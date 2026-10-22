@@ -32,7 +32,7 @@ export const zhTW: Readonly<Record<string, string>> = {
   Yonma: '四人麻將',
   Sanma: '三人麻將',
   'Match name': '對局名稱',
-  'Thursday night': '週四晚上的牌局',
+  'Saturday afternoon': '週六下午的牌局',
   East: '東',
   South: '南',
   West: '西',
