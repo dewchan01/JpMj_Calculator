@@ -1,0 +1,108 @@
+<section class="card result-card" aria-live="polite">
+  <p class="eyebrow">{{ 'The score, explained' | t }}</p>
+  @if (result(); as r) {
+    @if (!r.isValid) {
+      <h2>{{ 'Check your hand' | t }}</h2>
+      <ul class="validation-errors">
+        @for (message of r.errors; track message) {
+          <li>{{ message | t }}</li>
+        }
+      </ul>
+    } @else {
+      <div class="score-total">
+        <span>{{ r.winnerReceives | number }}</span>
+        <small>{{ 'points to ' + name(winner()) | t }}</small>
+      </div>
+      <div class="result-meta">
+        <span>{{ r.limitName ?? 'Standard hand' | t }}</span>
+        @if (r.han) {
+          <strong>{{ r.han + ' Han · ' + r.fu + ' Fu' | t }}</strong>
+        }
+      </div>
+      <h3>{{ 'Yaku' | t }}</h3>
+      @for (y of r.yaku; track y.id) {
+        <div class="explain-row">
+          <span>{{ y.name | t }}</span>
+          <strong>
+            {{ (y.yakumanMultiplier ? y.yakumanMultiplier + '× Yakuman' : y.han + ' Han') | t }}
+          </strong>
+        </div>
+      }
+      @if (r.bonusHan.length) {
+        <h3>{{ 'Bonus · not Yaku' | t }}</h3>
+        @for (b of r.bonusHan; track b.source) {
+          <div class="explain-row">
+            <span>{{ b.source | t }}</span>
+            <strong>{{ b.count + ' Han' | t }}</strong>
+          </div>
+        }
+      }
+      <h3>{{ 'Who pays' | t }}</h3>
+      @for (p of r.payments; track $index) {
+        <div class="payment-row">
+          <div>
+            <strong>{{ name(p.from) }}</strong>
+            <small>{{ p.reason | t }}</small>
+          </div>
+          <strong>{{ p.amount | number }}</strong>
+        </div>
+      }
+      <details>
+        <summary>{{ 'Fu & winning interpretation' | t }}</summary>
+        @for (f of r.fuBreakdown; track $index) {
+          <div class="explain-row">
+            <span>{{ f.reason | t }}</span>
+            <strong>{{ f.value }}</strong>
+          </div>
+        }
+        <p class="hint">{{ r.interpretation | t }}</p>
+      </details>
+      @if (match()) {
+        <h3>{{ 'Balances after settlement' | t }}</h3>
+        @for (p of players(); track p.id) {
+          <div class="explain-row">
+            <span>{{ p.name }}</span>
+            <strong>
+              {{ (book()?.players?.[p.id] ?? 0) + (r.playerDeltas[p.id] ?? 0) | number }}
+            </strong>
+          </div>
+        }
+        <button
+          class="primary full"
+          (click)="confirmSettlement.emit()"
+          [disabled]="busy() || status() !== 'verified'"
+        >
+          {{ 'Confirm & save settlement' | t }}
+        </button>
+        @if (status() !== 'verified') {
+          <p class="hint">
+            {{
+              'Check your tiles and press “I have checked these tiles” before calculating again to settle.'
+                | t
+            }}
+          </p>
+        }
+      }
+    }
+  } @else {
+    <div class="result-empty">
+      <span aria-hidden="true">和</span>
+      <h2>
+        {{ 'A hand worth' | t }}
+        <br />
+        {{ 'understanding.' | t }}
+      </h2>
+      <p>
+        {{ 'Add the tiles and round details,' | t }}
+        <br />
+        {{ 'then calculate your score.' | t }}
+      </p>
+    </div>
+  }
+  <div class="rule-note">
+    {{ rules().playerCount }}P · {{ ruleName(rules()) | t }} ·
+    {{ (rules().kiriage ? 'Kiriage Mangan' : 'Kiriage off') | t }}
+    <br />
+    <a routerLink="/about">{{ 'See coverage & limitations ↗' | t }}</a>
+  </div>
+</section>

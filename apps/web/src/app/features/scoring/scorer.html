@@ -1,0 +1,654 @@
+<section class="page-heading compact">
+  <p class="eyebrow">{{ (match() ? 'Your table' : 'No match required') | t }}</p>
+  <h1>{{ match()?.name ?? i18n.t('Score a hand.') }}</h1>
+  <p class="muted">{{ 'Build it. Check it. Make every point count.' | t }}</p>
+</section>
+@if (error()) {
+  <p class="banner error" role="alert">{{ error() | t }}</p>
+}
+@if (notice()) {
+  <p class="banner success" role="status">{{ notice() | t }}</p>
+}
+@if (ready()) {
+  <app-rule-picker [profile]="rules" [locked]="!!match()" (profileChange)="updateRules($event)" />
+  @if (match(); as m) {
+    <p class="round-heading">
+      {{ roundWind | t }} {{ handNumber }} · {{ 'Honba' | t }} {{ honba }} ·
+      {{ ruleName(rules) | t }}
+    </p>
+    @if (m.ended) {
+      <p class="banner success" role="status">{{ 'Match ended' | t }} · {{ m.endReason | t }}</p>
+    }
+    <section class="scoreboard" [attr.aria-label]="'Player balances' | t">
+      @for (p of players; track p.id) {
+        <div [class.winner]="p.id === winner">
+          <small>{{ seat(p.id) | t }}</small>
+          <strong>{{ p.name }}</strong>
+          <span>{{ book?.players?.[p.id] | number }}</span>
+        </div>
+      }
+      <div class="pot">
+        <small>{{ 'Riichi pot' | t }}</small>
+        <strong>{{ book?.table | number }}</strong>
+        <span>{{ 'table escrow' | t }}</span>
+      </div>
+    </section>
+    <div class="tabs">
+      <button [class.active]="tab === 'entry'" (click)="tab = 'entry'; roundResult.set(null)">
+        {{ 'Enter hand' | t }}
+      </button>
+      <button [class.active]="tab === 'draw'" (click)="tab = 'draw'; roundResult.set(null)">
+        {{ 'Record draw' | t }}
+      </button>
+      <button [class.active]="tab === 'history'" (click)="tab = 'history'">
+        {{ 'History' | t }}
+        <span class="pill">{{ m.events.length }}</span>
+      </button>
+    </div>
+  } @else {
+    <div class="banner">
+      {{ 'Quick score does not save a match.' | t }}
+      <a routerLink="/">{{ 'Create a table' | t }}</a>
+      {{ 'to track balances.' | t }}
+    </div>
+    <label class="inline-label">
+      {{ 'Rules' | t }}
+      <select [(ngModel)]="count" (ngModelChange)="changeCount()">
+        <option [ngValue]="4">{{ '4P · Yonma' | t }}</option>
+        <option [ngValue]="3">{{ '3P · Sanma' | t }}</option>
+      </select>
+    </label>
+  }
+  @if (tab === 'entry') {
+    <section class="card ron-queue">
+      <div class="section-heading spread">
+        <h2>{{ 'Multiple Ron winners' | t }}</h2>
+        <span class="pill">{{ queued.length }}</span>
+      </div>
+      <p class="hint">
+        {{
+          'Verify each Ron hand, add it to this list, then review all winners together. All winners must share the same discard and round context.'
+            | t
+        }}
+      </p>
+      @for (entry of queued; track entry.win.winnerId) {
+        <div class="explain-row">
+          <strong>{{ name(entry.win.winnerId) }}</strong>
+          <button class="quiet danger" (click)="removeQueued(entry.win.winnerId)">
+            {{ 'Remove' | t }}
+          </button>
+        </div>
+      }
+      <div class="action-row">
+        <button
+          class="secondary"
+          (click)="queueRon()"
+          [disabled]="method !== 'ron' || status !== 'verified'"
+        >
+          {{ 'Add verified Ron winner' | t }}
+        </button>
+        <button class="secondary" (click)="calculateQueued()" [disabled]="!queued.length">
+          {{ 'Review all Ron winners' | t }}
+        </button>
+      </div>
+      <app-round-review
+        [result]="roundResult()"
+        [players]="players"
+        [canSave]="!!match() && !match()?.ended"
+        [busy]="busy()"
+        (confirmSettlement)="confirmRound()"
+      />
+    </section>
+    <div class="scorer-grid">
+      <div class="entry-column">
+        <section class="card">
+          <div class="section-heading">
+            <span class="step">01</span>
+            <h2>{{ 'The winning hand' | t }}</h2>
+            <span class="pill status" [class.verified]="status === 'verified'">
+              {{ status | t }}
+            </span>
+          </div>
+          <div class="form-grid">
+            <label>
+              {{ 'Winner' | t }}
+              <select [(ngModel)]="winner" (ngModelChange)="changeWinner()">
+                @for (p of players; track p.id) {
+                  <option [value]="p.id">{{ p.name }} · {{ seat(p.id) | t }}</option>
+                }
+              </select>
+            </label>
+            <label>
+              {{ 'Win method' | t }}
+              <select [(ngModel)]="method" (ngModelChange)="changed()">
+                <option value="ron">{{ 'Ron · discard' | t }}</option>
+                <option value="tsumo">{{ 'Tsumo · self draw' | t }}</option>
+              </select>
+            </label>
+          </div>
+          <div class="hand-toolbar">
+            <span>{{ tiles.length + ' concealed · expected ' + (14 - 3 * melds.length) | t }}</span>
+            <div>
+              <button
+                class="quiet"
+                (click)="undo()"
+                [disabled]="!canUndo"
+                [attr.aria-label]="'Undo tile edit' | t"
+              >
+                ↶
+              </button>
+              <button
+                class="quiet"
+                (click)="redo()"
+                [disabled]="!canRedo"
+                [attr.aria-label]="'Redo tile edit' | t"
+              >
+                ↷
+              </button>
+              <button class="quiet" (click)="resetHand()">{{ 'Clear' | t }}</button>
+            </div>
+          </div>
+          <div class="hand-tray" [attr.aria-label]="'Concealed tiles including winning tile' | t">
+            @for (tile of tiles; track tile.id) {
+              <button
+                class="tile"
+                [class.winning-tile]="winningId === tile.id"
+                [class.red-ink]="tile.isRed"
+                (click)="clickTile(tile)"
+                [attr.aria-label]="tileActionLabel(tile, selectWinning ? 'mark' : 'remove')"
+              >
+                {{ labels(tile) }}
+                @if (winningId === tile.id) {
+                  <small>{{ ' ' + i18n.t('WIN') }}</small>
+                }
+              </button>
+            }
+            @if (!tiles.length) {
+              <p>
+                {{ 'Tap tiles below to build your hand.' | t }}
+                <br />
+                <button class="text-link" (click)="example()">
+                  {{ 'Try an example hand →' | t }}
+                </button>
+              </p>
+            }
+          </div>
+          <label class="check">
+            <input type="checkbox" [(ngModel)]="selectWinning" />
+            {{ 'Tap a hand tile to mark the winning tile' | t }}
+            <span class="hint">{{ 'Otherwise tap to remove' | t }}</span>
+          </label>
+          <details class="notation">
+            <summary>{{ 'Type compact tile notation' | t }}</summary>
+            <label>
+              {{ 'Concealed hand, including winning tile' | t }}
+              <input [(ngModel)]="notation" placeholder="123m456m789p234s55p" />
+            </label>
+            <p class="hint">
+              {{
+                'm = characters, p = circles, s = bamboo, z = honors (East–red dragon = 1–7). 0 = red five. Last tile is initially the winning tile.'
+                  | t
+              }}
+            </p>
+            <button class="secondary" (click)="applyNotation()">
+              {{ 'Replace concealed tiles' | t }}
+            </button>
+          </details>
+          <div class="tile-palette">
+            @for (suit of suits; track suit; let row = $index) {
+              <div>
+                <small>{{ suit | t }}</small>
+                <div class="palette-row">
+                  @for (tile of palette(row); track tile.id) {
+                    <button
+                      class="tile palette-tile"
+                      [class]="'tile palette-tile ' + tileClass(tile)"
+                      (click)="addTile(tile)"
+                      [attr.aria-label]="tileActionLabel(tile, 'add')"
+                    >
+                      {{ labels(tile) }}
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+            <div>
+              <small>{{ 'Red fives' | t }}</small>
+              <div class="palette-row">
+                @for (tile of redPalette(); track tile.id) {
+                  <button
+                    class="tile palette-tile red-ink"
+                    (click)="addTile(tile)"
+                    [attr.aria-label]="tileActionLabel(tile, 'add')"
+                  >
+                    {{ labels(tile) }}
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+          <button class="secondary full" (click)="verify()">
+            {{ '✓ I have checked these tiles' | t }}
+          </button>
+        </section>
+        <section class="card">
+          <div class="section-heading">
+            <span class="step">02</span>
+            <h2>{{ 'Melds & extracted tiles' | t }}</h2>
+          </div>
+          @for (meld of melds; track meld.id) {
+            <div class="meld-row">
+              <div>
+                <strong>{{ meld.type | t }}</strong>
+                <small>
+                  {{ (meld.fromPlayerId ? 'from ' + name(meld.fromPlayerId) : 'concealed') | t }}
+                </small>
+                <div class="mini-tiles">
+                  @for (t of meld.tiles; track t.id) {
+                    <span [class.called]="t.id === meld.calledTileId" [class.red-ink]="t.isRed">
+                      {{ labels(t) }}
+                    </span>
+                  }
+                </div>
+                <label>
+                  {{ 'Original call order' | t }}
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    [(ngModel)]="meld.callOrder"
+                    (ngModelChange)="changed()"
+                  />
+                </label>
+              </div>
+              <div>
+                @if (meld.type === 'pon') {
+                  <button class="quiet" (click)="upgrade(meld)">{{ 'Upgrade to Kan' | t }}</button>
+                }
+                <button
+                  class="quiet danger"
+                  (click)="removeMeld(meld.id)"
+                  [attr.aria-label]="'Remove meld' | t"
+                >
+                  {{ 'Remove' | t }}
+                </button>
+              </div>
+            </div>
+          }
+          <p class="hint">
+            {{
+              'Meld tiles are separate from the concealed hand. The outlined tile is the original called tile. Upgrade an existing Pon to create Kakan.'
+                | t
+            }}
+          </p>
+          <div class="form-grid">
+            <label>
+              {{ 'Meld type' | t }}
+              <select [(ngModel)]="meldType">
+                <option value="chi" [disabled]="rules.playerCount === 3">{{ 'Chi' | t }}</option>
+                <option value="pon">{{ 'Pon' | t }}</option>
+                <option value="daiminkan">{{ 'Open Kan' | t }}</option>
+                <option value="ankan">{{ 'Concealed Kan' | t }}</option>
+              </select>
+            </label>
+            <label>
+              {{ 'Tiles' | t }}
+              <input [(ngModel)]="meldText" placeholder="555z" />
+            </label>
+            @if (meldType !== 'ankan') {
+              <label>
+                {{ 'Source player' | t }}
+                <select [(ngModel)]="source">
+                  @for (p of players; track p.id) {
+                    @if (p.id !== winner) {
+                      <option [value]="p.id">{{ p.name }}</option>
+                    }
+                  }
+                </select>
+              </label>
+              <label>
+                {{ 'Called tile position' | t }}
+                <select [(ngModel)]="calledIndex">
+                  <option [ngValue]="0">{{ 'First' | t }}</option>
+                  <option [ngValue]="1">{{ 'Second' | t }}</option>
+                  <option [ngValue]="2">{{ 'Third' | t }}</option>
+                  @if (meldType === 'daiminkan') {
+                    <option [ngValue]="3">{{ 'Fourth' | t }}</option>
+                  }
+                </select>
+              </label>
+            }
+          </div>
+          <button class="secondary" (click)="addMeld()">{{ '+ Add meld' | t }}</button>
+          @if (rules.playerCount === 3) {
+            <div class="kita-row">
+              <div>
+                <strong>{{ 'Extracted North · ' + kita.length | t }}</strong>
+                <small>{{ 'Kita adds bonus Han, never Yaku.' | t }}</small>
+              </div>
+              <button
+                class="secondary"
+                (click)="removeKita()"
+                [disabled]="!kita.length"
+                [attr.aria-label]="'Remove extracted North' | t"
+              >
+                −
+              </button>
+              <button
+                class="secondary"
+                (click)="addKita()"
+                [attr.aria-label]="'Add extracted North' | t"
+              >
+                +
+              </button>
+            </div>
+          }
+        </section>
+        <section class="card">
+          <div class="section-heading">
+            <span class="step">03</span>
+            <h2>{{ 'Round & win details' | t }}</h2>
+          </div>
+          <div class="form-grid">
+            <label>
+              {{ 'Dealer' | t }}
+              <select [(ngModel)]="dealer" (ngModelChange)="changed()">
+                @for (p of players; track p.id) {
+                  <option [value]="p.id">{{ p.name }}</option>
+                }
+              </select>
+            </label>
+            <label>
+              {{ 'Round wind' | t }}
+              <select [(ngModel)]="roundWind" (ngModelChange)="changed()">
+                @for (wind of winds; track wind) {
+                  <option [value]="wind">{{ wind | t }}</option>
+                }
+              </select>
+            </label>
+            @if (method === 'ron') {
+              <label>
+                {{ 'Discarder' | t }}
+                <select [(ngModel)]="discarder" (ngModelChange)="changed()">
+                  @for (p of players; track p.id) {
+                    @if (p.id !== winner) {
+                      <option [value]="p.id">{{ p.name }} · {{ seat(p.id) | t }}</option>
+                    }
+                  }
+                </select>
+              </label>
+            }
+            <label>
+              {{ 'Honba' | t }}
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+                [(ngModel)]="honba"
+                (ngModelChange)="changed()"
+              />
+            </label>
+            <label>
+              {{ 'Dora indicators' | t }}
+              <input
+                [(ngModel)]="doraText"
+                (ngModelChange)="changed()"
+                [attr.placeholder]="'e.g. 4p' | t"
+              />
+            </label>
+            <label>
+              {{ 'Ura indicators' | t }}
+              <input
+                [(ngModel)]="uraText"
+                (ngModelChange)="changed()"
+                [attr.placeholder]="'Riichi only' | t"
+              />
+            </label>
+          </div>
+          <div class="form-grid">
+            <label>
+              {{ 'Other-player Kans' | t }}
+              <input
+                type="number"
+                min="0"
+                max="4"
+                [(ngModel)]="otherKans"
+                (ngModelChange)="changed()"
+              />
+            </label>
+            <label>
+              {{ 'Hand number' | t }}
+              <input
+                type="number"
+                min="1"
+                [max]="rules.playerCount"
+                [(ngModel)]="handNumber"
+                (ngModelChange)="changed()"
+              />
+            </label>
+          </div>
+          <p class="hint">
+            {{
+              'Enter revealed indicator tiles, including revealed Kan indicators. Declare other-player Kans separately.'
+                | t
+            }}
+          </p>
+          <div class="claims">
+            @for (flag of flagOptions; track flag.key) {
+              <label class="check">
+                <input type="checkbox" [(ngModel)]="flags[flag.key]" (ngModelChange)="changed()" />
+                {{ flag.label | t }}
+              </label>
+            }
+          </div>
+          @if (flags.rinshan) {
+            <label>
+              {{ 'Replacement draw' | t }}
+              <select [(ngModel)]="replacement" (ngModelChange)="changed()">
+                <option value="kan">{{ 'After Kan' | t }}</option>
+                <option value="kita" [disabled]="rules.playerCount !== 3">
+                  {{ 'After Kita' | t }}
+                </option>
+              </select>
+            </label>
+          }
+          @if (method === 'ron') {
+            <label>
+              {{ 'Ron circumstance' | t }}
+              <select [(ngModel)]="robbed" (ngModelChange)="changed()">
+                <option value="kakan">
+                  {{ 'Normal discard / added Kan when Chankan selected' | t }}
+                </option>
+                <option value="ankan">{{ 'Robbed Ankan (select Chankan)' | t }}</option>
+                <option value="kita" [disabled]="rules.playerCount !== 3">
+                  {{ 'Robbed Kita (no Chankan bonus)' | t }}
+                </option>
+              </select>
+            </label>
+          }
+          @if (flags.tenhou || flags.chiihou) {
+            <label class="check">
+              <input type="checkbox" [(ngModel)]="firstTurn" (ngModelChange)="changed()" />
+              {{ 'I confirm this was the first draw with no calls, Kans or Kita.' | t }}
+            </label>
+          }
+          <p class="hint">
+            {{
+              'You confirm these circumstances. Tile structure alone cannot establish Furiten, legal Riichi, or event timing.'
+                | t
+            }}
+          </p>
+          @if (match()) {
+            <details class="escrow">
+              <summary>{{ 'Record a Riichi deposit · pot ' + (book?.table | number) | t }}</summary>
+              <p class="hint">
+                {{
+                  'Declare before settlement. This moves 1,000 points from a player into escrow once.'
+                    | t
+                }}
+              </p>
+              <div class="action-row">
+                <select [(ngModel)]="depositPlayer" [attr.aria-label]="'Riichi declarer' | t">
+                  @for (p of players; track p.id) {
+                    <option [value]="p.id">{{ p.name }}</option>
+                  }
+                </select>
+                <button class="secondary" (click)="deposit()" [disabled]="busy()">
+                  {{ 'Deposit 1,000' | t }}
+                </button>
+              </div>
+            </details>
+          }
+          <button class="primary full calculate" (click)="calculate()">
+            {{ 'Calculate score' | t }}
+            <span aria-hidden="true">→</span>
+          </button>
+        </section>
+        <details class="card photo-card">
+          <summary>
+            {{ 'Optional photo demo' | t }}
+            <span class="pill">{{ 'Mock only' | t }}</span>
+          </summary>
+          <p class="hint">
+            {{
+              'No AI model is connected. Fixed demo suggestions do not describe your photo. Images stay in memory on this device.'
+                | t
+            }}
+          </p>
+          <label>
+            {{ 'Take a photo' | t }}
+            <input type="file" accept="image/*" capture="environment" (change)="capture($event)" />
+          </label>
+          <label>
+            {{ 'Or choose an image' | t }}
+            <input type="file" accept="image/*" (change)="capture($event)" />
+          </label>
+          @if (photoUrl) {
+            <img
+              class="photo-preview"
+              [src]="photoUrl"
+              [attr.alt]="'Your selected hand photo' | t"
+            />
+            <p>{{ photoName() }}</p>
+            <p class="eyebrow">{{ 'Fixed mock suggestions · 50% demo confidence' | t }}</p>
+            <div class="action-row">
+              @for (p of predictions; track $index) {
+                <button class="secondary" (click)="usePrediction(p)">
+                  {{ 'Add ' + predictionLabel(p) | t }}
+                </button>
+              }
+            </div>
+            <p class="hint">
+              {{
+                'Suggested tiles can be removed or replaced using the manual editor above. Manual corrections are not overwritten.'
+                  | t
+              }}
+            </p>
+          }
+        </details>
+      </div>
+      <aside class="result-column">
+        <app-score-result
+          [result]="result()"
+          [match]="match()"
+          [players]="players"
+          [book]="book"
+          [rules]="rules"
+          [winner]="winner"
+          [status]="status"
+          [busy]="busy()"
+          (confirmSettlement)="settle()"
+        />
+      </aside>
+    </div>
+  } @else if (tab === 'draw') {
+    <section class="card">
+      <h2>{{ 'Record draw' | t }}</h2>
+      <p class="hint">
+        {{
+          'Declare the actual draw circumstances. The app calculates transfers and progression; it does not infer the wall or discard history.'
+            | t
+        }}
+      </p>
+      <label>
+        {{ 'Draw type' | t }}
+        <select [(ngModel)]="drawType" (ngModelChange)="changed()">
+          <option value="exhaustive">{{ 'Exhaustive draw' | t }}</option>
+          <option value="abortive" [disabled]="rules.preset === 'm-league'">
+            {{ 'Abortive draw' | t }}
+          </option>
+          <option value="nagashi" [disabled]="rules.preset === 'm-league'">
+            {{ 'Nagashi Mangan' | t }}
+          </option>
+        </select>
+      </label>
+      @if (drawType === 'abortive') {
+        <label>
+          {{ 'Abortive draw reason' | t }}
+          <select [(ngModel)]="abortiveReason" (ngModelChange)="changed()">
+            @for (reason of abortiveOptions; track reason.value) {
+              <option [value]="reason.value">{{ reason.label | t }}</option>
+            }
+          </select>
+        </label>
+        <p class="hint">
+          {{
+            'Nine terminals: first uninterrupted draw and at least nine distinct terminals/honors. Four winds: identical first wind discards without calls. Four Kans: multiple players, after the win opportunity passes.'
+              | t
+          }}
+        </p>
+      } @else {
+        <h3>{{ 'Tenpai players' | t }}</h3>
+        <div class="claims">
+          @for (p of players; track p.id) {
+            <label class="check">
+              <input type="checkbox" [(ngModel)]="tenpai[p.id]" (ngModelChange)="changed()" />
+              {{ p.name }}
+            </label>
+          }
+        </div>
+        <p class="hint">
+          {{ 'Dealer continuation on a draw follows Tenpai, including Nagashi Mangan.' | t }}
+        </p>
+      }
+      @if (drawType === 'nagashi') {
+        <h3>{{ 'Nagashi Mangan players' | t }}</h3>
+        <div class="claims">
+          @for (p of players; track p.id) {
+            <label class="check">
+              <input type="checkbox" [(ngModel)]="nagashi[p.id]" (ngModelChange)="changed()" />
+              {{ p.name }}
+            </label>
+          }
+        </div>
+        <p class="hint">
+          {{
+            'Confirm that each selected player discarded only terminals/honors and none of those discards was called. Multiple qualifying players settle against one another; Riichi escrow carries forward.'
+              | t
+          }}
+        </p>
+      }
+      <label class="check">
+        <input type="checkbox" [(ngModel)]="drawConfirmed" (ngModelChange)="changed()" />
+        {{ 'I confirm the draw circumstances and player declarations.' | t }}
+      </label>
+      <button class="primary" (click)="calculateDraw()">{{ 'Review draw settlement' | t }}</button>
+    </section>
+    <app-round-review
+      [result]="roundResult()"
+      [players]="players"
+      [canSave]="!!match() && !match()?.ended"
+      [busy]="busy()"
+      (confirmSettlement)="confirmRound()"
+    />
+  } @else {
+    <app-match-history
+      [match]="match()"
+      [rules]="rules"
+      [busy]="busy()"
+      (exportRequested)="exportMatch()"
+      (undoRequested)="undoSettlement()"
+    />
+  }
+}

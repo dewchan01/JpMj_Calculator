@@ -1,0 +1,100 @@
+<section class="card">
+  <div class="section-heading spread">
+    <h2>{{ 'Auditable hand history' | t }}</h2>
+    <button class="secondary" (click)="exportRequested.emit()">{{ 'Export JSON' | t }}</button>
+  </div>
+  <p class="hint">
+    {{
+      'Older events cannot be edited. Undo the latest event to restore its transfers and previous round state.'
+        | t
+    }}
+  </p>
+  @if (!match()?.events?.length) {
+    <p class="empty">{{ 'No settlements yet.' | t }}</p>
+  }
+  @for (event of events(); track event.id) {
+    <details class="history-event">
+      <summary>
+        {{ eventLabel(event) }}
+        <small>{{ event.timestamp | date: 'medium' : undefined : i18n.locale() }}</small>
+      </summary>
+      @for (p of event.payments; track $index) {
+        <div class="explain-row">
+          <span>{{ name(p.from) }} → {{ name(p.to) }}</span>
+          <strong>{{ p.amount | number }}</strong>
+        </div>
+      }
+      @if (event.hand) {
+        <p class="hint">
+          {{ event.win?.method | t }} · {{ (event.roundWind ?? '') + ' round' | t }}
+        </p>
+        <div class="mini-tiles">
+          @for (t of event.hand.concealedTiles; track t.id) {
+            <span>{{ labels(t) }}</span>
+          }
+        </div>
+        @for (m of event.hand.melds; track m.id) {
+          <p class="hint">
+            {{ m.type | t }} · {{ m.fromPlayerId ? name(m.fromPlayerId) : i18n.t('concealed') }}
+          </p>
+          <div class="mini-tiles">
+            @for (t of m.tiles; track t.id) {
+              <span>{{ labels(t) }}</span>
+            }
+          </div>
+        }
+      }
+      @if (event.result; as r) {
+        <p>{{ r.han + ' Han · ' + r.fu + ' Fu' | t }} · {{ r.limitName ?? 'standard' | t }}</p>
+        @for (y of r.yaku; track y.id) {
+          <div class="explain-row">
+            <span>{{ y.name | t }}</span>
+            <strong>
+              {{ (y.yakumanMultiplier ? y.yakumanMultiplier + '× Yakuman' : y.han + ' Han') | t }}
+            </strong>
+          </div>
+        }
+      }
+      <p class="history-context">
+        {{ ruleName(eventRules(event)) | t }} · v{{ eventRules(event).version }}
+      </p>
+      @if (event.drawInput; as draw) {
+        <p>{{ draw.type | t }} · {{ draw.reason ?? '' | t }}</p>
+        <p>{{ 'Tenpai players' | t }}: {{ playerList(draw.tenpaiIds) }}</p>
+      }
+      @for (input of event.scoringInputs; track input.win.winnerId) {
+        <p>{{ name(input.win.winnerId) }}</p>
+        <div class="mini-tiles">
+          @for (tile of input.hand.concealedTiles; track tile.id) {
+            <span>{{ labels(tile) }}</span>
+          }
+        </div>
+      }
+      @for (r of event.results; track $index) {
+        <h3>{{ name(event.winnerIds?.[$index] ?? '') }}</h3>
+        <p>{{ r.han + ' Han · ' + r.fu + ' Fu' | t }} · {{ r.limitName ?? 'standard' | t }}</p>
+        @for (y of r.yaku; track y.id) {
+          <div class="explain-row">
+            <span>{{ y.name | t }}</span>
+            <strong>
+              {{ (y.yakumanMultiplier ? y.yakumanMultiplier + '× Yakuman' : y.han + ' Han') | t }}
+            </strong>
+          </div>
+        }
+      }
+      @if (event.after; as after) {
+        <p class="hint">
+          {{ 'Next round' | t }}: {{ after.roundWind | t }} {{ after.handNumber }} ·
+          {{ name(after.dealerId) }} · {{ 'Honba' | t }} {{ after.honba }}
+        </p>
+      }
+    </details>
+  }
+  <button
+    class="secondary danger"
+    (click)="undoRequested.emit()"
+    [disabled]="busy() || !match()?.events?.length"
+  >
+    {{ 'Undo last ledger event' | t }}
+  </button>
+</section>

@@ -1,0 +1,34 @@
+:host {
+  display: block;
+  margin-top: 2rem;
+}
+.storage-status {
+  border: 1px solid #c7c7bd;
+  border-radius: 12px;
+  padding: 1rem;
+}
+.storage-status.warning {
+  border-color: #87500b;
+}
+.heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+p {
+  margin: 0.5rem 0;
+}
+meter {
+  width: 100%;
+  height: 1rem;
+}
+.storage-warning {
+  color: #794300;
+  font-weight: 600;
+}

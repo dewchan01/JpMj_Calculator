@@ -1,0 +1,57 @@
+<section class="page-heading">
+  <p class="eyebrow">{{ 'Know your rules' | t }}</p>
+  <h1>{{ 'Transparent by design.' | t }}</h1>
+  <p class="muted">
+    {{ 'Independent scoring with selectable Mahjong Soul, Tenhou and Custom rules.' | t }}
+  </p>
+</section>
+<section class="card prose">
+  <h2>{{ 'What works' | t }}</h2>
+  <p>
+    {{
+      'Manual 3P/4P scoring includes standard Yaku, all standard Yakuman and special waits, first-turn claims, Pao, multiple Ron, draws and Nagashi Mangan. Rule presets control the differences; settlements update dealer, honba and match state automatically.'
+        | t
+    }}
+  </p>
+  <h2>{{ 'What needs your input' | t }}</h2>
+  <p>
+    {{
+      'The winning tile is included in the concealed hand. Declare the winner, discarder, dealer, round wind and situational claims yourself. The scorer validates tile structure and claim consistency; it cannot establish Furiten, legal Riichi timing or unrecorded game history.'
+        | t
+    }}
+  </p>
+  <h2>{{ 'Explicit limits' | t }}</h2>
+  <p>
+    {{
+      'You must declare legal timing, Tenpai, Nagashi eligibility, call order and revealed indicators. The app checks consistency and calculates settlement, but has no full wall/discard simulation. Local Yaku, chombo penalties, final Uma/Oka and rank progression are outside these presets.'
+        | t
+    }}
+  </p>
+  <p>
+    {{
+      'The North-bisection option is a house-rule alternative that splits the absent payer’s base share before rounding. It is not the ranked default. Ranked presets use Tsumo-loss and disable Kiriage.'
+        | t
+    }}
+  </p>
+  <h2>{{ 'Photos and privacy' | t }}</h2>
+  <p>
+    {{
+      'The capture demo is a mock recognizer, not AI inference. Images remain in your browser and are not uploaded. Confirm or correct demo suggestions; manual entry always works. Photo drafts and image editing are not yet persisted.'
+        | t
+    }}
+  </p>
+  <h2>{{ 'Local data' | t }}</h2>
+  <p>
+    {{
+      'Matches and manual drafts are stored in IndexedDB. Clearing site data removes them. Export a match from its history for a backup. An installed production PWA can work offline after its first successful online load. HTTPS is required away from localhost.'
+        | t
+    }}
+  </p>
+  <h2>{{ 'History' | t }}</h2>
+  <p>
+    {{
+      'Every settlement stores its rules, inputs, payments and previous/next round state. Riichi deposits fund escrow before it is awarded. Undo restores the latest event’s transfers and round progression; older edits remain blocked.'
+        | t
+    }}
+  </p>
+</section>

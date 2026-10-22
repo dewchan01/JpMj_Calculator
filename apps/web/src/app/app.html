@@ -1,0 +1,40 @@
+<header class="topbar">
+  <a class="brand" routerLink="/">
+    <span class="brand-mark" aria-hidden="true">發</span>
+    <span>
+      Riichi
+      <span class="brand-light">/ table</span>
+    </span>
+  </a>
+  <div class="header-tools">
+    <span class="local-badge">
+      <i></i>
+      {{ 'Local & offline' | t }}
+    </span>
+    <select
+      class="language-select"
+      aria-label="Language / 語言"
+      [value]="i18n.locale()"
+      (change)="changeLanguage($event)"
+    >
+      <option value="en">English</option>
+      <option value="zh-TW">繁體中文</option>
+    </select>
+  </div>
+</header>
+<div class="shell">
+  <nav [attr.aria-label]="'Main navigation' | t">
+    <a routerLink="/" [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="active">
+      {{ 'My table' | t }}
+    </a>
+    <a routerLink="/score" routerLinkActive="active">{{ 'Quick score' | t }}</a>
+    <a routerLink="/about" routerLinkActive="active">{{ 'Rule coverage' | t }}</a>
+  </nav>
+  <main id="main">
+    <router-outlet />
+    <app-storage-status />
+  </main>
+</div>
+<footer>
+  {{ 'Photo-assisted Riichi · Deterministic scoring · Your hands stay on this device' | t }}
+</footer>

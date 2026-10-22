@@ -1,0 +1,52 @@
+@if (result(); as r) {
+  <section class="card round-review" aria-live="polite">
+    <h2>{{ 'Round settlement' | t }}</h2>
+    @if (!r.isValid) {
+      <ul class="validation-errors">
+        @for (error of r.errors; track error) {
+          <li>{{ error | t }}</li>
+        }
+      </ul>
+    } @else {
+      <p class="eyebrow">{{ r.outcome | t }}</p>
+      <p class="hint">{{ (r.dealerRepeats ? 'Dealer repeats' : 'Dealer rotates') | t }}</p>
+      @for (result of r.results; track $index) {
+        <h3>{{ 'Winning hand' | t }} {{ $index + 1 }}</h3>
+        @for (y of result.yaku; track y.id) {
+          <div class="explain-row">
+            <span>{{ y.name | t }}</span>
+            <strong>
+              {{ (y.yakumanMultiplier ? y.yakumanMultiplier + '× Yakuman' : y.han + ' Han') | t }}
+            </strong>
+          </div>
+        }
+      }
+      <h3>{{ 'Who pays' | t }}</h3>
+      @for (p of r.payments; track $index) {
+        <div class="payment-row">
+          <div>
+            <strong>{{ name(p.from) }} → {{ name(p.to) }}</strong>
+            <small>{{ p.reason | t }}</small>
+          </div>
+          <strong>{{ p.amount | number }}</strong>
+        </div>
+      }
+      @if (!r.payments.length) {
+        <p class="hint">{{ 'No point transfers; table escrow carries forward.' | t }}</p>
+      }
+      @for (p of players(); track p.id) {
+        <div class="explain-row">
+          <span>{{ p.name }}</span>
+          <strong>
+            {{ r.playerDeltas[p.id] > 0 ? '+' : '' }}{{ r.playerDeltas[p.id] | number }}
+          </strong>
+        </div>
+      }
+      @if (canSave()) {
+        <button class="primary full" (click)="confirmSettlement.emit()" [disabled]="busy()">
+          {{ 'Confirm round settlement' | t }}
+        </button>
+      }
+    }
+  </section>
+}

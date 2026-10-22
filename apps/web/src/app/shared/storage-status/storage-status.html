@@ -1,0 +1,53 @@
+<section
+  class="storage-status"
+  [class.warning]="storage.level() !== 'normal'"
+  [attr.aria-label]="'Browser storage' | t"
+>
+  <div class="heading">
+    <h2>{{ 'Browser storage' | t }}</h2>
+    <button class="quiet" (click)="storage.refresh()" [disabled]="storage.refreshing()">
+      {{ 'Refresh storage usage' | t }}
+    </button>
+  </div>
+  @if (storage.usage(); as usage) {
+    <p>
+      {{ bytes(usage.used) }} / {{ bytes(usage.quota) }} · {{ usage.percent | number: '1.0-1' }}%
+    </p>
+    <meter
+      min="0"
+      max="100"
+      low="0"
+      high="80"
+      optimum="0"
+      [value]="usage.percent"
+      [attr.aria-label]="'Browser storage usage' | t"
+    ></meter>
+    <p class="hint">
+      {{
+        'Estimated usage for this site, including saved matches and offline files. Browser quota may change.'
+          | t
+      }}
+    </p>
+  } @else {
+    <p class="hint">
+      {{ 'Storage usage is unavailable in this browser. Saving may still work.' | t }}
+    </p>
+  }
+  <div aria-live="polite" aria-atomic="true">
+    @if (storage.level() === 'critical') {
+      <p class="storage-warning">
+        {{
+          'Storage is almost full (95% or more). New saves may fail. Export your matches, then delete unneeded saved matches.'
+            | t
+        }}
+      </p>
+    } @else if (storage.level() === 'warning') {
+      <p class="storage-warning">
+        {{
+          'Storage is nearing its limit (80% or more). Export your matches and remove unneeded saved matches.'
+            | t
+        }}
+      </p>
+    }
+  </div>
+</section>

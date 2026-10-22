@@ -1,0 +1,855 @@
+import { Component, inject, signal, OnDestroy } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { DecimalPipe } from '@angular/common';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import {
+  kindAt,
+  kindIndex,
+  parseTiles,
+  tileLabel,
+  WINDS,
+  type Tile,
+  type Meld,
+  type MeldType,
+  type ScoreResult,
+  type Wind,
+} from '../../../../../../packages/mahjong-core/index';
+import {
+  appendEvent,
+  balances,
+  settleRound,
+  undoLastEvent,
+  type Match,
+  type LedgerEvent,
+} from '../../../../../../packages/mahjong-core/ledger';
+import {
+  rankedRules,
+  presetRules,
+  ruleName,
+  ruleSettings,
+  type RuleProfile,
+} from '../../../../../../packages/mahjong-rules/index';
+import { score, type ScoringInput } from '../../../../../../packages/mahjong-scoring/index';
+import { Repository } from '../matches/data-access/repository';
+import { MockTileRecognizer, type TilePrediction } from './capture/recognizer';
+import { I18n, TranslatePipe } from '../../core/i18n/i18n';
+import { RulePicker } from '../../shared/rules/rule-picker';
+import { ScoreResultView } from './score-result/score-result';
+import { MatchHistory } from './match-history/match-history';
+import { RoundReview } from './round-review/round-review';
+import {
+  drawSettlement,
+  multipleRon,
+  type AbortiveReason,
+  type DrawInput,
+  type RoundSettlement,
+} from '../../../../../../packages/mahjong-scoring/rounds';
+interface Draft {
+  tiles: Tile[];
+  melds: Meld[];
+  kita: Tile[];
+  winningId: string;
+  winner: string;
+  discarder: string;
+  method: 'ron' | 'tsumo';
+  dealer: string;
+  roundWind: Wind;
+  honba: number;
+  handNumber?: number;
+  doraText: string;
+  uraText: string;
+  flags: Flags;
+  status: 'recognized' | 'corrected' | 'verified';
+  otherKans?: number;
+  replacement?: 'kan' | 'kita';
+  robbed?: 'kakan' | 'ankan' | 'kita';
+  firstTurn?: boolean;
+  queued?: ScoringInput[];
+}
+interface Flags {
+  riichi: boolean;
+  doubleRiichi: boolean;
+  ippatsu: boolean;
+  rinshan: boolean;
+  chankan: boolean;
+  haitei: boolean;
+  houtei: boolean;
+  tenhou: boolean;
+  chiihou: boolean;
+}
+const emptyFlags = (): Flags => ({
+  riichi: false,
+  doubleRiichi: false,
+  ippatsu: false,
+  rinshan: false,
+  chankan: false,
+  haitei: false,
+  houtei: false,
+  tenhou: false,
+  chiihou: false,
+});
+@Component({
+  imports: [
+    ScoreResultView,
+    MatchHistory,
+    RoundReview,
+    RulePicker,
+    TranslatePipe,
+    FormsModule,
+    DecimalPipe,
+    RouterLink,
+  ],
+  templateUrl: './scorer.html',
+})
+export class Scorer implements OnDestroy {
+  readonly i18n = inject(I18n);
+  private readonly repo = inject(Repository);
+  private readonly route = inject(ActivatedRoute);
+  readonly match = signal<Match | null>(null);
+  readonly ready = signal(false);
+  readonly error = signal('');
+  readonly notice = signal('');
+  readonly result = signal<ScoreResult | null>(null);
+  readonly busy = signal(false);
+  readonly roundResult = signal<RoundSettlement | null>(null);
+  readonly ruleName = ruleName;
+  readonly winds = WINDS;
+  readonly labels = tileLabel;
+  readonly tileNames = (tile: Tile): string => this.i18n.tile(tile);
+  tileActionLabel(tile: Tile, action: 'add' | 'mark' | 'remove'): string {
+    const visible =
+      tileLabel(tile) +
+      (action !== 'add' && tile.id === this.winningId ? ' ' + this.i18n.t('WIN') : '');
+    const instruction = this.i18n.t(
+      (action === 'add' ? 'Add ' : action === 'mark' ? 'Mark winning ' : 'Remove ') +
+        this.i18n.tile(tile),
+    );
+    return `${visible}: ${instruction}`;
+  }
+  readonly flagOptions: { key: keyof Flags; label: string }[] = [
+    { key: 'riichi', label: 'Riichi' },
+    { key: 'doubleRiichi', label: 'Double Riichi' },
+    { key: 'ippatsu', label: 'Ippatsu' },
+    { key: 'rinshan', label: 'Rinshan' },
+    { key: 'chankan', label: 'Chankan' },
+    { key: 'haitei', label: 'Haitei' },
+    { key: 'houtei', label: 'Houtei' },
+    { key: 'tenhou', label: 'Tenhou (first dealer draw)' },
+    { key: 'chiihou', label: 'Chiihou (first non-dealer draw)' },
+  ];
+  readonly suits = ['Characters · Man', 'Circles · Pin', 'Bamboo · Sou', 'Honors'];
+  count: 3 | 4 = 4;
+  tiles: Tile[] = [];
+  melds: Meld[] = [];
+  kita: Tile[] = [];
+  winningId = '';
+  winner = 'p1';
+  discarder = 'p2';
+  dealer = 'p0';
+  method: 'ron' | 'tsumo' = 'ron';
+  roundWind: Wind = 'east';
+  honba = 0;
+  handNumber = 1;
+  quickRules = rankedRules(4);
+  otherKans = 0;
+  replacement: 'kan' | 'kita' = 'kan';
+  robbed: 'kakan' | 'ankan' | 'kita' = 'kakan';
+  firstTurn = false;
+  queued: ScoringInput[] = [];
+  drawType: DrawInput['type'] = 'exhaustive';
+  tenpai: Record<string, boolean> = {};
+  nagashi: Record<string, boolean> = {};
+  drawConfirmed = false;
+  abortiveReason: AbortiveReason = 'nine-terminals';
+  readonly abortiveOptions: { value: AbortiveReason; label: string }[] = [
+    { value: 'nine-terminals', label: 'Nine terminals and honors' },
+    { value: 'four-winds', label: 'Four identical first winds' },
+    { value: 'four-riichi', label: 'Four Riichi declarations' },
+    { value: 'four-kans', label: 'Four Kans by multiple players' },
+    { value: 'triple-ron', label: 'Triple Ron abort' },
+  ];
+  flags = emptyFlags();
+  notation = '';
+  doraText = '';
+  uraText = '';
+  status: Draft['status'] = 'corrected';
+  selectWinning = false;
+  meldType: MeldType = 'pon';
+  meldText = '';
+  source = 'p0';
+  calledIndex = 0;
+  tab: 'entry' | 'history' | 'draw' = 'entry';
+  depositPlayer = 'p1';
+  photoUrl = '';
+  predictions: TilePrediction[] = [];
+  readonly photoName = signal('');
+  private readonly past: Draft[] = [];
+  private readonly future: Draft[] = [];
+  private resultFingerprint = '';
+  private eventId = crypto.randomUUID();
+  private draftQueue: Promise<void> = Promise.resolve();
+  private loadedId = '';
+  private loading = true;
+  constructor() {
+    void this.load();
+  }
+  ngOnDestroy(): void {
+    if (this.photoUrl) URL.revokeObjectURL(this.photoUrl);
+  }
+  get players(): { id: string; name: string }[] {
+    return (
+      this.match()?.players ??
+      ['p0', 'p1', 'p2', 'p3']
+        .slice(0, this.count)
+        .map((id, i) => ({ id, name: this.i18n.t(`Player ${i + 1}`) }))
+    );
+  }
+  get rules() {
+    return this.match()?.rules ?? this.quickRules;
+  }
+  get settings() {
+    return ruleSettings(this.rules);
+  }
+  updateRules(rules: RuleProfile): void {
+    this.quickRules = rules;
+    this.queued = [];
+    this.changed();
+  }
+  get book() {
+    const m = this.match();
+    return m ? balances(m) : null;
+  }
+  get canUndo(): boolean {
+    return this.past.length > 0;
+  }
+  get canRedo(): boolean {
+    return this.future.length > 0;
+  }
+  name(id: string): string {
+    return id === 'table'
+      ? this.i18n.t('Table pot')
+      : (this.players.find((p) => p.id === id)?.name ?? id);
+  }
+  seat(id: string): string {
+    return WINDS[
+      (this.players.findIndex((p) => p.id === id) -
+        this.players.findIndex((p) => p.id === this.dealer) +
+        this.players.length) %
+        this.players.length
+    ];
+  }
+  palette(row: number): Tile[] {
+    const indices =
+      row === 3
+        ? [27, 28, 29, 30, 31, 32, 33]
+        : Array.from({ length: 9 }, (_, i) => row * 9 + i).filter(
+            (i) => this.rules.playerCount === 4 || !(i >= 1 && i <= 7),
+          );
+    return indices.map((i) => ({ id: `palette-${i}`, kind: kindAt(i), isRed: false }));
+  }
+  redPalette(): Tile[] {
+    return (
+      this.settings.redFives ? (this.rules.playerCount === 3 ? [13, 22] : [4, 13, 22]) : []
+    ).map((i) => ({ id: `red-${i}`, kind: kindAt(i), isRed: true }));
+  }
+  async load(): Promise<void> {
+    try {
+      const id = this.route.snapshot.paramMap.get('id');
+      if (id) {
+        const m = await this.repo.get(id);
+        if (!m) throw new Error('Match not found. Return to My table.');
+        this.match.set(m);
+        this.loadedId = id;
+        this.count = m.playerCount;
+        this.dealer = m.dealerId;
+        this.roundWind = m.roundWind;
+        this.honba = m.honba;
+        this.handNumber = m.handNumber;
+        const saved = await this.repo.draft(id);
+        if (saved) this.restore(JSON.parse(saved) as Draft);
+      }
+    } catch (e) {
+      this.error.set(this.message(e));
+    } finally {
+      this.loading = false;
+      this.ready.set(true);
+    }
+  }
+  private draft(): Draft {
+    return structuredClone({
+      tiles: this.tiles,
+      melds: this.melds,
+      kita: this.kita,
+      winningId: this.winningId,
+      winner: this.winner,
+      discarder: this.discarder,
+      method: this.method,
+      dealer: this.dealer,
+      roundWind: this.roundWind,
+      honba: this.honba,
+      handNumber: this.handNumber,
+      doraText: this.doraText,
+      uraText: this.uraText,
+      flags: this.flags,
+      status: this.status,
+      otherKans: this.otherKans,
+      replacement: this.replacement,
+      robbed: this.robbed,
+      firstTurn: this.firstTurn,
+      queued: this.queued,
+    });
+  }
+  private restore(d: Draft): void {
+    // Restore only editor fields: persisted data must never replace services or signals.
+    this.tiles = d.tiles;
+    this.melds = d.melds;
+    this.kita = d.kita;
+    this.winningId = d.winningId;
+    this.winner = d.winner;
+    this.discarder = d.discarder;
+    this.method = d.method;
+    this.dealer = d.dealer;
+    this.roundWind = d.roundWind;
+    this.honba = d.honba;
+    this.handNumber = d.handNumber ?? this.handNumber;
+    this.doraText = d.doraText;
+    this.uraText = d.uraText;
+    this.status = d.status;
+    this.otherKans = d.otherKans ?? 0;
+    this.replacement = d.replacement ?? 'kan';
+    this.robbed = d.robbed ?? 'kakan';
+    this.firstTurn = d.firstTurn ?? false;
+    this.flags = { ...emptyFlags(), ...d.flags };
+    this.queued = d.queued ?? [];
+  }
+  private remember(): void {
+    this.past.push(this.draft());
+    if (this.past.length > 80) this.past.shift();
+    this.future.length = 0;
+  }
+  changed(): void {
+    this.result.set(null);
+    this.roundResult.set(null);
+    this.error.set('');
+    this.notice.set('');
+    if (this.loadedId && !this.loading) {
+      const id = this.loadedId;
+      const value = JSON.stringify(this.draft());
+      this.draftQueue = this.draftQueue
+        .then(() => this.repo.saveDraft(id, value))
+        .catch(() => {
+          this.error.set('Draft could not be saved to this device.');
+        });
+    }
+  }
+  editStatus(): void {
+    this.status = 'corrected';
+    this.changed();
+  }
+  undo(): void {
+    const previous = this.past.pop();
+    if (previous) {
+      this.future.push(this.draft());
+      this.restore(previous);
+      this.changed();
+    }
+  }
+  redo(): void {
+    const next = this.future.pop();
+    if (next) {
+      this.past.push(this.draft());
+      this.restore(next);
+      this.changed();
+    }
+  }
+  addTile(tile: Tile): void {
+    this.remember();
+    this.tiles.push({ ...structuredClone(tile), id: crypto.randomUUID() });
+    if (!this.winningId) this.winningId = this.tiles.at(-1)!.id;
+    this.editStatus();
+  }
+  clickTile(tile: Tile): void {
+    this.remember();
+    if (this.selectWinning) {
+      this.winningId = tile.id;
+    } else {
+      this.tiles = this.tiles.filter((t) => t.id !== tile.id);
+      if (this.winningId === tile.id) this.winningId = '';
+    }
+    this.editStatus();
+  }
+  applyNotation(): void {
+    try {
+      const tiles = parseTiles(this.notation, crypto.randomUUID());
+      this.remember();
+      this.tiles = tiles;
+      this.winningId = tiles.at(-1)?.id ?? '';
+      this.editStatus();
+    } catch (e) {
+      this.error.set(this.message(e));
+    }
+  }
+  example(): void {
+    this.remember();
+    this.tiles = parseTiles(
+      this.rules.playerCount === 3 ? '123p456p789s234s55p' : '123m456m789p234s55p',
+      crypto.randomUUID(),
+    );
+    this.melds = [];
+    this.kita = [];
+    this.winningId = this.tiles[11].id;
+    this.flags = emptyFlags();
+    this.doraText = '';
+    this.uraText = '';
+    this.editStatus();
+  }
+  resetHand(): void {
+    this.remember();
+    this.tiles = [];
+    this.melds = [];
+    this.kita = [];
+    this.winningId = '';
+    this.flags = emptyFlags();
+    this.firstTurn = false;
+    this.doraText = '';
+    this.uraText = '';
+    this.editStatus();
+  }
+  verify(): void {
+    this.status = 'verified';
+    this.changed();
+  }
+  changeWinner(): void {
+    if (this.tiles.length || this.melds.length) {
+      this.tiles = [];
+      this.melds = [];
+      this.kita = [];
+      this.winningId = '';
+      this.flags = emptyFlags();
+      this.past.length = 0;
+      this.future.length = 0;
+    }
+    this.editStatus();
+  }
+  changeCount(): void {
+    const preset =
+      this.quickRules.preset === 'm-league' && this.count === 3
+        ? 'mahjong-soul'
+        : this.quickRules.preset;
+    this.quickRules = presetRules(preset ?? 'mahjong-soul', this.count);
+    this.queued = [];
+    this.resetHand();
+    this.doraText = '';
+    this.uraText = '';
+    if (!this.players.some((p) => p.id === this.winner)) this.winner = 'p1';
+    if (!this.players.some((p) => p.id === this.discarder)) this.discarder = 'p2';
+    this.dealer = 'p0';
+    this.changed();
+  }
+  addMeld(): void {
+    try {
+      const tiles = parseTiles(this.meldText, crypto.randomUUID());
+      const concealed = this.meldType === 'ankan';
+      if (tiles.length !== (this.meldType === 'pon' || this.meldType === 'chi' ? 3 : 4))
+        throw new Error('Enter three tiles for Chi/Pon or four for Kan.');
+      if (
+        !Number.isInteger(this.calledIndex) ||
+        this.calledIndex < 0 ||
+        this.calledIndex >= tiles.length
+      )
+        throw new Error('Select a called tile within the meld.');
+      this.remember();
+      this.melds.push({
+        id: crypto.randomUUID(),
+        type: this.meldType,
+        tiles,
+        callOrder: Math.max(0, ...this.melds.map((m) => m.callOrder ?? 0)) + 1,
+        ...(concealed
+          ? {}
+          : { fromPlayerId: this.source, calledTileId: tiles[this.calledIndex].id }),
+      });
+      this.meldText = '';
+      this.editStatus();
+    } catch (e) {
+      this.error.set(this.message(e));
+    }
+  }
+  upgrade(meld: Meld): void {
+    this.remember();
+    const originalPon = {
+      id: meld.id,
+      tiles: structuredClone(meld.tiles),
+      calledTileId: meld.calledTileId!,
+      fromPlayerId: meld.fromPlayerId!,
+    };
+    const tile = { ...structuredClone(meld.tiles[0]), id: crypto.randomUUID(), isRed: false };
+    this.melds = this.melds.map((m) =>
+      m.id === meld.id
+        ? {
+            ...m,
+            id: crypto.randomUUID(),
+            type: 'kakan',
+            tiles: [...m.tiles, tile],
+            originalPon,
+            upgradedFromMeldId: m.id,
+          }
+        : m,
+    );
+    this.editStatus();
+  }
+  removeMeld(id: string): void {
+    this.remember();
+    this.melds = this.melds.filter((m) => m.id !== id);
+    this.editStatus();
+  }
+  addKita(): void {
+    this.remember();
+    this.kita.push({ id: crypto.randomUUID(), kind: kindAt(30), isRed: false });
+    this.editStatus();
+  }
+  removeKita(): void {
+    this.remember();
+    this.kita.pop();
+    this.editStatus();
+  }
+  private input(): ScoringInput {
+    return {
+      rules: this.rules,
+      players: this.players,
+      dealerId: this.dealer,
+      roundWind: this.roundWind,
+      hand: {
+        playerId: this.winner,
+        concealedTiles: this.tiles,
+        melds: this.melds,
+        extractedNorthTiles: this.kita,
+      },
+      win: {
+        ...this.flags,
+        winnerId: this.winner,
+        method: this.method,
+        discarderId: this.method === 'ron' ? this.discarder : undefined,
+        winningTileId: this.winningId,
+        replacement: this.replacement,
+        robbed:
+          this.method === 'ron' && (this.flags.chankan || this.robbed !== 'kakan')
+            ? this.robbed
+            : undefined,
+        firstTurnUninterrupted: this.firstTurn,
+      },
+      honba: this.honba,
+      riichiSticks: (this.book?.table ?? 0) / 1000,
+      doraIndicators: parseTiles(this.doraText, 'dora'),
+      uraIndicators: parseTiles(this.uraText, 'ura'),
+      otherPlayerKans: this.otherKans,
+    };
+  }
+  calculate(): void {
+    try {
+      this.error.set('');
+      const input = this.input();
+      this.result.set(score(input));
+      this.resultFingerprint = JSON.stringify(input);
+    } catch (e) {
+      this.result.set(null);
+      this.error.set(this.message(e));
+    }
+  }
+  async settle(): Promise<void> {
+    if (this.busy()) return;
+    this.busy.set(true);
+    try {
+      const match = this.match();
+      if (!match) throw new Error('Create a match to save settlements.');
+      if (this.status !== 'verified')
+        throw new Error('Verify your tiles before confirming settlement.');
+      const input = this.input();
+      if (this.resultFingerprint !== JSON.stringify(input))
+        throw new Error('Inputs changed; calculate again.');
+      const result = score(input);
+      if (!result.isValid) throw new Error('Invalid hands cannot be settled.');
+      if (this.queued.length)
+        throw new Error('Settle or remove the queued Ron winners before a single-hand settlement.');
+      const round: RoundSettlement = {
+        isValid: true,
+        errors: [],
+        outcome: 'win',
+        payments: result.payments,
+        playerDeltas: result.playerDeltas,
+        winnerIds: [input.win.winnerId],
+        dealerRepeats: input.win.winnerId === this.dealer,
+        results: [result],
+      };
+      const updated = settleRound(
+        match,
+        {
+          id: this.eventId,
+          type: 'win',
+          timestamp: new Date().toISOString(),
+          payments: result.payments,
+          result,
+          hand: structuredClone(input.hand),
+          win: input.win,
+          roundWind: this.roundWind,
+          scoringInput: structuredClone(input),
+        },
+        round,
+        {
+          dealerId: this.dealer,
+          roundWind: this.roundWind,
+          handNumber: this.handNumber,
+          honba: this.honba,
+        },
+      );
+      await this.repo.save(updated, match.updatedAt);
+      this.match.set(updated);
+      this.eventId = crypto.randomUUID();
+      this.dealer = updated.dealerId;
+      this.roundWind = updated.roundWind;
+      this.honba = updated.honba;
+      this.handNumber = updated.handNumber;
+      this.resetHand();
+      await this.draftQueue;
+      await this.repo.clearDraft(match.id);
+      this.notice.set('Settlement saved. Dealer, round and honba have been updated.');
+      this.tab = 'history';
+    } catch (e) {
+      this.error.set(this.message(e));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+  async deposit(): Promise<void> {
+    if (this.busy()) return;
+    this.busy.set(true);
+    try {
+      const match = this.match();
+      if (!match) return;
+      if (match.ended) throw new Error('This match has ended. Undo its last event to reopen it.');
+      let lastWin = -1;
+      match.events.forEach((event, index) => {
+        if (event.type !== 'riichiDeposit') lastWin = index;
+      });
+      if (
+        match.events
+          .slice(lastWin + 1)
+          .some(
+            (e) =>
+              e.type === 'riichiDeposit' && e.payments.some((p) => p.from === this.depositPlayer),
+          )
+      )
+        throw new Error('This player has already deposited in the current hand.');
+      if (match.rules.preset !== 'm-league' && (this.book?.players[this.depositPlayer] ?? 0) < 1000)
+        throw new Error('Not enough points for a Riichi deposit.');
+      const updated = appendEvent(match, {
+        id: crypto.randomUUID(),
+        type: 'riichiDeposit',
+        timestamp: new Date().toISOString(),
+        payments: [
+          { from: this.depositPlayer, to: 'table', amount: 1000, reason: 'Riichi deposit' },
+        ],
+      });
+      await this.repo.save(updated, match.updatedAt);
+      this.match.set(updated);
+      this.changed();
+      this.notice.set('1,000 points moved into table escrow.');
+    } catch (e) {
+      this.error.set(this.message(e));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+  async undoSettlement(): Promise<void> {
+    const match = this.match();
+    if (!match || this.busy()) return;
+    if (!confirm(this.i18n.t('Undo the latest ledger event and restore its points?'))) return;
+    this.busy.set(true);
+    try {
+      const updated = undoLastEvent(match);
+      await this.repo.save(updated, match.updatedAt);
+      this.match.set(updated);
+      this.dealer = updated.dealerId;
+      this.roundWind = updated.roundWind;
+      this.handNumber = updated.handNumber;
+      this.honba = updated.honba;
+      this.changed();
+      this.notice.set('Last event undone. Enter a corrected hand if needed.');
+    } catch (e) {
+      this.error.set(this.message(e));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+  exportMatch(): void {
+    const match = this.match();
+    if (!match) return;
+    const url = URL.createObjectURL(
+      new Blob([JSON.stringify(match, null, 2)], { type: 'application/json' }),
+    );
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `riichi-${match.id}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+  async capture(event: Event): Promise<void> {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      this.error.set('Choose an image file.');
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      this.error.set('Choose an image smaller than 20 MB.');
+      return;
+    }
+    if (this.photoUrl) URL.revokeObjectURL(this.photoUrl);
+    this.photoUrl = URL.createObjectURL(file);
+    this.photoName.set(file.name);
+    const raw = await new MockTileRecognizer().recognize(file, {
+      playerCount: this.rules.playerCount,
+    });
+    this.predictions = raw.predictions;
+  }
+  usePrediction(prediction: TilePrediction): void {
+    const c = prediction.candidates[0];
+    this.addTile({ id: '', kind: c.tile, isRed: c.isRed });
+    this.status = 'recognized';
+    this.changed();
+  }
+  predictionLabel(p: TilePrediction): string {
+    return tileLabel({ id: '', ...p.candidates[0], kind: p.candidates[0].tile });
+  }
+  tileClass(t: Tile): string {
+    return t.isRed || kindIndex(t.kind) === 33
+      ? 'red-ink'
+      : kindIndex(t.kind) === 32
+        ? 'green-ink'
+        : '';
+  }
+  private message(e: unknown): string {
+    return e instanceof Error
+      ? e.message
+      : 'Something went wrong. Your last saved match is unchanged.';
+  }
+  queueRon(): void {
+    try {
+      if (this.method !== 'ron' || this.status !== 'verified')
+        throw new Error('Verify a Ron hand before adding it to the winner list.');
+      if (this.queued.some((i) => i.win.winnerId === this.winner))
+        throw new Error('This winner is already queued.');
+      const input = this.input();
+      const result = score(input);
+      if (!result.isValid) {
+        this.result.set(result);
+        return;
+      }
+      const dora = this.doraText;
+      this.queued.push(structuredClone(input));
+      this.resetHand();
+      this.doraText = dora;
+      this.changed();
+      this.notice.set(
+        'Ron hand added. Select the next winner and enter their hand, or review all winners.',
+      );
+    } catch (e) {
+      this.error.set(this.message(e));
+    }
+  }
+  removeQueued(id: string): void {
+    this.queued = this.queued.filter((i) => i.win.winnerId !== id);
+    this.changed();
+  }
+  calculateQueued(): void {
+    this.error.set('');
+    this.roundResult.set(
+      multipleRon(this.queued.map((i) => ({ ...i, riichiSticks: (this.book?.table ?? 0) / 1000 }))),
+    );
+  }
+  calculateDraw(): void {
+    this.error.set('');
+    this.roundResult.set(drawSettlement(this.drawInput()));
+  }
+  private drawInput(): DrawInput {
+    return {
+      rules: this.rules,
+      players: this.players,
+      dealerId: this.dealer,
+      honba: this.honba,
+      type: this.drawType,
+      tenpaiIds: this.players.filter((p) => this.tenpai[p.id]).map((p) => p.id),
+      nagashiIds: this.players.filter((p) => this.nagashi[p.id]).map((p) => p.id),
+      circumstancesConfirmed: this.drawConfirmed,
+      reason: this.drawType === 'abortive' ? this.abortiveReason : undefined,
+    };
+  }
+  async confirmRound(): Promise<void> {
+    if (this.busy() || !this.roundResult()?.isValid) return;
+    this.busy.set(true);
+    try {
+      const match = this.match();
+      if (!match) throw new Error('Create a match to save settlements.');
+      const inputs = this.queued.map((i) => ({
+        ...i,
+        riichiSticks: (this.book?.table ?? 0) / 1000,
+      }));
+      const round = this.tab === 'draw' ? drawSettlement(this.drawInput()) : multipleRon(inputs);
+      if (!round.isValid) throw new Error(round.errors.join(' '));
+      const first = inputs[0];
+      const event: LedgerEvent = {
+        id: this.eventId,
+        timestamp: new Date().toISOString(),
+        type:
+          this.tab === 'draw'
+            ? round.outcome === 'nagashi'
+              ? 'nagashi'
+              : round.outcome === 'abortiveDraw'
+                ? 'abortiveDraw'
+                : 'exhaustiveDraw'
+            : round.outcome === 'abortiveDraw'
+              ? 'abortiveDraw'
+              : 'multipleRon',
+        payments: round.payments,
+        results: round.results,
+        winnerIds: round.winnerIds,
+        scoringInputs: this.tab === 'draw' ? undefined : inputs,
+        drawInput: this.tab === 'draw' ? this.drawInput() : undefined,
+      };
+      const context =
+        this.tab !== 'draw' && first
+          ? {
+              dealerId: first.dealerId,
+              roundWind: first.roundWind,
+              honba: first.honba,
+              handNumber: this.handNumber,
+            }
+          : {
+              dealerId: this.dealer,
+              roundWind: this.roundWind,
+              honba: this.honba,
+              handNumber: this.handNumber,
+            };
+      const updated = settleRound(match, event, round, context);
+      await this.repo.save(updated, match.updatedAt);
+      this.match.set(updated);
+      this.dealer = updated.dealerId;
+      this.roundWind = updated.roundWind;
+      this.honba = updated.honba;
+      this.handNumber = updated.handNumber;
+      this.eventId = crypto.randomUUID();
+      this.queued = [];
+      this.resetHand();
+      this.drawConfirmed = false;
+      this.tenpai = {};
+      this.nagashi = {};
+      await this.draftQueue;
+      await this.repo.clearDraft(match.id);
+      this.tab = 'history';
+      this.notice.set('Settlement saved. Dealer, round and honba have been updated.');
+    } catch (e) {
+      this.error.set(this.message(e));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+}
