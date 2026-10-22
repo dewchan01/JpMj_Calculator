@@ -71,6 +71,8 @@ Playwright serves the production build on port 4300, separate from the developme
 
 ## Structure
 
+GitHub Pages setup and deployment: [hosting instructions](docs/github-pages.md).
+
 ```text
 apps/web/                   Angular standalone, lazy routes, Signals, Tailwind
 packages/mahjong-core/       Validated notation, tile identities, pure match ledger

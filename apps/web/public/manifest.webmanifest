@@ -1,8 +1,8 @@
 {
   "name": "Riichi Table",
   "short_name": "Riichi",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#f6f5ef",
   "theme_color": "#143d32",
