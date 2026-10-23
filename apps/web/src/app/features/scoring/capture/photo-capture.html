@@ -1,0 +1,124 @@
+@if (configuration.value()?.provider === 'roboflow') {
+  <p class="hint">
+    {{ 'Roboflow browser recognition selected. Model downloads require internet access.' | t }}
+  </p>
+} @else if (configuration.value()?.provider === 'api') {
+  <p class="hint">
+    {{
+      'Photo recognition uploads your selected image to the configured service. Review and edit tiles before applying them.'
+        | t
+    }}
+  </p>
+}
+<label class="choose-image">
+  {{ 'Choose an image' | t }}
+  <input
+    type="file"
+    accept="image/*"
+    (change)="capture($event)"
+    [disabled]="busy() || !configuration.value()"
+  />
+</label>
+<p class="hint">{{ 'Choose a saved photo. The preview opens automatically for editing.' | t }}</p>
+<details
+  #reviewPanel
+  class="photo-card"
+  [attr.aria-label]="title() | t"
+  [open]="reviewOpen()"
+  (toggle)="reviewOpen.set(reviewPanel.open)"
+>
+  <summary>{{ title() | t }}</summary>
+  @if (configuration.value()?.provider === 'mock') {
+    <p class="hint">{{ 'Mock mode uses fixed suggestions and does not upload the photo.' | t }}</p>
+  }
+  @if (photoUrl()) {
+    <img class="photo-preview" [src]="photoUrl()" [attr.alt]="'Your selected hand photo' | t" />
+    <p>{{ photoName() }}</p>
+  }
+  <section [attr.aria-label]="'Review tiles before applying' | t">
+    <h3>{{ 'Review tiles before applying' | t }}</h3>
+    <div class="review-tray">
+      @for (tile of review(); track tile.id; let index = $index) {
+        <div class="review-tile">
+          <app-tile-art [tile]="tile" />
+          @if (confidence()[index] !== undefined) {
+            <small>{{ confidence()[index] | percent: '1.0-1' }}</small>
+          }
+          <div class="review-actions">
+            <button
+              (click)="move(index, -1)"
+              [disabled]="!index || busy()"
+              [attr.aria-label]="'Move tile left' | t"
+            >
+              ←
+            </button>
+            <button
+              (click)="move(index, 1)"
+              [disabled]="index === review().length - 1 || busy()"
+              [attr.aria-label]="'Move tile right' | t"
+            >
+              →
+            </button>
+            <button
+              (click)="remove(index)"
+              [disabled]="busy()"
+              [attr.aria-label]="'Remove preview tile' | t"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      } @empty {
+        <p class="hint">
+          {{ 'Your detected tiles will appear here. You can also type tiles below.' | t }}
+        </p>
+      }
+    </div>
+    <label>
+      {{ 'Edit preview tiles' | t }}
+      <input [formField]="editForm.notation" placeholder="123m456p789s11z" />
+    </label>
+    <div class="action-row">
+      <button class="secondary" (click)="edit()" [disabled]="busy()">
+        {{ 'Update preview' | t }}
+      </button>
+      <button
+        class="primary"
+        (click)="confirm()"
+        [disabled]="busy() || !review().length || hasUnappliedText()"
+      >
+        {{ 'Apply reviewed tiles' | t }}
+      </button>
+    </div>
+    <p class="hint">
+      {{
+        'Applying replaces only the target tiles. Meld type, caller, winning tile and round declarations must be checked manually.'
+          | t
+      }}
+    </p>
+  </section>
+  <label>
+    {{ 'Take a photo' | t }}
+    <input
+      type="file"
+      accept="image/*"
+      capture="environment"
+      (change)="capture($event)"
+      [disabled]="busy() || !configuration.value()"
+    />
+  </label>
+  <div aria-live="polite">
+    @if (busy()) {
+      <p>{{ 'Recognizing tiles…' | t }}</p>
+    }
+    @if (configuration.error()) {
+      <p class="banner error" role="alert">{{ configuration.error() | t }}</p>
+    }
+    @if (error()) {
+      <p class="banner error" role="alert">{{ error() | t }}</p>
+    }
+    @if (completed() && !review().length) {
+      <p>{{ 'No tiles detected. Try another photo or enter tiles manually.' | t }}</p>
+    }
+  </div>
+</details>

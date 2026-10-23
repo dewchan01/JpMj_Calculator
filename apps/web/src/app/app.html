@@ -1,40 +1,88 @@
-<header class="topbar">
-  <a class="brand" routerLink="/">
-    <span class="brand-mark" aria-hidden="true">發</span>
-    <span>
-      Riichi
-      <span class="brand-light">/ table</span>
-    </span>
-  </a>
-  <div class="header-tools">
-    <span class="local-badge">
-      <i></i>
-      {{ 'Local & offline' | t }}
-    </span>
-    <select
-      class="language-select"
-      aria-label="Language / 語言"
-      [value]="i18n.locale()"
-      (change)="changeLanguage($event)"
-    >
-      <option value="en">English</option>
-      <option value="zh-TW">繁體中文</option>
-    </select>
-  </div>
-</header>
-<div class="shell">
-  <nav [attr.aria-label]="'Main navigation' | t">
-    <a routerLink="/" [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="active">
-      {{ 'My table' | t }}
+<div class="sticky-header">
+  <header class="topbar">
+    <a class="brand" routerLink="/">
+      <span class="brand-mark" aria-hidden="true">發</span>
+      <span>
+        Riichi
+        <span class="brand-light">/ table</span>
+      </span>
     </a>
-    <a routerLink="/score" routerLinkActive="active">{{ 'Quick score' | t }}</a>
-    <a routerLink="/about" routerLinkActive="active">{{ 'Rule coverage' | t }}</a>
-  </nav>
+    <div class="header-tools">
+      <button
+        class="theme-toggle"
+        (click)="theme.toggle()"
+        [attr.aria-pressed]="theme.dark()"
+        [attr.aria-label]="'Dark mode' | t"
+        [attr.title]="(theme.dark() ? 'Switch to light mode' : 'Switch to dark mode') | t"
+      >
+        @if (theme.dark()) {
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="4" />
+            <path
+              d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"
+            />
+          </svg>
+        } @else {
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path d="M21 13a9 9 0 0 1-10-10A9 9 0 1 0 21 13Z" />
+          </svg>
+        }
+      </button>
+      <span class="local-badge">
+        <i></i>
+        {{ 'Local & offline' | t }}
+      </span>
+      <select
+        class="language-select"
+        aria-label="Language / 語言"
+        [value]="i18n.locale()"
+        (change)="changeLanguage($event)"
+      >
+        <option value="en">English</option>
+        <option value="zh-TW">繁體中文</option>
+        <option value="zh-CN">简体中文</option>
+        <option value="ja">日本語</option>
+      </select>
+    </div>
+  </header>
+  <div class="shell">
+    <nav [attr.aria-label]="'Main navigation' | t">
+      <a routerLink="/" [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="active">
+        {{ 'My table' | t }}
+      </a>
+      <a routerLink="/score" routerLinkActive="active">{{ 'Quick score' | t }}</a>
+      <a routerLink="/about" routerLinkActive="active">{{ 'Rule coverage' | t }}</a>
+    </nav>
+  </div>
+</div>
+<div class="shell">
   <main id="main">
     <router-outlet />
-    <app-storage-status />
+    @if (showStorage()) {
+      <app-storage-status />
+    }
   </main>
 </div>
 <footer>
-  {{ 'Photo-assisted Riichi · Deterministic scoring · Your hands stay on this device' | t }}
+  <a href="https://github.com/FluffyStuff/riichi-mahjong-tiles">
+    {{ 'Tile artwork by FluffyStuff (CC0)' | t }}
+  </a>
+  <br />
+  {{ 'Scoring stays on this device. Photo API mode uploads selected images.' | t }}
 </footer>

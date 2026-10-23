@@ -1,0 +1,129 @@
+.assignment-panel {
+  margin-block: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.entry-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+.hand-toolbar {
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-block: 16px;
+}
+.hand-toolbar > div {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.meld-empty {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: var(--subtle-surface);
+}
+.meld-empty h3 {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+}
+.meld-empty p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.7;
+}
+.meld-illustration {
+  display: flex;
+  flex-shrink: 0;
+  gap: 3px;
+}
+.meld-illustration span {
+  width: 22px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-bottom: 4px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+}
+.meld-illustration span:nth-child(2) {
+  transform: translateY(-5px);
+}
+.verification-check {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.hand-count {
+  color: var(--muted);
+  font-size: 0.75rem;
+  margin-block: 16px 8px;
+}
+.hand-workspace {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--tray-surface);
+}
+.hand-workspace .hand-tray {
+  padding: 16px;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+.hand-tray app-tile-entry-dialog {
+  justify-self: end;
+}
+.hand-tray.empty app-tile-entry-dialog {
+  margin-left: 0;
+}
+.hand-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
+  padding-bottom: 16px;
+}
+.hand-tiles > p {
+  width: 100%;
+  text-align: center;
+}
+.hand-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--subtle-surface);
+}
+.hand-controls .check {
+  margin: 0;
+  flex-wrap: wrap;
+}
+.hand-controls .hint {
+  flex-basis: 100%;
+}
+.tile-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+@media (max-width: 600px) {
+  .meld-empty {
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px;
+  }
+}

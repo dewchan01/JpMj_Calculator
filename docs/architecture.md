@@ -16,6 +16,20 @@ Dexie schema version 1 stores matches and manual drafts. Future schema changes m
 
 The production Angular service worker prefetches the app shell and lazy routes. Scoring and IndexedDB require no network. HTTPS hosting with SPA fallback is required for deployment. The local preview serves the service-worker shell; the Angular development server disables it.
 
-The recognizer interface returns normalized boxes and candidate arrays. The current adapter is fixed mock data and is labelled as such. Selected image Blob URLs and raw mock suggestions stay in memory, separate from confirmed tiles; no upload occurs. Real recognition and persistent capture records remain future work.
+The recognizer interface returns normalized boxes and candidate arrays. The capture feature owns API
+requests and independent editable previews; the scorer only receives an explicitly confirmed tile
+list for a named target. A singleton configuration loader validates public `config.json` once per
+app load. API endpoints are not user-editable or read from browser preferences.
+`ApiTileRecognizer` posts raw base64 JSON to a configurable endpoint, validates the response and
+normalizes center-based pixel boxes. Timeout, cancellation and stale-response guards protect the
+editor. API mode uploads the selected image; the optional mock performs no upload. Photos and
+suggestions stay in memory and are not stored with matches. Manual tiles are never replaced by an
+API response. See [API configuration](recognition-and-storage.md).
 
-English and zh-TW use a small runtime translation catalog and Signal-based locale service. The translate pipe updates text without reloading or resetting the editor. Domain strings remain canonical English in saved results; they are translated at display time, including historical results. User names are never run through the catalog. The locale service updates the document language/title, uses a saved browser preference with Chinese browser-language detection as a first-use default, and continues in memory if localStorage is unavailable. Angular's Traditional Chinese locale and extra day-period data localize dates, including the `B` time-format token.
+English, zh-TW, zh-CN and Japanese (ja) use runtime translation catalogs and a Signal-based locale service. The
+translate pipe updates text without reloading or resetting the editor. Domain strings remain
+canonical English in saved results and are translated at display time, including history. User
+names are never run through the catalog. English is the initial default regardless of browser
+language; a saved selection takes precedence. The locale service updates document language/title
+and continues in memory if localStorage is unavailable. Angular Chinese locale and extra day-period
+data localize dates, including the `B` time-format token.

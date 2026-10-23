@@ -30,7 +30,7 @@
         </p>
         <div class="mini-tiles">
           @for (t of event.hand.concealedTiles; track t.id) {
-            <span>{{ labels(t) }}</span>
+            <span><app-tile-art [tile]="t" /></span>
           }
         </div>
         @for (m of event.hand.melds; track m.id) {
@@ -39,7 +39,7 @@
           </p>
           <div class="mini-tiles">
             @for (t of m.tiles; track t.id) {
-              <span>{{ labels(t) }}</span>
+              <span><app-tile-art [tile]="t" /></span>
             }
           </div>
         }
@@ -66,7 +66,7 @@
         <p>{{ name(input.win.winnerId) }}</p>
         <div class="mini-tiles">
           @for (tile of input.hand.concealedTiles; track tile.id) {
-            <span>{{ labels(tile) }}</span>
+            <span><app-tile-art [tile]="tile" /></span>
           }
         </div>
       }

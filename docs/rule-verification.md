@@ -2,6 +2,36 @@
 
 Reviewed 2026-10-22. Platform-labelled presets are independent implementations. Custom settings are explicitly house rules.
 
+## Flow audit — 2026-10-23
+
+Rechecked the official Tenhou manual and M.League competition rules linked below. Mahjong Soul's
+public FAQ/data endpoint was unavailable through the research tool during this audit, so its
+previously recorded source review and the supplied specification remain the basis for that preset.
+This review does not resolve the Sanma honba uncertainty noted below.
+
+The browser matrix covers all seven supported combinations: Mahjong Soul, Tenhou and Custom
+in 3P/4P, plus M.League in 4P. Each runs setup, fixed match rules, steps 01/02/03, tile verification,
+Tsumo calculation, settlement, balances, reload, exhaustive draw and dealer progression.
+Existing domain tests cover Ron/Tsumo payments, Yaku/Fu, Yakuman variants, Pao, multiple Ron,
+draw transfers, extensions, final escrow and undo. These are regression checks, not certification
+against imported platform replays or every combination of house settings.
+
+Corrections from this audit:
+
+- Step 02 now labels meld/North assignment between hand entry and round details.
+- Chi offers only the preceding seated caller; assignment validates that caller before moving tiles.
+- Pon-to-Kakan and North extraction consume existing collection tiles, preserving physical tile IDs
+  and red-five identity. They no longer fabricate additional tiles.
+- Kan assignment/upgrade rejects a fifth declared table Kan.
+- Unavailable Ankan robbery and Kita Rinshan options are disabled for the selected rules.
+- Abortive reasons exclude 4P-only situations in Sanma and triple-Ron draws outside that policy.
+- Rule changes clear verification, stale tile undo and incompatible declarations. Player-count
+  changes reset Kan/robbery/replacement context and preserve explicitly selected Custom settings.
+- Changing Dora/Ura invalidates tile verification before a settlement can be saved.
+
+Live photo-model accuracy, event timing/Furiten, referee penalties and the rare-edge limitations
+below remain outside these automated guarantees.
+
 ## Primary references
 
 - [Official Tenhou manual](https://tenhou.net/man/#RULE), rules/Yaku sections: single special-wait Yakuman, triple-Ron abort, whole-hand Pao, and progression. The red/open-Tanyao lobby variant is selected.

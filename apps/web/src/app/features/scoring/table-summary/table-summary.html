@@ -1,0 +1,41 @@
+<section class="table-summary" [attr.aria-label]="'Table details' | t">
+  <div class="table-caption">
+    <h2>{{ 'Table details' | t }}</h2>
+    <span>{{ ruleName() | t }} · {{ players().length }}P</span>
+  </div>
+  <div class="table-layout" [class.sanma]="players().length === 3">
+    <div class="table-center">
+      <p class="table-round">
+        {{ roundWind() | t }}
+        <b>{{ handNumber() }}</b>
+      </p>
+      <p class="table-honba">
+        {{ 'Honba' | t }}
+        <strong>{{ honba() }}</strong>
+      </p>
+      <div class="table-pot">
+        <span>{{ 'Riichi pot' | t }}</span>
+        <strong>{{ pot() | number }}</strong>
+      </div>
+    </div>
+    <div class="table-players" [attr.aria-label]="'Player balances' | t" role="group">
+      @for (player of players(); track player.id; let index = $index) {
+        <article
+          class="player-seat"
+          [class]="'player-seat seat-' + position(index)"
+          [class.selected]="player.id === winner()"
+          [class.negative]="balances()[player.id] < 0"
+        >
+          <div class="seat-label">
+            <abbr [title]="seat(index) | t">{{ windLabel(index) }}</abbr>
+            @if (player.id === dealer()) {
+              <small>{{ 'Dealer' | t }}</small>
+            }
+          </div>
+          <h3 [title]="player.name">{{ player.name }}</h3>
+          <p class="player-points">{{ balances()[player.id] | number }}</p>
+        </article>
+      }
+    </div>
+  </div>
+</section>

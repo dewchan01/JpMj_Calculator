@@ -4,7 +4,7 @@
   padding: 16px;
   border: 1px solid #d3dccb;
   border-radius: 10px;
-  background: #eff3e6;
+  background: var(--rules-surface);
 }
 .rule-picker label {
   margin-bottom: 8px;
@@ -127,7 +127,7 @@ html[lang='zh-TW'] .eyebrow {
 }
 @theme {
   --color-felt: #143d32;
-  --color-paper: #f6f5ef;
+  --color-paper: var(--page);
 }
 :root {
   font-family:
@@ -138,8 +138,8 @@ html[lang='zh-TW'] .eyebrow {
     BlinkMacSystemFont,
     'Segoe UI',
     sans-serif;
-  color: #203a32;
-  background: #f6f5ef;
+  color: var(--text);
+  background: var(--page);
   font-synthesis: none;
   line-height: 1.55;
   --green: #143d32;
@@ -235,7 +235,7 @@ h3 {
 .brand-mark {
   width: 36px;
   height: 44px;
-  background: #f6f5ef;
+  background: var(--page);
   color: var(--green);
   border-radius: 5px;
   box-shadow: 0 4px #99ac8f;
@@ -317,7 +317,7 @@ main {
   gap: 60px;
 }
 .card {
-  background: #fffef9;
+  background: var(--surface);
   border: 1px solid var(--border);
   padding: 28px;
   border-radius: 14px;
@@ -353,7 +353,7 @@ label {
 }
 input:not([type='checkbox']),
 select {
-  background: #fffef9;
+  background: var(--surface);
   border: 1px solid #d3d9ce;
   border-radius: 7px;
   min-height: 46px;
@@ -371,7 +371,7 @@ select {
 }
 .segmented {
   display: flex;
-  background: #eeeee5;
+  background: var(--control-surface);
   padding: 4px;
   border-radius: 9px;
   gap: 5px;
@@ -394,7 +394,7 @@ select {
 }
 .segmented .selected {
   color: var(--green);
-  background: #fffef9;
+  background: var(--surface);
   box-shadow: 0 1px 4px #143d3214;
 }
 .players-grid,
@@ -431,7 +431,7 @@ select {
   border-color: #cbd3c5;
 }
 .secondary:hover {
-  background: #edf0e5;
+  background: var(--hover-surface);
 }
 .full {
   width: 100%;
@@ -453,7 +453,7 @@ select {
   justify-content: center;
   align-items: flex-start;
   padding: 20px 45px 35px;
-  background: #eaeedf;
+  background: var(--badge-surface);
   border: 1px solid #e1e5d7;
 }
 .table-intro h2 {
@@ -531,11 +531,11 @@ select {
   white-space: nowrap;
   font-weight: 500;
   letter-spacing: 0;
-  background: #edeee5;
+  background: var(--pill-surface);
   border: 1px solid #dfe3d5;
   border-radius: 50px;
   padding: 3px 10px;
-  color: #53604c;
+  color: var(--pill-text);
 }
 .empty {
   border: 1px dashed #ccd3c4;
@@ -558,7 +558,7 @@ select {
 .saved-match {
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #fffef9;
+  background: var(--surface);
   margin: 10px 0;
   padding: 17px 20px;
   display: flex;
@@ -604,7 +604,7 @@ select {
   color: var(--muted);
 }
 .quiet:hover {
-  background: #eef0e5;
+  background: var(--tab-surface);
 }
 .danger {
   color: #a03b2f;
@@ -612,7 +612,7 @@ select {
 .banner {
   padding: 15px 20px;
   border: 1px solid #d5dccb;
-  background: #ecf1df;
+  background: var(--active-surface);
   border-radius: 9px;
   font-size: 0.8rem;
   margin: 10px 0 24px;
@@ -632,7 +632,7 @@ select {
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
-  background: #fffef9;
+  background: var(--surface);
   margin-bottom: 22px;
 }
 .scoreboard > div {
@@ -660,7 +660,7 @@ select {
   letter-spacing: -0.6px;
 }
 .scoreboard .winner {
-  background: #edf2e3;
+  background: var(--score-surface);
 }
 .scoreboard .pot {
   background: #e5eadb;
@@ -729,7 +729,7 @@ select {
   min-height: 134px;
   border: 1px dashed #bccab6;
   border-radius: 9px;
-  background: #edf1e4;
+  background: var(--tray-surface);
   margin: 4px 0 13px;
   align-items: center;
   justify-content: flex-start;
@@ -769,6 +769,11 @@ select {
 .tile.winning-tile {
   border: 2px solid #976c18;
   box-shadow: 0 3px #b4954c;
+}
+.tile.group-selected {
+  outline: 3px solid var(--green);
+  outline-offset: 2px;
+  transform: translateY(-4px);
 }
 .tile small {
   position: absolute;
@@ -875,7 +880,7 @@ summary {
   padding: 3px;
   border: 1px solid #d4dac7;
   border-radius: 4px;
-  background: #f7f6ec;
+  background: var(--subtle-surface);
 }
 .mini-tiles .called {
   outline: 2px solid #a88e40;
@@ -925,7 +930,7 @@ summary {
 }
 .result-card {
   position: sticky;
-  top: 24px;
+  top: calc(var(--app-header-height, 0px) + 24px);
   border-top: 4px solid var(--green);
 }
 .result-empty {
@@ -1006,7 +1011,7 @@ summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #eef2e4;
+  background: var(--note-surface);
   padding: 12px;
   border-radius: 7px;
   margin: 7px 0;
@@ -1250,7 +1255,7 @@ footer {
   .hand-tray {
     padding: 20px 10px 28px;
   }
-  .hand-tray .tile {
+  .hand-tiles > .tile {
     width: 37px;
     height: 54px;
     font-size: 19px;
@@ -1323,4 +1328,114 @@ footer {
       transform: translateY(0) rotate(-8deg);
     }
   }
+}
+
+:root {
+  --page: #f6f5ef;
+  --surface: #fffef9;
+  --text: #203a32;
+  --rules-surface: #eff3e6;
+  --control-surface: #eeeee5;
+  --hover-surface: #edf0e5;
+  --badge-surface: #eaeedf;
+  --pill-surface: #edeee5;
+  --pill-text: #53604c;
+  --tab-surface: #eef0e5;
+  --active-surface: #ecf1df;
+  --score-surface: #edf2e3;
+  --tray-surface: #edf1e4;
+  --subtle-surface: #f7f6ec;
+  --note-surface: #eef2e4;
+  color-scheme: light;
+}
+:root[data-theme='dark'] {
+  --page: #151d1a;
+  --surface: #202c26;
+  --text: #edf3e8;
+  --rules-surface: #27372d;
+  --control-surface: #344137;
+  --hover-surface: #34463a;
+  --badge-surface: #344137;
+  --pill-surface: #344137;
+  --pill-text: #d8e3cf;
+  --tab-surface: #2d3c32;
+  --active-surface: #3b5037;
+  --score-surface: #2b3c30;
+  --tray-surface: #18251e;
+  --subtle-surface: #29392e;
+  --note-surface: #2d3c32;
+  --green: #b9dba1;
+  --muted: #b7c5b9;
+  --border: #536357;
+  --accent: #415c37;
+  --storage-warning: #ffd28c;
+  color-scheme: dark;
+}
+
+.theme-toggle {
+  border: 1px solid #bbd0bb;
+  color: #fffdf3;
+  border-radius: 6px;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.75rem;
+}
+.header-tools {
+  flex-wrap: wrap;
+}
+.tile app-tile-art {
+  border-radius: 4px;
+  overflow: hidden;
+}
+.mini-tiles > span {
+  width: 30px;
+  height: 40px;
+  padding: 0;
+  overflow: hidden;
+}
+:root[data-theme='dark'] .topbar {
+  background: #101c16;
+}
+:root[data-theme='dark'] .scoreboard .pot {
+  background: #344437;
+}
+:root[data-theme='dark'] .primary {
+  background: #b9dba1;
+  color: #18241b;
+}
+:root[data-theme='dark'] .primary:hover {
+  background: #d2edbf;
+}
+:root[data-theme='dark'] .segmented button.selected {
+  background: #b9dba1;
+  color: #18241b;
+}
+:root[data-theme='dark'] input,
+:root[data-theme='dark'] select,
+:root[data-theme='dark'] textarea {
+  background: #18251e;
+  color: #edf3e8;
+  border-color: #657860;
+}
+:root[data-theme='dark'] .tile small {
+  color: #f4d48b;
+}
+:root[data-theme='dark'] .tile {
+  background: #111;
+  border-color: #82947a;
+  box-shadow: 0 3px #5c7254;
+}
+:root[data-theme='dark'] .banner.error {
+  background: #472c27;
+  color: #ffd8ca;
+}
+:root[data-theme='dark'] .banner.success {
+  background: #30432a;
+  color: #e1f2ce;
+}
+:root[data-theme='dark'] .danger,
+:root[data-theme='dark'] .validation-errors {
+  color: #ffb6a3;
+}
+:root[data-theme='dark'] .rule-picker {
+  border-color: #657860;
 }

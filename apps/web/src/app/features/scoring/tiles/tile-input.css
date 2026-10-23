@@ -1,0 +1,45 @@
+:host {
+  display: block;
+  margin: 0.75rem 0;
+  min-width: 0;
+}
+h3 {
+  font-size: 0.8rem;
+  margin: 0 0 0.5rem;
+}
+.selected-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0;
+}
+.indicator-editor {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--subtle-surface);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+}
+.indicator-editor > app-tile-entry-dialog {
+  grid-row: 1;
+  justify-self: end;
+}
+.indicator-editor > .selected-tiles,
+.indicator-editor > .input-empty {
+  grid-row: 2;
+}
+.input-empty {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin: 0;
+}
+details {
+  margin-top: 0.5rem;
+}
+.advanced {
+  font-size: 0.75rem;
+}

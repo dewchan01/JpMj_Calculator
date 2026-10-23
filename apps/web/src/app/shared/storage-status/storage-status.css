@@ -29,6 +29,6 @@ meter {
   height: 1rem;
 }
 .storage-warning {
-  color: #794300;
+  color: var(--storage-warning, #794300);
   font-weight: 600;
 }

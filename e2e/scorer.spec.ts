@@ -16,7 +16,7 @@ test('mobile match, draft, verified settlement, escrow, history, reload and offl
   await expect(page.getByText('14 concealed · expected 14')).toBeVisible();
   await page.reload();
   await expect(page.getByText('14 concealed · expected 14')).toBeVisible();
-  await page.getByRole('button', { name: 'I have checked these tiles', exact: false }).click();
+  await page.getByRole('checkbox', { name: 'I have checked these tiles', exact: false }).check();
   await page.getByRole('button', { name: /Calculate score/ }).click();
   await expect(page.getByText('1 Han · 30 Fu', { exact: true })).toBeVisible();
   await page.getByText('Record a Riichi deposit', { exact: false }).click();
@@ -62,16 +62,22 @@ test('quick score rejects incomplete hands, supports Sanma and manual camera fal
   await page.getByLabel('Win method').selectOption('tsumo');
   await page.getByRole('button', { name: /Calculate score/ }).click();
   await expect(page.getByText('2 Han · 20 Fu', { exact: true })).toBeVisible();
-  await page.getByText('Optional photo demo').click();
-  await expect(page.locator('input[capture="environment"]')).toHaveAttribute('accept', 'image/*');
-  await expect(page.locator('input[type="file"]:not([capture])')).toBeVisible();
-  await page
-    .locator('input[type="file"]:not([capture])')
-    .setInputFiles('apps/web/public/icons/icon-192.png');
-  await expect(page.getByText('Fixed mock suggestions', { exact: false })).toBeVisible();
-  await page.getByRole('button', { name: 'Add 1p', exact: true }).click();
-  await expect(page.getByText('15 concealed · expected 14')).toBeVisible();
-  await page.getByRole('button', { name: 'Remove 1 pin' }).first().click();
+  await page.getByRole('button', { name: 'Enter tiles', exact: true }).click();
+  const capture = page.locator('app-photo-capture').first();
+  await capture.locator('details.photo-card > summary').click();
+  await expect(capture.locator('input[capture="environment"]')).toHaveAttribute(
+    'accept',
+    'image/*',
+  );
+  await capture.getByRole('textbox', { name: 'Edit preview tiles' }).fill('123p');
+  await capture.getByRole('button', { name: 'Update preview' }).click();
+  await expect(page.getByText('14 concealed · expected 14')).toBeVisible();
+  await capture.getByRole('button', { name: 'Apply reviewed tiles' }).click();
+  await expect(page.getByText('3 concealed · expected 14')).toBeVisible();
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await page.getByRole('button', { name: 'Enter tiles', exact: true }).click();
+  await page.getByRole('button', { name: 'Undo tile edit' }).click();
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(page.getByText('14 concealed · expected 14')).toBeVisible();
   await page.screenshot({ path: 'artifacts/scorer-desktop.png', fullPage: true });
 });

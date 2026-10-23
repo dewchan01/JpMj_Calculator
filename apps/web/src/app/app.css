@@ -1,0 +1,46 @@
+.header-tools .theme-toggle,
+.header-tools .language-select {
+  box-sizing: border-box;
+  height: 44px;
+  min-height: 44px;
+  border: 1px solid #8ca99a;
+  border-radius: 8px;
+  background-color: rgb(255 255 255 / 7%);
+  color: #fffdf3;
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.header-tools .theme-toggle {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.header-tools .language-select {
+  padding: 8px 28px 8px 12px;
+}
+
+.header-tools .theme-toggle:hover,
+.header-tools .language-select:hover {
+  background-color: rgb(255 255 255 / 13%);
+  border-color: #bbd0bb;
+}
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--page);
+}
+
+:host {
+  --app-header-height: 154px;
+}
+
+@media (max-width: 700px) {
+  :host {
+    --app-header-height: 136px;
+  }
+}

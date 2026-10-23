@@ -12,27 +12,20 @@
 @if (ready()) {
   <app-rule-picker [profile]="rules" [locked]="!!match()" (profileChange)="updateRules($event)" />
   @if (match(); as m) {
-    <p class="round-heading">
-      {{ roundWind | t }} {{ handNumber }} · {{ 'Honba' | t }} {{ honba }} ·
-      {{ ruleName(rules) | t }}
-    </p>
     @if (m.ended) {
       <p class="banner success" role="status">{{ 'Match ended' | t }} · {{ m.endReason | t }}</p>
     }
-    <section class="scoreboard" [attr.aria-label]="'Player balances' | t">
-      @for (p of players; track p.id) {
-        <div [class.winner]="p.id === winner">
-          <small>{{ seat(p.id) | t }}</small>
-          <strong>{{ p.name }}</strong>
-          <span>{{ book?.players?.[p.id] | number }}</span>
-        </div>
-      }
-      <div class="pot">
-        <small>{{ 'Riichi pot' | t }}</small>
-        <strong>{{ book?.table | number }}</strong>
-        <span>{{ 'table escrow' | t }}</span>
-      </div>
-    </section>
+    <app-table-summary
+      [players]="players"
+      [balances]="book?.players ?? {}"
+      [dealer]="dealer"
+      [winner]="winner"
+      [roundWind]="roundWind"
+      [handNumber]="handNumber"
+      [honba]="honba"
+      [pot]="book?.table ?? 0"
+      [ruleName]="ruleName(rules)"
+    />
     <div class="tabs">
       <button [class.active]="tab === 'entry'" (click)="tab = 'entry'; roundResult.set(null)">
         {{ 'Enter hand' | t }}
@@ -126,116 +119,217 @@
               </select>
             </label>
           </div>
-          <div class="hand-toolbar">
-            <span>{{ tiles.length + ' concealed · expected ' + (14 - 3 * melds.length) | t }}</span>
-            <div>
-              <button
-                class="quiet"
-                (click)="undo()"
-                [disabled]="!canUndo"
-                [attr.aria-label]="'Undo tile edit' | t"
-              >
-                ↶
-              </button>
-              <button
-                class="quiet"
-                (click)="redo()"
-                [disabled]="!canRedo"
-                [attr.aria-label]="'Redo tile edit' | t"
-              >
-                ↷
-              </button>
-              <button class="quiet" (click)="resetHand()">{{ 'Clear' | t }}</button>
-            </div>
-          </div>
-          <div class="hand-tray" [attr.aria-label]="'Concealed tiles including winning tile' | t">
-            @for (tile of tiles; track tile.id) {
-              <button
-                class="tile"
-                [class.winning-tile]="winningId === tile.id"
-                [class.red-ink]="tile.isRed"
-                (click)="clickTile(tile)"
-                [attr.aria-label]="tileActionLabel(tile, selectWinning ? 'mark' : 'remove')"
-              >
-                {{ labels(tile) }}
-                @if (winningId === tile.id) {
-                  <small>{{ ' ' + i18n.t('WIN') }}</small>
-                }
-              </button>
-            }
-            @if (!tiles.length) {
-              <p>
-                {{ 'Tap tiles below to build your hand.' | t }}
-                <br />
-                <button class="text-link" (click)="example()">
-                  {{ 'Try an example hand →' | t }}
-                </button>
-              </p>
-            }
-          </div>
-          <label class="check">
-            <input type="checkbox" [(ngModel)]="selectWinning" />
-            {{ 'Tap a hand tile to mark the winning tile' | t }}
-            <span class="hint">{{ 'Otherwise tap to remove' | t }}</span>
-          </label>
-          <details class="notation">
-            <summary>{{ 'Type compact tile notation' | t }}</summary>
-            <label>
-              {{ 'Concealed hand, including winning tile' | t }}
-              <input [(ngModel)]="notation" placeholder="123m456m789p234s55p" />
-            </label>
-            <p class="hint">
-              {{
-                'm = characters, p = circles, s = bamboo, z = honors (East–red dragon = 1–7). 0 = red five. Last tile is initially the winning tile.'
-                  | t
-              }}
-            </p>
-            <button class="secondary" (click)="applyNotation()">
-              {{ 'Replace concealed tiles' | t }}
-            </button>
-          </details>
-          <div class="tile-palette">
-            @for (suit of suits; track suit; let row = $index) {
-              <div>
-                <small>{{ suit | t }}</small>
-                <div class="palette-row">
-                  @for (tile of palette(row); track tile.id) {
+          <p class="hand-count">
+            {{ tiles.length + ' concealed · expected ' + (14 - 3 * melds.length) | t }}
+          </p>
+          <p class="hint">
+            {{
+              'Enter or upload all tiles first. Then select tiles below to assign them to melds or North. Unassigned tiles stay in the concealed hand.'
+                | t
+            }}
+          </p>
+          <div class="hand-workspace">
+            <div
+              class="hand-tray"
+              [class.empty]="!tiles.length"
+              [attr.aria-label]="'Concealed tiles including winning tile' | t"
+            >
+              <app-tile-entry-dialog>
+                <ng-template>
+                  <div class="action-row">
                     <button
-                      class="tile palette-tile"
-                      [class]="'tile palette-tile ' + tileClass(tile)"
-                      (click)="addTile(tile)"
-                      [attr.aria-label]="tileActionLabel(tile, 'add')"
+                      class="quiet"
+                      (click)="undo()"
+                      [disabled]="!canUndo"
+                      [attr.aria-label]="'Undo tile edit' | t"
                     >
-                      {{ labels(tile) }}
+                      ↶
                     </button>
-                  }
+                    <button
+                      class="quiet"
+                      (click)="redo()"
+                      [disabled]="!canRedo"
+                      [attr.aria-label]="'Redo tile edit' | t"
+                    >
+                      ↷
+                    </button>
+                  </div>
+                  <div class="entry-preview" role="group" [attr.aria-label]="'Tile preview' | t">
+                    @for (tile of tiles; track tile.id) {
+                      <button
+                        class="tile"
+                        (click)="removeTile(tile)"
+                        [attr.aria-label]="tileActionLabel(tile, 'remove')"
+                      >
+                        <app-tile-art [tile]="tile" [decorative]="true" />
+                      </button>
+                    }
+                  </div>
+                  <details class="notation">
+                    <summary>{{ 'Type compact tile notation' | t }}</summary>
+                    <label>
+                      {{ 'All tiles, including melds and North' | t }}
+                      <input [(ngModel)]="notation" placeholder="123m456m789p234s55p" />
+                    </label>
+                    <p class="hint">
+                      {{
+                        'm = characters, p = circles, s = bamboo, z = honors (East–red dragon = 1–7). 0 = red five. Last tile is initially the winning tile.'
+                          | t
+                      }}
+                    </p>
+                    <button class="secondary" (click)="applyNotation()">
+                      {{ 'Replace tile collection' | t }}
+                    </button>
+                  </details>
+                  <app-tile-picker
+                    [playerCount]="rules.playerCount"
+                    [redFives]="settings.redFives"
+                    (tilePicked)="addTile($event)"
+                  />
+                  <app-photo-capture
+                    [playerCount]="rules.playerCount"
+                    (tilesConfirmed)="applyWorkspacePhoto($event)"
+                  />
+                </ng-template>
+              </app-tile-entry-dialog>
+              <div class="hand-tiles">
+                @for (tile of tiles; track tile.id) {
+                  <button
+                    class="tile"
+                    [class.winning-tile]="winningId === tile.id"
+                    [class.red-ink]="tile.isRed"
+                    [class.group-selected]="selectedHandTiles().includes(tile.id)"
+                    [attr.aria-pressed]="
+                      !selectWinning && !deleteMode ? selectedHandTiles().includes(tile.id) : null
+                    "
+                    (click)="clickTile(tile)"
+                    [attr.aria-label]="
+                      tileActionLabel(
+                        tile,
+                        deleteMode ? 'remove' : selectWinning ? 'mark' : 'select'
+                      )
+                    "
+                  >
+                    <app-tile-art [tile]="tile" [decorative]="true" />
+                    @if (winningId === tile.id) {
+                      <small>{{ ' ' + i18n.t('WIN') }}</small>
+                    }
+                  </button>
+                }
+
+                @if (!tiles.length) {
+                  <p>
+                    {{ 'Use Enter tiles to build your hand.' | t }}
+                    <br />
+                    <button class="text-link" (click)="example()">
+                      {{ 'Try an example hand →' | t }}
+                    </button>
+                  </p>
+                }
+              </div>
+            </div>
+            @if (tiles.length) {
+              <div class="hand-controls">
+                <label class="check">
+                  <input
+                    type="checkbox"
+                    [(ngModel)]="selectWinning"
+                    (ngModelChange)="deleteMode = false"
+                  />
+                  {{ 'Tap a hand tile to mark the winning tile' | t }}
+                  <span class="hint">{{ 'Otherwise tap to select tiles for assignment' | t }}</span>
+                </label>
+                <div class="tile-actions">
+                  <button
+                    class="quiet danger"
+                    (click)="toggleDeleteMode()"
+                    [attr.aria-pressed]="deleteMode"
+                  >
+                    {{ 'Delete a tile' | t }}
+                  </button>
+                  <button class="quiet" (click)="resetHand()">{{ 'Clear' | t }}</button>
                 </div>
               </div>
             }
-            <div>
-              <small>{{ 'Red fives' | t }}</small>
-              <div class="palette-row">
-                @for (tile of redPalette(); track tile.id) {
-                  <button
-                    class="tile palette-tile red-ink"
-                    (click)="addTile(tile)"
-                    [attr.aria-label]="tileActionLabel(tile, 'add')"
-                  >
-                    {{ labels(tile) }}
-                  </button>
+          </div>
+          @if (selectedHandTiles().length) {
+            <section class="assignment-panel" [attr.aria-label]="'Assign selected tiles' | t">
+              <h3>{{ 'Assign selected tiles' | t }}</h3>
+              <div class="form-grid">
+                <label>
+                  {{ 'Assign as' | t }}
+                  <select [ngModel]="assignmentTarget()" (ngModelChange)="selectAssignment($event)">
+                    <option value="chi" [disabled]="rules.playerCount === 3">
+                      {{ 'Chi' | t }}
+                    </option>
+                    <option value="pon">{{ 'Pon' | t }}</option>
+                    <option value="daiminkan">{{ 'Open Kan' | t }}</option>
+                    <option value="ankan">{{ 'Concealed Kan' | t }}</option>
+                    @if (rules.playerCount === 3) {
+                      <option value="kita">{{ 'Extracted North' | t }}</option>
+                    }
+                  </select>
+                </label>
+                @if (assignmentTarget() !== 'kita' && assignmentTarget() !== 'ankan') {
+                  <label>
+                    {{ 'Called from' | t }}
+                    <select [(ngModel)]="source">
+                      @for (player of meldSources; track player.id) {
+                        <option [value]="player.id">{{ player.name }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label>
+                    {{ 'Called tile in selection' | t }}
+                    <select [(ngModel)]="calledIndex">
+                      @for (tile of selectedTiles; track tile.id; let index = $index) {
+                        <option [ngValue]="index">{{ tileNames(tile) }}</option>
+                      }
+                    </select>
+                  </label>
                 }
               </div>
-            </div>
-          </div>
-          <button class="secondary full" (click)="verify()">
-            {{ '✓ I have checked these tiles' | t }}
-          </button>
+              <div class="action-row">
+                <button class="primary" (click)="groupHandTiles()">
+                  {{ 'Assign selected tiles' | t }}
+                </button>
+                <button class="secondary" (click)="selectedHandTiles.set([])">
+                  {{ 'Keep concealed' | t }}
+                </button>
+                <button class="quiet danger" (click)="removeSelectedTiles()">
+                  {{ 'Remove selected tiles' | t }}
+                </button>
+              </div>
+            </section>
+          }
+          @if (deleteMode) {
+            <p class="hint" role="status">
+              {{ 'Tap a tile to delete it. Tap Delete a tile again to finish.' | t }}
+            </p>
+          }
         </section>
-        <section class="card">
+        <section class="card meld-card">
           <div class="section-heading">
             <span class="step">02</span>
             <h2>{{ 'Melds & extracted tiles' | t }}</h2>
+            <span class="pill" [attr.aria-label]="'Meld count' | t">{{ melds.length }} / 4</span>
           </div>
+          @if (!melds.length && !kita.length) {
+            <div class="meld-empty">
+              <div class="meld-illustration" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <div>
+                <h3>{{ 'No tiles assigned yet' | t }}</h3>
+                <p>{{ 'Select tiles from your hand, then assign them to Chi, Pon or Kan.' | t }}</p>
+                @if (rules.playerCount === 3) {
+                  <p>{{ 'North tiles can also be assigned for extraction.' | t }}</p>
+                }
+              </div>
+            </div>
+          }
           @for (meld of melds; track meld.id) {
             <div class="meld-row">
               <div>
@@ -246,7 +340,7 @@
                 <div class="mini-tiles">
                   @for (t of meld.tiles; track t.id) {
                     <span [class.called]="t.id === meld.calledTileId" [class.red-ink]="t.isRed">
-                      {{ labels(t) }}
+                      <app-tile-art [tile]="t" />
                     </span>
                   }
                 </div>
@@ -262,6 +356,9 @@
                 </label>
               </div>
               <div>
+                <button class="quiet" (click)="returnMeld(meld.id)">
+                  {{ 'Return to tile collection' | t }}
+                </button>
                 @if (meld.type === 'pon') {
                   <button class="quiet" (click)="upgrade(meld)">{{ 'Upgrade to Kan' | t }}</button>
                 }
@@ -275,52 +372,20 @@
               </div>
             </div>
           }
-          <p class="hint">
-            {{
-              'Meld tiles are separate from the concealed hand. The outlined tile is the original called tile. Upgrade an existing Pon to create Kakan.'
-                | t
-            }}
-          </p>
-          <div class="form-grid">
-            <label>
-              {{ 'Meld type' | t }}
-              <select [(ngModel)]="meldType">
-                <option value="chi" [disabled]="rules.playerCount === 3">{{ 'Chi' | t }}</option>
-                <option value="pon">{{ 'Pon' | t }}</option>
-                <option value="daiminkan">{{ 'Open Kan' | t }}</option>
-                <option value="ankan">{{ 'Concealed Kan' | t }}</option>
-              </select>
-            </label>
-            <label>
-              {{ 'Tiles' | t }}
-              <input [(ngModel)]="meldText" placeholder="555z" />
-            </label>
-            @if (meldType !== 'ankan') {
-              <label>
-                {{ 'Source player' | t }}
-                <select [(ngModel)]="source">
-                  @for (p of players; track p.id) {
-                    @if (p.id !== winner) {
-                      <option [value]="p.id">{{ p.name }}</option>
-                    }
-                  }
-                </select>
-              </label>
-              <label>
-                {{ 'Called tile position' | t }}
-                <select [(ngModel)]="calledIndex">
-                  <option [ngValue]="0">{{ 'First' | t }}</option>
-                  <option [ngValue]="1">{{ 'Second' | t }}</option>
-                  <option [ngValue]="2">{{ 'Third' | t }}</option>
-                  @if (meldType === 'daiminkan') {
-                    <option [ngValue]="3">{{ 'Fourth' | t }}</option>
-                  }
-                </select>
-              </label>
-            }
-          </div>
-          <button class="secondary" (click)="addMeld()">{{ '+ Add meld' | t }}</button>
+          @if (melds.length) {
+            <p class="hint">
+              {{
+                'Meld tiles are separate from the concealed hand. The outlined tile is the original called tile. Upgrade an existing Pon to create Kakan.'
+                  | t
+              }}
+            </p>
+          }
           @if (rules.playerCount === 3) {
+            @if (kita.length) {
+              <button class="quiet" (click)="returnNorth()">
+                {{ 'Return North to tile collection' | t }}
+              </button>
+            }
             <div class="kita-row">
               <div>
                 <strong>{{ 'Extracted North · ' + kita.length | t }}</strong>
@@ -343,6 +408,16 @@
               </button>
             </div>
           }
+          <label class="check verification-check">
+            <input
+              #verification
+              type="checkbox"
+              [checked]="status === 'verified'"
+              [disabled]="!tiles.length"
+              (change)="setVerified(verification.checked)"
+            />
+            {{ 'I have checked these tiles' | t }}
+          </label>
         </section>
         <section class="card">
           <div class="section-heading">
@@ -389,22 +464,24 @@
                 (ngModelChange)="changed()"
               />
             </label>
-            <label>
-              {{ 'Dora indicators' | t }}
-              <input
-                [(ngModel)]="doraText"
-                (ngModelChange)="changed()"
-                [attr.placeholder]="'e.g. 4p' | t"
+            <div>
+              <app-tile-input
+                label="Dora indicators"
+                [value]="doraText"
+                (valueChange)="doraText = $event; editStatus()"
+                [playerCount]="rules.playerCount"
+                [redFives]="settings.redFives"
               />
-            </label>
-            <label>
-              {{ 'Ura indicators' | t }}
-              <input
-                [(ngModel)]="uraText"
-                (ngModelChange)="changed()"
-                [attr.placeholder]="'Riichi only' | t"
+            </div>
+            <div>
+              <app-tile-input
+                label="Ura indicators"
+                [value]="uraText"
+                (valueChange)="uraText = $event; editStatus()"
+                [playerCount]="rules.playerCount"
+                [redFives]="settings.redFives"
               />
-            </label>
+            </div>
           </div>
           <div class="form-grid">
             <label>
@@ -447,7 +524,7 @@
               {{ 'Replacement draw' | t }}
               <select [(ngModel)]="replacement" (ngModelChange)="changed()">
                 <option value="kan">{{ 'After Kan' | t }}</option>
-                <option value="kita" [disabled]="rules.playerCount !== 3">
+                <option value="kita" [disabled]="rules.playerCount !== 3 || !settings.kitaRinshan">
                   {{ 'After Kita' | t }}
                 </option>
               </select>
@@ -460,7 +537,9 @@
                 <option value="kakan">
                   {{ 'Normal discard / added Kan when Chankan selected' | t }}
                 </option>
-                <option value="ankan">{{ 'Robbed Ankan (select Chankan)' | t }}</option>
+                <option value="ankan" [disabled]="!settings.kokushiAnkanRon">
+                  {{ 'Robbed Ankan (select Chankan)' | t }}
+                </option>
                 <option value="kita" [disabled]="rules.playerCount !== 3">
                   {{ 'Robbed Kita (no Chankan bonus)' | t }}
                 </option>
@@ -505,48 +584,6 @@
             <span aria-hidden="true">→</span>
           </button>
         </section>
-        <details class="card photo-card">
-          <summary>
-            {{ 'Optional photo demo' | t }}
-            <span class="pill">{{ 'Mock only' | t }}</span>
-          </summary>
-          <p class="hint">
-            {{
-              'No AI model is connected. Fixed demo suggestions do not describe your photo. Images stay in memory on this device.'
-                | t
-            }}
-          </p>
-          <label>
-            {{ 'Take a photo' | t }}
-            <input type="file" accept="image/*" capture="environment" (change)="capture($event)" />
-          </label>
-          <label>
-            {{ 'Or choose an image' | t }}
-            <input type="file" accept="image/*" (change)="capture($event)" />
-          </label>
-          @if (photoUrl) {
-            <img
-              class="photo-preview"
-              [src]="photoUrl"
-              [attr.alt]="'Your selected hand photo' | t"
-            />
-            <p>{{ photoName() }}</p>
-            <p class="eyebrow">{{ 'Fixed mock suggestions · 50% demo confidence' | t }}</p>
-            <div class="action-row">
-              @for (p of predictions; track $index) {
-                <button class="secondary" (click)="usePrediction(p)">
-                  {{ 'Add ' + predictionLabel(p) | t }}
-                </button>
-              }
-            </div>
-            <p class="hint">
-              {{
-                'Suggested tiles can be removed or replaced using the manual editor above. Manual corrections are not overwritten.'
-                  | t
-              }}
-            </p>
-          }
-        </details>
       </div>
       <aside class="result-column">
         <app-score-result
@@ -587,7 +624,7 @@
         <label>
           {{ 'Abortive draw reason' | t }}
           <select [(ngModel)]="abortiveReason" (ngModelChange)="changed()">
-            @for (reason of abortiveOptions; track reason.value) {
+            @for (reason of availableAbortiveOptions; track reason.value) {
               <option [value]="reason.value">{{ reason.label | t }}</option>
             }
           </select>

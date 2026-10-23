@@ -26,7 +26,7 @@
         <small>{{ 'Sanma' | t }}</small>
       </button>
     </div>
-    <app-rule-picker [(profile)]="rules" />
+    <app-rule-picker [profile]="rules()" (profileChange)="updateRules($event)" />
     @if (rules().preset !== 'm-league') {
       <label>
         {{ 'Game length' | t }}

@@ -1,16 +1,19 @@
-import { Component, inject, signal, OnDestroy } from '@angular/core';
+import { TableSummary } from './table-summary/table-summary';
+import { TileEntryDialog } from './tiles/tile-entry-dialog';
+import { TileInput } from './tiles/tile-input';
+import { TilePicker } from './tiles/tile-picker';
+import { TileArt } from '../../shared/tile-art/tile-art';
+import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
-  kindAt,
   kindIndex,
   parseTiles,
   tileLabel,
   WINDS,
   type Tile,
   type Meld,
-  type MeldType,
   type ScoreResult,
   type Wind,
 } from '../../../../../../packages/mahjong-core/index';
@@ -31,7 +34,7 @@ import {
 } from '../../../../../../packages/mahjong-rules/index';
 import { score, type ScoringInput } from '../../../../../../packages/mahjong-scoring/index';
 import { Repository } from '../matches/data-access/repository';
-import { MockTileRecognizer, type TilePrediction } from './capture/recognizer';
+import { PhotoCapture } from './capture/photo-capture';
 import { I18n, TranslatePipe } from '../../core/i18n/i18n';
 import { RulePicker } from '../../shared/rules/rule-picker';
 import { ScoreResultView } from './score-result/score-result';
@@ -66,6 +69,7 @@ interface Draft {
   firstTurn?: boolean;
   queued?: ScoringInput[];
 }
+type AssignmentTarget = 'chi' | 'pon' | 'daiminkan' | 'ankan' | 'kita';
 interface Flags {
   riichi: boolean;
   doubleRiichi: boolean;
@@ -90,6 +94,12 @@ const emptyFlags = (): Flags => ({
 });
 @Component({
   imports: [
+    TileInput,
+    TableSummary,
+    TileEntryDialog,
+    TilePicker,
+    PhotoCapture,
+    TileArt,
     ScoreResultView,
     MatchHistory,
     RoundReview,
@@ -100,8 +110,9 @@ const emptyFlags = (): Flags => ({
     RouterLink,
   ],
   templateUrl: './scorer.html',
+  styleUrl: './scorer.css',
 })
-export class Scorer implements OnDestroy {
+export class Scorer {
   readonly i18n = inject(I18n);
   private readonly repo = inject(Repository);
   private readonly route = inject(ActivatedRoute);
@@ -116,13 +127,18 @@ export class Scorer implements OnDestroy {
   readonly winds = WINDS;
   readonly labels = tileLabel;
   readonly tileNames = (tile: Tile): string => this.i18n.tile(tile);
-  tileActionLabel(tile: Tile, action: 'add' | 'mark' | 'remove'): string {
+  tileActionLabel(tile: Tile, action: 'add' | 'mark' | 'remove' | 'select'): string {
     const visible =
       tileLabel(tile) +
       (action !== 'add' && tile.id === this.winningId ? ' ' + this.i18n.t('WIN') : '');
     const instruction = this.i18n.t(
-      (action === 'add' ? 'Add ' : action === 'mark' ? 'Mark winning ' : 'Remove ') +
-        this.i18n.tile(tile),
+      (action === 'add'
+        ? 'Add '
+        : action === 'mark'
+          ? 'Mark winning '
+          : action === 'select'
+            ? 'Select '
+            : 'Remove ') + this.i18n.tile(tile),
     );
     return `${visible}: ${instruction}`;
   }
@@ -174,15 +190,12 @@ export class Scorer implements OnDestroy {
   uraText = '';
   status: Draft['status'] = 'corrected';
   selectWinning = false;
-  meldType: MeldType = 'pon';
-  meldText = '';
+  deleteMode = false;
   source = 'p0';
   calledIndex = 0;
   tab: 'entry' | 'history' | 'draw' = 'entry';
   depositPlayer = 'p1';
-  photoUrl = '';
-  predictions: TilePrediction[] = [];
-  readonly photoName = signal('');
+
   private readonly past: Draft[] = [];
   private readonly future: Draft[] = [];
   private resultFingerprint = '';
@@ -193,9 +206,7 @@ export class Scorer implements OnDestroy {
   constructor() {
     void this.load();
   }
-  ngOnDestroy(): void {
-    if (this.photoUrl) URL.revokeObjectURL(this.photoUrl);
-  }
+
   get players(): { id: string; name: string }[] {
     return (
       this.match()?.players ??
@@ -213,7 +224,45 @@ export class Scorer implements OnDestroy {
   updateRules(rules: RuleProfile): void {
     this.quickRules = rules;
     this.queued = [];
-    this.changed();
+    this.past.length = 0;
+    this.future.length = 0;
+    if (!this.settings.kokushiAnkanRon && this.robbed === 'ankan') this.robbed = 'kakan';
+    if (!this.settings.kitaRinshan && this.replacement === 'kita') {
+      this.replacement = 'kan';
+      this.flags.rinshan = false;
+    }
+    if (rules.preset === 'm-league') this.drawType = 'exhaustive';
+    if (!this.availableAbortiveOptions.some((option) => option.value === this.abortiveReason))
+      this.abortiveReason = 'nine-terminals';
+    this.drawConfirmed = false;
+    this.editStatus();
+  }
+  get availableAbortiveOptions() {
+    return this.abortiveOptions.filter(
+      (option) =>
+        !(
+          this.rules.playerCount === 3 &&
+          ['four-winds', 'four-riichi', 'triple-ron'].includes(option.value)
+        ) && !(option.value === 'triple-ron' && this.settings.multipleRon !== 'triple-draw'),
+    );
+  }
+  get meldSources() {
+    const preceding =
+      this.players[
+        (this.players.findIndex((player) => player.id === this.winner) + this.players.length - 1) %
+          this.players.length
+      ];
+    return this.players.filter(
+      (player) =>
+        player.id !== this.winner &&
+        (this.assignmentTarget() !== 'chi' || player.id === preceding.id),
+    );
+  }
+  selectAssignment(target: AssignmentTarget): void {
+    this.assignmentTarget.set(target);
+    if (!this.meldSources.some((player) => player.id === this.source))
+      this.source = this.meldSources[0]?.id ?? '';
+    this.error.set('');
   }
   get book() {
     const m = this.match();
@@ -237,20 +286,6 @@ export class Scorer implements OnDestroy {
         this.players.length) %
         this.players.length
     ];
-  }
-  palette(row: number): Tile[] {
-    const indices =
-      row === 3
-        ? [27, 28, 29, 30, 31, 32, 33]
-        : Array.from({ length: 9 }, (_, i) => row * 9 + i).filter(
-            (i) => this.rules.playerCount === 4 || !(i >= 1 && i <= 7),
-          );
-    return indices.map((i) => ({ id: `palette-${i}`, kind: kindAt(i), isRed: false }));
-  }
-  redPalette(): Tile[] {
-    return (
-      this.settings.redFives ? (this.rules.playerCount === 3 ? [13, 22] : [4, 13, 22]) : []
-    ).map((i) => ({ id: `red-${i}`, kind: kindAt(i), isRed: true }));
   }
   async load(): Promise<void> {
     try {
@@ -300,6 +335,7 @@ export class Scorer implements OnDestroy {
     });
   }
   private restore(d: Draft): void {
+    this.selectedHandTiles.set([]);
     // Restore only editor fields: persisted data must never replace services or signals.
     this.tiles = d.tiles;
     this.melds = d.melds;
@@ -369,20 +405,40 @@ export class Scorer implements OnDestroy {
     this.editStatus();
   }
   clickTile(tile: Tile): void {
-    this.remember();
-    if (this.selectWinning) {
+    if (this.deleteMode) {
+      this.removeTile(tile);
+    } else if (this.selectWinning) {
+      this.remember();
       this.winningId = tile.id;
+      this.editStatus();
     } else {
-      this.tiles = this.tiles.filter((t) => t.id !== tile.id);
-      if (this.winningId === tile.id) this.winningId = '';
+      this.selectedHandTiles.update((ids) =>
+        ids.includes(tile.id) ? ids.filter((id) => id !== tile.id) : [...ids, tile.id],
+      );
+      if (this.calledIndex >= this.selectedHandTiles().length) this.calledIndex = 0;
     }
+  }
+  toggleDeleteMode(): void {
+    this.deleteMode = !this.deleteMode;
+    this.selectWinning = false;
+    this.selectedHandTiles.set([]);
+  }
+  removeTile(tile: Tile): void {
+    this.remember();
+    this.tiles = this.tiles.filter((item) => item.id !== tile.id);
+    this.selectedHandTiles.update((ids) => ids.filter((id) => id !== tile.id));
+    if (this.winningId === tile.id) this.winningId = this.tiles.at(-1)?.id ?? '';
     this.editStatus();
   }
   applyNotation(): void {
     try {
       const tiles = parseTiles(this.notation, crypto.randomUUID());
+
       this.remember();
       this.tiles = tiles;
+      this.melds = [];
+      this.kita = [];
+      this.selectedHandTiles.set([]);
       this.winningId = tiles.at(-1)?.id ?? '';
       this.editStatus();
     } catch (e) {
@@ -390,6 +446,7 @@ export class Scorer implements OnDestroy {
     }
   }
   example(): void {
+    this.selectedHandTiles.set([]);
     this.remember();
     this.tiles = parseTiles(
       this.rules.playerCount === 3 ? '123p456p789s234s55p' : '123m456m789p234s55p',
@@ -404,6 +461,7 @@ export class Scorer implements OnDestroy {
     this.editStatus();
   }
   resetHand(): void {
+    this.selectedHandTiles.set([]);
     this.remember();
     this.tiles = [];
     this.melds = [];
@@ -411,15 +469,25 @@ export class Scorer implements OnDestroy {
     this.winningId = '';
     this.flags = emptyFlags();
     this.firstTurn = false;
+    this.otherKans = 0;
+    this.replacement = 'kan';
+    this.robbed = 'kakan';
+    this.selectWinning = false;
+    this.deleteMode = false;
     this.doraText = '';
     this.uraText = '';
     this.editStatus();
   }
-  verify(): void {
-    this.status = 'verified';
+  setVerified(verified: boolean): void {
+    this.status = verified ? 'verified' : 'corrected';
     this.changed();
   }
   changeWinner(): void {
+    this.selectedHandTiles.set([]);
+    if (this.source === this.winner)
+      this.source = this.players.find((player) => player.id !== this.winner)!.id;
+    if (this.discarder === this.winner)
+      this.discarder = this.players.find((player) => player.id !== this.winner)!.id;
     if (this.tiles.length || this.melds.length) {
       this.tiles = [];
       this.melds = [];
@@ -432,13 +500,19 @@ export class Scorer implements OnDestroy {
     this.editStatus();
   }
   changeCount(): void {
+    this.assignmentTarget.set('pon');
     const preset =
       this.quickRules.preset === 'm-league' && this.count === 3
         ? 'mahjong-soul'
         : this.quickRules.preset;
-    this.quickRules = presetRules(preset ?? 'mahjong-soul', this.count);
+    this.quickRules =
+      preset === 'custom'
+        ? { ...this.quickRules, id: `custom-${this.count}p`, playerCount: this.count }
+        : presetRules(preset ?? 'mahjong-soul', this.count);
     this.queued = [];
     this.resetHand();
+    this.past.length = 0;
+    this.future.length = 0;
     this.doraText = '';
     this.uraText = '';
     if (!this.players.some((p) => p.id === this.winner)) this.winner = 'p1';
@@ -446,35 +520,24 @@ export class Scorer implements OnDestroy {
     this.dealer = 'p0';
     this.changed();
   }
-  addMeld(): void {
-    try {
-      const tiles = parseTiles(this.meldText, crypto.randomUUID());
-      const concealed = this.meldType === 'ankan';
-      if (tiles.length !== (this.meldType === 'pon' || this.meldType === 'chi' ? 3 : 4))
-        throw new Error('Enter three tiles for Chi/Pon or four for Kan.');
-      if (
-        !Number.isInteger(this.calledIndex) ||
-        this.calledIndex < 0 ||
-        this.calledIndex >= tiles.length
-      )
-        throw new Error('Select a called tile within the meld.');
-      this.remember();
-      this.melds.push({
-        id: crypto.randomUUID(),
-        type: this.meldType,
-        tiles,
-        callOrder: Math.max(0, ...this.melds.map((m) => m.callOrder ?? 0)) + 1,
-        ...(concealed
-          ? {}
-          : { fromPlayerId: this.source, calledTileId: tiles[this.calledIndex].id }),
-      });
-      this.meldText = '';
-      this.editStatus();
-    } catch (e) {
-      this.error.set(this.message(e));
-    }
-  }
   upgrade(meld: Meld): void {
+    if (meld.type !== 'pon') return;
+    if (
+      this.otherKans + this.melds.filter((meld) => !['chi', 'pon'].includes(meld.type)).length >=
+      4
+    ) {
+      this.error.set(
+        'The table can contain at most four Kans; enter a valid other-player Kan count.',
+      );
+      return;
+    }
+    const tile = (this.selectedTiles.length ? this.selectedTiles : this.tiles).find(
+      (tile) => kindIndex(tile.kind) === kindIndex(meld.tiles[0].kind),
+    );
+    if (!tile || this.selectedTiles.length > 1) {
+      this.error.set('Select the fourth matching tile from your collection to upgrade Pon.');
+      return;
+    }
     this.remember();
     const originalPon = {
       id: meld.id,
@@ -482,7 +545,6 @@ export class Scorer implements OnDestroy {
       calledTileId: meld.calledTileId!,
       fromPlayerId: meld.fromPlayerId!,
     };
-    const tile = { ...structuredClone(meld.tiles[0]), id: crypto.randomUUID(), isRed: false };
     this.melds = this.melds.map((m) =>
       m.id === meld.id
         ? {
@@ -495,6 +557,9 @@ export class Scorer implements OnDestroy {
           }
         : m,
     );
+    this.tiles = this.tiles.filter((item) => item.id !== tile.id);
+    this.selectedHandTiles.set([]);
+    if (this.winningId === tile.id) this.winningId = this.tiles.at(-1)?.id ?? '';
     this.editStatus();
   }
   removeMeld(id: string): void {
@@ -502,9 +567,32 @@ export class Scorer implements OnDestroy {
     this.melds = this.melds.filter((m) => m.id !== id);
     this.editStatus();
   }
-  addKita(): void {
+  returnMeld(id: string): void {
+    const meld = this.melds.find((meld) => meld.id === id);
+    if (!meld) return;
     this.remember();
-    this.kita.push({ id: crypto.randomUUID(), kind: kindAt(30), isRed: false });
+    this.tiles = [...this.tiles, ...meld.tiles];
+    this.melds = this.melds.filter((meld) => meld.id !== id);
+    this.editStatus();
+  }
+  returnNorth(): void {
+    if (!this.kita.length) return;
+    this.remember();
+    this.tiles = [...this.tiles, ...this.kita];
+    this.kita = [];
+    this.editStatus();
+  }
+  addKita(): void {
+    const tile = this.tiles.find((tile) => kindIndex(tile.kind) === 30);
+    if (this.rules.playerCount !== 3 || this.kita.length >= 4 || !tile) {
+      this.error.set('Extracted tiles must contain only North, up to four tiles.');
+      return;
+    }
+    this.remember();
+    this.kita.push(tile);
+    this.tiles = this.tiles.filter((item) => item.id !== tile.id);
+    this.selectedHandTiles.update((ids) => ids.filter((id) => id !== tile.id));
+    if (this.winningId === tile.id) this.winningId = this.tiles.at(-1)?.id ?? '';
     this.editStatus();
   }
   removeKita(): void {
@@ -692,33 +780,113 @@ export class Scorer implements OnDestroy {
     a.click();
     URL.revokeObjectURL(url);
   }
-  async capture(event: Event): Promise<void> {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      this.error.set('Choose an image file.');
-      return;
-    }
-    if (file.size > 20 * 1024 * 1024) {
-      this.error.set('Choose an image smaller than 20 MB.');
-      return;
-    }
-    if (this.photoUrl) URL.revokeObjectURL(this.photoUrl);
-    this.photoUrl = URL.createObjectURL(file);
-    this.photoName.set(file.name);
-    const raw = await new MockTileRecognizer().recognize(file, {
-      playerCount: this.rules.playerCount,
-    });
-    this.predictions = raw.predictions;
+  readonly assignmentTarget = signal<AssignmentTarget>('pon');
+  readonly selectedHandTiles = signal<string[]>([]);
+  get selectedTiles(): Tile[] {
+    return this.tiles.filter((tile) => this.selectedHandTiles().includes(tile.id));
   }
-  usePrediction(prediction: TilePrediction): void {
-    const c = prediction.candidates[0];
-    this.addTile({ id: '', kind: c.tile, isRed: c.isRed });
-    this.status = 'recognized';
-    this.changed();
+  removeSelectedTiles(): void {
+    if (!this.selectedTiles.length) return;
+    this.remember();
+    this.tiles = this.tiles.filter((tile) => !this.selectedHandTiles().includes(tile.id));
+    if (!this.tiles.some((tile) => tile.id === this.winningId))
+      this.winningId = this.tiles.at(-1)?.id ?? '';
+    this.selectedHandTiles.set([]);
+    this.editStatus();
   }
-  predictionLabel(p: TilePrediction): string {
-    return tileLabel({ id: '', ...p.candidates[0], kind: p.candidates[0].tile });
+  groupHandTiles(): void {
+    const selected = this.tiles.filter((tile) => this.selectedHandTiles().includes(tile.id));
+    const target = this.assignmentTarget();
+    if (!selected.length) return;
+    if (target === 'kita') {
+      if (
+        this.rules.playerCount !== 3 ||
+        this.kita.length + selected.length > 4 ||
+        selected.some((tile) => kindIndex(tile.kind) !== 30)
+      ) {
+        this.error.set('Extracted tiles must contain only North, up to four tiles.');
+        return;
+      }
+    } else {
+      if (
+        ['ankan', 'daiminkan'].includes(target) &&
+        this.otherKans + this.melds.filter((meld) => !['chi', 'pon'].includes(meld.type)).length >=
+          4
+      ) {
+        this.error.set(
+          'The table can contain at most four Kans; enter a valid other-player Kan count.',
+        );
+        return;
+      }
+      const kinds = selected.map((tile) => kindIndex(tile.kind)).sort((a, b) => a - b);
+      const validShape =
+        target === 'chi'
+          ? kinds[0] < 27 &&
+            Math.floor(kinds[0] / 9) === Math.floor(kinds[2] / 9) &&
+            kinds[1] === kinds[0] + 1 &&
+            kinds[2] === kinds[0] + 2
+          : kinds.every((kind) => kind === kinds[0]);
+      if (!validShape || this.melds.length >= 4) {
+        this.error.set(
+          'Select a valid sequence for Chi or matching tiles for Pon/Kan, with at most four melds.',
+        );
+        return;
+      }
+      if (selected.length !== (target === 'chi' || target === 'pon' ? 3 : 4)) {
+        this.error.set('Enter three tiles for Chi/Pon or four for Kan.');
+        return;
+      }
+      if (target === 'chi' && this.rules.playerCount === 3) {
+        this.error.set('Chi is prohibited in Sanma.');
+        return;
+      }
+      if (target !== 'ankan' && !this.meldSources.some((player) => player.id === this.source)) {
+        this.error.set(
+          target === 'chi'
+            ? 'Chi must come from the preceding player.'
+            : 'A called meld needs another seated source player.',
+        );
+        return;
+      }
+      if (
+        target !== 'ankan' &&
+        (this.calledIndex < 0 ||
+          this.calledIndex >= selected.length ||
+          !Number.isInteger(this.calledIndex))
+      ) {
+        this.error.set('Select a called tile within the meld.');
+        return;
+      }
+    }
+    this.remember();
+    if (target === 'kita') this.kita = [...this.kita, ...selected];
+    else
+      this.melds = [
+        ...this.melds,
+        {
+          id: crypto.randomUUID(),
+          type: target,
+          tiles: selected,
+          callOrder: Math.max(0, ...this.melds.map((meld) => meld.callOrder ?? 0)) + 1,
+          ...(target === 'ankan'
+            ? {}
+            : { fromPlayerId: this.source, calledTileId: selected[this.calledIndex].id }),
+        },
+      ];
+    this.tiles = this.tiles.filter((tile) => !this.selectedHandTiles().includes(tile.id));
+    if (!this.tiles.some((tile) => tile.id === this.winningId))
+      this.winningId = this.tiles.at(-1)?.id ?? '';
+    this.selectedHandTiles.set([]);
+    this.editStatus();
+  }
+  applyWorkspacePhoto(tiles: Tile[]): void {
+    this.remember();
+    this.tiles = tiles.map((tile) => ({ ...tile, id: crypto.randomUUID() }));
+    this.melds = [];
+    this.kita = [];
+    this.selectedHandTiles.set([]);
+    this.winningId = this.tiles.at(-1)?.id ?? '';
+    this.editStatus();
   }
   tileClass(t: Tile): string {
     return t.isRed || kindIndex(t.kind) === 33

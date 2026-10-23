@@ -6,14 +6,14 @@ export interface TilePrediction {
 export interface TileRecognizer {
   recognize(
     input: Blob,
-    options: { playerCount: 3 | 4 },
+    options: { playerCount: 3 | 4; signal?: AbortSignal },
   ): Promise<{ modelName: string; modelVersion: string; predictions: TilePrediction[] }>;
 }
 /** Fixed demo data. This deliberately performs no image inference. */
 export class MockTileRecognizer implements TileRecognizer {
   async recognize(
     _input: Blob,
-    options: { playerCount: 3 | 4 },
+    options: { playerCount: 3 | 4; signal?: AbortSignal },
   ): Promise<{ modelName: string; modelVersion: string; predictions: TilePrediction[] }> {
     const offset = options.playerCount === 3 ? 9 : 0;
     return {

@@ -1,6 +1,6 @@
 # Riichi / table
 
-An offline-first Angular PWA for manually scoring Japanese Riichi Mahjong, with Mahjong Soul, Tenhou and Custom presets. Includes manual scoring, draw/multiple-winner settlement and match progression. Photo recognition remains a clearly labelled mock. This independent application is not affiliated with either platform.
+An offline-first Angular PWA for scoring Japanese Riichi Mahjong, with Mahjong Soul, Tenhou, M.League and Custom presets. Includes manual scoring, draw/multiple-winner settlement, match progression and configurable photo recognition. Manual scoring works offline; API recognition uploads selected photos. This independent application is not affiliated with the rule platforms or detection provider.
 
 ## Run
 
@@ -51,7 +51,14 @@ For **first-turn Yakuman**, select Tenhou/Chiihou and attest that the first draw
 
 ## Languages
 
-Choose **English** or **繁體中文 (zh-TW)** in the header. The selection is saved locally and works offline; first-time users with a Chinese browser language default to Traditional Chinese. Navigation, setup, scoring inputs, validation, Yaku/Fu explanations, history, accessibility labels and dates are localized. Player-entered names and saved scoring data are preserved. Translation strings live in `apps/web/src/app/core/i18n/messages.ts`; the scoring engine stays language-independent.
+Choose **English**, **繁體中文 (zh-TW)**, **简体中文 (zh-CN)** or **日本語 (ja)** in the header. English is the default;
+the selected language is saved locally and works offline. Navigation, setup, scoring inputs,
+validation, Yaku/Fu explanations, history, accessibility labels and dates are localized.
+Player-entered names and saved scoring data are preserved. Translation strings live in
+`apps/web/src/app/core/i18n/zh-tw.json`, `zh-cn.json` and `ja.json`; the scoring engine stays language-independent.
+Traditional Chinese and Japanese are maintained directly. The generator derives Simplified Chinese
+from `zh-tw.json`, so Traditional Chinese does not need a generation script. English uses the source
+message keys. Japanese uses the standard language code `ja`.
 
 ## Checks
 
@@ -70,6 +77,13 @@ npm.cmd run e2e
 Playwright serves the production build on port 4300, separate from the development server on 4200. Mobile tests use a 375px Chromium viewport; they do not establish real iPhone Safari compatibility. See [feature coverage](docs/feature-coverage.md) for actual checks and gaps.
 
 ## Structure
+
+Tile displays use locally bundled [FluffyStuff artwork](https://github.com/FluffyStuff/riichi-mahjong-tiles)
+(CC0), including regular and dark variants. The header offers a persistent dark-mode toggle and
+English, Traditional Chinese, Simplified Chinese, and Japanese. The initial theme follows the system setting.
+After changing the Traditional Chinese catalog, run `npm.cmd run i18n:generate` to update the
+Simplified Chinese catalog, then `npm.cmd run format`. Conversion uses OpenCC at development time;
+player-entered names are preserved.
 
 GitHub Pages setup and deployment: [hosting instructions](docs/github-pages.md).
 
@@ -92,12 +106,13 @@ parser preserves binding expressions and translation strings. See
 - **M.League** is available for four-player games, including its scoring and round progression
   differences. Final league points and penalties are excluded; see [rule verification](docs/rule-verification.md).
 - Free recognition candidates and IndexedDB retention are covered in
-  [recognition and storage notes](docs/recognition-and-storage.md). Photo recognition remains a mock.
+  [recognition and storage notes](docs/recognition-and-storage.md), including API configuration.
 
 - The previous unsupported-case gates for standard Yakuman, special waits, first-turn wins, Pao and Kita timing have been replaced with profile-aware scoring and explicit circumstance inputs.
 - The app does not simulate the full wall/discard sequence. You declare legal Riichi/Furiten timing, Tenpai, Nagashi eligibility, original call chronology and revealed indicators. Consistency checks reject contradictory declarations.
 - Local/nonstandard Yaku, chombo penalties, final Uma/Oka/return-point scoring and platform rank progression are outside the implemented presets.
-- A fixed photo mock demonstrates capture and editable suggestions. No image inference, crop/rotate, image persistence, multiple-photo merging or backend is implemented.
+- Photo recognition uses a configurable third-party API, with an optional local mock. Crop/rotate,
+  image persistence, multiple-photo merging and an app-owned inference backend are not implemented.
 - Initial seat/player names can be entered; editing an existing match’s players/seating and historical events is not supported. Undo the latest ledger event or start a new match.
 - Reference provenance and remaining verification limits are documented in [rule verification](docs/rule-verification.md).
 

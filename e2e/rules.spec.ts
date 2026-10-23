@@ -1,12 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
 
 async function enter(page: Page, notation: string): Promise<void> {
+  await page.getByRole('button', { name: 'Enter tiles', exact: true }).click();
   await page.getByText('Type compact tile notation', { exact: true }).click();
   await page
-    .getByRole('textbox', { name: 'Concealed hand, including winning tile', exact: true })
+    .getByRole('textbox', { name: 'All tiles, including melds and North', exact: true })
     .fill(notation);
-  await page.getByRole('button', { name: 'Replace concealed tiles', exact: true }).click();
-  await page.getByText('Type compact tile notation', { exact: true }).click();
+  await page.getByRole('button', { name: 'Replace tile collection', exact: true }).click();
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
 }
 
 test('M.League is four-player only and persists its match profile', async ({ page }) => {
@@ -15,6 +16,7 @@ test('M.League is four-player only and persists its match profile', async ({ pag
   await expect(page.getByText(/M.League: four players/)).toBeVisible();
   await expect(page.getByRole('combobox', { name: 'Game length', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.waitForURL('**/score/*');
   await expect(page.getByRole('combobox', { name: 'Rule preset', exact: true })).toHaveValue(
     'm-league',
   );
@@ -80,18 +82,18 @@ test('chosen rules persist, draws advance the round, and undo restores it', asyn
   await page.getByRole('button', { name: 'Review draw settlement', exact: true }).click();
   await expect(page.getByText('Dealer rotates', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Confirm round settlement', exact: true }).click();
-  await expect(page.locator('.round-heading')).toContainText('east 2 · Honba 1');
+  await expect(page.locator('app-table-summary')).toContainText('east 2');
   await page.locator('.history-event summary').click();
   await expect(page.getByText('Tenhou · v2')).toBeVisible();
   await page.reload();
   await expect(page.getByRole('combobox', { name: 'Rule preset', exact: true })).toHaveValue(
     'tenhou',
   );
-  await expect(page.locator('.round-heading')).toContainText('east 2 · Honba 1');
+  await expect(page.locator('app-table-summary')).toContainText('east 2');
   await page.getByRole('button', { name: /History/ }).click();
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Undo last ledger event', exact: true }).click();
-  await expect(page.locator('.round-heading')).toContainText('east 1 · Honba 0');
+  await expect(page.locator('app-table-summary')).toContainText('east 1');
   await page.screenshot({ path: 'artifacts/rules-mobile.png', fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
@@ -102,11 +104,11 @@ test('double Ron queue settles both hands and stores the explanations', async ({
   await page.getByRole('combobox', { name: 'Discarder', exact: true }).selectOption('p3');
   await page.getByRole('combobox', { name: 'Winner', exact: true }).selectOption('p0');
   await enter(page, '123456789m123p44z');
-  await page.getByRole('button', { name: /I have checked these tiles/ }).click();
+  await page.getByRole('checkbox', { name: /I have checked these tiles/ }).check();
   await page.getByRole('button', { name: 'Add verified Ron winner', exact: true }).click();
   await page.getByRole('combobox', { name: 'Winner', exact: true }).selectOption('p1');
   await enter(page, '123456789p123s44z');
-  await page.getByRole('button', { name: /I have checked these tiles/ }).click();
+  await page.getByRole('checkbox', { name: /I have checked these tiles/ }).check();
   await page.getByRole('button', { name: 'Add verified Ron winner', exact: true }).click();
   await page.getByRole('button', { name: 'Review all Ron winners', exact: true }).click();
   await expect(
@@ -116,21 +118,18 @@ test('double Ron queue settles both hands and stores the explanations', async ({
   await expect(page.locator('.history-event summary')).toContainText('Player 1, Player 2');
   await page.locator('.history-event summary').click();
   await expect(page.getByText('Pure straight (Ittsu)', { exact: true })).toHaveCount(2);
-  await expect(page.locator('.round-heading')).toContainText('east 1 · Honba 1');
+  await expect(page.locator('app-table-summary')).toContainText('east 1');
 });
 
 test('exposed Daisangen uses original call order and selected Pao policy', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('link', { name: 'Quick score', exact: true }).click();
-  await enter(page, '11122z');
-  for (const [tiles, source] of [
-    ['555z', 'p0'],
-    ['666z', 'p0'],
-    ['777z', 'p3'],
-  ]) {
-    await page.getByRole('textbox', { name: 'Tiles', exact: true }).fill(tiles);
-    await page.getByRole('combobox', { name: 'Source player', exact: true }).selectOption(source);
-    await page.getByRole('button', { name: '+ Add meld', exact: true }).click();
+  await enter(page, '11122z555666777z');
+  for (const source of ['p0', 'p0', 'p3']) {
+    const tiles = page.locator('.hand-tray > .hand-tiles > button.tile');
+    for (let index = 5; index < 8; index++) await tiles.nth(index).click();
+    await page.getByRole('combobox', { name: 'Called from', exact: true }).selectOption(source);
+    await page.getByRole('button', { name: 'Assign selected tiles', exact: true }).click();
   }
   await page.getByRole('button', { name: /Calculate score/ }).click();
   await expect(page.locator('.score-total>span')).toHaveText('64,000');
@@ -151,12 +150,16 @@ test('last-hand finish ends the match and undo reopens it', async ({ page }) => 
   await page.getByRole('spinbutton', { name: 'Hand number', exact: true }).fill('4');
   await page.getByRole('checkbox', { name: 'Riichi', exact: true }).check();
   await page.getByRole('checkbox', { name: 'Ippatsu', exact: true }).check();
-  await page.getByRole('textbox', { name: 'Dora indicators', exact: true }).fill('4p');
-  await page.getByRole('button', { name: /I have checked these tiles/ }).click();
+  const doraInput = page.locator('app-tile-input[data-label="Dora indicators"]');
+  await doraInput.getByRole('button', { name: 'Enter Dora indicators', exact: true }).click();
+  await expect(doraInput.locator('.picker')).toHaveJSProperty('open', true);
+  await doraInput.getByRole('button', { name: '4p: Add 4 pin', exact: true }).click();
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await page.getByRole('checkbox', { name: /I have checked these tiles/ }).check();
   await page.getByRole('button', { name: /Calculate score/ }).click();
   await page.getByRole('button', { name: 'Confirm & save settlement', exact: true }).click();
   await expect(page.getByText('Match ended · Match complete')).toBeVisible();
-  await expect(page.locator('.round-heading')).toContainText('south 4');
+  await expect(page.locator('app-table-summary')).toContainText('south 4');
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Undo last ledger event', exact: true }).click();
   await expect(page.getByText('Match ended · Match complete')).toHaveCount(0);

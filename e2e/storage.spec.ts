@@ -7,6 +7,8 @@ test('storage usage updates and warns at 80% and 95%, including zh-TW', async ({
     });
   });
   await page.goto('/');
+  await expect(page.locator('app-storage-status')).toHaveCount(0);
+  await page.getByRole('link', { name: 'Rule coverage', exact: true }).click();
   const panel = page.getByRole('region', { name: 'Browser storage', exact: true });
   await expect(panel.getByRole('meter')).toHaveAttribute('value', '20');
   await expect(panel.locator('.storage-warning')).toHaveCount(0);
@@ -34,10 +36,13 @@ for (const scenario of ['rejected', 'missing-quota', 'zero-quota'] as const) {
       });
     }, scenario);
     await page.goto('/');
+    await page.getByRole('link', { name: 'Rule coverage', exact: true }).click();
     await expect(
       page.getByText('Storage usage is unavailable in this browser. Saving may still work.'),
     ).toBeVisible();
     await expect(page.getByRole('meter')).toHaveCount(0);
+    await page.getByRole('link', { name: 'My table', exact: true }).click();
+    await expect(page.locator('app-storage-status')).toHaveCount(0);
     await expect(page.getByRole('button', { name: /Start match/ })).toBeEnabled();
   });
 }

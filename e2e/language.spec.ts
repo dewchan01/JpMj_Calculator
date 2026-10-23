@@ -29,7 +29,7 @@ test('zh-TW switches current results, persists offline and preserves user names'
   await page.reload();
   await expect(page.getByRole('heading', { name: 'My table name' })).toBeVisible();
   await expect(page.getByText('暗手 14 張・應有 14 張')).toBeVisible();
-  await page.getByRole('button', { name: /我已核對牌張/ }).click();
+  await page.getByRole('checkbox', { name: /我已核對牌張/ }).check();
   await page.getByRole('button', { name: /計算點數/ }).click();
   await page.getByRole('button', { name: '確認並儲存結算' }).click();
   await expect(page.locator('.history-event summary')).toContainText('和牌・East');
@@ -56,12 +56,14 @@ test('zh-TW switches current results, persists offline and preserves user names'
   expect(errors).toEqual([]);
 });
 
-test('Traditional Chinese browser defaults, validation, coverage and storage fallback', async ({
+test('English defaults in a Chinese browser, selected language, validation and storage fallback', async ({
   browser,
 }) => {
   const context = await browser.newContext({ locale: 'zh-TW' });
   const page = await context.newPage();
   await page.goto('http://localhost:4300/');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await page.getByRole('combobox', { name: 'Language / 語言' }).selectOption('zh-TW');
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-TW');
   await page.getByRole('link', { name: '快速計分', exact: true }).click();
   await page.getByRole('button', { name: /計算點數/ }).click();

@@ -5,6 +5,40 @@ templates and styles in their respective TypeScript, HTML and CSS files.
 
 ## Responsibilities
 
+`features/scoring/table-summary` renders the spatial match overview. Player positions follow the
+initial seating order; seat winds and the dealer badge follow the current dealer. The center shows
+round, honba and funded Riichi escrow. Three-player tables omit the fourth seat. Keep score and
+ledger calculations in the domain layer; this component only displays the current snapshot.
+
+Maintain translations in `core/i18n/zh-tw.json` and `ja.json`. Run `npm run i18n:generate` after
+editing Traditional Chinese to regenerate `zh-cn.json`, then format. English source keys and
+interpolation placeholders must match across catalogs; names and saved domain data stay unchanged.
+Japanese uses `ja`. Translation lookup code belongs in `messages.ts`, not catalog data.
+
+The hand workspace collects all tiles through one palette, notation editor or photo review.
+After collection, select tiles and assign them to Chi/Pon/Kan or extracted North in one undoable
+operation. Unassigned tiles form the concealed hand. Groups can be returned to the collection
+without another photo. Caller, called-tile position and call order remain explicit.
+Dora/Ura retain separate targets. Replacing the full collection resets its assignments; Undo restores them.
+
+`tiles/tile-entry-dialog` lazily opens the shared entry tools in a native modal: a bottom sheet on
+mobile and a centered dialog on desktop. Keep palette, text and photo entry behind one button per tile field.
+Mobile sheets support downward drag dismissal from the top, short-drag snap-back and reduced-motion
+preferences. Content scrolling, interactive controls, Done and Escape remain separate from dragging.
+The separate Add meld form is removed; use collection assignments instead.
+The hand toolbar's Delete a tile mode removes individual tiles and supports Undo.
+Undo and Redo appear inside Enter tiles, keeping the main hand toolbar focused on Delete and Clear.
+Enter tiles sits inside the green hand tray. Winning-tile, Delete and Clear controls appear in an
+attached footer only when hand tiles exist. Melds/North use a separate step-02 card, with a compact
+verification checkbox after the summary. Edits clear verification, and settlement still requires it.
+Indicator fields use compact entry controls. Storage usage appears only on the Rule coverage page;
+home and scoring pages omit the panel.
+
+`tiles/tile-picker` renders the image palette shared by the hand and `tiles/tile-input` fields.
+Meld/Dora/Ura inputs show selected tile images with removal controls; notation is an optional
+advanced editor. Keep new tile-valued fields on these components instead of adding raw-text-only
+entry. Provider settings are read exclusively from `config.json`.
+
 Organize files by feature, keeping each component's template beside its TypeScript file:
 
 ```text

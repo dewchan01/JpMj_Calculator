@@ -1,3 +1,4 @@
+import { TileArt } from '../../../shared/tile-art/tile-art';
 import { Component, computed, inject, input, output } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { tileLabel } from '../../../../../../../packages/mahjong-core/index';
@@ -6,7 +7,7 @@ import { ruleName, type RuleProfile } from '../../../../../../../packages/mahjon
 import { I18n, TranslatePipe } from '../../../core/i18n/i18n';
 @Component({
   selector: 'app-match-history',
-  imports: [DatePipe, DecimalPipe, TranslatePipe],
+  imports: [TileArt, DatePipe, DecimalPipe, TranslatePipe],
   templateUrl: './match-history.html',
 })
 export class MatchHistory {

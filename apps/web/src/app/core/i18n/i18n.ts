@@ -15,20 +15,23 @@ export class I18n {
     } catch {
       /* Language switching also works when browser storage is disabled. */
     }
-    const browser = this.document.defaultView?.navigator.language ?? 'en';
     this.set(
-      preferred === 'zh-TW' || preferred === 'en'
+      preferred === 'zh-TW' || preferred === 'zh-CN' || preferred === 'ja' || preferred === 'en'
         ? preferred
-        : /^zh\b/i.test(browser)
-          ? 'zh-TW'
-          : 'en',
+        : 'en',
     );
   }
   set(language: Language): void {
     this.locale.set(language);
     this.document.documentElement.lang = language;
     this.document.title =
-      language === 'zh-TW' ? 'Riichi / table — 日麻計分' : 'Riichi / table — Mahjong scorer';
+      language === 'ja'
+        ? 'Riichi / table — 麻雀点数計算'
+        : language === 'zh-CN'
+          ? 'Riichi / table — 日麻计分'
+          : language === 'zh-TW'
+            ? 'Riichi / table — 日麻計分'
+            : 'Riichi / table — Mahjong scorer';
     try {
       this.document.defaultView?.localStorage.setItem('riichi-language', language);
     } catch {
@@ -41,11 +44,18 @@ export class I18n {
   tile(tile: Tile): string {
     if (this.locale() === 'en') return tileName(tile);
     const kind = tile.kind;
+    if (this.locale() === 'ja') {
+      return kind.type === 'suited'
+        ? `${tile.isRed ? '赤' : ''}${kind.rank}${{ man: '萬', pin: '筒', sou: '索' }[kind.suit]}`
+        : kind.type === 'wind'
+          ? this.t(kind.wind)
+          : { white: '白', green: '發', red: '中' }[kind.dragon];
+    }
     return kind.type === 'suited'
-      ? `${tile.isRed ? '赤' : ''}${kind.rank}${{ man: '萬', pin: '筒', sou: '索' }[kind.suit]}`
+      ? `${tile.isRed ? '赤' : ''}${kind.rank}${{ man: this.locale() === 'zh-CN' ? '万' : '萬', pin: '筒', sou: '索' }[kind.suit]}`
       : kind.type === 'wind'
-        ? `${this.t(kind.wind)}風`
-        : { white: '白', green: '發', red: '中' }[kind.dragon];
+        ? `${this.t(kind.wind)}${this.locale() === 'zh-CN' ? '风' : '風'}`
+        : { white: '白', green: this.locale() === 'zh-CN' ? '发' : '發', red: '中' }[kind.dragon];
   }
 }
 @Pipe({ name: 't', pure: false })

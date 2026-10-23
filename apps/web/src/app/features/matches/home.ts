@@ -4,7 +4,11 @@ import { applyEach, form, FormField, maxLength } from '@angular/forms/signals';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { balances, type Match } from '../../../../../../packages/mahjong-core/ledger';
-import { rankedRules, presetRules } from '../../../../../../packages/mahjong-rules/index';
+import {
+  rankedRules,
+  presetRules,
+  type RuleProfile,
+} from '../../../../../../packages/mahjong-rules/index';
 import { RulePicker } from '../../shared/rules/rule-picker';
 import { Repository } from './data-access/repository';
 @Component({
@@ -39,6 +43,29 @@ export class Home {
       current.preset === 'custom'
         ? { ...current, playerCount: count, startingPoints: next.startingPoints }
         : next,
+    );
+  }
+  updateRules(profile: RuleProfile): void {
+    // A fast preset change can arrive before the child has rendered a new player count.
+    const count = this.count();
+    if (profile.playerCount === count) {
+      this.rules.set(profile);
+      return;
+    }
+    const preset =
+      profile.preset === 'm-league' && count === 3
+        ? 'mahjong-soul'
+        : (profile.preset ?? 'mahjong-soul');
+    const baseline = presetRules(preset, count);
+    this.rules.set(
+      preset === 'custom'
+        ? {
+            ...profile,
+            id: baseline.id,
+            playerCount: count,
+            startingPoints: baseline.startingPoints,
+          }
+        : baseline,
     );
   }
   constructor() {

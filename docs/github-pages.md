@@ -21,6 +21,7 @@ npm.cmd run build -- --configuration production,pages --base-href /JpMj_Calculat
 
 GitHub serves only the build artifact, including public assets. Test photos, source files and local
 IndexedDB data are not bundled. The hosted origin has its own database; local matches are not
-automatically transferred. Photo recognition is still explicitly labelled as a mock.
+automatically transferred. API photo recognition requires the configured provider to allow CORS
+from this Pages origin. API URLs are public client-side settings; never put secret keys in them.
 
 See [GitHub's custom workflow documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).

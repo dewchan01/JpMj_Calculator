@@ -1,0 +1,24 @@
+<button class="secondary" [attr.aria-label]="label() | t" (click)="show()">
+  {{ buttonText() ?? label() | t }}
+</button>
+<dialog
+  #dialog
+  [attr.aria-label]="label() | t"
+  (close)="opened.set(false)"
+  (cancel)="$event.preventDefault(); close()"
+  (touchstart)="touchStart($event)"
+  (touchmove)="touchMove($event)"
+  (touchend)="touchEnd()"
+  (touchcancel)="touchEnd(true)"
+  [class.dragging]="dragging()"
+  [style.transform]="dragOffset() ? 'translateY(' + dragOffset() + 'px)' : null"
+>
+  <div class="sheet-grip" aria-hidden="true"><span></span></div>
+  <header>
+    <h2>{{ label() | t }}</h2>
+    <button class="secondary" (click)="close()">{{ 'Done' | t }}</button>
+  </header>
+  @if (opened()) {
+    <ng-container [ngTemplateOutlet]="content()" />
+  }
+</dialog>

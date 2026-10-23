@@ -1,0 +1,43 @@
+:host {
+  display: block;
+  margin: 1rem 0;
+}
+.choose-image {
+  margin-bottom: 0.25rem;
+}
+details {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+.review-tray {
+  min-height: 100px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--tray-surface);
+  border-radius: 8px;
+  margin: 0.75rem 0;
+}
+.review-tile {
+  width: 90px;
+  text-align: center;
+}
+app-tile-art {
+  width: 45px;
+  height: 60px;
+}
+small {
+  display: block;
+}
+.review-actions {
+  display: flex;
+  justify-content: center;
+}
+.review-actions button {
+  min-width: 28px;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}

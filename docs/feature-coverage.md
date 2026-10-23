@@ -24,20 +24,20 @@
 
 ## Application
 
-| Area                                                                 | Status                                                                                    |
-| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| English / zh-TW                                                      | Implemented including new controls, results and errors                                    |
-| Tile palette/notation/winning tile, undo/redo                        | Implemented; direct tile reorder controls still absent                                    |
-| Chi/Pon/Kan, provider/called tile, Kakan provenance/call order       | Implemented; individual meld changes use remove/recreate                                  |
-| IndexedDB matches/drafts/history                                     | Implemented; win profiles/inputs/results, draw declarations and round before/after stored |
-| Duplicate prevention, funded escrow, audit/replay, latest-event undo | Implemented                                                                               |
-| Historical editing                                                   | Older edits blocked; latest event can be undone                                           |
-| JSON export / match deletion                                         | Implemented; import and post-creation seat/name editor absent                             |
-| Production offline PWA                                               | Implemented; Chromium offline regression passes                                           |
-| Real iPhone Safari / Android device validation                       | Not performed                                                                             |
-| Photo capture/file fallback                                          | Implemented; recognizer is fixed mock, no inference/upload                                |
-| Crop/rotate, persistent captures, multiple-photo merge               | Not implemented                                                                           |
-| Backend/sync/auth                                                    | Deferred; unnecessary for local scoring                                                   |
+| Area                                                                 | Status                                                                                                                       |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| English / zh-TW                                                      | Implemented including new controls, results and errors                                                                       |
+| Tile palette/notation/winning tile, undo/redo                        | Implemented; direct tile reorder controls still absent                                                                       |
+| Chi/Pon/Kan, provider/called tile, Kakan provenance/call order       | Implemented; individual meld changes use remove/recreate                                                                     |
+| IndexedDB matches/drafts/history                                     | Implemented; win profiles/inputs/results, draw declarations and round before/after stored                                    |
+| Duplicate prevention, funded escrow, audit/replay, latest-event undo | Implemented                                                                                                                  |
+| Historical editing                                                   | Older edits blocked; latest event can be undone                                                                              |
+| JSON export / match deletion                                         | Implemented; import and post-creation seat/name editor absent                                                                |
+| Production offline PWA                                               | Implemented; Chromium offline regression passes                                                                              |
+| Real iPhone Safari / Android device validation                       | Not performed                                                                                                                |
+| Photo capture/file fallback                                          | Configurable detection API with validated suggestions; optional offline mock. Live provider accuracy/CORS remain unverified. |
+| Crop/rotate, persistent captures, multiple-photo merge               | Not implemented                                                                                                              |
+| Backend/sync/auth                                                    | Deferred; unnecessary for local scoring                                                                                      |
 
 ## Validation
 
