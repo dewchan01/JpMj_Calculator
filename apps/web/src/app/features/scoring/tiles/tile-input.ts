@@ -1,3 +1,4 @@
+import { ErrorNotice } from '../../../shared/error-notice/error-notice';
 import { Component, computed, inject, input, linkedSignal, model, signal } from '@angular/core';
 import { form, FormField } from '@angular/forms/signals';
 import { kindIndex, parseTiles, type Tile } from '../../../../../../../packages/mahjong-core/index';
@@ -9,7 +10,15 @@ import { PhotoCapture } from '../capture/photo-capture';
 
 @Component({
   selector: 'app-tile-input',
-  imports: [TilePicker, TileArt, TranslatePipe, FormField, TileEntryDialog, PhotoCapture],
+  imports: [
+    ErrorNotice,
+    TilePicker,
+    TileArt,
+    TranslatePipe,
+    FormField,
+    TileEntryDialog,
+    PhotoCapture,
+  ],
   templateUrl: './tile-input.html',
   styleUrl: './tile-input.css',
   host: { '[attr.data-label]': 'label()' },

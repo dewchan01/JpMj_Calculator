@@ -1,5 +1,10 @@
 import { parseTiles } from '../../../../../../../packages/mahjong-core/index';
-import { type TilePrediction, type TileRecognizer } from './recognizer';
+import {
+  type TilePrediction,
+  type TileRecognizer,
+  type RecognitionOptions,
+  type RecognitionResult,
+} from './recognizer';
 
 export const DETECTION_TIMEOUT_MS = 30_000;
 
@@ -82,7 +87,7 @@ export class ApiTileRecognizer implements TileRecognizer {
     private readonly timeoutMs = DETECTION_TIMEOUT_MS,
   ) {}
 
-  async recognize(input: Blob, options: { playerCount: 3 | 4; signal?: AbortSignal }) {
+  async recognize(input: Blob, options: RecognitionOptions): Promise<RecognitionResult> {
     const endpoint = detectionEndpoint(this.endpoint);
     const bytes = new Uint8Array(await input.arrayBuffer());
     let binary = '';

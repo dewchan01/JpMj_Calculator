@@ -47,6 +47,13 @@ export function parseCaptureConfig(value: unknown): CaptureConfig {
       )
         throw invalid();
       const classMap = 'classMap' in model ? model.classMap : {};
+      const ignoredClasses = 'ignoredClasses' in model ? model.ignoredClasses : undefined;
+      if (
+        ignoredClasses !== undefined &&
+        (!Array.isArray(ignoredClasses) ||
+          ignoredClasses.some((label: unknown) => typeof label !== 'string' || !label.trim()))
+      )
+        throw invalid();
       if (
         typeof classMap !== 'object' ||
         classMap === null ||
@@ -62,6 +69,7 @@ export function parseCaptureConfig(value: unknown): CaptureConfig {
           version: model.version,
           publishableApiKey: model.publishableApiKey.trim(),
           classMap: classMap as Record<string, string>,
+          ...(ignoredClasses === undefined ? {} : { ignoredClasses: ignoredClasses as string[] }),
         },
       };
     }

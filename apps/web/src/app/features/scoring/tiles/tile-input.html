@@ -54,7 +54,7 @@
           </p>
           <button class="secondary" (click)="edit()">{{ 'Apply notation' | t }}</button>
           @if (error()) {
-            <p class="banner error" role="alert">{{ error() | t }}</p>
+            <app-error-notice [message]="error()" />
           }
         </details>
         <app-photo-capture [playerCount]="playerCount()" (tilesConfirmed)="applyPhoto($event)" />

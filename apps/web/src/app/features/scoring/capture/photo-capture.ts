@@ -1,3 +1,4 @@
+import { ErrorNotice } from '../../../shared/error-notice/error-notice';
 import { PercentPipe } from '@angular/common';
 import { Component, DestroyRef, computed, inject, input, output, signal } from '@angular/core';
 import { form, FormField } from '@angular/forms/signals';
@@ -9,7 +10,7 @@ import { createRecognizer } from './create-recognizer';
 
 @Component({
   selector: 'app-photo-capture',
-  imports: [FormField, TranslatePipe, PercentPipe, TileArt],
+  imports: [ErrorNotice, FormField, TranslatePipe, PercentPipe, TileArt],
   templateUrl: './photo-capture.html',
   styleUrl: './photo-capture.css',
 })

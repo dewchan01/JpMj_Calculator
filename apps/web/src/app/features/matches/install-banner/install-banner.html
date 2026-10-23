@@ -1,0 +1,38 @@
+@if (!installed() && !dismissed()) {
+  <dialog
+    #popup
+    class="install-banner"
+    [attr.aria-label]="'Install app' | t"
+    aria-describedby="install-reminder-description"
+    (cancel)="$event.preventDefault(); dismissed.set(true)"
+  >
+    <span class="install-icon" aria-hidden="true">↓</span>
+    <h2>{{ 'Keep your table close' | t }}</h2>
+    <p id="install-reminder-description">
+      {{
+        'Install this app from your browser menu or Share → Add to Home Screen. Manual scoring works offline after the first load.'
+          | t
+      }}
+    </p>
+    <p class="hint">
+      {{
+        'Choose Next time to see this reminder again on your next visit. Close hides it on this browser.'
+          | t
+      }}
+    </p>
+    @if (error()) {
+      <app-error-notice [message]="error()" />
+    }
+    <div class="action-row">
+      @if (available()) {
+        <button class="primary" (click)="install()" [disabled]="busy()">
+          {{ 'Install app' | t }}
+        </button>
+      }
+      <button class="secondary" autofocus (click)="dismissed.set(true)">
+        {{ 'Next time' | t }}
+      </button>
+      <button class="quiet" (click)="closePermanently()">{{ 'Close' | t }}</button>
+    </div>
+  </dialog>
+}

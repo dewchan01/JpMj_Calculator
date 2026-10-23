@@ -1,3 +1,4 @@
+import { ErrorNotice } from '../../../shared/error-notice/error-notice';
 import { Component, inject, input, output } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -7,7 +8,7 @@ import { ruleName, type RuleProfile } from '../../../../../../../packages/mahjon
 import { I18n, TranslatePipe } from '../../../core/i18n/i18n';
 @Component({
   selector: 'app-score-result',
-  imports: [DecimalPipe, RouterLink, TranslatePipe],
+  imports: [ErrorNotice, DecimalPipe, RouterLink, TranslatePipe],
   templateUrl: './score-result.html',
 })
 export class ScoreResultView {

@@ -27,6 +27,8 @@ test('mobile match, draft, verified settlement, escrow, history, reload and offl
   await page.screenshot({ path: 'artifacts/scorer-mobile.png', fullPage: true });
   await page.getByRole('button', { name: /Confirm & save settlement/ }).click();
   await expect(page.getByRole('heading', { name: 'Auditable hand history' })).toBeVisible();
+  await expect(page.locator('app-table-summary .selected')).toHaveCount(0);
+  await expect(page.locator('app-table-summary .yakitori-label')).toHaveCount(3);
   await page.reload();
   await page.getByRole('button', { name: /History/ }).click();
   await expect(page.getByText('Win · Player 2')).toBeVisible();

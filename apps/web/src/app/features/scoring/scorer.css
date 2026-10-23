@@ -127,3 +127,12 @@
     padding: 16px;
   }
 }
+.tabs {
+  position: sticky;
+  top: var(--app-header-height, 0px);
+  z-index: 10;
+  min-height: 64px;
+  margin-block: 20px;
+  background: var(--page);
+  border-bottom: 1px solid var(--border);
+}

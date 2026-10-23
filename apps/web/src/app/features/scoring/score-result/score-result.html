@@ -3,11 +3,7 @@
   @if (result(); as r) {
     @if (!r.isValid) {
       <h2>{{ 'Check your hand' | t }}</h2>
-      <ul class="validation-errors">
-        @for (message of r.errors; track message) {
-          <li>{{ message | t }}</li>
-        }
-      </ul>
+      <app-error-notice [messages]="r.errors" />
     } @else {
       <div class="score-total">
         <span>{{ r.winnerReceives | number }}</span>

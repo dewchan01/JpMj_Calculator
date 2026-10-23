@@ -26,7 +26,7 @@ After editing, reload the app; the running app reads configuration once per page
   "recognition": {
     "provider": "roboflow",
     "timeoutMs": 30000,
-    "endpoint": "https://www.riichicam.com/api/detect-server",
+    "endpoint": "https://www.example.com/api/detect-server",
     "roboflow": {
       "model": "mahjong-baq4s-q6hto",
       "version": 1,
@@ -37,7 +37,7 @@ After editing, reload the app; the running app reads configuration once per page
 }
 ```
 
-Keep the full class map already provided in the real config; the example above is abbreviated.
+The example class map is abbreviated. Keep the full map in the real config: B=bamboo, C=characters, D=dots, EW/SW/WW/NW for winds, and WD/GD/RD for dragons. Optional `ignoredClasses` excludes explicitly listed labels before normalization; unknown labels otherwise cause an error.
 `endpoint` is required only for `api`. The Roboflow model, version and publishable key are used
 only for `roboflow`; `classMap` defaults to direct tile labels if omitted. `timeoutMs` defaults
 to 30,000 ms. Use `"mock"` for offline demo suggestions.
@@ -49,10 +49,7 @@ The [provider link](https://app.roboflow.com/settings/api) is for the administra
 
 The optional `recognition.roboflow` section in `config.json` contains the model slug, version,
 an optional publishable key, and class-label mappings. Set `recognition.provider` to `roboflow`
-to select it, or keep `api` for the JSON endpoint. The default candidate is
-`mahjong-baq4s-q6hto`, version 1; its class map assumes B=bamboo, C=characters and D=dots.
-Check this mapping against your photos. Unsupported flower labels are rejected, and red-five
-support for this model has not been established; correct those tiles manually.
+to select it, or keep `api` for the JSON endpoint. The configured model is restored to `mahjong-baq4s-q6hto`, version 1, following worse physical-photo results with the candidate. Its full suit and honor mapping is restored and candidate-specific exclusions are removed. Red-five recognition for the restored model remains unverified; review those tiles manually.
 
 The browser adapter uses the official `inferencejs` SDK with a downloaded model, rather than
 sending images to the hosted inference endpoint. Model initialization needs network access and
@@ -72,7 +69,7 @@ the app. API settings are not shown in the UI and old browser endpoint preferenc
 {
   "recognition": {
     "provider": "api",
-    "endpoint": "https://www.riichicam.com/api/detect-server",
+    "endpoint": "https://www.example.com/api/detect-server",
     "timeoutMs": 30000
   }
 }
@@ -169,3 +166,23 @@ the browser. Even persistent storage can be deleted by the user. Export match JS
 There is currently no JSON import UI or cloud sync.
 
 Source: [MDN storage quotas and eviction](https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria).
+
+## Swappable recognizers and model evaluation
+
+`TileRecognizer` is the polymorphic interface. `ApiTileRecognizer`, `RoboflowRecognizer`, and `MockTileRecognizer` implement it; `createRecognizer` selects an implementation from configuration. The photo UI consumes the shared `RecognitionResult`, with normalized boxes, tile kinds, red-five flags, confidence and model identity. A new provider implements this interface and is registered in the factory. Another model using the same Roboflow protocol needs only model configuration, class mappings and explicit ignored labels, rather than another subclass. Polymorphism handles interchangeability; it does not improve model accuracy.
+
+The previously tried [candidate model page](https://universe.roboflow.com/riichimahjongdetection/riichi-mahjong-detection) lists `riichi-mahjong-detection/3`, red-five labels, and 99% mAP@50 on its own data. This is not a measured improvement on this app's physical-tile photos. Browser model access and inference still need live verification with the configured publishable key.
+
+For a comparison, use the same original physical-tile photos for both models. Include straight and angled views, bright and dim lighting, red fives, honors and repeated tiles. Write the expected tile counts before recognition. Record the raw preview before correcting it; changing lighting or manually correcting predictions invalidates a direct comparison.
+
+| Photo           | Expected tiles        | Model/version         | Missed | Wrong label | Extra | Red-five errors | Elapsed ms |
+| --------------- | --------------------- | --------------------- | ------ | ----------- | ----- | --------------- | ---------- |
+| straight-bright | Fill in tile notation | baseline or candidate |        |             |       |                 |            |
+
+Compare hands with every tile correct as well as individual mistakes; a high per-tile score can still leave many hands needing correction. No evaluation photos currently exist in this workspace, so the model configuration and adapter behavior can be tested here, but a physical-photo accuracy comparison cannot yet be completed. Keep reviewing predictions before scoring.
+
+## Recognition and artwork caching
+
+The factory keeps one Roboflow recognizer for the active configuration. Its model worker remains loaded after successful recognition and is reused across photo inputs and dialogs during the current visit. Requests are serialized; cancellation, failures, or configuration changes dispose of the worker so a retry starts cleanly. The cache does not retain photos or prediction results. Reloading closes the worker and requires initialization again; model-weight downloads still follow the SDK and remote server cache rules.
+
+Tile artwork uses eager image loading and stable bordered preview frames. The production PWA already prefetches `/tiles/**/*.svg`, allowing artwork to be served from its versioned cache across visits after a successful install. Development mode uses the browser HTTP cache and does not enable the production service worker.

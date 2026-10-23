@@ -13,6 +13,9 @@ for (const count of [3, 4])
       const table = page.locator('app-table-summary');
       await expect(table.locator('.player-seat')).toHaveCount(count);
       await expect(table.locator('.seat-label small')).toHaveText('Dealer');
+      await expect(table.locator('.player-seat.dealer')).toHaveCount(1);
+      await expect(table.locator('.yakitori-label')).toHaveCount(count);
+      await expect(table.locator('.selected .winner-label')).toHaveText('Selected winner');
       await expect(table.locator('.table-round')).toHaveText('east 1');
       await expect(table.locator('.table-honba')).toHaveText('Honba 0');
       await expect(table.locator('.table-pot strong')).toHaveText('0');
@@ -34,6 +37,16 @@ for (const count of [3, 4])
       await table.screenshot({ path: `artifacts/table-${count}p-${width}.png` });
       await page.getByRole('button', { name: 'Dark mode', exact: true }).click();
       await table.screenshot({ path: `artifacts/table-${count}p-${width}-dark.png` });
+      const tabs = page.locator('.tabs');
+      await tabs.evaluate((element) => element.scrollIntoView({ block: 'start' }));
+      const headerBottom = await page
+        .locator('.sticky-header')
+        .evaluate((element) => element.getBoundingClientRect().bottom);
+      await expect
+        .poll(() => tabs.evaluate((element) => element.getBoundingClientRect().top))
+        .toBeCloseTo(headerBottom, 0);
+      await tabs.getByRole('button', { name: 'Record draw', exact: true }).click();
+      await expect(table.locator('.selected')).toHaveCount(0);
       const dark = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
         .analyze();

@@ -2,11 +2,7 @@
   <section class="card round-review" aria-live="polite">
     <h2>{{ 'Round settlement' | t }}</h2>
     @if (!r.isValid) {
-      <ul class="validation-errors">
-        @for (error of r.errors; track error) {
-          <li>{{ error | t }}</li>
-        }
-      </ul>
+      <app-error-notice [messages]="r.errors" />
     } @else {
       <p class="eyebrow">{{ r.outcome | t }}</p>
       <p class="hint">{{ (r.dealerRepeats ? 'Dealer repeats' : 'Dealer rotates') | t }}</p>

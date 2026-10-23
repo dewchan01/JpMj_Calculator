@@ -12,6 +12,17 @@ const roboflow = {
   classMap: { EW: '1z' },
 };
 describe('config.json recognition provider selection', () => {
+  it('reuses Roboflow across dialogs and replaces it when the model configuration changes', () => {
+    const config = parseCaptureConfig({ recognition: { provider: 'roboflow', roboflow } });
+    const first = createRecognizer(config);
+    expect(createRecognizer(structuredClone(config))).toBe(first);
+    const replacement = createRecognizer(
+      parseCaptureConfig({
+        recognition: { provider: 'roboflow', roboflow: { ...roboflow, version: 2 } },
+      }),
+    );
+    expect(replacement).not.toBe(first);
+  });
   it('switches providers while retaining both settings without loading a model', () => {
     const settings = {
       provider: 'api',
@@ -69,6 +80,19 @@ describe('config.json recognition provider selection', () => {
     expect(parsed).toMatchObject({
       roboflow: { model: 'test', version: 2, publishableApiKey: 'public', classMap: {} },
     });
+  });
+  it('accepts explicit ignored labels and rejects malformed exclusion lists', () => {
+    const recognition = { provider: 'roboflow', roboflow: { ...roboflow, ignoredClasses: ['0z'] } };
+    expect(parseCaptureConfig({ recognition })).toMatchObject({
+      roboflow: { ignoredClasses: ['0z'] },
+    });
+    for (const ignoredClasses of ['0z', [1], [''], null]) {
+      expect(() =>
+        parseCaptureConfig({
+          recognition: { ...recognition, roboflow: { ...roboflow, ignoredClasses } },
+        }),
+      ).toThrow();
+    }
   });
   it.each([0, 999, 120001, 1.5, '30000', null])('rejects invalid timeout %s', (timeoutMs) => {
     expect(() => parseCaptureConfig({ recognition: { provider: 'mock', timeoutMs } })).toThrow();

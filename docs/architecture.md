@@ -33,3 +33,25 @@ names are never run through the catalog. English is the initial default regardle
 language; a saved selection takes precedence. The locale service updates document language/title
 and continues in memory if localStorage is unavailable. Angular Chinese locale and extra day-period
 data localize dates, including the `B` time-format token.
+
+## Installation, support, and build details
+
+The home page offers installation in a popup that follows the light or dark theme and hides it when running in standalone PWA mode. Next time (or Escape) dismisses it for this visit; it returns on reload or the next home-page visit. Close stores a permanent dismissal in this browser’s local storage. Clearing site data restores the reminder. On iOS, use Share → Add to Home Screen. The Install button appears when the browser provides an installation prompt.
+
+Set the top-level `supportEmail` field in `apps/web/public/config.json` to your support address. Leave it empty to hide the footer contact link. This file is public; do not put private credentials in it.
+
+`npm start` and `npm run build` generate `version.json` from the package version and Git commit. A footer asterisk means the build included local changes. Source archives without Git metadata show an unknown commit.
+
+Photo recognition requires internet access. Manual tile entry and scoring work offline after the app has cached successfully. Drag collected tiles to reorder them; keyboard users can focus a tile and press Alt + Left/Right. Tap a collected tile to remove it, and use Undo to recover it.
+
+Table labels distinguish the selected hand-entry winner from the dealer and point totals. Yakitori means no recorded hand win (`win` or effective `multipleRon` winner); it is informational and applies no penalty. Draws, including Nagashi settlements, do not clear this label. Undoing a settlement recalculates the labels.
+
+## Action feedback
+
+Scoring errors are associated with the action that produced them: tile notation, meld assignment, a specific Pon upgrade, North extraction, Riichi deposit, calculation, settlement, or history undo. Each message appears once beside those controls instead of being repeated at the top or in unrelated cards. Assignment errors clear when the selected tiles change or are kept concealed.
+
+The shared `ErrorNotice` component in `shared/error-notice` announces the translated message, focuses it for keyboard and screen-reader users, and brings it into view when it would be offscreen or behind sticky navigation. Input errors inside the tile-entry dialog remain within that dialog.
+
+All error panels use `ErrorNotice`, including home, installation, recognition, manual input, scoring and round validation. The component accepts a single message or a list, with the same padding, border, typography and light/dark colors. Action feedback focuses and scrolls into view; background configuration notices use the same presentation with automatic focus disabled.
+
+Quick score (`/score`) is independent of saved matches (`/score/:id`). It has its own rules and temporary hand state and cannot save settlements into an ongoing match. Match drafts remain keyed by match ID in IndexedDB. Navigation highlights My table while a saved match is open and Quick score only for the standalone calculator. An end-to-end test switches between a 4P Tenhou game and a 3P quick calculation and checks the original draft, balances, escrow and ledger afterward.

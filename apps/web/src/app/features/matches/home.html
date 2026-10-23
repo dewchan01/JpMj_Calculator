@@ -1,3 +1,4 @@
+<app-install-banner />
 <section class="page-heading">
   <p class="eyebrow">{{ 'A place for every hand' | t }}</p>
   <h1>
@@ -8,7 +9,7 @@
   <p class="muted">{{ 'A little less counting. A little more Mahjong.' | t }}</p>
 </section>
 @if (error()) {
-  <p class="banner error" role="alert">{{ error() | t }}</p>
+  <app-error-notice [message]="error()" />
 }
 <div class="home-grid">
   <section class="card setup-card">

@@ -1,0 +1,30 @@
+﻿@if (content().length) {
+  <div #alert class="error-notice" role="alert" tabindex="-1">
+    <svg
+      class="error-icon"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="m9 9 6 6m0-6-6 6" />
+    </svg>
+    <div class="error-content">
+      @if (content().length === 1) {
+        <p>{{ content()[0] | t }}</p>
+      } @else {
+        <ul>
+          @for (message of content(); track $index) {
+            <li>{{ message | t }}</li>
+          }
+        </ul>
+      }
+    </div>
+  </div>
+}

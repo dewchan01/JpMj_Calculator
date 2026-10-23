@@ -1,3 +1,5 @@
+import { ErrorNotice } from '../../shared/error-notice/error-notice';
+import { InstallBanner } from './install-banner/install-banner';
 import { I18n, TranslatePipe } from '../../core/i18n/i18n';
 import { Component, inject, signal } from '@angular/core';
 import { applyEach, form, FormField, maxLength } from '@angular/forms/signals';
@@ -12,7 +14,16 @@ import {
 import { RulePicker } from '../../shared/rules/rule-picker';
 import { Repository } from './data-access/repository';
 @Component({
-  imports: [RulePicker, TranslatePipe, FormField, RouterLink, DecimalPipe, DatePipe],
+  imports: [
+    ErrorNotice,
+    InstallBanner,
+    RulePicker,
+    TranslatePipe,
+    FormField,
+    RouterLink,
+    DecimalPipe,
+    DatePipe,
+  ],
   templateUrl: './home.html',
 })
 export class Home {

@@ -192,3 +192,38 @@
     font-size: 0.63rem;
   }
 }
+.player-seat.dealer {
+  background: #fff4d8;
+  border-color: #9b711f;
+}
+.dealer .seat-label small {
+  color: #715014;
+  font-weight: 700;
+}
+.player-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 0.65rem;
+  line-height: 1.5;
+}
+.player-status span {
+  padding: 2px 6px;
+  border-radius: 5px;
+}
+.winner-label {
+  background: var(--green);
+  color: var(--page);
+}
+.yakitori-label {
+  border: 1px dashed var(--muted);
+  color: var(--muted);
+}
+:host-context([data-theme='dark']) .player-seat.dealer {
+  background: #40351e;
+  border-color: #d7b969;
+}
+:host-context([data-theme='dark']) .dealer .seat-label small {
+  color: #f3d58d;
+}

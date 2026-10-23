@@ -1,3 +1,6 @@
+<p class="hint">
+  {{ 'Photo recognition requires internet access. Manual tile entry works offline.' | t }}
+</p>
 @if (configuration.value()?.provider === 'roboflow') {
   <p class="hint">
     {{ 'Roboflow browser recognition selected. Model downloads require internet access.' | t }}
@@ -9,6 +12,12 @@
         | t
     }}
   </p>
+}
+@if (configuration.error()) {
+  <app-error-notice [message]="configuration.error()" [focusOnShow]="false" />
+}
+@if (error()) {
+  <app-error-notice [message]="error()" />
 }
 <label class="choose-image">
   {{ 'Choose an image' | t }}
@@ -40,7 +49,7 @@
     <div class="review-tray">
       @for (tile of review(); track tile.id; let index = $index) {
         <div class="review-tile">
-          <app-tile-art [tile]="tile" />
+          <span class="tile preview-tile-face"><app-tile-art [tile]="tile" /></span>
           @if (confidence()[index] !== undefined) {
             <small>{{ confidence()[index] | percent: '1.0-1' }}</small>
           }
@@ -111,12 +120,7 @@
     @if (busy()) {
       <p>{{ 'Recognizing tiles…' | t }}</p>
     }
-    @if (configuration.error()) {
-      <p class="banner error" role="alert">{{ configuration.error() | t }}</p>
-    }
-    @if (error()) {
-      <p class="banner error" role="alert">{{ error() | t }}</p>
-    }
+
     @if (completed() && !review().length) {
       <p>{{ 'No tiles detected. Try another photo or enter tiles manually.' | t }}</p>
     }

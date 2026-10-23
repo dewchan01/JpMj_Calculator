@@ -8,3 +8,6 @@ playwright-report/
 .env
 .playwright/
 artifacts/
+
+# Generated at build/start with the current version and commit
+/apps/web/public/version.json

@@ -16,6 +16,23 @@ afterEach(() => {
 });
 
 describe('Roboflow browser adapter', () => {
+  it('normalizes riichi labels, preserves red fives and excludes only configured classes', () => {
+    const detections = ['0m', '0p', '0s', '5z', '7z', '0z'].map((label, index) => ({
+      class: label,
+      confidence: 0.95,
+      bbox: { x: 10 + index * 15, y: 50, width: 10, height: 30 },
+    }));
+    const predictions = roboflowPredictions(detections, 100, 100, {}, ['0z']);
+    expect(predictions).toHaveLength(5);
+    expect(predictions.slice(0, 3).every((prediction) => prediction.candidates[0].isRed)).toBe(
+      true,
+    );
+    expect(predictions[3].candidates[0].tile).toEqual({ type: 'dragon', dragon: 'white' });
+    expect(() => roboflowPredictions(detections, 100, 100, {})).toThrow();
+    expect(() =>
+      roboflowPredictions([{ ...detections[0], class: 'unknown' }], 100, 100, {}, ['0z']),
+    ).toThrow();
+  });
   it('retains dimensions when the SDK transfers and detaches the bitmap', async () => {
     const bitmap = { width: 100, height: 100, close: vi.fn() };
     vi.stubGlobal('createImageBitmap', vi.fn().mockResolvedValue(bitmap));
@@ -31,8 +48,72 @@ describe('Roboflow browser adapter', () => {
       30000,
     ).recognize(new Blob(['test']), { playerCount: 4 });
     expect(result.predictions[0].box).toEqual({ x: 0.4, y: 0.3, width: 0.2, height: 0.4 });
+    expect(result.modelName).toBe('test');
     expect(bitmap.close).toHaveBeenCalledOnce();
-    expect(sdk.stopWorker).toHaveBeenCalledWith('worker');
+    expect(sdk.stopWorker).not.toHaveBeenCalled();
+  });
+  it('reuses a warm model and serializes images without starting another worker', async () => {
+    vi.stubGlobal(
+      'createImageBitmap',
+      vi.fn().mockImplementation(async () => ({ width: 100, height: 100, close: vi.fn() })),
+    );
+    sdk.startWorker.mockResolvedValue('warm-worker');
+    let release!: (value: unknown[]) => void;
+    sdk.infer
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            release = resolve;
+          }),
+      )
+      .mockResolvedValue([]);
+    const recognizer = new RoboflowRecognizer(
+      { model: 'test', version: 1, publishableApiKey: 'public-test', classMap: {} },
+      30000,
+    );
+    const first = recognizer.recognize(new Blob(), { playerCount: 4 });
+    const second = recognizer.recognize(new Blob(), { playerCount: 4 });
+    await vi.waitFor(() => expect(sdk.infer).toHaveBeenCalledTimes(1));
+    release([]);
+    await Promise.all([first, second]);
+    expect(sdk.startWorker).toHaveBeenCalledTimes(1);
+    expect(sdk.infer).toHaveBeenCalledTimes(2);
+    expect(sdk.stopWorker).not.toHaveBeenCalled();
+    recognizer.dispose();
+    await vi.waitFor(() => expect(sdk.stopWorker).toHaveBeenCalledWith('warm-worker'));
+  });
+  it('cleans up a cancelled startup and allows a fresh model on retry', async () => {
+    vi.stubGlobal(
+      'createImageBitmap',
+      vi.fn().mockImplementation(async () => ({ width: 100, height: 100, close: vi.fn() })),
+    );
+    let ready!: (worker: string) => void;
+    sdk.startWorker
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            ready = resolve;
+          }),
+      )
+      .mockResolvedValue('retry-worker');
+    sdk.infer.mockResolvedValue([]);
+    const recognizer = new RoboflowRecognizer(
+      { model: 'test', version: 1, publishableApiKey: 'public-test', classMap: {} },
+      30000,
+    );
+    const controller = new AbortController();
+    const pending = recognizer.recognize(new Blob(), { playerCount: 4, signal: controller.signal });
+    const rejected = expect(pending).rejects.toThrow('cancelled');
+    await vi.waitFor(() => expect(sdk.startWorker).toHaveBeenCalledTimes(1));
+    controller.abort();
+    await rejected;
+    ready('cancelled-worker');
+    await vi.waitFor(() => expect(sdk.stopWorker).toHaveBeenCalledWith('cancelled-worker'));
+    await expect(recognizer.recognize(new Blob(), { playerCount: 4 })).resolves.toMatchObject({
+      predictions: [],
+    });
+    expect(sdk.startWorker).toHaveBeenCalledTimes(2);
+    recognizer.dispose();
   });
   it('maps configured class names and rejects unknown flowers rather than guessing', () => {
     const predictions = roboflowPredictions(

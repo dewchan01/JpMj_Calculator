@@ -1,3 +1,5 @@
+import { ErrorNotice } from '../../shared/error-notice/error-notice';
+import { TileReorder } from './tiles/tile-reorder';
 import { TableSummary } from './table-summary/table-summary';
 import { TileEntryDialog } from './tiles/tile-entry-dialog';
 import { TileInput } from './tiles/tile-input';
@@ -94,9 +96,11 @@ const emptyFlags = (): Flags => ({
 });
 @Component({
   imports: [
+    ErrorNotice,
     TileInput,
     TableSummary,
     TileEntryDialog,
+    TileReorder,
     TilePicker,
     PhotoCapture,
     TileArt,
@@ -119,6 +123,14 @@ export class Scorer {
   readonly match = signal<Match | null>(null);
   readonly ready = signal(false);
   readonly error = signal('');
+  readonly errorArea = signal('page');
+  errorAt(area: string): string {
+    return this.errorArea() === area ? this.error() : '';
+  }
+  private beginAction(area: string): void {
+    this.error.set('');
+    this.errorArea.set(area);
+  }
   readonly notice = signal('');
   readonly result = signal<ScoreResult | null>(null);
   readonly busy = signal(false);
@@ -374,6 +386,7 @@ export class Scorer {
       this.draftQueue = this.draftQueue
         .then(() => this.repo.saveDraft(id, value))
         .catch(() => {
+          this.errorArea.set('page');
           this.error.set('Draft could not be saved to this device.');
         });
     }
@@ -398,6 +411,14 @@ export class Scorer {
       this.changed();
     }
   }
+  reorderTiles({ from, to }: { from: number; to: number }): void {
+    this.remember();
+    const tiles = [...this.tiles];
+    const [tile] = tiles.splice(from, 1);
+    tiles.splice(to, 0, tile);
+    this.tiles = tiles;
+    this.editStatus();
+  }
   addTile(tile: Tile): void {
     this.remember();
     this.tiles.push({ ...structuredClone(tile), id: crypto.randomUUID() });
@@ -412,11 +433,16 @@ export class Scorer {
       this.winningId = tile.id;
       this.editStatus();
     } else {
+      if (this.errorArea() === 'assignment') this.error.set('');
       this.selectedHandTiles.update((ids) =>
         ids.includes(tile.id) ? ids.filter((id) => id !== tile.id) : [...ids, tile.id],
       );
       if (this.calledIndex >= this.selectedHandTiles().length) this.calledIndex = 0;
     }
+  }
+  keepConcealed(): void {
+    this.selectedHandTiles.set([]);
+    if (this.errorArea() === 'assignment') this.error.set('');
   }
   toggleDeleteMode(): void {
     this.deleteMode = !this.deleteMode;
@@ -431,6 +457,7 @@ export class Scorer {
     this.editStatus();
   }
   applyNotation(): void {
+    this.beginAction('tiles');
     try {
       const tiles = parseTiles(this.notation, crypto.randomUUID());
 
@@ -521,6 +548,7 @@ export class Scorer {
     this.changed();
   }
   upgrade(meld: Meld): void {
+    this.beginAction(`meld:${meld.id}`);
     if (meld.type !== 'pon') return;
     if (
       this.otherKans + this.melds.filter((meld) => !['chi', 'pon'].includes(meld.type)).length >=
@@ -583,6 +611,7 @@ export class Scorer {
     this.editStatus();
   }
   addKita(): void {
+    this.beginAction('north');
     const tile = this.tiles.find((tile) => kindIndex(tile.kind) === 30);
     if (this.rules.playerCount !== 3 || this.kita.length >= 4 || !tile) {
       this.error.set('Extracted tiles must contain only North, up to four tiles.');
@@ -633,6 +662,7 @@ export class Scorer {
     };
   }
   calculate(): void {
+    this.beginAction('score');
     try {
       this.error.set('');
       const input = this.input();
@@ -644,6 +674,7 @@ export class Scorer {
     }
   }
   async settle(): Promise<void> {
+    this.beginAction('settlement');
     if (this.busy()) return;
     this.busy.set(true);
     try {
@@ -702,12 +733,14 @@ export class Scorer {
       this.notice.set('Settlement saved. Dealer, round and honba have been updated.');
       this.tab = 'history';
     } catch (e) {
+      this.errorArea.set('settlement');
       this.error.set(this.message(e));
     } finally {
       this.busy.set(false);
     }
   }
   async deposit(): Promise<void> {
+    this.beginAction('escrow');
     if (this.busy()) return;
     this.busy.set(true);
     try {
@@ -742,12 +775,14 @@ export class Scorer {
       this.changed();
       this.notice.set('1,000 points moved into table escrow.');
     } catch (e) {
+      this.errorArea.set('escrow');
       this.error.set(this.message(e));
     } finally {
       this.busy.set(false);
     }
   }
   async undoSettlement(): Promise<void> {
+    this.beginAction('history');
     const match = this.match();
     if (!match || this.busy()) return;
     if (!confirm(this.i18n.t('Undo the latest ledger event and restore its points?'))) return;
@@ -763,6 +798,7 @@ export class Scorer {
       this.changed();
       this.notice.set('Last event undone. Enter a corrected hand if needed.');
     } catch (e) {
+      this.errorArea.set('history');
       this.error.set(this.message(e));
     } finally {
       this.busy.set(false);
@@ -795,6 +831,7 @@ export class Scorer {
     this.editStatus();
   }
   groupHandTiles(): void {
+    this.beginAction('assignment');
     const selected = this.tiles.filter((tile) => this.selectedHandTiles().includes(tile.id));
     const target = this.assignmentTarget();
     if (!selected.length) return;
@@ -901,6 +938,7 @@ export class Scorer {
       : 'Something went wrong. Your last saved match is unchanged.';
   }
   queueRon(): void {
+    this.beginAction('queued');
     try {
       if (this.method !== 'ron' || this.status !== 'verified')
         throw new Error('Verify a Ron hand before adding it to the winner list.');
@@ -929,12 +967,14 @@ export class Scorer {
     this.changed();
   }
   calculateQueued(): void {
+    this.beginAction('queued');
     this.error.set('');
     this.roundResult.set(
       multipleRon(this.queued.map((i) => ({ ...i, riichiSticks: (this.book?.table ?? 0) / 1000 }))),
     );
   }
   calculateDraw(): void {
+    this.beginAction('draw');
     this.error.set('');
     this.roundResult.set(drawSettlement(this.drawInput()));
   }
@@ -952,6 +992,7 @@ export class Scorer {
     };
   }
   async confirmRound(): Promise<void> {
+    this.beginAction('round');
     if (this.busy() || !this.roundResult()?.isValid) return;
     this.busy.set(true);
     try {
@@ -1015,6 +1056,7 @@ export class Scorer {
       this.tab = 'history';
       this.notice.set('Settlement saved. Dealer, round and honba have been updated.');
     } catch (e) {
+      this.errorArea.set('round');
       this.error.set(this.message(e));
     } finally {
       this.busy.set(false);

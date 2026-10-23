@@ -44,10 +44,6 @@
           </svg>
         }
       </button>
-      <span class="local-badge">
-        <i></i>
-        {{ 'Local & offline' | t }}
-      </span>
       <select
         class="language-select"
         aria-label="Language / 語言"
@@ -63,10 +59,16 @@
   </header>
   <div class="shell">
     <nav [attr.aria-label]="'Main navigation' | t">
-      <a routerLink="/" [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="active">
+      <a
+        routerLink="/"
+        [class.active]="tableActive()"
+        [attr.aria-current]="tableActive() ? 'page' : null"
+      >
         {{ 'My table' | t }}
       </a>
-      <a routerLink="/score" routerLinkActive="active">{{ 'Quick score' | t }}</a>
+      <a routerLink="/score" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        {{ 'Quick score' | t }}
+      </a>
       <a routerLink="/about" routerLinkActive="active">{{ 'Rule coverage' | t }}</a>
     </nav>
   </div>
@@ -85,4 +87,13 @@
   </a>
   <br />
   {{ 'Scoring stays on this device. Photo API mode uploads selected images.' | t }}
+  <p class="build-details">
+    v{{ version().version }} · {{ 'Commit' | t }} {{ version().commit
+    }}{{ version().dirty ? ' *' : '' }}
+  </p>
+  @if (configuration.supportEmail()) {
+    <a [href]="'mailto:' + configuration.supportEmail()">
+      {{ 'Support' | t }}: {{ configuration.supportEmail() }}
+    </a>
+  }
 </footer>

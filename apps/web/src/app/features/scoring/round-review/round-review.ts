@@ -1,3 +1,4 @@
+import { ErrorNotice } from '../../../shared/error-notice/error-notice';
 import { Component, inject, input, output } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import type { RoundSettlement } from '../../../../../../../packages/mahjong-scoring/rounds';
@@ -5,7 +6,7 @@ import type { Player } from '../../../../../../../packages/mahjong-core/index';
 import { I18n, TranslatePipe } from '../../../core/i18n/i18n';
 @Component({
   selector: 'app-round-review',
-  imports: [DecimalPipe, TranslatePipe],
+  imports: [ErrorNotice, DecimalPipe, TranslatePipe],
   templateUrl: './round-review.html',
 })
 export class RoundReview {

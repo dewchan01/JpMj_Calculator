@@ -13,6 +13,7 @@
           "/*.webmanifest",
           "/*.svg",
           "/config.json",
+          "/version.json",
           "/icons/**",
           "/tiles/**/*.svg"
         ]

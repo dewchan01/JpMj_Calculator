@@ -7,6 +7,7 @@ export class CaptureConfiguration {
   private readonly document = inject(DOCUMENT);
   readonly value = signal<CaptureConfig | null>(null);
   readonly error = signal('');
+  readonly supportEmail = signal('');
   private loading?: Promise<void>;
   load(): Promise<void> {
     return (this.loading ??= this.read());
@@ -19,6 +20,14 @@ export class CaptureConfiguration {
       });
       if (!response.ok) throw new Error('Configuration unavailable');
       const data: unknown = await response.json();
+      if (
+        typeof data === 'object' &&
+        data !== null &&
+        'supportEmail' in data &&
+        typeof data.supportEmail === 'string' &&
+        /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(data.supportEmail)
+      )
+        this.supportEmail.set(data.supportEmail.trim());
       this.value.set(parseCaptureConfig(data));
     } catch {
       this.error.set(

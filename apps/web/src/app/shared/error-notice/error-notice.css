@@ -1,0 +1,40 @@
+﻿:host {
+  display: contents;
+}
+.error-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-block: 12px 0;
+  padding: 15px 20px;
+  border: 1px solid #e9c8b8;
+  border-radius: 9px;
+  background: #fff0e9;
+  color: #893e2b;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  scroll-margin-block: calc(var(--app-header-height, 0px) + 80px) 24px;
+}
+.error-icon {
+  flex: 0 0 20px;
+  margin-top: 1px;
+}
+.error-content {
+  min-width: 0;
+}
+p,
+ul {
+  margin: 0;
+}
+ul {
+  padding-left: 20px;
+}
+li + li {
+  margin-top: 6px;
+}
+:host-context([data-theme='dark']) .error-notice {
+  background: #472c27;
+  color: #ffd8ca;
+  border-color: #a87360;
+}

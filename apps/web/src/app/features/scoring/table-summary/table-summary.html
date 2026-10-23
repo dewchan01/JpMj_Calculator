@@ -24,6 +24,7 @@
           class="player-seat"
           [class]="'player-seat seat-' + position(index)"
           [class.selected]="player.id === winner()"
+          [class.dealer]="player.id === dealer()"
           [class.negative]="balances()[player.id] < 0"
         >
           <div class="seat-label">
@@ -34,6 +35,21 @@
           </div>
           <h3 [title]="player.name">{{ player.name }}</h3>
           <p class="player-points">{{ balances()[player.id] | number }}</p>
+          <div class="player-status">
+            @if (player.id === winner()) {
+              <span class="winner-label">{{ 'Selected winner' | t }}</span>
+            }
+            @if (!recordedWinners().has(player.id)) {
+              <span
+                class="yakitori-label"
+                [title]="
+                  'No recorded hand wins yet. Informational only; no penalty is applied.' | t
+                "
+              >
+                {{ 'Yakitori' | t }}
+              </span>
+            }
+          </div>
         </article>
       }
     </div>

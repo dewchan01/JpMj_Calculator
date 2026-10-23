@@ -3,9 +3,7 @@
   <h1>{{ match()?.name ?? i18n.t('Score a hand.') }}</h1>
   <p class="muted">{{ 'Build it. Check it. Make every point count.' | t }}</p>
 </section>
-@if (error()) {
-  <p class="banner error" role="alert">{{ error() | t }}</p>
-}
+<app-error-notice [message]="errorAt('page')" />
 @if (notice()) {
   <p class="banner success" role="status">{{ notice() | t }}</p>
 }
@@ -19,7 +17,8 @@
       [players]="players"
       [balances]="book?.players ?? {}"
       [dealer]="dealer"
-      [winner]="winner"
+      [winner]="tab === 'entry' && !m.ended ? winner : ''"
+      [events]="m.events"
       [roundWind]="roundWind"
       [handNumber]="handNumber"
       [honba]="honba"
@@ -84,6 +83,7 @@
           {{ 'Review all Ron winners' | t }}
         </button>
       </div>
+      <app-error-notice [message]="errorAt('queued')" />
       <app-round-review
         [result]="roundResult()"
         [players]="players"
@@ -91,8 +91,9 @@
         [busy]="busy()"
         (confirmSettlement)="confirmRound()"
       />
+      <app-error-notice [message]="errorAt('round')" />
     </section>
-    <div class="scorer-grid">
+    <div class="scorer-grid" [style.--match-tabs-height]="match() ? '64px' : '0px'">
       <div class="entry-column">
         <section class="card">
           <div class="section-heading">
@@ -154,9 +155,22 @@
                       ↷
                     </button>
                   </div>
-                  <div class="entry-preview" role="group" [attr.aria-label]="'Tile preview' | t">
-                    @for (tile of tiles; track tile.id) {
+                  <p class="hint">
+                    {{
+                      'Drag tiles to reorder, or use Alt + Left/Right on a focused tile. Tap a tile to remove it.'
+                        | t
+                    }}
+                  </p>
+                  <div
+                    appTileReorder
+                    (tileReordered)="reorderTiles($event)"
+                    class="entry-preview"
+                    role="group"
+                    [attr.aria-label]="'Tile preview' | t"
+                  >
+                    @for (tile of tiles; track tile.id; let index = $index) {
                       <button
+                        [attr.data-tile-index]="index"
                         class="tile"
                         (click)="removeTile(tile)"
                         [attr.aria-label]="tileActionLabel(tile, 'remove')"
@@ -180,6 +194,7 @@
                     <button class="secondary" (click)="applyNotation()">
                       {{ 'Replace tile collection' | t }}
                     </button>
+                    <app-error-notice [message]="errorAt('tiles')" />
                   </details>
                   <app-tile-picker
                     [playerCount]="rules.playerCount"
@@ -293,13 +308,14 @@
                 <button class="primary" (click)="groupHandTiles()">
                   {{ 'Assign selected tiles' | t }}
                 </button>
-                <button class="secondary" (click)="selectedHandTiles.set([])">
+                <button class="secondary" (click)="keepConcealed()">
                   {{ 'Keep concealed' | t }}
                 </button>
                 <button class="quiet danger" (click)="removeSelectedTiles()">
                   {{ 'Remove selected tiles' | t }}
                 </button>
               </div>
+              <app-error-notice [message]="errorAt('assignment')" />
             </section>
           }
           @if (deleteMode) {
@@ -371,6 +387,7 @@
                 </button>
               </div>
             </div>
+            <app-error-notice [message]="errorAt('meld:' + meld.id)" />
           }
           @if (melds.length) {
             <p class="hint">
@@ -407,6 +424,7 @@
                 +
               </button>
             </div>
+            <app-error-notice [message]="errorAt('north')" />
           }
           <label class="check verification-check">
             <input
@@ -577,12 +595,14 @@
                   {{ 'Deposit 1,000' | t }}
                 </button>
               </div>
+              <app-error-notice [message]="errorAt('escrow')" />
             </details>
           }
           <button class="primary full calculate" (click)="calculate()">
             {{ 'Calculate score' | t }}
             <span aria-hidden="true">→</span>
           </button>
+          <app-error-notice [message]="errorAt('score')" />
         </section>
       </div>
       <aside class="result-column">
@@ -597,6 +617,7 @@
           [busy]="busy()"
           (confirmSettlement)="settle()"
         />
+        <app-error-notice [message]="errorAt('settlement')" />
       </aside>
     </div>
   } @else if (tab === 'draw') {
@@ -671,6 +692,7 @@
         {{ 'I confirm the draw circumstances and player declarations.' | t }}
       </label>
       <button class="primary" (click)="calculateDraw()">{{ 'Review draw settlement' | t }}</button>
+      <app-error-notice [message]="errorAt('draw')" />
     </section>
     <app-round-review
       [result]="roundResult()"
@@ -679,6 +701,7 @@
       [busy]="busy()"
       (confirmSettlement)="confirmRound()"
     />
+    <app-error-notice [message]="errorAt('round')" />
   } @else {
     <app-match-history
       [match]="match()"
@@ -687,5 +710,6 @@
       (exportRequested)="exportMatch()"
       (undoRequested)="undoSettlement()"
     />
+    <app-error-notice [message]="errorAt('history')" />
   }
 }

@@ -38,6 +38,11 @@ test('file configuration, editable capture preview, and independent tile targets
   await file.setInputFiles('apps/web/public/icons/icon-192.png');
   await expect(capture.locator('details')).toHaveJSProperty('open', true);
   await expect(capture.locator('.review-tile')).toHaveCount(2);
+  await expect(capture.locator('.preview-tile-face').first()).toHaveCSS('border-top-width', '1px');
+  await expect(capture.locator('.preview-tile-face img').first()).toHaveAttribute(
+    'loading',
+    'eager',
+  );
   expect(received).toBe(true);
   await expect(page.locator('.hand-tray > .hand-tiles > button.tile app-tile-art')).toHaveCount(0);
   await capture.getByRole('button', { name: 'Move tile left' }).nth(1).click();
@@ -99,3 +104,45 @@ test('invalid configuration disables uploads without preventing manual previews'
   await capture.getByRole('button', { name: 'Apply reviewed tiles' }).click();
   await expect(page.locator('.hand-tray > .hand-tiles > button.tile app-tile-art')).toHaveCount(3);
 });
+
+for (const dark of [false, true]) {
+  test(`preview tile frames remain visible on mobile in ${dark ? 'dark' : 'light'} mode`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 900 });
+    await page.route('**/config.json', (route) =>
+      route.fulfill({ json: { recognition: { provider: 'mock' } } }),
+    );
+    await page.goto('/');
+    if (dark) await page.getByRole('button', { name: 'Dark mode', exact: true }).click();
+    await page.getByRole('link', { name: 'Quick score', exact: true }).click();
+    await page.getByRole('button', { name: 'Enter tiles', exact: true }).click();
+    const capture = page.locator('app-photo-capture').first();
+    await capture.locator('summary').click();
+    await capture.getByRole('textbox', { name: 'Edit preview tiles' }).fill('5z6s7z');
+    await capture.getByRole('button', { name: 'Update preview' }).click();
+    const frames = capture.locator('.preview-tile-face');
+    await expect(frames).toHaveCount(3);
+    await expect(frames.first()).toHaveCSS('border-top-width', '1px');
+    await expect
+      .poll(() =>
+        frames
+          .locator('img')
+          .evaluateAll((images) =>
+            images.every(
+              (image) =>
+                (image as HTMLImageElement).complete &&
+                (image as HTMLImageElement).naturalWidth > 0,
+            ),
+          ),
+      )
+      .toBe(true);
+    await capture
+      .locator('.review-tray')
+      .screenshot({ path: `artifacts/preview-frames-${dark ? 'dark' : 'light'}.png` });
+    const accessibility = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+      .analyze();
+    expect(accessibility.violations).toEqual([]);
+  });
+}
