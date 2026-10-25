@@ -1,3 +1,4 @@
+import { openQuickScore } from './helpers/navigation';
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
@@ -26,7 +27,7 @@ test('one photo supplies concealed tiles, Pon and North before assignment', asyn
     });
   });
   await page.goto('/');
-  await page.getByRole('link', { name: 'Quick score', exact: true }).click();
+  await openQuickScore(page);
   await page
     .getByRole('combobox', { name: 'Rules', exact: true })
     .selectOption({ label: '3P · Sanma' });
@@ -46,15 +47,24 @@ test('one photo supplies concealed tiles, Pon and North before assignment', asyn
     .analyze();
   expect(accessibility.violations).toEqual([]);
   await page.getByRole('button', { name: 'Assign selected tiles', exact: true }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Assign selected tiles', exact: true })
+    .click();
   await expect(page.locator('.meld-row')).toHaveCount(1);
   await tiles.nth(0).click();
   await tiles.nth(1).click();
+  await page.getByRole('button', { name: 'Assign selected tiles', exact: true }).click();
   await page.getByRole('combobox', { name: 'Assign as', exact: true }).selectOption('kita');
   await page.getByRole('button', { name: 'Assign selected tiles', exact: true }).click();
   await expect(page.getByText('Extracted North · 2', { exact: true })).toBeVisible();
   await expect(tiles).toHaveCount(3);
   await tiles.nth(0).click();
   await page.getByRole('button', { name: 'Assign selected tiles', exact: true }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Assign selected tiles', exact: true })
+    .click();
   await expect(page.getByRole('alert')).toContainText('only North');
   await expect(tiles).toHaveCount(3);
   expect(requests).toBe(1);

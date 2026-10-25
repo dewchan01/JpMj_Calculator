@@ -1,3 +1,4 @@
+import { setLanguage, toggleTheme } from './helpers/navigation';
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
@@ -5,20 +6,16 @@ test('dark theme and Simplified Chinese persist, and both tile sets render', asy
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/');
   await page.evaluate(() => window.scrollTo(0, 400));
-  await expect
-    .poll(() =>
-      page.locator('.sticky-header').evaluate((header) => header.getBoundingClientRect().top),
-    )
-    .toBe(0);
+  await expect(page.locator('.sticky-header')).toBeHidden();
   await expect(page.getByRole('navigation')).toBeInViewport();
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.getByRole('button', { name: 'Dark mode', exact: true }).click();
+  await toggleTheme(page);
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   const homeAxe = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
     .analyze();
   expect(homeAxe.violations).toEqual([]);
-  await page.getByRole('combobox', { name: 'Language / 語言' }).selectOption('zh-CN');
+  await setLanguage(page, 'zh-CN');
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
   await expect(page.getByRole('heading', { name: '开设牌桌' })).toBeVisible();
   await page.reload();
@@ -45,16 +42,14 @@ test('dark theme and Simplified Chinese persist, and both tile sets render', asy
     .analyze();
   expect(scoreAxe.violations).toEqual([]);
   await page.getByRole('button', { name: '完成', exact: true }).click();
-  await page.getByRole('button', { name: '深色模式', exact: true }).click();
+  await toggleTheme(page);
   await page.getByRole('button', { name: '输入牌张', exact: true }).click();
   await expect(image).toHaveAttribute('src', /tiles\/Regular\//);
   await page.getByRole('button', { name: '完成', exact: true }).click();
-  await page.getByRole('combobox', { name: 'Language / 語言' }).selectOption('en');
-  await page.getByRole('button', { name: 'Dark mode', exact: true }).click();
+  await setLanguage(page, 'en');
+  await toggleTheme(page);
   await page.getByRole('link', { name: 'My table', exact: true }).click();
   await page.getByRole('button', { name: /Start match/ }).click();
-  await page.getByRole('button', { name: /Try an example hand/ }).click();
-  await page.getByRole('button', { name: /Calculate score/ }).click();
   const matchAxe = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
     .analyze();

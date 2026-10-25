@@ -311,10 +311,26 @@ main {
 .compact .muted {
   margin-top: 12px;
 }
+.home-content {
+  padding-top: 24px;
+}
+.setup-heading {
+  margin: 0;
+  font-family: inherit;
+  font-size: 1.15rem;
+  font-weight: 650;
+  line-height: 1.3;
+  letter-spacing: -0.4px;
+}
 .home-grid {
   display: grid;
   grid-template-columns: 1.05fr 1fr;
   gap: 60px;
+}
+.quick-score-link {
+  margin-left: auto;
+  white-space: nowrap;
+  font-size: 0.8rem;
 }
 .card {
   background: var(--surface);
@@ -1169,7 +1185,7 @@ footer {
   }
   .table-intro {
     padding: 27px;
-    display: block;
+    display: none;
   }
   .tile-still-life {
     height: 125px;
@@ -1432,6 +1448,14 @@ footer {
 [appTileReorder] .tile-drop-target {
   outline: 3px solid var(--green);
   outline-offset: 2px;
+}
+[appTileReorder] .tile-drag-preview {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  pointer-events: none;
+  opacity: 1;
+  transform: none;
 }
 .build-details {
   font-variant-numeric: tabular-nums;

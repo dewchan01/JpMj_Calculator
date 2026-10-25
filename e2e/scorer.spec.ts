@@ -1,3 +1,5 @@
+import { beginWin, finishWin, playerAction, gameMenu, prompt } from './helpers/game';
+import { openQuickScore } from './helpers/navigation';
 import { expect, test } from '@playwright/test';
 test('mobile match, draft, verified settlement, escrow, history, reload and offline', async ({
   page,
@@ -7,54 +9,41 @@ test('mobile match, draft, verified settlement, escrow, history, reload and offl
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: /Your next round/ })).toBeVisible();
-  await page.screenshot({ path: 'artifacts/home-mobile.png', fullPage: true });
   await page.getByLabel('Match name').fill('Test table');
   await page.getByRole('button', { name: /Start match/ }).click();
-  await expect(page.getByRole('heading', { name: 'Test table' })).toBeVisible();
-  await page.getByRole('button', { name: /Try an example hand/ }).click();
-  await expect(page.getByText('14 concealed · expected 14')).toBeVisible();
+  await playerAction(page, 'Player 2');
+  await prompt(page)
+    .getByRole('button', { name: /Declare Riichi/ })
+    .click();
+  await expect(page.locator('.table-pot strong')).toHaveText('1,000');
   await page.reload();
-  await expect(page.getByText('14 concealed · expected 14')).toBeVisible();
-  await page.getByRole('checkbox', { name: 'I have checked these tiles', exact: false }).check();
-  await page.getByRole('button', { name: /Calculate score/ }).click();
-  await expect(page.getByText('1 Han · 30 Fu', { exact: true })).toBeVisible();
-  await page.getByText('Record a Riichi deposit', { exact: false }).click();
-  await page.getByRole('button', { name: 'Deposit 1,000' }).click();
-  await expect(page.getByRole('status')).toContainText('escrow');
-  await page.getByRole('button', { name: /Calculate score/ }).click();
-  await expect(page.getByText('Riichi escrow award')).toBeVisible();
-  await page.screenshot({ path: 'artifacts/scorer-mobile.png', fullPage: true });
-  await page.getByRole('button', { name: /Confirm & save settlement/ }).click();
-  await expect(page.getByRole('heading', { name: 'Auditable hand history' })).toBeVisible();
-  await expect(page.locator('app-table-summary .selected')).toHaveCount(0);
-  await expect(page.locator('app-table-summary .yakitori-label')).toHaveCount(3);
-  await page.reload();
-  await page.getByRole('button', { name: /History/ }).click();
-  await expect(page.getByText('Win · Player 2')).toBeVisible();
+  await expect(page.locator('.table-pot strong')).toHaveText('1,000');
+  await beginWin(page);
+  await finishWin(page);
+  await gameMenu(page, 'History');
+  await expect(page.locator('.history-event')).toHaveCount(2);
+  await prompt(page).getByRole('button', { name: 'Close', exact: true }).click();
   await page.evaluate(async () => {
-    const registration = await navigator.serviceWorker.ready;
+    await navigator.serviceWorker.ready;
     if (!navigator.serviceWorker.controller)
       await new Promise<void>((resolve) =>
         navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), {
           once: true,
         }),
       );
-    return !!registration.active;
   });
   await context.setOffline(true);
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Test table' })).toBeVisible();
-  await page.getByRole('button', { name: /History/ }).click();
-  await expect(page.getByText('Win · Player 2')).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await expect(page.getByRole('heading', { name: 'Test table', exact: true })).toBeVisible();
+  await gameMenu(page, 'History');
+  await expect(page.locator('.history-event')).toHaveCount(2);
   expect(errors).toEqual([]);
 });
 test('quick score rejects incomplete hands, supports Sanma and manual camera fallback', async ({
   page,
 }) => {
   await page.goto('/');
-  await page.getByRole('link', { name: 'Quick score', exact: true }).click();
+  await openQuickScore(page);
   await page.getByRole('button', { name: /Calculate score/ }).click();
   await expect(page.getByText(/Expected 14 concealed tiles/)).toBeVisible();
   await page

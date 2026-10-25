@@ -1,0 +1,233 @@
+:host {
+  display: block;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.records-heading,
+.game-card header,
+.records-toolbar,
+.game-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.records-heading {
+  margin-bottom: 24px;
+}
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+h1 {
+  margin-bottom: 0;
+  font-size: 2.25rem;
+}
+.filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 16px 20px;
+}
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.filter-bar > button:first-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.filter-dialog {
+  width: min(520px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  color: var(--text);
+  background: var(--surface);
+  overflow-y: auto;
+  box-shadow: 0 16px 60px #0003;
+}
+.filter-dialog::backdrop {
+  background: #0007;
+}
+.filter-dialog-heading,
+.filter-dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--surface);
+}
+.filter-dialog-heading {
+  border-bottom: 1px solid var(--border);
+}
+.filter-dialog-heading h2 {
+  font-size: 1.2rem;
+  margin: 0;
+}
+.filter-dialog-heading button {
+  font-size: 1.4rem;
+  padding: 4px;
+  width: 44px;
+  min-height: 44px;
+}
+.filter-dialog-actions {
+  position: sticky;
+  bottom: 0;
+  border-top: 1px solid var(--border);
+}
+.filters app-error-notice {
+  grid-column: 1 / -1;
+}
+.filters .quiet {
+  justify-self: start;
+}
+.records-toolbar {
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.records-toolbar .segmented {
+  margin: 0;
+  min-width: 220px;
+}
+.records-toolbar label {
+  max-width: 300px;
+}
+.game-card {
+  padding: 24px;
+  margin-bottom: 20px;
+}
+.game-card header {
+  align-items: flex-start;
+}
+.game-card h2 {
+  margin: 8px 0;
+  font-size: 1.2rem;
+  overflow-wrap: anywhere;
+}
+.game-card h2 a {
+  color: var(--text);
+  text-decoration: none;
+}
+.game-card header .pill {
+  white-space: nowrap;
+}
+.table-scroll {
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: nowrap;
+}
+th,
+td {
+  text-align: right;
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+th:first-child,
+th[scope='row'] {
+  text-align: left;
+}
+thead {
+  background: var(--tray-surface);
+}
+thead th {
+  font-size: 0.8rem;
+}
+.game-actions {
+  margin-top: 16px;
+}
+.player-card {
+  padding: 12px;
+}
+.money-line {
+  display: block;
+}
+@media (max-width: 700px) {
+  .player-card {
+    padding: 4px;
+  }
+  .player-card table {
+    table-layout: fixed;
+    white-space: normal;
+    font-size: 0.75rem;
+  }
+  .player-card th,
+  .player-card td {
+    padding: 12px 3px;
+    overflow-wrap: anywhere;
+    vertical-align: middle;
+  }
+  .player-card thead th {
+    font-size: 0.68rem;
+    line-height: 1.4;
+  }
+  .player-card th:first-child {
+    width: 18%;
+  }
+  .player-card th:nth-child(2) {
+    width: 10%;
+  }
+  .player-card th:nth-child(3) {
+    width: 14%;
+  }
+  .player-card th:nth-child(4) {
+    width: 21%;
+  }
+  .player-card th:nth-child(5) {
+    width: 17%;
+  }
+  .player-card th:nth-child(6) {
+    width: 20%;
+  }
+  .player-card .money-currency {
+    display: block;
+    font-size: 0.65rem;
+    color: var(--muted);
+  }
+  .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 16px;
+    gap: 12px;
+  }
+  .filters label {
+    min-width: 0;
+  }
+  .filters input,
+  .filters select {
+    min-width: 0;
+    width: 100%;
+  }
+  .records-toolbar {
+    align-items: stretch;
+  }
+  .records-toolbar .segmented,
+  .records-toolbar label {
+    width: 100%;
+    max-width: none;
+  }
+  .game-card {
+    padding: 16px;
+  }
+  .game-card header {
+    flex-wrap: wrap;
+  }
+}

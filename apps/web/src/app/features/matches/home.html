@@ -1,21 +1,13 @@
 <app-install-banner />
-<section class="page-heading">
-  <p class="eyebrow">{{ 'A place for every hand' | t }}</p>
-  <h1>
-    {{ 'Your next round' | t }}
-    <br />
-    {{ 'starts here.' | t }}
-  </h1>
-  <p class="muted">{{ 'A little less counting. A little more Mahjong.' | t }}</p>
-</section>
 @if (error()) {
   <app-error-notice [message]="error()" />
 }
-<div class="home-grid">
+<div class="home-grid home-content">
   <section class="card setup-card">
     <div class="section-heading">
       <span class="step">01</span>
-      <h2>{{ 'Set the table' | t }}</h2>
+      <h1 class="setup-heading">{{ 'Set the table' | t }}</h1>
+      <a class="text-link quick-score-link" routerLink="/score">{{ 'Quick score' | t }}</a>
     </div>
     <div class="segmented" [attr.aria-label]="'Player count' | t">
       <button [class.selected]="count() === 4" (click)="setCount(4)">
@@ -27,7 +19,7 @@
         <small>{{ 'Sanma' | t }}</small>
       </button>
     </div>
-    <app-rule-picker [profile]="rules()" (profileChange)="updateRules($event)" />
+    <app-rule-picker [profile]="rules()" />
     @if (rules().preset !== 'm-league') {
       <label>
         {{ 'Game length' | t }}
@@ -41,10 +33,22 @@
       {{ 'Match name' | t }}
       <input [formField]="setupForm.name" [attr.placeholder]="'Saturday afternoon' | t" />
     </label>
+    <button class="player-library-open" (click)="playersDialog.showModal()">
+      {{ 'Saved players' | t }}
+    </button>
     <div class="players-grid">
       @for (seat of seats.slice(0, count()); track seat; let i = $index) {
         <label>
           {{ seat + ' seat' | t }}
+          <select
+            (change)="choosePlayer(i, $event)"
+            [attr.aria-label]="('Saved players' | t) + ' ' + (seat | t)"
+          >
+            <option value="">{{ 'Choose a saved player' | t }}</option>
+            @for (player of playerLibrary.players(); track player.id) {
+              <option [value]="player.id">{{ player.name }}</option>
+            }
+          </select>
           <input
             [formField]="setupForm.names[i]"
             [attr.placeholder]="'Player ' + (i + 1) | t"
@@ -90,47 +94,33 @@
     <a class="text-link" routerLink="/score">{{ 'Just score a hand →' | t }}</a>
   </aside>
 </div>
-<section class="recent">
-  <div class="section-heading spread">
-    <h2>{{ 'Saved tables' | t }}</h2>
-    <span class="pill">{{ matches().length }} {{ 'local' | t }}</span>
-  </div>
-  @if (!matches().length) {
-    <div class="empty">
-      <span aria-hidden="true">東</span>
-      <div>
-        <h3>{{ 'A clean slate.' | t }}</h3>
-        <p>{{ 'Your matches will appear here, saved on this device.' | t }}</p>
-      </div>
+<dialog #playersDialog class="players-dialog" aria-labelledby="players-title">
+  <header class="players-heading">
+    <h2 id="players-title">{{ 'Saved players' | t }}</h2>
+    <button (click)="playersDialog.close()">{{ 'Return' | t }}</button>
+  </header>
+  <section class="player-library">
+    <app-error-notice [message]="playerError()" />
+    <div class="action-row">
+      <label>
+        {{ 'Player name' | t }}
+        <input [formControl]="playerName" maxlength="40" (keydown.enter)="addPlayer()" />
+      </label>
+      <button (click)="addPlayer()">{{ 'Add player' | t }}</button>
     </div>
-  }
-  @for (match of matches(); track match.id) {
-    <article class="saved-match">
-      <a [routerLink]="['/score', match.id]">
-        <div>
-          <span class="eyebrow">
-            {{ match.playerCount + 'P · ' + match.events.length + ' events' | t }}
-          </span>
-          <h3>{{ match.name }}</h3>
-          <small>{{ match.updatedAt | date: 'medium' : undefined : i18n.locale() }}</small>
-        </div>
-        <div class="mini-balances">
-          @for (p of match.players; track p.id) {
-            <span>
-              {{ p.name }}
-              <strong>{{ balance(match, p.id) | number }}</strong>
-            </span>
-          }
-        </div>
-        <span aria-hidden="true">↗</span>
-      </a>
-      <button
-        class="quiet danger"
-        (click)="remove(match)"
-        [attr.aria-label]="'Delete ' + match.name | t"
-      >
-        {{ 'Delete' | t }}
-      </button>
-    </article>
-  }
-</section>
+    @for (player of playerLibrary.players(); track player.id) {
+      <div class="explain-row">
+        <span>{{ player.name }}</span>
+        <button
+          class="quiet danger"
+          (click)="removePlayer(player.id)"
+          [attr.aria-label]="('Remove' | t) + ' ' + player.name"
+        >
+          {{ 'Remove' | t }}
+        </button>
+      </div>
+    } @empty {
+      <p class="hint">{{ 'Save names here, then choose them for any seat.' | t }}</p>
+    }
+  </section>
+</dialog>

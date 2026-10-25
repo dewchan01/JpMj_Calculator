@@ -33,7 +33,13 @@ export class ErrorNotice {
       const header = element.closest('dialog')
         ? 0
         : Number.parseFloat(getComputedStyle(element).getPropertyValue('--app-header-height')) || 0;
-      if (rect.top < header + 72 || rect.bottom > window.innerHeight)
+      const bottom = element.closest('dialog')
+        ? window.innerHeight
+        : ((window.matchMedia('(max-width: 700px)').matches
+            ? document.querySelector('.app-navigation')
+            : null
+          )?.getBoundingClientRect().top ?? window.innerHeight);
+      if (rect.top < header + 72 || rect.bottom > bottom)
         element.scrollIntoView({ block: 'center', behavior: 'instant' });
     });
   }

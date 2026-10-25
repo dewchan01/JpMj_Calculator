@@ -1,0 +1,259 @@
+<header class="records-heading">
+  <div>
+    <p class="eyebrow">{{ 'Saved tables' | t }}</p>
+    <h1>{{ 'Records' | t }}</h1>
+  </div>
+  <span class="pill">{{ matches().length }} {{ 'local' | t }}</span>
+</header>
+@if (error()) {
+  <app-error-notice [message]="error()" />
+}
+<div class="filter-bar">
+  <button (click)="openFilters()" aria-haspopup="dialog">
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.8"
+      aria-hidden="true"
+    >
+      <path d="M3 5h18l-7 8v6l-4 2v-8Z" />
+    </svg>
+    {{ 'Filter records' | t }}
+    @if (activeFilterCount()) {
+      <span class="pill">{{ activeFilterCount() }}</span>
+    }
+  </button>
+  @if (activeFilterCount()) {
+    <button class="quiet" (click)="reset()">{{ 'Reset filters' | t }}</button>
+  }
+</div>
+<dialog #filterDialog class="filter-dialog" aria-labelledby="filter-title">
+  <header class="filter-dialog-heading">
+    <h2 id="filter-title">{{ 'Filter records' | t }}</h2>
+    <button class="quiet" (click)="filterDialog.close()" [attr.aria-label]="'Close' | t">×</button>
+  </header>
+  <div class="filters" [formGroup]="filterDraft">
+    <label>
+      {{ 'From date' | t }}
+      <input type="date" formControlName="from" />
+    </label>
+    <label>
+      {{ 'To date' | t }}
+      <input type="date" formControlName="to" />
+    </label>
+    <label>
+      {{ 'Game mode' | t }}
+      <select formControlName="mode">
+        <option value="">{{ 'All modes' | t }}</option>
+        <option value="4-east">{{ '4P East-only' | t }}</option>
+        <option value="4-south">{{ '4P East and South' | t }}</option>
+        <option value="3-east">{{ '3P East-only' | t }}</option>
+        <option value="3-south">{{ '3P East and South' | t }}</option>
+      </select>
+    </label>
+    <label>
+      {{ 'Participant' | t }}
+      <select formControlName="participant">
+        <option value="">{{ 'All participants' | t }}</option>
+        @for (name of participants(); track name) {
+          <option [value]="name">{{ name }}</option>
+        }
+      </select>
+    </label>
+    @if (invalidDraftDates()) {
+      <app-error-notice [message]="'From date must not be after to date.'" />
+    }
+  </div>
+  <footer class="filter-dialog-actions">
+    <button class="quiet" (click)="filterDraft.reset()">{{ 'Reset filters' | t }}</button>
+    <button class="primary" (click)="applyFilters()" [disabled]="invalidDraftDates()">
+      {{ 'Apply filters' | t }}
+    </button>
+  </footer>
+</dialog>
+<div class="records-toolbar">
+  <div class="segmented" [attr.aria-label]="'Record view' | t">
+    <button
+      [class.selected]="view() === 'games'"
+      [attr.aria-pressed]="view() === 'games'"
+      (click)="view.set('games')"
+    >
+      {{ 'Games' | t }}
+    </button>
+    <button
+      [class.selected]="view() === 'players'"
+      [attr.aria-pressed]="view() === 'players'"
+      (click)="view.set('players')"
+    >
+      {{ 'Players' | t }}
+    </button>
+  </div>
+  @if (view() === 'games') {
+    <label>
+      {{ 'Sort games' | t }}
+      <select [formControl]="gameSort">
+        <option value="newest">{{ 'Newest first' | t }}</option>
+        <option value="oldest">{{ 'Oldest first' | t }}</option>
+      </select>
+    </label>
+  } @else {
+    <label>
+      {{ 'Sort players' | t }}
+      <select [formControl]="playerSort">
+        <option value="name">{{ 'Name: A to Z' | t }}</option>
+        <option value="games">{{ 'Game count: highest first' | t }}</option>
+        <option value="rank">{{ 'Average rank: best first' | t }}</option>
+        <option value="points">{{ 'Total points: highest first' | t }}</option>
+        <option value="score">{{ 'Total score: highest first' | t }}</option>
+        <option value="money">{{ 'Total money: highest first' | t }}</option>
+      </select>
+    </label>
+    @if (currencies().length > 1) {
+      <label>
+        {{ 'Money sort currency' | t }}
+        <select [formControl]="currency">
+          @for (unit of currencies(); track unit) {
+            <option [value]="unit">{{ unit || ('Unspecified currency' | t) }}</option>
+          }
+        </select>
+      </label>
+    }
+  }
+</div>
+@if (loading()) {
+  <p role="status">{{ 'Loading records…' | t }}</p>
+} @else if (view() === 'games') {
+  <p class="hint" role="status">{{ games().length }} {{ 'games found' | t }}</p>
+  <p class="hint">
+    {{
+      'Duration is estimated from table creation to the last recorded event, including breaks.' | t
+    }}
+  </p>
+  @for (game of games(); track game.match.id) {
+    <article class="card game-card">
+      <header>
+        <div>
+          <span class="eyebrow">
+            {{ game.match.playerCount }}P ·
+            {{ (game.match.gameLength === 'east' ? 'East-only game' : 'East and South game') | t }}
+          </span>
+          <h2>
+            <a [routerLink]="['/score', game.match.id]">{{ game.match.name }}</a>
+          </h2>
+          <p class="hint">
+            {{ game.match.createdAt | date: 'medium' : undefined : i18n.locale() }} ·
+            {{ game.minutes }} {{ 'minutes' | t }} · {{ game.match.events.length }}
+            {{ 'events' | t }}
+          </p>
+        </div>
+        <span class="pill">{{ (game.match.ended ? 'Completed' : 'In progress') | t }}</span>
+      </header>
+      <div
+        class="table-scroll"
+        tabindex="0"
+        role="region"
+        [attr.aria-label]="('Leaderboard' | t) + ' ' + game.match.name"
+      >
+        <table>
+          <caption class="sr-only">{{ 'Leaderboard' | t }} · {{ game.match.name }}</caption>
+          <thead>
+            <tr>
+              <th>{{ 'Rank' | t }}</th>
+              <th>{{ 'Player' | t }}</th>
+              <th>{{ 'Points' | t }}</th>
+              <th>{{ 'Final score' | t }}</th>
+              <th>{{ 'Total money' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of game.rows; track row.id) {
+              <tr>
+                <td>{{ row.rank }}</td>
+                <th scope="row">{{ row.name }}</th>
+                <td>{{ row.points | number }}</td>
+                <td>{{ game.match.ended ? (row.finalScore | number: '1.0-2') : '—' }}</td>
+                <td>
+                  {{ game.match.ended ? (row.totalMoney | number: '1.2-2') : '—' }}
+                  {{ game.match.ended ? game.currency : '' }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="game-actions">
+        <a class="text-link" [routerLink]="['/score', game.match.id]">{{ 'Open table' | t }} ↗</a>
+        <button
+          class="quiet danger"
+          (click)="remove(game.match)"
+          [attr.aria-label]="('Delete' | t) + ' ' + game.match.name"
+        >
+          {{ 'Delete' | t }}
+        </button>
+      </div>
+    </article>
+  } @empty {
+    <p class="empty">{{ 'No games match these filters.' | t }}</p>
+  }
+} @else {
+  <p class="hint" role="status">
+    {{ completed() }} {{ 'completed games' | t }} · {{ players().length }} {{ 'players found' | t }}
+  </p>
+  <p class="hint">
+    {{
+      'Only completed games count. Matching player names are combined. Total points means net points won or lost; total score includes Uma and Oka. Currencies are kept separate.'
+        | t
+    }}
+  </p>
+  <section class="card player-card">
+    <div class="table-scroll" tabindex="0" role="region" [attr.aria-label]="'Player totals' | t">
+      <table>
+        <caption class="sr-only">{{ 'Player totals' | t }}</caption>
+        <thead>
+          <tr>
+            <th>{{ 'Player' | t }}</th>
+            <th>{{ 'Game count' | t }}</th>
+            <th>{{ 'Average rank' | t }}</th>
+            <th>{{ 'Total points' | t }}</th>
+            <th>{{ 'Total score' | t }}</th>
+            <th>{{ 'Total money' | t }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (player of players(); track player.name) {
+            <tr>
+              <th scope="row">{{ player.name }}</th>
+              <td>
+                {{ player.games }}
+              </td>
+              <td>
+                {{ player.averageRank | number: '1.2-2' }}
+              </td>
+              <td>
+                {{ player.points | number }}
+              </td>
+              <td>
+                {{ player.score | number: '1.0-2' }}
+              </td>
+              <td>
+                @for (amount of player.money | keyvalue; track amount.key) {
+                  <span class="money-line">
+                    {{ amount.value | number: '1.2-2' }}
+                    <span class="money-currency">{{ amount.key }}</span>
+                  </span>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6">{{ 'No completed games match these filters.' | t }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+}

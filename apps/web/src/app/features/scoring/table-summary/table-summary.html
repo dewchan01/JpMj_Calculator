@@ -20,37 +20,94 @@
     </div>
     <div class="table-players" [attr.aria-label]="'Player balances' | t" role="group">
       @for (player of players(); track player.id; let index = $index) {
-        <article
-          class="player-seat"
-          [class]="'player-seat seat-' + position(index)"
-          [class.selected]="player.id === winner()"
-          [class.dealer]="player.id === dealer()"
-          [class.negative]="balances()[player.id] < 0"
-        >
-          <div class="seat-label">
-            <abbr [title]="seat(index) | t">{{ windLabel(index) }}</abbr>
-            @if (player.id === dealer()) {
-              <small>{{ 'Dealer' | t }}</small>
+        <div [class]="'seat-slot slot-' + position(index)">
+          <article
+            class="player-seat"
+            [class]="'player-seat seat-' + position(index)"
+            [class.selected]="player.id === winner()"
+            [class.dealer]="player.id === dealer()"
+            [class.negative]="balances()[player.id] < 0"
+          >
+            @if (interactive()) {
+              <button
+                class="seat-hit"
+                (click)="playerAction.emit(player.id)"
+                [attr.aria-label]="('Player actions' | t) + ' ' + player.name"
+              ></button>
             }
-          </div>
-          <h3 [title]="player.name">{{ player.name }}</h3>
-          <p class="player-points">{{ balances()[player.id] | number }}</p>
-          <div class="player-status">
-            @if (player.id === winner()) {
-              <span class="winner-label">{{ 'Selected winner' | t }}</span>
-            }
-            @if (!recordedWinners().has(player.id)) {
-              <span
-                class="yakitori-label"
-                [title]="
-                  'No recorded hand wins yet. Informational only; no penalty is applied.' | t
-                "
+            <div class="seat-label">
+              <abbr [title]="seat(index) | t">{{ windLabel(index) }}</abbr>
+              @if (player.id === dealer()) {
+                <small>{{ 'Dealer' | t }}</small>
+              }
+            </div>
+            <h3 [title]="player.name">{{ player.name }}</h3>
+            @if (interactive()) {
+              <button
+                class="player-points difference-button"
+                (click)="pointDifference.emit(player.id)"
+                [attr.aria-label]="('Point differences' | t) + ' ' + player.name"
               >
-                {{ 'Yakitori' | t }}
-              </span>
+                {{ balances()[player.id] | number }}
+                <small aria-hidden="true" class="difference-icon"></small>
+              </button>
+            } @else {
+              <p class="player-points">{{ balances()[player.id] | number }}</p>
             }
-          </div>
-        </article>
+            @if (riichiPlayers()[player.id]) {
+              <span
+                class="riichi-stick"
+                role="img"
+                [attr.aria-label]="riichiPlayers()[player.id]"
+              ></span>
+            }
+            <div class="player-status">
+              @if (statuses()[player.id]) {
+                <span>{{ statuses()[player.id] }}</span>
+              }
+              @if (player.id === winner()) {
+                <span class="winner-label">{{ 'Selected winner' | t }}</span>
+              }
+              @if (!recordedWinners().has(player.id)) {
+                <span
+                  class="yakitori-label"
+                  [title]="
+                    (yakitoriPenalty()
+                      ? 'No recorded wins. The saved Yakitori penalty applies at game end.'
+                      : 'No recorded hand wins yet. Informational only; no penalty is applied.'
+                    ) | t
+                  "
+                >
+                  {{ 'Yakitori' | t }}
+                </span>
+              }
+            </div>
+            @if (interactive()) {
+              <div class="seat-actions">
+                <button
+                  [disabled]="actionsDisabled()"
+                  (click)="quickAction.emit({ player: player.id, type: 'riichi' })"
+                >
+                  {{ 'Riichi' | t }}
+                </button>
+                <button
+                  [disabled]="actionsDisabled()"
+                  (click)="quickAction.emit({ player: player.id, type: 'calls' })"
+                >
+                  {{ 'Call' | t }}
+                </button>
+                @if (players().length === 3) {
+                  <button
+                    [disabled]="actionsDisabled()"
+                    (click)="quickAction.emit({ player: player.id, type: 'kita' })"
+                  >
+                    {{ 'Kita' | t }}
+                  </button>
+                }
+              </div>
+            }
+          </article>
+        </div>
       }
     </div>
   </div>

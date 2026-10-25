@@ -63,21 +63,9 @@
             </strong>
           </div>
         }
-        <button
-          class="primary full"
-          (click)="confirmSettlement.emit()"
-          [disabled]="busy() || status() !== 'verified'"
-        >
+        <button class="primary full" (click)="confirmSettlement.emit()" [disabled]="busy()">
           {{ 'Confirm & save settlement' | t }}
         </button>
-        @if (status() !== 'verified') {
-          <p class="hint">
-            {{
-              'Check your tiles and press “I have checked these tiles” before calculating again to settle.'
-                | t
-            }}
-          </p>
-        }
       }
     }
   } @else {
@@ -96,7 +84,7 @@
     </div>
   }
   <div class="rule-note">
-    {{ rules().playerCount }}P · {{ ruleName(rules()) | t }} ·
+    {{ rules().playerCount }}P · {{ rules().name ?? (ruleName(rules()) | t) }} ·
     {{ (rules().kiriage ? 'Kiriage Mangan' : 'Kiriage off') | t }}
     <br />
     <a routerLink="/about">{{ 'See coverage & limitations ↗' | t }}</a>

@@ -11,8 +11,19 @@ dialog {
   border-radius: 18px;
   width: min(760px, calc(100vw - 32px));
   max-height: 85dvh;
-  padding: 24px;
+  padding: 0;
   overflow-y: auto;
+}
+.sheet-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  padding: 24px 24px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.sheet-content {
+  padding: 16px 24px 24px;
 }
 .sheet-grip {
   display: none;
@@ -25,7 +36,6 @@ header {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1rem;
 }
 header h2 {
   margin: 0;
@@ -38,7 +48,12 @@ header h2 {
     max-width: 100%;
     max-height: 88dvh;
     border-radius: 18px 18px 0 0;
-    padding: 20px 16px max(20px, env(safe-area-inset-bottom));
+  }
+  .sheet-header {
+    padding: 20px 16px 12px;
+  }
+  .sheet-content {
+    padding: 16px 16px max(20px, env(safe-area-inset-bottom));
   }
   dialog.dragging {
     transition: none;

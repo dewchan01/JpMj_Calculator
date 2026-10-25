@@ -8,10 +8,11 @@
   <p class="banner success" role="status">{{ notice() | t }}</p>
 }
 @if (ready()) {
-  <app-rule-picker [profile]="rules" [locked]="!!match()" (profileChange)="updateRules($event)" />
+  <app-rule-picker [profile]="rules" [locked]="!!match()" />
   @if (match(); as m) {
     @if (m.ended) {
       <p class="banner success" role="status">{{ 'Match ended' | t }} · {{ m.endReason | t }}</p>
+      <app-final-results [match]="m" />
     }
     <app-table-summary
       [players]="players"
@@ -24,6 +25,7 @@
       [honba]="honba"
       [pot]="book?.table ?? 0"
       [ruleName]="ruleName(rules)"
+      [yakitoriPenalty]="tableSettings.yakitoriPenalty"
     />
     <div class="tabs">
       <button [class.active]="tab === 'entry'" (click)="tab = 'entry'; roundResult.set(null)">
@@ -72,12 +74,8 @@
         </div>
       }
       <div class="action-row">
-        <button
-          class="secondary"
-          (click)="queueRon()"
-          [disabled]="method !== 'ron' || status !== 'verified'"
-        >
-          {{ 'Add verified Ron winner' | t }}
+        <button class="secondary" (click)="queueRon()" [disabled]="method !== 'ron'">
+          {{ 'Add Ron winner' | t }}
         </button>
         <button class="secondary" (click)="calculateQueued()" [disabled]="!queued.length">
           {{ 'Review all Ron winners' | t }}
@@ -95,7 +93,12 @@
     </section>
     <div class="scorer-grid" [style.--match-tabs-height]="match() ? '64px' : '0px'">
       <div class="entry-column">
-        <section class="card">
+        <section
+          class="card"
+          appTileReorder
+          (tileReordered)="reorderTiles($event)"
+          (tileDropped)="dropHandTile($event)"
+        >
           <div class="section-heading">
             <span class="step">01</span>
             <h2>{{ 'The winning hand' | t }}</h2>
@@ -208,8 +211,9 @@
                 </ng-template>
               </app-tile-entry-dialog>
               <div class="hand-tiles">
-                @for (tile of tiles; track tile.id) {
+                @for (tile of tiles; track tile.id; let index = $index) {
                   <button
+                    [attr.data-tile-index]="index"
                     class="tile"
                     [class.winning-tile]="winningId === tile.id"
                     [class.red-ink]="tile.isRed"
@@ -267,9 +271,42 @@
               </div>
             }
           </div>
-          @if (selectedHandTiles().length) {
+          @if (tiles.length || melds.length || kita.length) {
+            <app-tile-drop-zones
+              [playerCount]="rules.playerCount"
+              [meldCount]="openMeldCount"
+              [kanCount]="concealedKanCount"
+              [northCount]="kita.length"
+              [hasSelection]="!!selectedHandTiles().length"
+              [errorTarget]="errorArea()"
+              [error]="error()"
+              (assigned)="assignSelectedToZone($event)"
+            />
+          }
+          @if (selectedHandTiles().length && !assignmentOpen()) {
+            <div class="action-row">
+              <button class="secondary" (click)="openAssignment()">
+                {{ 'Assign selected tiles' | t }}
+              </button>
+              <button class="quiet" (click)="keepConcealed()">{{ 'Keep concealed' | t }}</button>
+            </div>
+          }
+          <dialog
+            #assignmentDialog
+            class="assignment-dialog"
+            (close)="assignmentOpen.set(false)"
+            [attr.aria-label]="'Assign selected tiles' | t"
+          >
             <section class="assignment-panel" [attr.aria-label]="'Assign selected tiles' | t">
-              <h3>{{ 'Assign selected tiles' | t }}</h3>
+              <header class="assignment-heading">
+                <h3>{{ 'Assign selected tiles' | t }}</h3>
+                <button class="quiet" (click)="closeAssignment()">{{ 'Cancel' | t }}</button>
+              </header>
+              <div class="mini-tiles">
+                @for (tile of selectedTiles; track tile.id) {
+                  <span><app-tile-art [tile]="tile" /></span>
+                }
+              </div>
               <div class="form-grid">
                 <label>
                   {{ 'Assign as' | t }}
@@ -308,43 +345,20 @@
                 <button class="primary" (click)="groupHandTiles()">
                   {{ 'Assign selected tiles' | t }}
                 </button>
-                <button class="secondary" (click)="keepConcealed()">
+                <button class="secondary" (click)="keepConcealed(); closeAssignment()">
                   {{ 'Keep concealed' | t }}
                 </button>
-                <button class="quiet danger" (click)="removeSelectedTiles()">
+                <button class="quiet danger" (click)="removeSelectedTiles(); closeAssignment()">
                   {{ 'Remove selected tiles' | t }}
                 </button>
               </div>
               <app-error-notice [message]="errorAt('assignment')" />
             </section>
-          }
+          </dialog>
           @if (deleteMode) {
             <p class="hint" role="status">
               {{ 'Tap a tile to delete it. Tap Delete a tile again to finish.' | t }}
             </p>
-          }
-        </section>
-        <section class="card meld-card">
-          <div class="section-heading">
-            <span class="step">02</span>
-            <h2>{{ 'Melds & extracted tiles' | t }}</h2>
-            <span class="pill" [attr.aria-label]="'Meld count' | t">{{ melds.length }} / 4</span>
-          </div>
-          @if (!melds.length && !kita.length) {
-            <div class="meld-empty">
-              <div class="meld-illustration" aria-hidden="true">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
-              <div>
-                <h3>{{ 'No tiles assigned yet' | t }}</h3>
-                <p>{{ 'Select tiles from your hand, then assign them to Chi, Pon or Kan.' | t }}</p>
-                @if (rules.playerCount === 3) {
-                  <p>{{ 'North tiles can also be assigned for extraction.' | t }}</p>
-                }
-              </div>
-            </div>
           }
           @for (meld of melds; track meld.id) {
             <div class="meld-row">
@@ -360,16 +374,19 @@
                     </span>
                   }
                 </div>
-                <label>
-                  {{ 'Original call order' | t }}
-                  <input
-                    type="number"
-                    min="1"
-                    max="20"
-                    [(ngModel)]="meld.callOrder"
-                    (ngModelChange)="changed()"
-                  />
-                </label>
+                <details class="meld-order">
+                  <summary>{{ 'Original call order' | t }}: {{ meld.callOrder }}</summary>
+                  <label>
+                    {{ 'Original call order' | t }}
+                    <input
+                      type="number"
+                      min="1"
+                      max="20"
+                      [(ngModel)]="meld.callOrder"
+                      (ngModelChange)="changed()"
+                    />
+                  </label>
+                </details>
               </div>
               <div>
                 <button class="quiet" (click)="returnMeld(meld.id)">
@@ -389,76 +406,73 @@
             </div>
             <app-error-notice [message]="errorAt('meld:' + meld.id)" />
           }
-          @if (melds.length) {
-            <p class="hint">
-              {{
-                'Meld tiles are separate from the concealed hand. The outlined tile is the original called tile. Upgrade an existing Pon to create Kakan.'
-                  | t
-              }}
-            </p>
-          }
           @if (rules.playerCount === 3) {
             @if (kita.length) {
               <button class="quiet" (click)="returnNorth()">
                 {{ 'Return North to tile collection' | t }}
               </button>
             }
-            <div class="kita-row">
-              <div>
-                <strong>{{ 'Extracted North · ' + kita.length | t }}</strong>
-                <small>{{ 'Kita adds bonus Han, never Yaku.' | t }}</small>
+            @if (kita.length) {
+              <div class="kita-row">
+                <div>
+                  <strong>{{ 'Extracted North · ' + kita.length | t }}</strong>
+                  <small>{{ 'Kita adds bonus Han, never Yaku.' | t }}</small>
+                </div>
+                <button
+                  class="secondary"
+                  (click)="removeKita()"
+                  [disabled]="!kita.length"
+                  [attr.aria-label]="'Remove extracted North' | t"
+                >
+                  −
+                </button>
+                <button
+                  class="secondary"
+                  (click)="addKita()"
+                  [attr.aria-label]="'Add extracted North' | t"
+                >
+                  +
+                </button>
               </div>
-              <button
-                class="secondary"
-                (click)="removeKita()"
-                [disabled]="!kita.length"
-                [attr.aria-label]="'Remove extracted North' | t"
-              >
-                −
-              </button>
-              <button
-                class="secondary"
-                (click)="addKita()"
-                [attr.aria-label]="'Add extracted North' | t"
-              >
-                +
-              </button>
-            </div>
+            }
             <app-error-notice [message]="errorAt('north')" />
           }
-          <label class="check verification-check">
-            <input
-              #verification
-              type="checkbox"
-              [checked]="status === 'verified'"
-              [disabled]="!tiles.length"
-              (change)="setVerified(verification.checked)"
-            />
-            {{ 'I have checked these tiles' | t }}
-          </label>
         </section>
         <section class="card">
           <div class="section-heading">
-            <span class="step">03</span>
+            <span class="step">02</span>
             <h2>{{ 'Round & win details' | t }}</h2>
           </div>
           <div class="form-grid">
-            <label>
-              {{ 'Dealer' | t }}
-              <select [(ngModel)]="dealer" (ngModelChange)="changed()">
-                @for (p of players; track p.id) {
-                  <option [value]="p.id">{{ p.name }}</option>
-                }
-              </select>
-            </label>
-            <label>
-              {{ 'Round wind' | t }}
-              <select [(ngModel)]="roundWind" (ngModelChange)="changed()">
-                @for (wind of winds; track wind) {
-                  <option [value]="wind">{{ wind | t }}</option>
-                }
-              </select>
-            </label>
+            @if (tableSettings.waremeMultiplier !== 1) {
+              <label>
+                {{ 'Wareme player' | t }}
+                <select [(ngModel)]="waremePlayerId" (ngModelChange)="changed()">
+                  <option value="">{{ 'Choose a player' | t }}</option>
+                  @for (player of players; track player.id) {
+                    <option [value]="player.id">{{ player.name }}</option>
+                  }
+                </select>
+              </label>
+            }
+            @if (!match()) {
+              <label>
+                {{ 'Dealer' | t }}
+                <select [(ngModel)]="dealer" (ngModelChange)="changed()">
+                  @for (p of players; track p.id) {
+                    <option [value]="p.id">{{ p.name }}</option>
+                  }
+                </select>
+              </label>
+              <label>
+                {{ 'Round wind' | t }}
+                <select [(ngModel)]="roundWind" (ngModelChange)="changed()">
+                  @for (wind of winds; track wind) {
+                    <option [value]="wind">{{ wind | t }}</option>
+                  }
+                </select>
+              </label>
+            }
             @if (method === 'ron') {
               <label>
                 {{ 'Discarder' | t }}
@@ -471,17 +485,43 @@
                 </select>
               </label>
             }
+            @if (!match()) {
+              <label>
+                {{ 'Honba' | t }}
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                  [(ngModel)]="honba"
+                  (ngModelChange)="changed()"
+                />
+              </label>
+            }
             <label>
-              {{ 'Honba' | t }}
+              {{ 'Other-player Kans' | t }}
               <input
                 type="number"
                 min="0"
-                max="100"
-                step="1"
-                [(ngModel)]="honba"
+                max="4"
+                [(ngModel)]="otherKans"
                 (ngModelChange)="changed()"
               />
             </label>
+            @if (!match()) {
+              <label>
+                {{ 'Hand number' | t }}
+                <input
+                  type="number"
+                  min="1"
+                  [max]="rules.playerCount"
+                  [(ngModel)]="handNumber"
+                  (ngModelChange)="changed()"
+                />
+              </label>
+            }
+          </div>
+          <div class="indicator-grid">
             <div>
               <app-tile-input
                 label="Dora indicators"
@@ -500,28 +540,6 @@
                 [redFives]="settings.redFives"
               />
             </div>
-          </div>
-          <div class="form-grid">
-            <label>
-              {{ 'Other-player Kans' | t }}
-              <input
-                type="number"
-                min="0"
-                max="4"
-                [(ngModel)]="otherKans"
-                (ngModelChange)="changed()"
-              />
-            </label>
-            <label>
-              {{ 'Hand number' | t }}
-              <input
-                type="number"
-                min="1"
-                [max]="rules.playerCount"
-                [(ngModel)]="handNumber"
-                (ngModelChange)="changed()"
-              />
-            </label>
           </div>
           <p class="hint">
             {{
@@ -613,7 +631,6 @@
           [book]="book"
           [rules]="rules"
           [winner]="winner"
-          [status]="status"
           [busy]="busy()"
           (confirmSettlement)="settle()"
         />

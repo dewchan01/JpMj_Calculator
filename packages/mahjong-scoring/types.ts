@@ -12,6 +12,7 @@ export interface ScoringInput {
   doraIndicators: Tile[];
   uraIndicators: Tile[];
   otherPlayerKans?: number;
+  waremePlayerId?: string;
 }
 export interface Group {
   type: 'sequence' | 'triplet' | 'kan';

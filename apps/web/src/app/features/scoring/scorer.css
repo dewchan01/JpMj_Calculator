@@ -4,6 +4,49 @@
   border: 1px solid var(--border);
   border-radius: 12px;
 }
+.assignment-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(560px, calc(100vw - 32px));
+  max-height: 85dvh;
+  overflow-y: auto;
+  padding: 20px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+.assignment-dialog::backdrop {
+  background: rgb(0 0 0 / 55%);
+}
+.assignment-dialog .assignment-panel {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.assignment-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.meld-order {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 12px;
+}
+.meld-order input {
+  max-width: 100px;
+}
+.indicator-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
 .entry-preview {
   display: flex;
   flex-wrap: wrap;

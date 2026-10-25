@@ -1,0 +1,49 @@
+.player-library-open {
+  margin-block: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.players-dialog {
+  width: min(520px, calc(100vw - 24px));
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+}
+.players-dialog::backdrop {
+  background: rgb(0 0 0 / 45%);
+}
+.players-heading {
+  position: sticky;
+  top: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.players-heading h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+.players-heading button {
+  min-height: 44px;
+  padding: 8px 18px;
+  background: var(--green);
+  color: var(--page);
+  border-radius: 8px;
+}
+.player-library {
+  padding: 16px;
+}
+.player-library .action-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+}

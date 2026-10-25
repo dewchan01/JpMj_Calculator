@@ -18,11 +18,35 @@
         {{ eventLabel(event) }}
         <small>{{ event.timestamp | date: 'medium' : undefined : i18n.locale() }}</small>
       </summary>
+      @if (event.durationMs !== undefined) {
+        <p class="hint">
+          {{ 'Recorded play time' | t }}: {{ event.durationMs / 60000 | number: '1.1-1' }}
+          {{ 'minutes' | t }}
+        </p>
+      }
+      @if (event.liveBefore?.actions?.length) {
+        <h3>{{ 'Actions during this hand' | t }}</h3>
+        @for (action of event.liveBefore.actions; track $index) {
+          <p class="hint">
+            {{ action.timestamp | date: 'shortTime' : undefined : i18n.locale() }} ·
+            {{ action.playerId ? name(action.playerId) : '' }} {{ action.type | t }}
+          </p>
+        }
+      }
       @for (p of event.payments; track $index) {
         <div class="explain-row">
           <span>{{ name(p.from) }} → {{ name(p.to) }}</span>
           <strong>{{ p.amount | number }}</strong>
         </div>
+      }
+      @if (chips(event).length) {
+        <h3>{{ 'Net chips' | t }}</h3>
+        @for (chip of chips(event); track chip.id) {
+          <div class="explain-row">
+            <span>{{ name(chip.id) }}</span>
+            <strong>{{ chip.value | number }}</strong>
+          </div>
+        }
       }
       @if (event.hand) {
         <p class="hint">
@@ -56,7 +80,9 @@
         }
       }
       <p class="history-context">
-        {{ ruleName(eventRules(event)) | t }} · v{{ eventRules(event).version }}
+        {{ eventRules(event).name ?? (ruleName(eventRules(event)) | t) }} · v{{
+          eventRules(event).version
+        }}
       </p>
       @if (event.drawInput; as draw) {
         <p>{{ draw.type | t }} · {{ draw.reason ?? '' | t }}</p>

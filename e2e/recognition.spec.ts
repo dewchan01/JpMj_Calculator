@@ -1,3 +1,4 @@
+import { openQuickScore, toggleTheme } from './helpers/navigation';
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
@@ -28,7 +29,7 @@ test('file configuration, editable capture preview, and independent tile targets
     });
   });
   await page.goto('/');
-  await page.getByRole('link', { name: 'Quick score', exact: true }).click();
+  await openQuickScore(page);
   await expect(page.getByRole('textbox', { name: 'Detection API endpoint' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Enter tiles', exact: true }).click();
   const capture = page.locator('app-photo-capture').first();
@@ -93,7 +94,7 @@ test('invalid configuration disables uploads without preventing manual previews'
 }) => {
   await page.route('**/config.json', (route) => route.fulfill({ json: {} }));
   await page.goto('/');
-  await page.getByRole('link', { name: 'Quick score', exact: true }).click();
+  await openQuickScore(page);
   await page.getByRole('button', { name: 'Enter tiles', exact: true }).click();
   const capture = page.locator('app-photo-capture').first();
   await capture.locator('summary').click();
@@ -114,8 +115,8 @@ for (const dark of [false, true]) {
       route.fulfill({ json: { recognition: { provider: 'mock' } } }),
     );
     await page.goto('/');
-    if (dark) await page.getByRole('button', { name: 'Dark mode', exact: true }).click();
-    await page.getByRole('link', { name: 'Quick score', exact: true }).click();
+    if (dark) await toggleTheme(page);
+    await openQuickScore(page);
     await page.getByRole('button', { name: 'Enter tiles', exact: true }).click();
     const capture = page.locator('app-photo-capture').first();
     await capture.locator('summary').click();

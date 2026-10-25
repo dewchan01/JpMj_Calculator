@@ -18,7 +18,6 @@ export class ScoreResultView {
   readonly book = input.required<ReturnType<typeof balances> | null>();
   readonly rules = input.required<RuleProfile>();
   readonly winner = input.required<string>();
-  readonly status = input.required<'recognized' | 'corrected' | 'verified'>();
   readonly busy = input(false);
   readonly confirmSettlement = output<void>();
   readonly ruleName = ruleName;

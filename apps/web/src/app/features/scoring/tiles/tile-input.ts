@@ -1,3 +1,4 @@
+import { newId } from '../../../core/id/new-id';
 import { ErrorNotice } from '../../../shared/error-notice/error-notice';
 import { Component, computed, inject, input, linkedSignal, model, signal } from '@angular/core';
 import { form, FormField } from '@angular/forms/signals';
@@ -24,7 +25,7 @@ import { PhotoCapture } from '../capture/photo-capture';
   host: { '[attr.data-label]': 'label()' },
 })
 export class TileInput {
-  readonly notationHintId = `notation-hint-${crypto.randomUUID()}`;
+  readonly notationHintId = `notation-hint-${newId()}`;
   readonly value = model('');
   readonly label = input.required<string>();
   readonly playerCount = input.required<3 | 4>();

@@ -1,0 +1,51 @@
+import { openQuickScore, openRules } from './helpers/navigation';
+import { test, expect } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+
+test('one URL adapts navigation on resize without losing the hand or match', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.goto('/');
+  const navigation = page.locator('.app-navigation');
+  const checkBottomNavigation = async () => {
+    const bounds = (await navigation.boundingBox())!;
+    expect(bounds.x).toBe(0);
+    expect(bounds.width).toBe(390);
+    expect(bounds.y + bounds.height).toBe(900);
+  };
+  const checkSidebar = async () => {
+    const bounds = (await navigation.boundingBox())!;
+    expect(bounds.x).toBe(0);
+    expect(bounds.width).toBe(208);
+    expect(bounds.height).toBeGreaterThan(700);
+  };
+  await checkBottomNavigation();
+  await expect(page.getByRole('link', { name: /^(Mobile view|Desktop view)$/ })).toHaveCount(0);
+  const nav = page.getByRole('navigation', { name: 'Main navigation' });
+  await openQuickScore(page);
+  await expect(page).toHaveURL(/\/score$/);
+  await page.getByRole('button', { name: /Try an example hand/ }).click();
+  await expect(page.locator('.hand-tiles > button.tile')).toHaveCount(14);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await checkSidebar();
+  await expect(page).toHaveURL(/\/score$/);
+  await expect(page.locator('.hand-tiles > button.tile')).toHaveCount(14);
+  await page.setViewportSize({ width: 390, height: 900 });
+  await checkBottomNavigation();
+  await expect(page.locator('.hand-tiles > button.tile')).toHaveCount(14);
+  await openRules(page);
+  await expect(page).toHaveURL(/\/others\/rules$/);
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await expect(page.locator('.workspace > footer')).toBeHidden();
+  const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
+  expect(axe.violations).toEqual([]);
+  await nav.getByRole('link', { name: 'My table', exact: true }).click();
+  await page.getByRole('button', { name: /Start match/ }).click();
+  await expect(page).toHaveURL(/\/score\/[^/]+$/);
+  const matchUrl = page.url();
+  await expect(navigation).toBeHidden();
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(navigation).toBeHidden();
+  await expect(page).toHaveURL(matchUrl);
+  await expect(page.locator('.workspace > footer')).toBeHidden();
+  await expect(page.locator('app-table-summary')).toBeVisible();
+});

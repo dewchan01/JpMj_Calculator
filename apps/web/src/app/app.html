@@ -57,43 +57,67 @@
       </select>
     </div>
   </header>
-  <div class="shell">
-    <nav [attr.aria-label]="'Main navigation' | t">
-      <a
-        routerLink="/"
-        [class.active]="tableActive()"
-        [attr.aria-current]="tableActive() ? 'page' : null"
-      >
-        {{ 'My table' | t }}
-      </a>
-      <a routerLink="/score" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-        {{ 'Quick score' | t }}
-      </a>
-      <a routerLink="/about" routerLinkActive="active">{{ 'Rule coverage' | t }}</a>
-    </nav>
-  </div>
 </div>
-<div class="shell">
-  <main id="main">
-    <router-outlet />
-    @if (showStorage()) {
-      <app-storage-status />
-    }
-  </main>
-</div>
-<footer>
-  <a href="https://github.com/FluffyStuff/riichi-mahjong-tiles">
-    {{ 'Tile artwork by FluffyStuff (CC0)' | t }}
-  </a>
-  <br />
-  {{ 'Scoring stays on this device. Photo API mode uploads selected images.' | t }}
-  <p class="build-details">
-    v{{ version().version }} · {{ 'Commit' | t }} {{ version().commit
-    }}{{ version().dirty ? ' *' : '' }}
-  </p>
-  @if (configuration.supportEmail()) {
-    <a [href]="'mailto:' + configuration.supportEmail()">
-      {{ 'Support' | t }}: {{ configuration.supportEmail() }}
+<div class="app-navigation" [class.in-game]="liveTable()">
+  <nav [attr.aria-label]="'Main navigation' | t">
+    <a
+      routerLink="/"
+      [class.active]="tableActive()"
+      [attr.aria-current]="tableActive() ? 'page' : null"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 10 12 3l9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z" />
+      </svg>
+      {{ 'My table' | t }}
     </a>
-  }
-</footer>
+    <a routerLink="/settings" routerLinkActive="active">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 7h16M4 17h16" />
+        <circle cx="9" cy="7" r="3" />
+        <circle cx="15" cy="17" r="3" />
+      </svg>
+      {{ 'Settings' | t }}
+    </a>
+
+    <a routerLink="/records" routerLinkActive="active">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 3h16v18H4zM8 7h8M8 12h8M8 17h5" />
+      </svg>
+      {{ 'Records' | t }}
+    </a>
+    <a routerLink="/others" routerLinkActive="active">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="5" cy="12" r="1.5" />
+        <circle cx="12" cy="12" r="1.5" />
+        <circle cx="19" cy="12" r="1.5" />
+      </svg>
+      {{ 'Others' | t }}
+    </a>
+  </nav>
+</div>
+<div class="workspace" [class.live-page]="liveTable()">
+  <div class="shell">
+    <main id="main">
+      <router-outlet />
+      @if (showStorage()) {
+        <app-storage-status />
+      }
+    </main>
+  </div>
+  <footer>
+    <a href="https://github.com/FluffyStuff/riichi-mahjong-tiles">
+      {{ 'Tile artwork by FluffyStuff (CC0)' | t }}
+    </a>
+    <br />
+    {{ 'Scoring stays on this device. Photo API mode uploads selected images.' | t }}
+    <p class="build-details">
+      v{{ version().version }} · {{ 'Commit' | t }} {{ version().commit
+      }}{{ version().dirty ? ' *' : '' }}
+    </p>
+    @if (configuration.supportEmail()) {
+      <a [href]="'mailto:' + configuration.supportEmail()">
+        {{ 'Support' | t }}: {{ configuration.supportEmail() }}
+      </a>
+    }
+  </footer>
+</div>

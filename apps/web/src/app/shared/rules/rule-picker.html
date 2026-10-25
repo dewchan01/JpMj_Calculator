@@ -1,147 +1,24 @@
-<section class="rule-picker">
-  <label>
-    {{ 'Rule preset' | t }}
-    <select
-      [ngModel]="profile().preset ?? 'mahjong-soul'"
-      (ngModelChange)="select($event)"
-      [disabled]="locked()"
-    >
-      <option value="mahjong-soul">{{ 'Mahjong Soul' | t }}</option>
-      <option value="tenhou">{{ 'Tenhou' | t }}</option>
-      <option value="m-league" [disabled]="profile().playerCount !== 4">
-        {{ 'M.League' | t }}
-      </option>
-      <option value="custom">{{ 'Custom / house rules' | t }}</option>
-    </select>
-  </label>
-  <p class="hint">{{ description() | t }}</p>
-  <details>
-    <summary>{{ 'Compare rules and view settings' | t }}</summary>
-    <div class="rule-comparison">
-      <p>
-        <strong>{{ 'Mahjong Soul' | t }}</strong>
-        <br />
+<section class="rules-summary">
+  <div class="rules-heading">
+    <div>
+      <small>{{ 'Rules' | t }} · {{ profile().playerCount }}P</small>
+      <strong>
         {{
-          'Special waits award double Yakuman; triple Ron wins; Pao covers only the liable Yakuman component.'
-            | t
+          profile().preset === 'custom' && profile().name
+            ? profile().name
+            : (ruleName(profile()) | t)
         }}
-      </p>
-      <p>
-        <strong>{{ 'Tenhou' | t }}</strong>
-        <br />
-        {{
-          'Special waits award single Yakuman; triple Ron draws; Pao covers the whole combined Yakuman hand.'
-            | t
-        }}
-      </p>
-      <p>
-        <strong>{{ 'Custom / house rules' | t }}</strong>
-        <br />
-        {{
-          'Start with Mahjong Soul settings and change the options below. Custom settings are saved per match.'
-            | t
-        }}
-      </p>
+      </strong>
     </div>
-    <div class="form-grid">
-      <label>
-        {{ 'Starting points' | t }}
-        <input
-          type="number"
-          min="1000"
-          max="100000"
-          step="1000"
-          [ngModel]="profile().startingPoints"
-          (ngModelChange)="root('startingPoints', $event)"
-          [disabled]="!editable"
-        />
-      </label>
-      <label>
-        {{ 'Multiple Ron' | t }}
-        <select
-          [ngModel]="settings.multipleRon"
-          (ngModelChange)="setting('multipleRon', $event)"
-          [disabled]="!editable"
-        >
-          <option value="all">{{ 'All winners, including triple Ron' | t }}</option>
-          <option value="triple-draw">{{ 'Double Ron; triple Ron aborts' | t }}</option>
-          <option value="head-bump">{{ 'Nearest winner only (head-bump)' | t }}</option>
-        </select>
-      </label>
-      <label>
-        {{ 'Responsibility payments' | t }}
-        <select
-          [ngModel]="settings.pao"
-          (ngModelChange)="setting('pao', $event)"
-          [disabled]="!editable"
-        >
-          <option value="component">{{ 'Liable Yakuman component only' | t }}</option>
-          <option value="whole-hand">{{ 'Whole combined Yakuman hand' | t }}</option>
-          <option value="off">{{ 'Disabled' | t }}</option>
-        </select>
-      </label>
-      <label>
-        {{ 'Counted limit (13+ Han)' | t }}
-        <select
-          [ngModel]="settings.kazoe"
-          (ngModelChange)="setting('kazoe', $event)"
-          [disabled]="!editable"
-        >
-          <option value="yakuman">{{ 'Counted Yakuman' | t }}</option>
-          <option value="sanbaiman">{{ 'Sanbaiman' | t }}</option>
-        </select>
-      </label>
-      @if (profile().playerCount === 3) {
-        <label>
-          {{ 'Sanma Tsumo payment' | t }}
-          <select
-            [ngModel]="profile().tsumo"
-            (ngModelChange)="root('tsumo', $event)"
-            [disabled]="!editable"
-          >
-            <option value="loss">{{ 'Tsumo-loss' | t }}</option>
-            <option value="north-bisection">{{ 'North-bisection (house rule)' | t }}</option>
-          </select>
-        </label>
-      }
-    </div>
-    <div class="claims">
-      @for (option of toggles; track option.key) {
-        <label class="check">
-          <input
-            type="checkbox"
-            [ngModel]="settings[option.key]"
-            (ngModelChange)="setting(option.key, $event)"
-            [disabled]="!editable"
-          />
-          {{ option.label | t }}
-        </label>
-      }
-      <label class="check">
-        <input
-          type="checkbox"
-          [ngModel]="profile().kiriage"
-          (ngModelChange)="root('kiriage', $event)"
-          [disabled]="!editable"
-        />
-        {{ 'Kiriage Mangan' | t }}
-      </label>
-      <label class="check">
-        <input
-          type="checkbox"
-          [ngModel]="profile().openTanyao"
-          (ngModelChange)="root('openTanyao', $event)"
-          [disabled]="!editable"
-        />
-        {{ 'Open Tanyao' | t }}
-      </label>
-    </div>
-    @if (locked()) {
-      <p class="hint">
-        {{
-          'This match keeps its saved rule snapshot. Start a new match to use different rules.' | t
-        }}
-      </p>
-    }
-  </details>
+    <a routerLink="/settings" [queryParams]="{ players: profile().playerCount }">
+      {{ 'Settings' | t }}
+    </a>
+  </div>
+  @if (locked()) {
+    <p class="hint">
+      {{
+        'This match keeps its saved rule snapshot. Start a new match to use different rules.' | t
+      }}
+    </p>
+  }
 </section>

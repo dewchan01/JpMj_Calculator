@@ -11,3 +11,4 @@ artifacts/
 
 # Generated at build/start with the current version and commit
 /apps/web/public/version.json
+todo.md

@@ -1,3 +1,9 @@
+import { newId } from '../../core/id/new-id';
+import { FinalResults } from './final-results/final-results';
+import { QuickScoreSession } from './quick-score-session';
+import { handChips } from '../../../../../../packages/mahjong-scoring/chips';
+import { RuleLibrary } from '../settings/rule-library';
+import { TileDropZones, type TileDropTarget } from './tiles/tile-drop-zones/tile-drop-zones';
 import { ErrorNotice } from '../../shared/error-notice/error-notice';
 import { TileReorder } from './tiles/tile-reorder';
 import { TableSummary } from './table-summary/table-summary';
@@ -5,7 +11,7 @@ import { TileEntryDialog } from './tiles/tile-entry-dialog';
 import { TileInput } from './tiles/tile-input';
 import { TilePicker } from './tiles/tile-picker';
 import { TileArt } from '../../shared/tile-art/tile-art';
-import { Component, inject, signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -28,8 +34,7 @@ import {
   type LedgerEvent,
 } from '../../../../../../packages/mahjong-core/ledger';
 import {
-  rankedRules,
-  presetRules,
+  tableRules,
   ruleName,
   ruleSettings,
   type RuleProfile,
@@ -49,7 +54,8 @@ import {
   type DrawInput,
   type RoundSettlement,
 } from '../../../../../../packages/mahjong-scoring/rounds';
-interface Draft {
+export interface Draft {
+  waremePlayerId?: string;
   tiles: Tile[];
   melds: Meld[];
   kita: Tile[];
@@ -96,8 +102,10 @@ const emptyFlags = (): Flags => ({
 });
 @Component({
   imports: [
+    FinalResults,
     ErrorNotice,
     TileInput,
+    TileDropZones,
     TableSummary,
     TileEntryDialog,
     TileReorder,
@@ -117,6 +125,12 @@ const emptyFlags = (): Flags => ({
   styleUrl: './scorer.css',
 })
 export class Scorer {
+  readonly library = inject(RuleLibrary);
+  private readonly quickSession = inject(QuickScoreSession);
+  waremePlayerId = '';
+  get tableSettings() {
+    return tableRules(this.rules);
+  }
   readonly i18n = inject(I18n);
   private readonly repo = inject(Repository);
   private readonly route = inject(ActivatedRoute);
@@ -166,7 +180,10 @@ export class Scorer {
     { key: 'chiihou', label: 'Chiihou (first non-dealer draw)' },
   ];
   readonly suits = ['Characters · Man', 'Circles · Pin', 'Bamboo · Sou', 'Honors'];
-  count: 3 | 4 = 4;
+  count: 3 | 4 =
+    this.quickSession.value?.preferredCount === this.library.preferredCount
+      ? this.quickSession.value.count
+      : this.library.preferredCount;
   tiles: Tile[] = [];
   melds: Meld[] = [];
   kita: Tile[] = [];
@@ -178,7 +195,7 @@ export class Scorer {
   roundWind: Wind = 'east';
   honba = 0;
   handNumber = 1;
-  quickRules = rankedRules(4);
+  quickRules = this.library.active(this.count);
   otherKans = 0;
   replacement: 'kan' | 'kita' = 'kan';
   robbed: 'kakan' | 'ankan' | 'kita' = 'kakan';
@@ -211,11 +228,20 @@ export class Scorer {
   private readonly past: Draft[] = [];
   private readonly future: Draft[] = [];
   private resultFingerprint = '';
-  private eventId = crypto.randomUUID();
+  private eventId = newId();
   private draftQueue: Promise<void> = Promise.resolve();
   private loadedId = '';
   private loading = true;
   constructor() {
+    inject(DestroyRef).onDestroy(() => {
+      if (!this.route.snapshot.paramMap.has('id') && !this.loading)
+        this.quickSession.value = {
+          count: this.count,
+          preferredCount: this.library.preferredCount,
+          rules: JSON.stringify(this.rules),
+          draft: this.draft(),
+        };
+    });
     void this.load();
   }
 
@@ -314,6 +340,17 @@ export class Scorer {
         this.handNumber = m.handNumber;
         const saved = await this.repo.draft(id);
         if (saved) this.restore(JSON.parse(saved) as Draft);
+      } else if (this.quickSession.value?.count === this.count) {
+        const saved = this.quickSession.value;
+        this.restore(saved.draft);
+        if (saved.rules !== JSON.stringify(this.rules)) {
+          this.queued = [];
+          if (!this.settings.kokushiAnkanRon && this.robbed === 'ankan') this.robbed = 'kakan';
+          if (!this.settings.kitaRinshan && this.replacement === 'kita') {
+            this.replacement = 'kan';
+            this.flags.rinshan = false;
+          }
+        }
       }
     } catch (e) {
       this.error.set(this.message(e));
@@ -324,6 +361,7 @@ export class Scorer {
   }
   private draft(): Draft {
     return structuredClone({
+      waremePlayerId: this.waremePlayerId,
       tiles: this.tiles,
       melds: this.melds,
       kita: this.kita,
@@ -347,6 +385,7 @@ export class Scorer {
     });
   }
   private restore(d: Draft): void {
+    this.waremePlayerId = d.waremePlayerId ?? '';
     this.selectedHandTiles.set([]);
     // Restore only editor fields: persisted data must never replace services or signals.
     this.tiles = d.tiles;
@@ -369,6 +408,13 @@ export class Scorer {
     this.firstTurn = d.firstTurn ?? false;
     this.flags = { ...emptyFlags(), ...d.flags };
     this.queued = d.queued ?? [];
+    const match = this.match();
+    if (match) {
+      this.dealer = match.dealerId;
+      this.roundWind = match.roundWind;
+      this.honba = match.honba;
+      this.handNumber = match.handNumber;
+    }
   }
   private remember(): void {
     this.past.push(this.draft());
@@ -421,7 +467,7 @@ export class Scorer {
   }
   addTile(tile: Tile): void {
     this.remember();
-    this.tiles.push({ ...structuredClone(tile), id: crypto.randomUUID() });
+    this.tiles.push({ ...structuredClone(tile), id: newId() });
     if (!this.winningId) this.winningId = this.tiles.at(-1)!.id;
     this.editStatus();
   }
@@ -433,7 +479,8 @@ export class Scorer {
       this.winningId = tile.id;
       this.editStatus();
     } else {
-      if (this.errorArea() === 'assignment') this.error.set('');
+      if (this.errorArea() === 'assignment' || this.errorArea().startsWith('drop:'))
+        this.error.set('');
       this.selectedHandTiles.update((ids) =>
         ids.includes(tile.id) ? ids.filter((id) => id !== tile.id) : [...ids, tile.id],
       );
@@ -442,7 +489,8 @@ export class Scorer {
   }
   keepConcealed(): void {
     this.selectedHandTiles.set([]);
-    if (this.errorArea() === 'assignment') this.error.set('');
+    if (this.errorArea() === 'assignment' || this.errorArea().startsWith('drop:'))
+      this.error.set('');
   }
   toggleDeleteMode(): void {
     this.deleteMode = !this.deleteMode;
@@ -459,7 +507,7 @@ export class Scorer {
   applyNotation(): void {
     this.beginAction('tiles');
     try {
-      const tiles = parseTiles(this.notation, crypto.randomUUID());
+      const tiles = parseTiles(this.notation, newId());
 
       this.remember();
       this.tiles = tiles;
@@ -477,7 +525,7 @@ export class Scorer {
     this.remember();
     this.tiles = parseTiles(
       this.rules.playerCount === 3 ? '123p456p789s234s55p' : '123m456m789p234s55p',
-      crypto.randomUUID(),
+      newId(),
     );
     this.melds = [];
     this.kita = [];
@@ -505,10 +553,6 @@ export class Scorer {
     this.uraText = '';
     this.editStatus();
   }
-  setVerified(verified: boolean): void {
-    this.status = verified ? 'verified' : 'corrected';
-    this.changed();
-  }
   changeWinner(): void {
     this.selectedHandTiles.set([]);
     if (this.source === this.winner)
@@ -528,14 +572,7 @@ export class Scorer {
   }
   changeCount(): void {
     this.assignmentTarget.set('pon');
-    const preset =
-      this.quickRules.preset === 'm-league' && this.count === 3
-        ? 'mahjong-soul'
-        : this.quickRules.preset;
-    this.quickRules =
-      preset === 'custom'
-        ? { ...this.quickRules, id: `custom-${this.count}p`, playerCount: this.count }
-        : presetRules(preset ?? 'mahjong-soul', this.count);
+    this.quickRules = this.library.active(this.count);
     this.queued = [];
     this.resetHand();
     this.past.length = 0;
@@ -577,7 +614,7 @@ export class Scorer {
       m.id === meld.id
         ? {
             ...m,
-            id: crypto.randomUUID(),
+            id: newId(),
             type: 'kakan',
             tiles: [...m.tiles, tile],
             originalPon,
@@ -659,6 +696,7 @@ export class Scorer {
       doraIndicators: parseTiles(this.doraText, 'dora'),
       uraIndicators: parseTiles(this.uraText, 'ura'),
       otherPlayerKans: this.otherKans,
+      waremePlayerId: this.waremePlayerId || undefined,
     };
   }
   calculate(): void {
@@ -680,8 +718,6 @@ export class Scorer {
     try {
       const match = this.match();
       if (!match) throw new Error('Create a match to save settlements.');
-      if (this.status !== 'verified')
-        throw new Error('Verify your tiles before confirming settlement.');
       const input = this.input();
       if (this.resultFingerprint !== JSON.stringify(input))
         throw new Error('Inputs changed; calculate again.');
@@ -711,6 +747,7 @@ export class Scorer {
           win: input.win,
           roundWind: this.roundWind,
           scoringInput: structuredClone(input),
+          chipDeltas: handChips(input, result),
         },
         round,
         {
@@ -722,7 +759,8 @@ export class Scorer {
       );
       await this.repo.save(updated, match.updatedAt);
       this.match.set(updated);
-      this.eventId = crypto.randomUUID();
+      this.eventId = newId();
+      this.waremePlayerId = '';
       this.dealer = updated.dealerId;
       this.roundWind = updated.roundWind;
       this.honba = updated.honba;
@@ -760,10 +798,13 @@ export class Scorer {
           )
       )
         throw new Error('This player has already deposited in the current hand.');
-      if (match.rules.preset !== 'm-league' && (this.book?.players[this.depositPlayer] ?? 0) < 1000)
+      if (
+        !tableRules(match.rules).allowNegativeRiichi &&
+        (this.book?.players[this.depositPlayer] ?? 0) < 1000
+      )
         throw new Error('Not enough points for a Riichi deposit.');
       const updated = appendEvent(match, {
-        id: crypto.randomUUID(),
+        id: newId(),
         type: 'riichiDeposit',
         timestamp: new Date().toISOString(),
         payments: [
@@ -815,6 +856,56 @@ export class Scorer {
     a.download = `riichi-${match.id}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+  get openMeldCount(): number {
+    return this.melds.filter((meld) => meld.type !== 'ankan').length;
+  }
+  get concealedKanCount(): number {
+    return this.melds.filter((meld) => meld.type === 'ankan').length;
+  }
+  readonly assignmentDialog = viewChild<ElementRef<HTMLDialogElement>>('assignmentDialog');
+  readonly assignmentOpen = signal(false);
+  openAssignment(): void {
+    this.beginAction('assignment');
+    this.assignmentOpen.set(true);
+    this.assignmentDialog()?.nativeElement.showModal();
+  }
+  closeAssignment(): void {
+    this.assignmentOpen.set(false);
+    this.assignmentDialog()?.nativeElement.close();
+  }
+  assignSelectedToZone(target: TileDropTarget): void {
+    const index = this.tiles.findIndex((tile) => this.selectedHandTiles().includes(tile.id));
+    if (index >= 0) this.dropHandTile({ index, target });
+  }
+  dropHandTile({ index, target }: { index: number; target: string }): void {
+    if (!['meld', 'ankan', 'kita'].includes(target) || !this.tiles[index]) return;
+    const tile = this.tiles[index];
+    const assignment = target === 'meld' ? 'pon' : (target as 'ankan' | 'kita');
+    let ids = this.selectedHandTiles().includes(tile.id) ? this.selectedHandTiles() : [tile.id];
+    if (ids.length === 1 && assignment !== 'kita') {
+      const matching = this.tiles.filter(
+        (candidate) => kindIndex(candidate.kind) === kindIndex(tile.kind),
+      );
+      const required = assignment === 'pon' ? 3 : 4;
+      if (matching.length === required || (target === 'meld' && matching.length === 4)) {
+        ids = matching.map((candidate) => candidate.id);
+        this.calledIndex = ids.indexOf(tile.id);
+      }
+    }
+    this.selectedHandTiles.set(ids);
+    this.selectAssignment(assignment);
+    if (target === 'meld') {
+      if (ids.length === 4) this.selectAssignment('daiminkan');
+      else if (
+        this.selectedTiles.some((candidate) => kindIndex(candidate.kind) !== kindIndex(tile.kind))
+      )
+        this.selectAssignment('chi');
+      this.openAssignment();
+      return;
+    }
+    this.groupHandTiles();
+    if (this.error()) this.errorArea.set('drop:' + target);
   }
   readonly assignmentTarget = signal<AssignmentTarget>('pon');
   readonly selectedHandTiles = signal<string[]>([]);
@@ -901,7 +992,7 @@ export class Scorer {
       this.melds = [
         ...this.melds,
         {
-          id: crypto.randomUUID(),
+          id: newId(),
           type: target,
           tiles: selected,
           callOrder: Math.max(0, ...this.melds.map((meld) => meld.callOrder ?? 0)) + 1,
@@ -915,10 +1006,11 @@ export class Scorer {
       this.winningId = this.tiles.at(-1)?.id ?? '';
     this.selectedHandTiles.set([]);
     this.editStatus();
+    this.closeAssignment();
   }
   applyWorkspacePhoto(tiles: Tile[]): void {
     this.remember();
-    this.tiles = tiles.map((tile) => ({ ...tile, id: crypto.randomUUID() }));
+    this.tiles = tiles.map((tile) => ({ ...tile, id: newId() }));
     this.melds = [];
     this.kita = [];
     this.selectedHandTiles.set([]);
@@ -940,8 +1032,7 @@ export class Scorer {
   queueRon(): void {
     this.beginAction('queued');
     try {
-      if (this.method !== 'ron' || this.status !== 'verified')
-        throw new Error('Verify a Ron hand before adding it to the winner list.');
+      if (this.method !== 'ron') throw new Error('Select Ron before adding a winner.');
       if (this.queued.some((i) => i.win.winnerId === this.winner))
         throw new Error('This winner is already queued.');
       const input = this.input();
@@ -1024,6 +1115,15 @@ export class Scorer {
         scoringInputs: this.tab === 'draw' ? undefined : inputs,
         drawInput: this.tab === 'draw' ? this.drawInput() : undefined,
       };
+      if (this.tab !== 'draw') {
+        event.chipDeltas = Object.fromEntries(this.players.map((player) => [player.id, 0]));
+        round.winnerIds.forEach((id, index) => {
+          const input = inputs.find((input) => input.win.winnerId === id);
+          if (input && round.results[index])
+            for (const [player, chips] of Object.entries(handChips(input, round.results[index])))
+              event.chipDeltas![player] += chips;
+        });
+      }
       const context =
         this.tab !== 'draw' && first
           ? {
@@ -1045,7 +1145,8 @@ export class Scorer {
       this.roundWind = updated.roundWind;
       this.honba = updated.honba;
       this.handNumber = updated.handNumber;
-      this.eventId = crypto.randomUUID();
+      this.eventId = newId();
+      this.waremePlayerId = '';
       this.queued = [];
       this.resetHand();
       this.drawConfirmed = false;

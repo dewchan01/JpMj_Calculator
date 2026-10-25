@@ -1,3 +1,4 @@
+import { openQuickScore } from './helpers/navigation';
 import { test, expect } from '@playwright/test';
 
 test.use({ viewport: { width: 390, height: 900 }, hasTouch: true });
@@ -6,7 +7,7 @@ test('mobile sheet snaps back, dismisses past threshold, and preserves tile edit
   page,
 }) => {
   await page.goto('/');
-  await page.getByRole('link', { name: 'Quick score', exact: true }).click();
+  await openQuickScore(page);
   const trigger = page.getByRole('button', { name: 'Enter tiles', exact: true });
   await trigger.click();
   const dialog = page.getByRole('dialog');

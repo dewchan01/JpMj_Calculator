@@ -1,3 +1,4 @@
+<a class="text-link" routerLink="/others">← {{ 'Others' | t }}</a>
 <section class="page-heading">
   <p class="eyebrow">{{ 'Know your rules' | t }}</p>
   <h1>{{ 'Transparent by design.' | t }}</h1>
@@ -16,14 +17,21 @@
   <h2>{{ 'What needs your input' | t }}</h2>
   <p>
     {{
-      'The winning tile is included in the concealed hand. Declare the winner, discarder, dealer, round wind and situational claims yourself. The scorer validates tile structure and claim consistency; it cannot establish Furiten, legal Riichi timing or unrecorded game history.'
+      'Choose the winner, discarder and situational claims. Ongoing matches supply dealer, round wind and honba automatically; Quick score lets you set them manually. Tile and claim validation still runs before settlement.'
+        | t
+    }}
+  </p>
+  <h2>{{ 'Settings' | t }}</h2>
+  <p>
+    {{
+      'Save named rules separately for 3P and 4P on Settings. Expand the help beside each option for examples. Applied rules affect new tables and Quick score; existing tables keep their original rules. Final results include Oka, Uma, chips and optional money conversion.'
         | t
     }}
   </p>
   <h2>{{ 'Explicit limits' | t }}</h2>
   <p>
     {{
-      'You must declare legal timing, Tenpai, Nagashi eligibility, call order and revealed indicators. The app checks consistency and calculates settlement, but has no full wall/discard simulation. Local Yaku, chombo penalties, final Uma/Oka and rank progression are outside these presets.'
+      'You must declare legal timing, Tenpai, Nagashi eligibility, call order and revealed indicators. The app checks consistency and calculates settlement, but has no full wall/discard simulation. Local Yaku, chombo penalties and platform rank progression are outside these presets.'
         | t
     }}
   </p>

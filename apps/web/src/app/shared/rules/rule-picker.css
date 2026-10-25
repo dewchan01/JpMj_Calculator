@@ -1,0 +1,26 @@
+.rules-summary {
+  padding: 16px;
+  margin-block: 12px 20px;
+  background: var(--tray-surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.rules-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.rules-heading strong,
+.rules-heading small {
+  display: block;
+}
+.rules-heading small {
+  color: var(--muted);
+  font-size: 0.7rem;
+  margin-bottom: 4px;
+}
+.rules-heading a {
+  font-size: 0.8rem;
+  padding: 10px 0;
+}

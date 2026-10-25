@@ -1,0 +1,31 @@
+﻿<p class="hint">
+  {{
+    'Drag a matching tile or select tiles first. Open melds ask for call details; concealed Kan and North are assigned immediately.'
+      | t
+  }}
+</p>
+<div class="drop-zones">
+  @for (zone of zones(); track zone.target) {
+    <section
+      class="drop-zone"
+      [attr.data-tile-drop-target]="zone.target"
+      [attr.aria-label]="zone.label | t"
+    >
+      <h3>
+        {{ zone.label | t }}
+        <span class="pill">{{ zone.count }}</span>
+      </h3>
+      <p>{{ 'Drop tiles here' | t }}</p>
+      <button
+        class="secondary"
+        [disabled]="!hasSelection()"
+        [attr.aria-label]="zone.action | t"
+        (click)="assigned.emit(zone.target)"
+      >
+        {{ 'Move selected' | t }}
+      </button>
+    </section>
+  }
+</div>
+
+<app-error-notice [message]="errorTarget().startsWith('drop:') ? error() : ''" />

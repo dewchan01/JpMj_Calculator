@@ -20,15 +20,19 @@ npm.cmd run build
 npm.cmd run preview
 ```
 
-The development server intentionally does not enable the service worker. Load the production app online once before going offline. Serve the `dist/web/browser` directory over HTTPS when deploying. Hosting must fall back to `index.html` for Angular routes. Camera and PWA features on an iPhone require HTTPS outside localhost; an ordinary HTTP LAN address is insufficient for full PWA behavior. No Docker, backend, database server, account or API key is needed.
+The development server intentionally does not enable the service worker. Load the production app online once before going offline. Serve the `dist/web/browser` directory over HTTPS when deploying. Hosting must fall back to `index.html` for Angular routes. Manual scoring and match entry work over an HTTP LAN address (use `npm run start:host` for phone previews). Camera and PWA features on an iPhone require HTTPS outside localhost; an ordinary HTTP LAN address is insufficient for full PWA behavior. No Docker, backend, database server, account or API key is needed.
 
-## Try a hand
+## Play at a table
 
-1. Start a 3P/4P match, or open Quick score. Choose Mahjong Soul, Tenhou or Custom, compare the descriptions, and select an East-only or East/South match.
+Save reusable player names on My table, choose them for seats, then start a 3P/4P match. The game opens a compact live table. Tap a player to record Riichi, Chi/Pon/Kan or 3P North extraction; update Dora/Ura from the table. End this hand guides you through winner(s), method, concealed tiles, winning tile and conditional claims before settlement. The floating menu contains pause/resume, full-match ending, history/export/undo, game information, display settings, display seat swaps and help. The timer survives reloads and excludes pauses. Dice and point differences are available beside the table. See [Live table flow](docs/live-table.md).
+
+## Try a hand in Quick score
+
+1. Open Quick score from My table. Choose Mahjong Soul, Tenhou, M.League or a saved custom profile on Settings.
 2. Use **Try an example hand**, the palette, or compact notation (`123m456m789p234s55p`). The concealed hand includes the winning tile.
-3. Tick the winning-tile selector and tap the actual winning tile. Add separate melds and their providers if needed.
-4. Enter dealer, round wind, Ron/Tsumo, discarder, indicators and claims.
-5. Check the tiles, press **I have checked these tiles**, then calculate. Read Yaku, bonus Han, Fu and individual payments.
+3. Mark the actual winning tile. Drag a matching tile (or a selected group) into Open melds, Concealed Kan, or, in 3P, Extracted North. Open melds ask for the call details in a popup; concealed Kan and North are assigned immediately. Use the move buttons as a keyboard alternative. Assigned groups remain in the same hand card with return, upgrade and remove actions.
+4. Choose Ron/Tsumo, the discarder, indicators and claims. Ongoing games use their saved dealer, round wind, hand number and honba automatically; Quick score keeps these fields editable.
+5. Review the tiles and calculate. Read Yaku, bonus Han, Fu and individual payments. There is no separate verification checkbox; scoring and settlement still validate the hand and declarations.
 6. In a match, record Riichi deposits before settlement. Confirm and save; reopen History to audit or undo the latest event.
 
 Data and drafts stay in IndexedDB on this browser. JSON export provides a backup; import is not yet implemented. Site-data deletion removes local matches. Dealer rotation, honba, round wind, extension rounds, bankruptcy and first-place dealer finish are automatic after settlement. Undo restores points and the preceding round state.
@@ -37,11 +41,11 @@ Data and drafts stay in IndexedDB on this browser. JSON export provides a backup
 
 - **Mahjong Soul:** double Yakuman for Kokushi thirteen-wait, Suuankou tanki, pure Chuuren and Daisuushii; triple Ron wins; Pao applies to the liable Yakuman component.
 - **Tenhou:** those special forms remain single Yakuman; triple Ron is an abortive draw; Pao covers the whole combined Yakuman hand. The preset selects open Tanyao and red fives.
-- **Custom:** configure starting points, red fives, open Tanyao, Kiriage, Yakuman stacking/special multipliers, counted limit, multiple Ron/head-bump, Pao, Kokushi robbery of Ankan, Kita replacement Rinshan and Sanma Tsumo-loss/North-bisection.
+- **Custom:** save named, separate 3P/4P profiles on Settings. Configure game progression, bankruptcy ending, starting/return scores, Noten, Honba, Yakitori, Uma, tied ranks, final rounding, money/chip conversion, Wareme, Riichi escrow recipients and existing hand-scoring options. 3P supports Tsumo loss, North-bisection without loss, and equal shares ignoring the dealer. The no-100-point-stick option rounds each hand payment upward to 1,000 after Honba/Wareme. Each setting has expandable help.
 
 Settings are saved as a versioned snapshot when creating a match. Existing matches keep their snapshots; switching Quick score presets preserves entered tiles. Existing version-1 matches remain readable, and historical score results are not recalculated.
 
-For **multiple Ron**, verify each winner’s hand and use **Add verified Ron winner**. Enter all winners, then review and confirm the combined settlement. Every hand must use the same discarded tile and round context. Honba and table sticks go to the nearest eligible winner once.
+For **multiple Ron**, review each winner’s hand and use **Add Ron winner**. Enter all winners, then review and confirm the combined settlement. Every hand must use the same discarded tile and round context. Honba goes to the nearest eligible winner once. Riichi escrow follows the saved nearest-winner or split policy.
 
 For **Pao**, enter exposed dragon/wind sets in original call order, or edit their order numbers. Kakan retains the original Pon’s provider/order. The responsible player pays according to the chosen preset; Sanma keeps its actual Tsumo shares.
 
@@ -117,3 +121,5 @@ parser preserves binding expressions and translation strings. See
 - Reference provenance and remaining verification limits are documented in [rule verification](docs/rule-verification.md).
 
 Angular compatibility reference: https://angular.dev/reference/versions
+
+Final results show raw points, Oka, Uma, net chips and money when a table ends. Money is `(final score × rate) + (net chips × chip value)`, rounded to two decimals with any residual assigned to first place. Chip transfers for valid Ippatsu, actual red/ura tiles and configured Yakuman awards are recorded separately from points. Chip value 0 disables chips. Undo removes the latest event’s point transfers, chip changes and final penalties together. The app calculates balances and never sends payments. Custom rules and matches are local to this browser origin.

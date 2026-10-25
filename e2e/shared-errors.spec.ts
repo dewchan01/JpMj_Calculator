@@ -1,4 +1,5 @@
-﻿import { test, expect, type Locator } from '@playwright/test';
+import { openQuickScore, toggleTheme } from './helpers/navigation';
+import { test, expect, type Locator } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 async function appearance(notice: Locator) {
@@ -24,11 +25,14 @@ for (const dark of [false, true]) {
       route.fulfill({ json: { recognition: { provider: 'mock' } } }),
     );
     await page.goto('/');
-    if (dark) await page.getByRole('button', { name: 'Dark mode', exact: true }).click();
-    await page.getByRole('link', { name: 'Quick score', exact: true }).click();
+    if (dark) await toggleTheme(page);
+    await openQuickScore(page);
     await page.getByRole('button', { name: /Calculate score/ }).click();
     const validation = page.locator('app-score-result .error-notice');
     await expect(validation).toBeFocused();
+    expect(
+      (await validation.boundingBox())!.y + (await validation.boundingBox())!.height,
+    ).toBeLessThanOrEqual((await page.locator('.app-navigation').boundingBox())!.y);
     await expect(validation.locator('svg.error-icon')).toBeVisible();
     await expect(validation.locator('svg.error-icon')).toHaveAttribute('aria-hidden', 'true');
     expect(await validation.locator('li').count()).toBeGreaterThan(1);
@@ -56,9 +60,11 @@ for (const dark of [false, true]) {
     await dialog.getByRole('button', { name: 'Done', exact: true }).click();
     await page.getByRole('link', { name: 'My table', exact: true }).click();
     await page.getByRole('button', { name: /Start match/ }).click();
-    await page.getByRole('button', { name: 'Record draw', exact: true }).click();
-    await page.getByRole('button', { name: 'Review draw settlement', exact: true }).click();
-    const draw = page.locator('app-round-review .error-notice');
+    await page.getByRole('button', { name: 'End this hand', exact: true }).click();
+    const game = page.locator('.game-prompt');
+    await game.getByRole('button', { name: 'Win', exact: true }).click();
+    await game.getByRole('button', { name: 'Next', exact: true }).click();
+    const draw = game.locator('.error-notice');
     await expect(draw).toBeFocused();
     expect(await appearance(draw)).toEqual(design);
   });

@@ -20,6 +20,11 @@ export class MatchHistory {
   readonly i18n = inject(I18n);
   readonly labels = tileLabel;
   readonly ruleName = ruleName;
+  chips(event: LedgerEvent) {
+    return Object.entries(event.chipDeltas ?? {})
+      .filter(([, value]) => value !== 0)
+      .map(([id, value]) => ({ id, value }));
+  }
   name(id: string): string {
     return id === 'table'
       ? this.i18n.t('Table pot')

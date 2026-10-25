@@ -1,9 +1,10 @@
+import { openQuickScore } from './helpers/navigation';
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 test('one manual collection assigns Pon and Kan afterward and returns groups', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('link', { name: 'Quick score', exact: true }).click();
+  await openQuickScore(page);
   await page.getByRole('button', { name: 'Enter tiles', exact: true }).click();
   const white = page.getByRole('button', { name: 'P: Add white dragon', exact: true });
   await white.click();
@@ -16,8 +17,13 @@ test('one manual collection assigns Pon and Kan afterward and returns groups', a
   await expect(tiles).toHaveCount(7);
   for (let index = 0; index < 3; index++) await tiles.nth(index).click();
   await page.getByRole('button', { name: 'Assign selected tiles', exact: true }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Assign selected tiles', exact: true })
+    .click();
   await expect(page.locator('.meld-row')).toHaveCount(1);
   for (let index = 0; index < 4; index++) await tiles.nth(index).click();
+  await page.getByRole('button', { name: 'Assign selected tiles', exact: true }).click();
   await page.getByRole('combobox', { name: 'Assign as', exact: true }).selectOption('ankan');
   await page.getByRole('button', { name: 'Assign selected tiles', exact: true }).click();
   await expect(page.locator('.meld-row')).toHaveCount(2);
@@ -37,7 +43,7 @@ test('provider and publishable key settings are not exposed to users', async ({ 
     localStorage.setItem('riichi-roboflow-publishable-key', 'obsolete-browser-key'),
   );
   await page.goto('/');
-  await page.getByRole('link', { name: 'Quick score', exact: true }).click();
+  await openQuickScore(page);
   await expect(page.getByRole('textbox', { name: 'Publishable API Key', exact: true })).toHaveCount(
     0,
   );
@@ -47,7 +53,7 @@ test('provider and publishable key settings are not exposed to users', async ({ 
 
 test('tiles from one entered hand can be grouped into Pon with undo', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('link', { name: 'Quick score', exact: true }).click();
+  await openQuickScore(page);
   await page.getByRole('button', { name: 'Enter tiles', exact: true }).click();
   await page.getByText('Type compact tile notation', { exact: true }).click();
   await page
@@ -62,6 +68,10 @@ test('tiles from one entered hand can be grouped into Pon with undo', async ({ p
   await tiles.nth(1).click();
   await tiles.nth(2).click();
   await page.getByRole('button', { name: 'Assign selected tiles', exact: true }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Assign selected tiles', exact: true })
+    .click();
   await expect(page.locator('.meld-row')).toHaveCount(1);
   await expect(tiles).toHaveCount(3);
   await page.getByRole('button', { name: 'Enter tiles', exact: true }).click();
@@ -73,7 +83,7 @@ test('tiles from one entered hand can be grouped into Pon with undo', async ({ p
 
 test('meld, Dora and Ura fields use image pickers and removable previews', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('link', { name: 'Quick score', exact: true }).click();
+  await openQuickScore(page);
   for (const label of ['Dora indicators', 'Ura indicators']) {
     const input = page.locator(`app-tile-input[data-label="${label}"]`);
     const entry = input.getByRole('button', { name: 'Enter ' + label, exact: true });

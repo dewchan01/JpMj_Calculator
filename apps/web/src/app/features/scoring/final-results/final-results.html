@@ -1,0 +1,55 @@
+<section class="card final-results">
+  <h2>{{ 'Final results' | t }}</h2>
+  <p class="hint">
+    {{
+      'Final score = (points − return score) ÷ 1,000 + Oka + Uma. Money = final score × rate + net chips × chip value.'
+        | t
+    }}
+  </p>
+  <div class="result-table">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">{{ 'Rank' | t }}</th>
+          <th scope="col">{{ 'Player' | t }}</th>
+          <th scope="col">{{ 'Points' | t }}</th>
+          <th scope="col">{{ 'Uma' | t }}</th>
+          <th scope="col">{{ 'Oka' | t }}</th>
+          <th scope="col">{{ 'Final score' | t }}</th>
+          <th scope="col">{{ 'Net chips' | t }}</th>
+          @if (settings().bettingRate || settings().chipValue) {
+            <th scope="col">{{ settings().currency || ('Money' | t) }}</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of rows(); track row.id) {
+          <tr>
+            <td>{{ row.rank }}</td>
+            <th scope="row">{{ row.name }}</th>
+            <td>{{ row.points | number }}</td>
+            <td>{{ row.uma | number: '1.0-3' }}</td>
+            <td>{{ row.oka | number: '1.0-3' }}</td>
+            <td>{{ row.finalScore | number: '1.0-3' }}</td>
+            <td>{{ row.chips }}</td>
+            @if (settings().bettingRate || settings().chipValue) {
+              <td>
+                <strong>{{ row.totalMoney | number: '1.2-2' }}</strong>
+                <small>
+                  {{ 'Score money' | t }} {{ row.scoreMoney | number: '1.2-2' }} ·
+                  {{ 'Chip money' | t }} {{ row.chipMoney | number: '1.2-2' }}
+                </small>
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <p class="hint">
+    {{
+      'Amounts are calculated from this table’s saved rules. No payments are sent. Undoing the final settlement also restores its penalties and chips.'
+        | t
+    }}
+  </p>
+</section>

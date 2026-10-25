@@ -1,9 +1,14 @@
 import { kindIndex, WINDS } from '../mahjong-core/index';
 import type { ScoringInput } from './types';
-import { ruleSettings } from '../mahjong-rules/index';
+import { ruleSettings, tableRules, validateProfile } from '../mahjong-rules/index';
 export function validate(input: ScoringInput): string[] {
   const { rules, hand, win, players } = input;
-  const errors: string[] = [];
+  const errors: string[] = [...validateProfile(rules)];
+  if (
+    tableRules(rules).waremeMultiplier !== 1 &&
+    !players.some((player) => player.id === input.waremePlayerId)
+  )
+    errors.push('Select the Wareme player for this hand.');
   if (rules.preset === 'm-league' && rules.playerCount !== 4)
     errors.push('M.League supports four players only.');
   const settings = ruleSettings(rules);

@@ -1,7 +1,8 @@
 import type { Payment, PlayerCount, ScoreResult, WinEvent, Hand, Wind } from './index';
-import type { RuleProfile } from '../mahjong-rules/index';
+import { tableRules, type RuleProfile } from '../mahjong-rules/index';
 import type { ScoringInput } from '../mahjong-scoring/types';
 import type { DrawInput, RoundSettlement } from '../mahjong-scoring/rounds';
+import type { GameClock, LiveHand } from './live';
 export interface RoundState {
   dealerId: string;
   roundWind: Wind;
@@ -13,7 +14,16 @@ export interface RoundState {
 export interface LedgerEvent {
   id: string;
   timestamp: string;
-  type: 'win' | 'multipleRon' | 'exhaustiveDraw' | 'abortiveDraw' | 'nagashi' | 'riichiDeposit';
+  type:
+    | 'win'
+    | 'multipleRon'
+    | 'exhaustiveDraw'
+    | 'abortiveDraw'
+    | 'nagashi'
+    | 'riichiDeposit'
+    | 'matchEnd';
+  durationMs?: number;
+  liveBefore?: LiveHand;
   payments: Payment[];
   result?: ScoreResult;
   hand?: Hand;
@@ -26,6 +36,7 @@ export interface LedgerEvent {
   before?: RoundState;
   after?: RoundState;
   winnerIds?: string[];
+  chipDeltas?: Record<string, number>;
 }
 export interface Match {
   id: string;
@@ -35,7 +46,12 @@ export interface Match {
   name: string;
   playerCount: PlayerCount;
   rules: RuleProfile;
-  players: { id: string; name: string }[];
+  players: { id: string; name: string; profileId?: string }[];
+  clock?: GameClock;
+  live?: LiveHand;
+  liveUndo?: { live: LiveHand; eventCount: number; events?: LedgerEvent[] }[];
+  viewSeats?: string[];
+  showPointDifferences?: boolean;
   initialBalances: Record<string, number>;
   initialDealerId: string;
   dealerId: string;
@@ -52,6 +68,13 @@ export function balances(match: Match): { players: Record<string, number>; table
   let table = 0;
   const seen = new Set<string>();
   for (const event of match.events) {
+    if (
+      event.chipDeltas &&
+      (Object.keys(event.chipDeltas).some((id) => !(id in players)) ||
+        Object.values(event.chipDeltas).some((value) => !Number.isSafeInteger(value)) ||
+        Object.values(event.chipDeltas).reduce((sum, value) => sum + value, 0) !== 0)
+    )
+      throw new Error('Chip balances must reconcile.');
     if (seen.has(event.id)) throw new Error('Duplicate settlement event.');
     seen.add(event.id);
     for (const p of event.payments) {
@@ -135,7 +158,9 @@ export function settleRound(
   const pending = { ...event, payments: [...outcome.payments], before, after };
   const scored = appendEvent(match, pending);
   const book = balances(scored);
-  const target = match.playerCount === 3 ? 40000 : 30000;
+  const table = tableRules(match.rules);
+  const target = table.returnPoints;
+  const repeats = outcome.dealerRepeats && !(table.dealerPassAfterWin && outcome.outcome === 'win');
   const winds: Wind[] = ['east', 'south', 'west', 'north'];
   const index = winds.indexOf(current.roundWind);
   const lastRegular = match.gameLength === 'east' ? 0 : 1;
@@ -152,12 +177,18 @@ export function settleRound(
       after.ended = true;
       after.endReason = 'Match complete';
     }
-  } else if (Object.values(book.players).some((value) => value < 0)) {
+  } else if (
+    table.bankruptcy !== 'off' &&
+    Object.values(book.players).some((value) =>
+      table.bankruptcy === 'nonpositive' ? value <= 0 : value < 0,
+    )
+  ) {
     after.ended = true;
     after.endReason = 'Bankruptcy';
   } else if (
     (isAllLast || index > lastRegular) &&
-    outcome.dealerRepeats &&
+    repeats &&
+    table.dealerFinish &&
     outcome.outcome !== 'abortiveDraw' &&
     leader === current.dealerId &&
     book.players[leader] >= target
@@ -165,15 +196,16 @@ export function settleRound(
     after.ended = true;
     after.endReason = 'Dealer finish in first place';
   } else if (
-    !outcome.dealerRepeats &&
-    ((index > lastRegular && threshold) ||
+    !repeats &&
+    ((isAllLast && table.extension === 'none') ||
+      (index > lastRegular && threshold) ||
       (isAllLast && threshold) ||
       (index > lastRegular && current.handNumber === match.playerCount))
   ) {
     after.ended = true;
     after.endReason = 'Match complete';
   }
-  if (!after.ended && outcome.dealerRepeats) after.honba = current.honba + 1;
+  if (!after.ended && repeats) after.honba = current.honba + 1;
   else if (!after.ended) {
     after.dealerId =
       match.players[
@@ -183,7 +215,40 @@ export function settleRound(
     after.handNumber = (current.handNumber % match.playerCount) + 1;
     if (current.handNumber === match.playerCount) after.roundWind = winds[Math.min(index + 1, 3)];
   }
-  if (after.ended && book.table && match.rules.preset === 'm-league') {
+  return finalPayments(match, pending, outcome.winnerIds);
+}
+/** Final penalties and escrow use the same path for automatic and manual endings. */
+function finalPayments(match: Match, pending: LedgerEvent, winnerIds: string[]): Match {
+  const table = tableRules(match.rules);
+  let book = balances(appendEvent(match, pending));
+  let leader = [...match.players].sort(
+    (a, b) =>
+      book.players[b.id] - book.players[a.id] ||
+      match.players.indexOf(a) - match.players.indexOf(b),
+  )[0].id;
+  if (pending.after?.ended && table.yakitoriPenalty) {
+    const winners = new Set([
+      ...match.events.flatMap(
+        (event) => event.winnerIds ?? (event.win ? [event.win.winnerId] : []),
+      ),
+      ...winnerIds,
+    ]);
+    for (const player of match.players.filter((player) => !winners.has(player.id)))
+      for (const opponent of match.players.filter((opponent) => opponent.id !== player.id))
+        pending.payments.push({
+          from: player.id,
+          to: opponent.id,
+          amount: table.yakitoriPenalty,
+          reason: 'Final Yakitori penalty',
+        });
+    book = balances(appendEvent(match, pending));
+    leader = [...match.players].sort(
+      (a, b) =>
+        book.players[b.id] - book.players[a.id] ||
+        match.players.indexOf(a) - match.players.indexOf(b),
+    )[0].id;
+  }
+  if (pending.after?.ended && book.table && table.finalRiichiReceiver === 'split-top') {
     const leaders = match.players.filter(
       (player) => book.players[player.id] === book.players[leader],
     );
@@ -192,13 +257,13 @@ export function settleRound(
         from: 'table',
         to: player.id,
         amount:
-          leaders.length === 3
-            ? book.table * (index === 0 ? 0.4 : 0.3)
-            : book.table / leaders.length,
+          (Math.floor(book.table / 100 / leaders.length) +
+            (index < (book.table / 100) % leaders.length ? 1 : 0)) *
+          100,
         reason: 'Final table escrow award',
       }),
     );
-  } else if (after.ended && book.table)
+  } else if (pending.after?.ended && book.table)
     pending.payments.push({
       from: 'table',
       to: leader,
@@ -206,4 +271,21 @@ export function settleRound(
       reason: 'Final table escrow award',
     });
   return appendEvent(match, pending);
+}
+
+export function finishMatch(match: Match, id: string, timestamp = new Date().toISOString()): Match {
+  if (match.ended) throw new Error('This match has already ended.');
+  const before = roundState(match);
+  return finalPayments(
+    match,
+    {
+      id,
+      type: 'matchEnd',
+      timestamp,
+      payments: [],
+      before,
+      after: { ...before, ended: true, endReason: 'Manually ended' },
+    },
+    [],
+  );
 }

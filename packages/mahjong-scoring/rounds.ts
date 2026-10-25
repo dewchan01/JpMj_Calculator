@@ -1,5 +1,10 @@
 import { kindIndex, type Payment, type Player, type ScoreResult } from '../mahjong-core/index';
-import { ruleSettings, type RuleProfile } from '../mahjong-rules/index';
+import {
+  ruleSettings,
+  tableRules,
+  validateProfile,
+  type RuleProfile,
+} from '../mahjong-rules/index';
 import { score, type ScoringInput } from './index';
 import { paymentsFor } from './payments';
 
@@ -56,6 +61,7 @@ export function multipleRon(inputs: ScoringInput[]): RoundSettlement {
       i.roundWind,
       i.honba,
       i.riichiSticks,
+      i.waremePlayerId,
       i.win.discarderId,
       (i.otherPlayerKans ?? 0) +
         i.hand.melds.filter((m) => !['chi', 'pon'].includes(m.type)).length,
@@ -127,14 +133,32 @@ export function multipleRon(inputs: ScoringInput[]): RoundSettlement {
     score({
       ...input,
       honba: index === 0 ? first.honba : 0,
-      riichiSticks: index === 0 ? first.riichiSticks : 0,
+      riichiSticks:
+        tableRules(first.rules).riichiReceiver === 'split'
+          ? 0
+          : index === 0
+            ? first.riichiSticks
+            : 0,
     }),
   );
   if (results.some((r) => !r.isValid)) return fail('A winning hand could not be settled.');
+  const payments = results.flatMap((result) => result.payments);
+  if (tableRules(first.rules).riichiReceiver === 'split' && first.riichiSticks) {
+    const units = first.riichiSticks * 10;
+    effective.forEach((input, index) =>
+      payments.push({
+        from: 'table',
+        to: input.win.winnerId,
+        amount:
+          (Math.floor(units / effective.length) + (index < units % effective.length ? 1 : 0)) * 100,
+        reason: 'Riichi escrow award',
+      }),
+    );
+  }
   return settlement(
     first.players,
     'win',
-    results.flatMap((r) => r.payments),
+    payments,
     effective.map((i) => i.win.winnerId),
     effective.some((i) => i.win.winnerId === first.dealerId),
     results,
@@ -165,6 +189,7 @@ export function drawSettlement(input: DrawInput): RoundSettlement {
         : 'exhaustiveDraw';
   const fail = (message: string): RoundSettlement =>
     settlement(players, outcome, [], [], false, [], [message]);
+  if (validateProfile(rules).length) return fail(validateProfile(rules)[0]);
   if (rules.preset === 'm-league' && input.type !== 'exhaustive')
     return fail('M.League allows exhaustive draws only; no abortive draws or Nagashi Mangan.');
   if (!input.circumstancesConfirmed)
@@ -217,7 +242,7 @@ export function drawSettlement(input: DrawInput): RoundSettlement {
       );
     }
   } else if (tenpaiIds.length && tenpaiIds.length < players.length) {
-    const pool = rules.playerCount === 3 ? 2000 : 3000;
+    const pool = tableRules(rules).notenPool;
     const owing = ids
       .filter((id) => !tenpaiIds.includes(id))
       .map((id) => ({ id, amount: pool / (players.length - tenpaiIds.length) }));

@@ -10,7 +10,7 @@ previously recorded source review and the supplied specification remain the basi
 This review does not resolve the Sanma honba uncertainty noted below.
 
 The browser matrix covers all seven supported combinations: Mahjong Soul, Tenhou and Custom
-in 3P/4P, plus M.League in 4P. Each runs setup, fixed match rules, steps 01/02/03, tile verification,
+in 3P/4P, plus M.League in 4P. Each runs setup, fixed match rules, steps 01/02, tile validation,
 Tsumo calculation, settlement, balances, reload, exhaustive draw and dealer progression.
 Existing domain tests cover Ron/Tsumo payments, Yaku/Fu, Yakuman variants, Pao, multiple Ron,
 draw transfers, extensions, final escrow and undo. These are regression checks, not certification
@@ -25,9 +25,9 @@ Corrections from this audit:
 - Kan assignment/upgrade rejects a fifth declared table Kan.
 - Unavailable Ankan robbery and Kita Rinshan options are disabled for the selected rules.
 - Abortive reasons exclude 4P-only situations in Sanma and triple-Ron draws outside that policy.
-- Rule changes clear verification, stale tile undo and incompatible declarations. Player-count
+- Rule changes clear calculated results, stale tile undo and incompatible declarations. Player-count
   changes reset Kan/robbery/replacement context and preserve explicitly selected Custom settings.
-- Changing Dora/Ura invalidates tile verification before a settlement can be saved.
+- Changing Dora/Ura invalidates the calculated result, requiring recalculation before settlement.
 
 Live photo-model accuracy, event timing/Furiten, referee penalties and the rare-edge limitations
 below remain outside these automated guarantees.
@@ -81,5 +81,10 @@ for the relevant liability decision. Recorded call order is required.
 
 Matches use East/South rounds, continue through negative balances, and have no first-place dealer
 finish or extension. Final tied leaders share remaining escrow; three-way ties use a 400/300/300
-split per stick by initial seat order. Final league placement points, league/team standings and referee penalties remain outside
-the app. This is a scoring and settlement preset, not a complete competition management system.
+split per stick by initial seat order. Final table results now include the saved Oka/Uma model; league/team standings and referee penalties remain outside the app. This is a scoring and settlement preset, not a complete competition management system.
+
+## Flow update — 2026-10-24
+
+The separate tile-verification checkbox and its save/queue gate have been removed. Hand structure, Yaku and declaration validation still run; changed inputs require recalculation before saving. Active matches supply dealer, round wind, honba and hand number from the ledger, overriding stale values in older drafts. These fields remain editable in standalone Quick score.
+
+Drag targets assign open melds, concealed Kans and (3P only) North directly. A single matching tile can move an unambiguous complete triplet/quad; otherwise users select the intended physical tiles first. Chi requires an explicit selection. Existing shape, caller, Kan-count, North and red-tile rules are reused. No automatic image-based area/orientation classification has been added.

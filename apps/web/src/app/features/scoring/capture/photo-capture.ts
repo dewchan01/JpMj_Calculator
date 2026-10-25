@@ -1,3 +1,4 @@
+import { newId } from '../../../core/id/new-id';
 import { ErrorNotice } from '../../../shared/error-notice/error-notice';
 import { PercentPipe } from '@angular/common';
 import { Component, DestroyRef, computed, inject, input, output, signal } from '@angular/core';
@@ -60,7 +61,7 @@ export class PhotoCapture {
   }
   edit(): void {
     try {
-      this.update(parseTiles(this.editor().notation, crypto.randomUUID()));
+      this.update(parseTiles(this.editor().notation, newId()));
       this.confidence.set([]);
       this.error.set('');
     } catch {
@@ -134,7 +135,7 @@ export class PhotoCapture {
       });
       this.update(
         result.predictions.map((prediction) => ({
-          id: crypto.randomUUID(),
+          id: newId(),
           kind: prediction.candidates[0].tile,
           isRed: prediction.candidates[0].isRed,
         })),

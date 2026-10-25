@@ -8,6 +8,7 @@
     "format": "prettier --write apps packages e2e scripts *.json *.ts *.js docs README.md",
     "format:check": "prettier --check apps packages e2e scripts *.json *.ts *.js docs README.md",
     "start": "ng serve",
+    "start:host": "ng serve --host 0.0.0.0",
     "build": "ng build",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
@@ -16,6 +17,7 @@
     "e2e": "playwright test",
     "preview": "http-server dist/web/browser -p 4200 -c-1",
     "prebuild": "node scripts/build-info.mjs",
+    "postbuild": "node scripts/copy-licenses.mjs",
     "prestart": "node scripts/build-info.mjs"
   },
   "dependencies": {

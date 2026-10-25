@@ -1,0 +1,585 @@
+@if (match(); as m) {
+  <div class="game-shell">
+    <header class="game-heading">
+      <h1>{{ m.name }}</h1>
+      <button class="quiet clock" (click)="open('menu')" [attr.aria-label]="'Game timer' | t">
+        {{ time(elapsed()) }}
+        @if (paused()) {
+          <small>{{ 'Paused' | t }}</small>
+        }
+      </button>
+    </header>
+    <app-error-notice [message]="prompt.open ? '' : error()" />
+    <app-table-summary
+      class="live-table"
+      [interactive]="!m.ended"
+      [actionsDisabled]="paused() || busy()"
+      [compact]="true"
+      [players]="m.players"
+      [balances]="book().players"
+      [dealer]="m.dealerId"
+      [winner]="''"
+      [events]="m.events"
+      [roundWind]="m.roundWind"
+      [handNumber]="m.handNumber"
+      [honba]="m.honba"
+      [pot]="book().table"
+      [ruleName]="ruleName(m.rules)"
+      [yakitoriPenalty]="tableRules(m.rules).yakitoriPenalty"
+      [statuses]="tableStatuses()"
+      [riichiPlayers]="riichiPlayers()"
+      [viewSeats]="m.viewSeats ?? []"
+      (playerAction)="open('player', $event)"
+      (quickAction)="tableAction($event)"
+      (pointDifference)="showPlayerDifference($event)"
+    />
+    <div class="indicator-bar">
+      <button (click)="open('indicators')" [attr.aria-label]="'Dora / Ura' | t">
+        {{ 'Dora / Ura' | t }}
+        <span class="indicator-preview">
+          @for (tile of indicatorTiles(); track tile.id) {
+            <app-tile-art [tile]="tile" [decorative]="true" />
+          } @empty {
+            <small>—</small>
+          }
+        </span>
+      </button>
+      <button (click)="open('dice'); rollDice()">{{ 'Dice' | t }}</button>
+      <button (click)="open('difference')">{{ 'Point differences' | t }}</button>
+    </div>
+    @if (m.showPointDifferences) {
+      <p class="difference-strip">
+        {{ name(basis) }}:
+        @for (p of players; track p.id) {
+          @if (p.id !== basis) {
+            <span>{{ p.name }} {{ book().players[basis] - book().players[p.id] | number }}</span>
+          }
+        }
+      </p>
+    }
+    <div class="game-bottom">
+      <button
+        class="primary"
+        [disabled]="paused() && !m.ended"
+        (click)="open(m.ended ? 'results' : 'outcome'); !m.ended && startOutcome()"
+      >
+        {{ (m.ended ? 'Final results' : 'End this hand') | t }}
+      </button>
+      <button class="floating-menu" (click)="open('menu')" [attr.aria-label]="'Game menu' | t">
+        •••
+      </button>
+    </div>
+  </div>
+} @else {
+  <app-error-notice [message]="error()" />
+}
+<dialog #prompt class="game-prompt" aria-labelledby="game-prompt-title" (close)="error.set('')">
+  <header class="prompt-heading">
+    <h2 id="game-prompt-title">{{ panelTitle() | t }}</h2>
+    <button class="quiet close-prompt" (click)="close()" [attr.aria-label]="'Close' | t">×</button>
+  </header>
+  <div class="prompt-body">
+    <app-error-notice [messages]="error().split('\n')" />
+    @if (match(); as m) {
+      @switch (panel()) {
+        @case ('menu') {
+          <div class="menu-list">
+            @if (!m.ended) {
+              <button (click)="undoAction()" [disabled]="busy() || !m.liveUndo?.length">
+                {{ 'Undo previous action' | t }}
+              </button>
+              <button (click)="pause()">{{ (paused() ? 'Resume game' : 'Pause game') | t }}</button>
+              <button (click)="startOutcome()" [disabled]="paused()">
+                {{ 'End this hand' | t }}
+              </button>
+              <button class="danger" (click)="panel.set('finish')">
+                {{ 'End entire match' | t }}
+              </button>
+            } @else {
+              <button (click)="panel.set('results')">{{ 'Final results' | t }}</button>
+            }
+            <button (click)="panel.set('history')">
+              {{ 'History' | t }} · {{ m.events.length }}
+            </button>
+            <button (click)="panel.set('info')">{{ 'Edit game info' | t }}</button>
+            <button (click)="panel.set('settings')">{{ 'In-game settings' | t }}</button>
+            <button (click)="panel.set('seats')">{{ 'Change seats' | t }}</button>
+            <button (click)="panel.set('help')">{{ 'Help' | t }}</button>
+            <a routerLink="/">{{ 'My table' | t }}</a>
+          </div>
+        }
+        @case ('player') {
+          <h3>{{ name(selected) }}</h3>
+          @if (paused()) {
+            <p>{{ 'Resume the game before recording actions.' | t }}</p>
+          }
+          @if (currentPlayer.riichi === 'none' && playerMode() !== 'calls') {
+            <label class="check">
+              <input type="checkbox" [(ngModel)]="doubleRiichi" />
+              {{ 'Double Riichi' | t }}
+            </label>
+            @if (doubleRiichi) {
+              <label class="check">
+                <input type="checkbox" [(ngModel)]="firstTurn" />
+                {{ 'Uninterrupted first turn' | t }}
+              </label>
+            }
+            <button (click)="riichi()" [disabled]="busy() || paused()">
+              {{ 'Declare Riichi · 1,000 points' | t }}
+            </button>
+          } @else if (currentPlayer.riichi !== 'none') {
+            <p>{{ statuses()[selected] }}</p>
+            <button (click)="cancelDeclaration()" [disabled]="busy() || paused()">
+              {{ 'Cancel Riichi · refund 1,000 points' | t }}
+            </button>
+          }
+          @if (playerMode() !== 'riichi') {
+            <div class="button-grid">
+              @if (m.playerCount === 4) {
+                <button (click)="startCall('chi')" [disabled]="paused()">{{ 'Chi' | t }}</button>
+              }
+              <button (click)="startCall('pon')" [disabled]="paused()">{{ 'Pon' | t }}</button>
+              <button (click)="startCall('daiminkan')" [disabled]="paused()">
+                {{ 'Open Kan' | t }}
+              </button>
+              <button (click)="startCall('ankan')" [disabled]="paused()">
+                {{ 'Concealed Kan' | t }}
+              </button>
+              <button (click)="startCall('kakan')" [disabled]="paused() || !hasPon()">
+                {{ 'Added Kan' | t }}
+              </button>
+              @if (m.playerCount === 3) {
+                <button (click)="startCall('kita')" [disabled]="paused()">
+                  {{ 'North extraction' | t }}
+                </button>
+              }
+            </div>
+          }
+          @for (meld of currentPlayer.melds; track meld.id; let i = $index) {
+            <div class="recorded-call">
+              <span>{{ meld.type | t }}</span>
+              <div class="mini-tiles">
+                @for (tile of meld.tiles; track tile.id) {
+                  <app-tile-art [tile]="tile" />
+                }
+              </div>
+              <button class="quiet danger" (click)="removeCall(i)" [disabled]="paused()">
+                {{ 'Remove' | t }}
+              </button>
+            </div>
+          }
+          @if (currentPlayer.kita.length) {
+            <div class="explain-row">
+              <span>{{ 'North' | t }} × {{ currentPlayer.kita.length }}</span>
+              <button class="quiet" (click)="removeNorth()" [disabled]="paused()">
+                {{ 'Remove one North' | t }}
+              </button>
+            </div>
+          }
+        }
+        @case ('call') {
+          <p>{{ name(selected) }} · {{ callType | t }}</p>
+          @if (callType === 'kakan') {
+            <label>
+              {{ 'Upgrade Pon' | t }}
+              <select [(ngModel)]="upgradeId">
+                @for (meld of currentPlayer.melds; track meld.id) {
+                  @if (meld.type === 'pon') {
+                    <option [value]="meld.id">{{ i18n.tile(meld.tiles[0]) }}</option>
+                  }
+                }
+              </select>
+            </label>
+          }
+          @if (callType === 'kita') {
+            <p>{{ 'Record one extracted North tile.' | t }}</p>
+          } @else {
+            @if (callType !== 'chi' && callType !== 'kakan') {
+              <p class="hint">
+                {{
+                  'Choose one tile; matching tiles are filled automatically. Select a red five if the set contains one.'
+                    | t
+                }}
+              </p>
+            }
+            <app-tile-input
+              [label]="callType === 'kakan' ? 'Fourth tile' : 'Meld tiles'"
+              [(value)]="callText"
+              [playerCount]="m.playerCount"
+              [redFives]="settings?.redFives ?? true"
+            />
+          }
+          @if (callType !== 'ankan' && callType !== 'kita' && callType !== 'kakan') {
+            @if (callType !== 'chi') {
+              <label>
+                {{ 'Call source' | t }}
+                <select [(ngModel)]="callSource">
+                  @for (p of players; track p.id) {
+                    @if (p.id !== selected) {
+                      <option [value]="p.id">{{ p.name }}</option>
+                    }
+                  }
+                </select>
+              </label>
+            }
+            @if (callType === 'chi' || callTiles().length > 1) {
+              <label>
+                {{ 'Called tile' | t }}
+                <select [(ngModel)]="called">
+                  @for (tile of callTiles(); track tile.id; let index = $index) {
+                    <option [ngValue]="index">{{ i18n.tile(tile) }} · {{ index + 1 }}</option>
+                  }
+                </select>
+              </label>
+            }
+          }
+          @if (currentPlayer.riichi !== 'none' && callType === 'ankan') {
+            <label class="check">
+              <input type="checkbox" [(ngModel)]="legalKan" />
+              {{ 'The wait is unchanged and this Kan is legal.' | t }}
+            </label>
+          }
+          <button class="primary" (click)="saveCall()" [disabled]="busy()">
+            {{ 'Record action' | t }}
+          </button>
+        }
+        @case ('indicators') {
+          <p class="hint">{{ 'After a Kan, add the newly revealed indicator here.' | t }}</p>
+          <app-tile-input
+            label="Dora indicators"
+            [(value)]="dora"
+            [playerCount]="m.playerCount"
+            [redFives]="false"
+          />
+          <app-tile-input
+            label="Ura indicators"
+            [(value)]="ura"
+            [playerCount]="m.playerCount"
+            [redFives]="false"
+          />
+          <button class="primary" (click)="saveIndicators()" [disabled]="busy() || m.ended">
+            {{ 'Save indicators' | t }}
+          </button>
+        }
+        @case ('outcome') {
+          <div class="menu-list">
+            <button (click)="panel.set('win')">{{ 'Win' | t }}</button>
+            <button (click)="drawType = 'exhaustive'; tenpai = {}; nagashi = {}; panel.set('draw')">
+              {{ 'Record draw' | t }}
+            </button>
+          </div>
+        }
+        @case ('win') {
+          <label>
+            {{ 'Win method' | t }}
+            <select [(ngModel)]="method">
+              <option value="ron">{{ 'Ron · discard' | t }}</option>
+              <option value="tsumo">{{ 'Tsumo · self draw' | t }}</option>
+            </select>
+          </label>
+          <p>{{ 'Who won this hand?' | t }}</p>
+          <div class="button-grid">
+            @for (p of players; track p.id) {
+              <label class="check">
+                <input type="checkbox" [(ngModel)]="winners[p.id]" />
+                {{ p.name }}
+              </label>
+            }
+          </div>
+          @if (method === 'ron') {
+            <label>
+              {{ 'Discarder' | t }}
+              <select [(ngModel)]="discarder">
+                @for (p of players; track p.id) {
+                  <option [value]="p.id">{{ p.name }}</option>
+                }
+              </select>
+            </label>
+          }
+          <button class="primary" (click)="nextWinners()">{{ 'Next' | t }}</button>
+        }
+        @case ('hand') {
+          <p>
+            <strong>{{ name(activeWinner) }}</strong>
+            · {{ 'Concealed tiles only; recorded melds and North are already included.' | t }}
+          </p>
+          <app-tile-input
+            label="The winning hand"
+            [(value)]="handText"
+            [playerCount]="m.playerCount"
+            [redFives]="settings?.redFives ?? true"
+          />
+          <label>
+            {{ 'Winning tile' | t }}
+            <select [(ngModel)]="winningIndex">
+              <option [ngValue]="-1">{{ 'Choose winning tile' | t }}</option>
+              @for (tile of tiles; track tile.id; let index = $index) {
+                <option [ngValue]="index">{{ i18n.tile(tile) }} · {{ index + 1 }}</option>
+              }
+            </select>
+          </label>
+          <button class="primary" (click)="nextHand()">{{ 'Next' | t }}</button>
+        }
+        @case ('details') {
+          <p>
+            {{ name(activeWinner) }} · {{ 'Select only conditions that actually occurred.' | t }}
+          </p>
+          <div class="button-grid">
+            @for (claim of claimOptions; track claim.key) {
+              <label class="check">
+                <input type="checkbox" [(ngModel)]="claims[claim.key]" />
+                {{ claim.label | t }}
+              </label>
+            }
+          </div>
+          @if (claims['tenhou'] || claims['chiihou']) {
+            <label class="check">
+              <input type="checkbox" [(ngModel)]="firstTurn" />
+              {{ 'Uninterrupted first turn' | t }}
+            </label>
+          }
+          @if (claims['rinshan'] && winnerState.kita.length) {
+            <label>
+              {{ 'Replacement draw' | t }}
+              <select [(ngModel)]="replacement">
+                <option value="kan">{{ 'Kan' | t }}</option>
+                <option value="kita">{{ 'North extraction' | t }}</option>
+              </select>
+            </label>
+          }
+          @if (claims['chankan']) {
+            <label>
+              {{ 'Robbed call' | t }}
+              <select [(ngModel)]="robbed">
+                <option value="kakan">{{ 'Added Kan' | t }}</option>
+                @if (settings?.kokushiAnkanRon) {
+                  <option value="ankan">{{ 'Concealed Kan' | t }}</option>
+                }
+              </select>
+            </label>
+          }
+          @if (winnerState.riichi !== 'none') {
+            <app-tile-input
+              label="Ura indicators"
+              [(value)]="ura"
+              [playerCount]="m.playerCount"
+              [redFives]="false"
+            />
+          }
+          @if (waremeEnabled()) {
+            <label>
+              {{ 'Wareme player' | t }}
+              <select [(ngModel)]="wareme">
+                <option value="">—</option>
+                @for (p of players; track p.id) {
+                  <option [value]="p.id">{{ p.name }}</option>
+                }
+              </select>
+            </label>
+          }
+          <div class="action-row">
+            <button class="quiet" (click)="panel.set('hand')">{{ 'Back' | t }}</button>
+            <button class="primary" (click)="reviewWinner()">{{ 'Review settlement' | t }}</button>
+          </div>
+        }
+        @case ('draw') {
+          <label>
+            {{ 'Draw type' | t }}
+            <select [(ngModel)]="drawType">
+              <option value="exhaustive">{{ 'Exhaustive draw' | t }}</option>
+              @if (m.rules.preset !== 'm-league') {
+                <option value="abortive">{{ 'Abortive draw' | t }}</option>
+                <option value="nagashi">{{ 'Nagashi Mangan' | t }}</option>
+              }
+            </select>
+          </label>
+          @if (drawType === 'abortive') {
+            <label>
+              {{ 'Reason' | t }}
+              <select [(ngModel)]="abortive">
+                @for (reason of abortiveReasons; track reason) {
+                  <option [value]="reason">{{ reason | t }}</option>
+                }
+              </select>
+            </label>
+          } @else {
+            <p>
+              {{
+                (drawType === 'nagashi'
+                  ? 'Select eligible Nagashi players'
+                  : 'Select Tenpai players'
+                ) | t
+              }}
+            </p>
+            @for (p of players; track p.id) {
+              <label class="check">
+                <input
+                  type="checkbox"
+                  [ngModel]="drawType === 'nagashi' ? nagashi[p.id] : tenpai[p.id]"
+                  (ngModelChange)="
+                    drawType === 'nagashi' ? (nagashi[p.id] = $event) : (tenpai[p.id] = $event)
+                  "
+                />
+                {{ p.name }}
+              </label>
+            }
+          }
+          <p class="hint">{{ 'Continue only after checking the draw circumstances.' | t }}</p>
+          <button class="primary" (click)="reviewDraw()">{{ 'Review settlement' | t }}</button>
+        }
+        @case ('review') {
+          @if (round; as result) {
+            @for (entry of result.results; track $index) {
+              <details>
+                <summary>
+                  {{ name(result.winnerIds[$index]) }} · {{ entry.han }} {{ 'Han' | t }} ·
+                  {{ entry.fu }} {{ 'Fu' | t }}
+                </summary>
+                @for (yaku of entry.yaku; track yaku.name) {
+                  <p>{{ yaku.name | t }} · {{ yaku.han }}</p>
+                }
+              </details>
+            }
+            <div class="payment-list">
+              @for (p of result.payments; track $index) {
+                <p>
+                  {{ p.from === 'table' ? ('Riichi pot' | t) : name(p.from) }} → {{ name(p.to) }}
+                  <strong>{{ p.amount | number }}</strong>
+                </p>
+              } @empty {
+                <p>{{ 'No point transfers.' | t }}</p>
+              }
+            </div>
+            <button class="primary full" (click)="settle()" [disabled]="busy()">
+              {{ 'Confirm & save settlement' | t }}
+            </button>
+          }
+        }
+        @case ('finish') {
+          <p>
+            {{
+              'End the entire match now? Final penalties, escrow and money use the saved rules. The unfinished hand will not be scored.'
+                | t
+            }}
+          </p>
+          <button class="primary" (click)="endMatch()" [disabled]="busy()">
+            {{ 'End entire match' | t }}
+          </button>
+        }
+        @case ('results') {
+          <app-final-results [match]="m" />
+        }
+        @case ('history') {
+          <app-match-history
+            [match]="m"
+            [rules]="m.rules"
+            [busy]="busy()"
+            (undoRequested)="undo()"
+            (exportRequested)="exportMatch()"
+          />
+        }
+        @case ('info') {
+          <label>
+            {{ 'Match name' | t }}
+            <input [(ngModel)]="editName" maxlength="80" />
+          </label>
+          @for (p of players; track p.id; let index = $index) {
+            <label>
+              {{ 'Player name' | t }} {{ index + 1 }}
+              <input [(ngModel)]="editNames[index]" maxlength="40" />
+            </label>
+          }
+          <button class="primary" (click)="saveInfo()" [disabled]="busy()">{{ 'Save' | t }}</button>
+        }
+        @case ('settings') {
+          <p>{{ ruleName(m.rules) | t }}</p>
+          <p class="hint">
+            {{
+              'This match keeps its saved rule snapshot. Start a new match to use different rules.'
+                | t
+            }}
+          </p>
+          <button (click)="toggleDifference()" [attr.aria-pressed]="!!m.showPointDifferences">
+            {{ 'Show point differences on the table' | t }}
+          </button>
+          <a routerLink="/settings">{{ 'Settings' | t }}</a>
+        }
+        @case ('seats') {
+          <p class="hint">
+            {{
+              'Swap display positions only. Seat winds, dealer, balances and tie priority stay with the players.'
+                | t
+            }}
+          </p>
+          <label>
+            {{ 'First player' | t }}
+            <select [(ngModel)]="swapA">
+              @for (p of players; track p.id) {
+                <option [value]="p.id">{{ p.name }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            {{ 'Second player' | t }}
+            <select [(ngModel)]="swapB">
+              @for (p of players; track p.id) {
+                <option [value]="p.id">{{ p.name }}</option>
+              }
+            </select>
+          </label>
+          <button (click)="swapSeats()">{{ 'Swap positions' | t }}</button>
+        }
+        @case ('difference') {
+          <label>
+            {{ 'Compare from player' | t }}
+            <select [(ngModel)]="basis">
+              @for (p of players; track p.id) {
+                <option [value]="p.id">{{ p.name }}</option>
+              }
+            </select>
+          </label>
+          @for (p of players; track p.id) {
+            @if (p.id !== basis) {
+              <div class="explain-row">
+                <span>{{ p.name }}</span>
+                <strong>{{ book().players[basis] - book().players[p.id] | number }}</strong>
+              </div>
+            }
+          }
+          <p class="hint">
+            {{ 'Positive means the selected player is ahead; negative means behind.' | t }}
+          </p>
+        }
+        @case ('dice') {
+          <div class="dice" [class.rolling]="diceRolling()" aria-hidden="true">
+            @for (face of dice; track $index) {
+              <div class="die" [class.one]="face === 1">
+                @for (dot of dieDots; track dot) {
+                  <span [class.visible]="diePips[face].includes(dot)"></span>
+                }
+              </div>
+            }
+          </div>
+          <p class="dice-result" role="status">
+            @if (diceRolling()) {
+              {{ 'Rolling…' | t }}
+            } @else {
+              {{ dice[0] }} + {{ dice[1] }} = {{ dice[0] + dice[1] }}
+            }
+          </p>
+          <button class="primary full" (click)="rollDice()" [disabled]="diceRolling()">
+            {{ 'Roll two dice' | t }}
+          </button>
+        }
+        @case ('help') {
+          <p>
+            {{
+              'Tap a player to record Riichi, calls, Kan or North. Update indicators after Kan. End this hand opens guided settlement; end entire match calculates final standings. Pause excludes breaks from the timer. History can undo the latest settlement.'
+                | t
+            }}
+          </p>
+        }
+      }
+    }
+  </div>
+</dialog>

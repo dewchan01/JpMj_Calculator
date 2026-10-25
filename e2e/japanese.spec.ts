@@ -1,3 +1,5 @@
+import { beginWin, finishWin, gameMenu, prompt } from './helpers/game';
+import { setLanguage } from './helpers/navigation';
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
@@ -6,15 +8,17 @@ test('Japanese saved matches and history format dates without changing names', a
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/');
-  await page.getByRole('combobox', { name: 'Language / 語言' }).selectOption('ja');
+  await setLanguage(page, 'ja');
   await page.getByRole('textbox', { name: '対局名', exact: true }).fill('陳萬發');
-  await page.getByRole('button', { name: /対局を開始/ }).click();
-  await page.getByRole('button', { name: /サンプル手牌/ }).click();
-  await page.getByRole('checkbox', { name: '牌を確認しました', exact: true }).check();
-  await page.getByRole('button', { name: '点数を計算', exact: true }).click();
-  await page.getByRole('button', { name: '精算を確定して保存', exact: true }).click();
-  await expect(page.locator('.history-event summary')).toContainText('和了');
-  await page.getByRole('link', { name: 'マイ卓', exact: true }).click();
+  await setLanguage(page, 'en');
+  await page.getByRole('button', { name: /Start match/ }).click();
+  await beginWin(page);
+  await finishWin(page);
+  await setLanguage(page, 'ja');
+  await gameMenu(page, 'History');
+  await expect(page.locator('.history-event')).toHaveCount(1);
+  await prompt(page).locator('.close-prompt').click();
+  await page.locator('.app-navigation a[href$="/records"]').click();
   await expect(page.getByText('陳萬發', { exact: true })).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -23,7 +27,7 @@ test('Japanese translates scoring and saved preference; indicator palettes start
 }) => {
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-  await page.getByRole('combobox', { name: 'Language / 語言' }).selectOption('ja');
+  await setLanguage(page, 'ja');
   await expect(page.locator('html')).toHaveAttribute('lang', 'ja');
   await expect(page.getByRole('heading', { name: '対局を作成', exact: true })).toBeVisible();
   await page.getByRole('link', { name: '点数計算', exact: true }).click();

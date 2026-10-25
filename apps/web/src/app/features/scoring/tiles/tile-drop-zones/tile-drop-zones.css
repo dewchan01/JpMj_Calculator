@@ -1,0 +1,51 @@
+﻿:host {
+  display: block;
+  margin-block: 16px;
+}
+.drop-zones {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 10px;
+}
+.drop-zone {
+  padding: 12px;
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  background: var(--subtle-surface);
+  min-width: 0;
+}
+h3 {
+  font-size: 0.8rem;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+p {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-block: 8px;
+}
+button {
+  width: 100%;
+  font-size: 0.72rem;
+  padding: 8px;
+}
+.pill {
+  padding: 1px 7px;
+}
+.tile-drop-active {
+  border-color: var(--green);
+  background: var(--active-surface);
+  box-shadow: inset 0 0 0 1px var(--green);
+}
+@media (max-width: 600px) {
+  .drop-zones {
+    gap: 6px;
+  }
+  .drop-zone {
+    padding: 8px;
+  }
+}

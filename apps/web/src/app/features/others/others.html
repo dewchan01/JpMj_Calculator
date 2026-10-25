@@ -1,0 +1,108 @@
+@if (!section()) {
+  <header class="others-heading">
+    <h1>{{ 'Others' | t }}</h1>
+  </header>
+  <nav class="other-list" [attr.aria-label]="'Other options' | t">
+    @for (entry of entries; track entry.path) {
+      <a [routerLink]="entry.path">
+        <span class="entry-mark" aria-hidden="true">{{ entry.mark }}</span>
+        <span>{{ entry.title | t }}</span>
+        <span class="chevron" aria-hidden="true">›</span>
+      </a>
+      @if (entry.title === 'Developer') {
+        @if (configuration.supportEmail()) {
+          <a [href]="'mailto:' + configuration.supportEmail()">
+            <span class="entry-mark" aria-hidden="true">@</span>
+            <span>
+              {{ 'Send email' | t }}
+              <small>{{ configuration.supportEmail() }}</small>
+            </span>
+            <span class="chevron" aria-hidden="true">↗</span>
+          </a>
+        } @else {
+          <div class="unavailable">{{ 'Support email is not configured.' | t }}</div>
+        }
+      }
+    }
+  </nav>
+} @else {
+  <a class="back-link" routerLink="/others">← {{ 'Others' | t }}</a>
+  <h1>{{ title() | t }}</h1>
+  <section class="card other-detail">
+    @switch (section()) {
+      @case ('version') {
+        <dl>
+          <div>
+            <dt>{{ 'Version' | t }}</dt>
+            <dd>v{{ build().version }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'Commit' | t }}</dt>
+            <dd>{{ build().commit }}{{ build().dirty ? ' *' : '' }}</dd>
+          </div>
+        </dl>
+      }
+      @case ('developer') {
+        <h2>{{ configuration.developerName() }}</h2>
+        <p>{{ 'Independent Mahjong scoring, made for your table.' | t }}</p>
+        @if (configuration.supportEmail()) {
+          <a [href]="'mailto:' + configuration.supportEmail()">
+            {{ 'Send email' | t }} · {{ configuration.supportEmail() }}
+          </a>
+        }
+      }
+      @case ('terms') {
+        <p>{{ 'Terms and conditions have not been published for this build.' | t }}</p>
+      }
+      @case ('license') {
+        <h2>{{ 'Application' | t }}</h2>
+        <p>{{ 'An application license has not been specified in this repository.' | t }}</p>
+        <h2>{{ 'Tile artwork' | t }}</h2>
+        <p>
+          <a href="https://github.com/FluffyStuff/riichi-mahjong-tiles">
+            {{ 'Tile artwork by FluffyStuff (CC0)' | t }}
+          </a>
+        </p>
+        <a href="tiles/LICENSE.md">{{ 'Read tile artwork license' | t }}</a>
+        <h2>{{ 'Third-party software' | t }}</h2>
+        <a href="3rdpartylicenses.txt">{{ 'Read third-party license notices' | t }}</a>
+      }
+      @case ('language') {
+        <label>
+          {{ 'Language' | t }}
+          <select
+            aria-label="Language / 語言"
+            [value]="i18n.locale()"
+            (change)="changeLanguage($event)"
+          >
+            <option value="en">English</option>
+            <option value="zh-TW">繁體中文</option>
+            <option value="zh-CN">简体中文</option>
+            <option value="ja">日本語</option>
+          </select>
+        </label>
+      }
+      @case ('theme') {
+        <div class="theme-choices" [attr.aria-label]="'Theme' | t">
+          <button
+            [class.selected]="!theme.dark()"
+            [attr.aria-pressed]="!theme.dark()"
+            (click)="theme.dark() && theme.toggle()"
+          >
+            ☀ {{ 'Light mode' | t }}
+          </button>
+          <button
+            [class.selected]="theme.dark()"
+            [attr.aria-pressed]="theme.dark()"
+            (click)="!theme.dark() && theme.toggle()"
+          >
+            ☾ {{ 'Dark mode' | t }}
+          </button>
+        </div>
+      }
+      @default {
+        <a routerLink="/others">{{ 'Other options' | t }}</a>
+      }
+    }
+  </section>
+}

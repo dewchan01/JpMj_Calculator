@@ -1,0 +1,100 @@
+<section class="page-heading compact">
+  <h1>{{ 'Settings' | t }}</h1>
+  <p class="muted">
+    {{
+      'Save separate rules for 3P and 4P. New games use the applied rules; existing games keep their snapshot.'
+        | t
+    }}
+  </p>
+</section>
+<section class="card rule-library">
+  <div class="segmented" [attr.aria-label]="'Player count' | t">
+    <button [class.selected]="count() === 3" (click)="setCount(3)">{{ '3 players' | t }}</button>
+    <button [class.selected]="count() === 4" (click)="setCount(4)">{{ '4 players' | t }}</button>
+  </div>
+  <div class="form-grid">
+    <label>
+      {{ 'Rule preset' | t }}
+      <select [value]="selected()" (change)="choose($event)">
+        <option value="mahjong-soul">{{ 'Mahjong Soul' | t }}</option>
+        <option value="tenhou">{{ 'Tenhou' | t }}</option>
+        <option value="m-league" [disabled]="count() !== 4">{{ 'M.League' | t }}</option>
+        <option value="custom">{{ 'New custom rules' | t }}</option>
+        @for (profile of library.profiles(count()); track profile.id) {
+          <option [value]="profile.id">{{ profile.name }}</option>
+        }
+      </select>
+    </label>
+    <label>
+      {{ 'Custom rule name' | t }}
+      <input [formControl]="form.controls['name']" maxlength="80" />
+    </label>
+  </div>
+  <p class="hint">
+    {{ 'Currently applied' | t }}:
+    <strong>{{ library.active(count()).name ?? (ruleName(library.active(count())) | t) }}</strong>
+    · {{ count() }}P · v{{ library.active(count()).version }}
+  </p>
+</section>
+<div class="settings-groups">
+  @for (group of groups; track group.title) {
+    <section class="card">
+      <h2>{{ group.title | t }}</h2>
+      <div class="settings-fields">
+        @for (field of group.fields; track field.key) {
+          @if ((!field.threeOnly || count() === 3) && (field.key !== 'uma4' || count() === 4)) {
+            <div class="setting-field">
+              <label [class.check]="field.type === 'checkbox'">
+                @if (field.type === 'checkbox') {
+                  <input type="checkbox" [formControl]="form.controls[field.key]" />
+                }
+                {{ field.label | t }}
+                @switch (field.type) {
+                  @case ('number') {
+                    <input
+                      type="number"
+                      [min]="field.min ?? 0"
+                      [max]="field.max ?? 100000"
+                      [step]="field.step ?? 1"
+                      [formControl]="form.controls[field.key]"
+                    />
+                  }
+                  @case ('text') {
+                    <input maxlength="16" [formControl]="form.controls[field.key]" />
+                  }
+                  @case ('select') {
+                    <select [formControl]="form.controls[field.key]">
+                      @for (option of field.options; track option.value) {
+                        <option [ngValue]="option.value">{{ option.label | t }}</option>
+                      }
+                    </select>
+                  }
+                }
+              </label>
+              @if (field.hint) {
+                <details class="setting-help">
+                  <summary>{{ 'What does this mean?' | t }}</summary>
+                  <p>{{ field.hint | t }}</p>
+                </details>
+              }
+            </div>
+          }
+        }
+      </div>
+    </section>
+  }
+</div>
+<section class="card settings-actions">
+  <app-error-notice [messages]="errors()" />
+  @if (notice()) {
+    <p class="banner success" role="status">{{ notice() | t }}</p>
+  }
+  <div class="action-row">
+    <button class="secondary" (click)="save()">{{ 'Save custom rules' | t }}</button>
+    <button class="primary" (click)="apply()">{{ 'Use these rules' | t }}</button>
+    @if (base().preset === 'custom' && base().name) {
+      <button class="quiet danger" (click)="remove()">{{ 'Delete custom rules' | t }}</button>
+    }
+    <a routerLink="/">{{ 'My table' | t }}</a>
+  </div>
+</section>

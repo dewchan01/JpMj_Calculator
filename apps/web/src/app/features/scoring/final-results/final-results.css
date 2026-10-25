@@ -1,0 +1,32 @@
+.final-results {
+  margin-block: 20px;
+}
+.final-results h2 {
+  margin-bottom: 12px;
+}
+.result-table {
+  overflow-x: auto;
+  margin-block: 16px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+th,
+td {
+  padding: 12px;
+  text-align: end;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+th:first-child,
+td:first-child,
+th:nth-child(2) {
+  text-align: start;
+}
+small {
+  display: block;
+  font-size: 0.65rem;
+  color: var(--muted);
+}

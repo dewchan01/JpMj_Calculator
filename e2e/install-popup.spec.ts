@@ -1,4 +1,5 @@
-﻿import { test, expect } from '@playwright/test';
+import { toggleTheme } from './helpers/navigation';
+import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 test.use({ storageState: { cookies: [], origins: [] } });
@@ -27,7 +28,7 @@ for (const width of [390, 1280]) {
     await popup.screenshot({ path: `artifacts/install-popup-${width}.png` });
     await popup.getByRole('button', { name: 'Next time', exact: true }).click();
     await expect(popup).toHaveCount(0);
-    await page.getByRole('button', { name: 'Dark mode', exact: true }).click();
+    await toggleTheme(page);
     await page.reload();
     await expect(popup).toBeVisible();
     await popup.evaluate(async (element) => {
@@ -46,7 +47,7 @@ for (const width of [390, 1280]) {
     await expect(popup).toBeVisible();
     await popup.getByRole('button', { name: 'Close', exact: true }).click();
     await page.reload();
-    await expect(page.getByRole('heading', { name: /Your next round/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Set the table', exact: true })).toBeVisible();
     await expect(popup).toHaveCount(0);
   });
 }

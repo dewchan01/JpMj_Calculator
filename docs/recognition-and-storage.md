@@ -141,7 +141,7 @@ These are proposed integration paths, not measured performance claims.
 
 Implement the existing `TileRecognizer` interface in
 `apps/web/src/app/features/scoring/capture/recognizer.ts`, returning normalized boxes, mapped tile
-classes, red-five flags and confidence. Keep manual verification before settlement. The current
+classes, red-five flags and confidence. Keep preview editing available; there is no separate verification checkbox before settlement. The current
 local model integration is an alternative to the configured API. An explicit mock mode also remains
 available for offline demonstration and performs no upload.
 

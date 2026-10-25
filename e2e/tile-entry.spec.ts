@@ -1,16 +1,47 @@
+import { openQuickScore } from './helpers/navigation';
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 for (const width of [390, 1280]) {
+  test(`tile entry Done stays reachable after scrolling at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 700 });
+    await page.goto('/');
+    await openQuickScore(page);
+    await page.getByRole('button', { name: 'Enter tiles', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Enter tiles', exact: true });
+    await dialog.evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+    });
+    await expect.poll(() => dialog.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    const done = dialog.getByRole('button', { name: 'Done', exact: true });
+    await expect
+      .poll(() =>
+        done.evaluate((button) => {
+          const bounds = button.getBoundingClientRect();
+          const sheet = button.closest('dialog')!.getBoundingClientRect();
+          return (
+            bounds.top >= sheet.top &&
+            bounds.bottom <= sheet.bottom &&
+            button.contains(
+              document.elementFromPoint(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2),
+            )
+          );
+        }),
+      )
+      .toBe(true);
+    await done.click();
+    await expect(dialog).not.toBeVisible();
+  });
+
   test(`shared tile entry and individual deletion at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/');
-    await page.getByRole('link', { name: 'Quick score', exact: true }).click();
+    await openQuickScore(page);
     await expect(page.locator('app-storage-status')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Delete a tile', exact: true })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Clear', exact: true })).toHaveCount(0);
     await expect(page.locator('.hand-controls')).toHaveCount(0);
-    await expect(page.locator('.meld-card .step')).toHaveText('02');
+    await expect(page.locator('.meld-card')).toHaveCount(0);
     await expect(page.locator('.hand-tray > app-tile-entry-dialog > button')).toHaveText(
       'Enter tiles',
     );

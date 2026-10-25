@@ -1,3 +1,4 @@
+import { openQuickScore } from './helpers/navigation';
 import { test, expect } from '@playwright/test';
 test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -6,7 +7,7 @@ for (const width of [390, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/');
     await page.getByRole('button', { name: 'Next time', exact: true }).click();
-    await page.getByRole('link', { name: 'Quick score', exact: true }).click();
+    await openQuickScore(page);
     await page.getByRole('button', { name: 'Enter tiles', exact: true }).click();
     for (const rank of [1, 2, 3])
       await page.getByRole('button', { name: `${rank}m: Add ${rank} man`, exact: true }).click();
@@ -18,6 +19,18 @@ for (const width of [390, 1280]) {
     const first = await tiles.nth(0).getAttribute('aria-label');
     const from = (await tiles.nth(0).boundingBox())!;
     const to = (await tiles.nth(2).boundingBox())!;
+    const checkPreview = async () => {
+      const preview = page.locator('.tile-drag-preview');
+      await expect(preview).toBeVisible();
+      await expect(preview).toHaveAttribute('aria-label', first!);
+      await expect(preview.locator('img')).toBeVisible();
+      await expect(preview).toHaveCSS('opacity', '1');
+      expect(await preview.evaluate((element) => element.matches(':popover-open'))).toBe(true);
+      const bounds = (await preview.boundingBox())!;
+      expect(Math.abs(bounds.x - to.x)).toBeLessThan(2);
+      expect(Math.abs(bounds.y - to.y)).toBeLessThan(2);
+      await page.screenshot({ path: `artifacts/tile-drag-preview-${width}.png` });
+    };
     if (width === 390) {
       const session = await page.context().newCDPSession(page);
       await session.send('Input.dispatchTouchEvent', {
@@ -36,13 +49,16 @@ for (const width of [390, 1280]) {
         });
         await page.evaluate(() => new Promise(requestAnimationFrame));
       }
+      await checkPreview();
       await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     } else {
       await page.mouse.move(from.x + 10, from.y + 10);
       await page.mouse.down();
       await page.mouse.move(to.x + 10, to.y + 10, { steps: 8 });
+      await checkPreview();
       await page.mouse.up();
     }
+    await expect(page.locator('.tile-drag-preview')).toHaveCount(0);
     await expect(tiles).toHaveCount(3);
     await expect(tiles.nth(2)).toHaveAttribute('aria-label', first!);
     await tiles.nth(2).focus();

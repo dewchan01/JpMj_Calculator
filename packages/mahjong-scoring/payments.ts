@@ -1,10 +1,10 @@
 import { kindIndex, type Payment, type ScoreResult } from '../mahjong-core/index';
-import { ruleSettings } from '../mahjong-rules/index';
+import { ruleSettings, tableRules } from '../mahjong-rules/index';
 import type { ScoringInput } from './types';
 export const ceil100 = (points: number): number => Math.ceil(points / 100) * 100;
 export type PaymentContext = Pick<
   ScoringInput,
-  'rules' | 'players' | 'dealerId' | 'honba' | 'riichiSticks'
+  'rules' | 'players' | 'dealerId' | 'honba' | 'riichiSticks' | 'waremePlayerId'
 > & { win: Pick<ScoringInput['win'], 'method' | 'winnerId' | 'discarderId'> };
 export function basePoints(
   han: number,
@@ -26,24 +26,28 @@ export function basePoints(
 export function paymentsFor(base: number, input: PaymentContext): Payment[] {
   const { win, rules, players, dealerId, honba, riichiSticks } = input;
   const dealer = win.winnerId === dealerId;
+  const table = tableRules(rules);
   const payments: Payment[] = [];
   if (win.method === 'ron') {
     payments.push({
       from: win.discarderId!,
       to: win.winnerId,
-      amount: ceil100(base * (dealer ? 6 : 4)) + honba * (rules.playerCount === 3 ? 200 : 300),
+      amount: ceil100(base * (dealer ? 6 : 4)) + honba * table.honbaRon,
       reason: 'Ron + honba',
     });
   } else {
     for (const p of players.filter((p) => p.id !== win.winnerId)) {
       let share = base * (dealer || p.id === dealerId ? 2 : 1);
       // Explicit house-rule alternative: split the missing non-dealer share before rounding.
-      if (rules.playerCount === 3 && rules.tsumo === 'north-bisection')
+      if (rules.playerCount === 3 && table.tsumoMode === 'no-loss')
         share += base * (dealer ? 1 : 0.5);
+      if (rules.playerCount === 3 && table.tsumoMode === 'equal') share = base * 2;
+      if (rules.playerCount === 3 && table.tsumoMode === 'equal-dealer')
+        share = base * (dealer ? 3 : 2);
       payments.push({
         from: p.id,
         to: win.winnerId,
-        amount: ceil100(share) + honba * 100,
+        amount: ceil100(share) + honba * table.honbaTsumo,
         reason: 'Tsumo + honba',
       });
     }
@@ -55,7 +59,29 @@ export function paymentsFor(base: number, input: PaymentContext): Payment[] {
       amount: riichiSticks * 1000,
       reason: 'Riichi escrow award',
     });
-  return payments;
+  return adjustHandPayments(payments, input);
+}
+
+export function adjustHandPayments(
+  payments: Payment[],
+  input: Pick<PaymentContext, 'rules' | 'waremePlayerId'>,
+): Payment[] {
+  const table = tableRules(input.rules);
+  return payments.map((payment) =>
+    payment.from === 'table' || payment.to === 'table'
+      ? payment
+      : {
+          ...payment,
+          amount:
+            Math.ceil(
+              (payment.amount *
+                (input.waremePlayerId && [payment.from, payment.to].includes(input.waremePlayerId)
+                  ? table.waremeMultiplier
+                  : 1)) /
+                table.paymentUnit,
+            ) * table.paymentUnit,
+        },
+  );
 }
 
 export function responsibilityPayments(
@@ -89,7 +115,16 @@ export function responsibilityPayments(
     const payer = last.fromPlayerId!;
     const responsibleBase =
       settings.pao === 'whole-hand' ? base : Math.min(base, (item.yakumanMultiplier ?? 1) * 8000);
-    const clean = { ...input, honba: 0, riichiSticks: 0 };
+    // Apply Wareme/rounding once, after splitting responsibility and adding Honba.
+    const clean = {
+      ...input,
+      rules: {
+        ...input.rules,
+        table: { ...tableRules(input.rules), waremeMultiplier: 1, paymentUnit: 100 as const },
+      },
+      honba: 0,
+      riichiSticks: 0,
+    };
     const payments = base > responsibleBase ? paymentsFor(base - responsibleBase, clean) : [];
     const amount = paymentsFor(responsibleBase, clean).reduce((sum, p) => sum + p.amount, 0);
     const add = (from: string, amount: number, reason: string): void => {
@@ -99,7 +134,7 @@ export function responsibilityPayments(
       add(input.win.discarderId!, amount / 2, 'Ron: half of responsibility share');
       add(payer, amount / 2, 'Responsibility: half of Ron');
     } else add(payer, amount, 'Responsibility payment');
-    add(payer, input.honba * (input.rules.playerCount === 3 ? 200 : 300), 'Responsibility: honba');
+    add(payer, input.honba * tableRules(input.rules).honbaRon, 'Responsibility: honba');
     if (input.riichiSticks)
       payments.push({
         from: 'table',
@@ -107,7 +142,7 @@ export function responsibilityPayments(
         amount: input.riichiSticks * 1000,
         reason: 'Riichi escrow award',
       });
-    return payments;
+    return adjustHandPayments(payments, input);
   }
   return null;
 }

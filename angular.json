@@ -15,7 +15,12 @@
             "index": "apps/web/src/index.html",
             "outputPath": "dist/web",
             "styles": ["apps/web/src/styles.css"],
-            "assets": [{ "glob": "**/*", "input": "apps/web/public" }]
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "apps/web/public"
+              }
+            ]
           },
           "configurations": {
             "pages": {
@@ -29,19 +34,39 @@
             "production": {
               "serviceWorker": "apps/web/ngsw-config.json",
               "outputHashing": "all",
-              "budgets": [{ "type": "initial", "maximumWarning": "800kB", "maximumError": "1MB" }]
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "800kB",
+                  "maximumError": "1MB"
+                }
+              ]
             },
-            "development": { "optimization": false, "sourceMap": true }
+            "development": {
+              "optimization": false,
+              "sourceMap": true
+            }
           },
           "defaultConfiguration": "production"
         },
         "serve": {
           "builder": "@angular/build:dev-server",
-          "configurations": { "development": { "buildTarget": "web:build:development" } },
+          "configurations": {
+            "development": {
+              "buildTarget": "web:build:development"
+            },
+            "options": {
+              "host": "0.0.0.0",
+              "port": 4200,
+              "allowedHosts": ["localhost"]
+            }
+          },
           "defaultConfiguration": "development"
         }
       }
     }
   },
-  "cli": { "analytics": false }
+  "cli": {
+    "analytics": false
+  }
 }

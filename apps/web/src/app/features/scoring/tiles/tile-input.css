@@ -1,6 +1,5 @@
 :host {
   display: block;
-  margin: 0.75rem 0;
   min-width: 0;
 }
 h3 {
@@ -15,22 +14,27 @@ h3 {
   padding: 0;
 }
 .indicator-editor {
-  padding: 12px;
+  padding: 10px;
+  min-height: 78px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--subtle-surface);
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-items: start;
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
 }
 .indicator-editor > app-tile-entry-dialog {
   grid-row: 1;
+  grid-column: 2;
+  align-self: start;
+  margin-top: 6px;
   justify-self: end;
 }
 .indicator-editor > .selected-tiles,
 .indicator-editor > .input-empty {
-  grid-row: 2;
+  grid-row: 1;
+  grid-column: 1;
 }
 .input-empty {
   font-size: 0.75rem;

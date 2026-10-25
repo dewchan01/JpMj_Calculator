@@ -13,12 +13,16 @@
   [class.dragging]="dragging()"
   [style.transform]="dragOffset() ? 'translateY(' + dragOffset() + 'px)' : null"
 >
-  <div class="sheet-grip" aria-hidden="true"><span></span></div>
-  <header>
-    <h2>{{ label() | t }}</h2>
-    <button class="secondary" (click)="close()">{{ 'Done' | t }}</button>
-  </header>
+  <div class="sheet-header">
+    <div class="sheet-grip" aria-hidden="true"><span></span></div>
+    <header>
+      <h2>{{ label() | t }}</h2>
+      <button class="secondary" (click)="close()">{{ 'Done' | t }}</button>
+    </header>
+  </div>
   @if (opened()) {
-    <ng-container [ngTemplateOutlet]="content()" />
+    <div class="sheet-content">
+      <ng-container [ngTemplateOutlet]="content()" />
+    </div>
   }
 </dialog>

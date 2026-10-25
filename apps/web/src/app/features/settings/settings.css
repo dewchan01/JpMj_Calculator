@@ -1,0 +1,45 @@
+:host {
+  display: block;
+}
+.rule-library {
+  margin-bottom: 20px;
+}
+.settings-groups {
+  display: grid;
+  gap: 20px;
+}
+.settings-groups h2 {
+  margin-bottom: 20px;
+}
+.settings-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+.setting-field {
+  min-width: 0;
+}
+.setting-field label {
+  margin-bottom: 6px;
+}
+.setting-help {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.setting-help summary {
+  cursor: pointer;
+  min-height: 28px;
+}
+.setting-help p {
+  padding: 8px 0;
+  line-height: 1.7;
+}
+.settings-actions {
+  margin-top: 20px;
+}
+@media (max-width: 700px) {
+  .settings-fields {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+}

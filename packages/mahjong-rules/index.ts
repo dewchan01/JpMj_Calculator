@@ -1,4 +1,6 @@
 import type { PlayerCount } from '../mahjong-core/index';
+import type { TableRules } from './table-rules';
+export { tableRules, validateProfile, type TableRules } from './table-rules';
 export type RulePreset = 'mahjong-soul' | 'tenhou' | 'm-league' | 'custom';
 export interface RuleSettings {
   doubleYakuman: boolean;
@@ -20,6 +22,8 @@ export interface RuleProfile {
   readonly openTanyao: boolean;
   readonly preset?: RulePreset;
   readonly settings?: Readonly<RuleSettings>;
+  readonly name?: string;
+  readonly table?: Readonly<TableRules>;
 }
 export function rankedRules(playerCount: PlayerCount): RuleProfile {
   return presetRules('mahjong-soul', playerCount);
@@ -56,6 +60,7 @@ export function ruleSettings(profile: RuleProfile): Readonly<RuleSettings> {
   );
 }
 export function ruleName(profile: RuleProfile): string {
+  if (profile.preset === 'custom' && profile.name) return profile.name;
   if (profile.preset === 'm-league') return 'M.League';
   return profile.preset === 'tenhou'
     ? 'Tenhou'
