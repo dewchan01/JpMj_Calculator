@@ -1,0 +1,64 @@
+.dice {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  padding: 28px 0;
+  perspective: 500px;
+}
+.die {
+  width: 76px;
+  height: 76px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 5px;
+  padding: 12px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 3px 5px 0 var(--border);
+}
+.die span {
+  visibility: hidden;
+  border-radius: 50%;
+  background: var(--text);
+}
+.die span.visible {
+  visibility: visible;
+}
+.die.one span {
+  background: #ba3c32;
+}
+.rolling .die {
+  animation: dice-tumble 750ms ease-out both;
+}
+.rolling .die:nth-child(2) {
+  animation-direction: reverse;
+}
+.dice-result {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  min-height: 28px;
+}
+@keyframes dice-tumble {
+  0% {
+    transform: translateY(-14px) rotateX(0deg) rotateZ(-25deg);
+  }
+  35% {
+    transform: translateY(6px) rotateX(190deg) rotateZ(130deg);
+  }
+  65% {
+    transform: translateY(-9px) rotateX(300deg) rotateZ(280deg);
+  }
+  85% {
+    transform: translateY(3px) rotateX(360deg) rotateZ(350deg);
+  }
+  100% {
+    transform: translateY(0) rotateX(360deg) rotateZ(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rolling .die {
+    animation: none;
+  }
+}

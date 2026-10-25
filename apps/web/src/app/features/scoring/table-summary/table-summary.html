@@ -27,6 +27,7 @@
             [class.selected]="player.id === winner()"
             [class.dealer]="player.id === dealer()"
             [class.negative]="balances()[player.id] < 0"
+            [class.comparison-reference]="differenceFrom() === player.id"
           >
             @if (interactive()) {
               <button
@@ -40,36 +41,8 @@
               @if (player.id === dealer()) {
                 <small>{{ 'Dealer' | t }}</small>
               }
-            </div>
-            <h3 [title]="player.name">{{ player.name }}</h3>
-            @if (interactive()) {
-              <button
-                class="player-points difference-button"
-                (click)="pointDifference.emit(player.id)"
-                [attr.aria-label]="('Point differences' | t) + ' ' + player.name"
-              >
-                {{ balances()[player.id] | number }}
-                <small aria-hidden="true" class="difference-icon"></small>
-              </button>
-            } @else {
-              <p class="player-points">{{ balances()[player.id] | number }}</p>
-            }
-            @if (riichiPlayers()[player.id]) {
-              <span
-                class="riichi-stick"
-                role="img"
-                [attr.aria-label]="riichiPlayers()[player.id]"
-              ></span>
-            }
-            <div class="player-status">
-              @if (statuses()[player.id]) {
-                <span>{{ statuses()[player.id] }}</span>
-              }
-              @if (player.id === winner()) {
-                <span class="winner-label">{{ 'Selected winner' | t }}</span>
-              }
               @if (!recordedWinners().has(player.id)) {
-                <span
+                <small
                   class="yakitori-label"
                   [title]="
                     (yakitoriPenalty()
@@ -79,29 +52,81 @@
                   "
                 >
                   {{ 'Yakitori' | t }}
-                </span>
+                </small>
+              }
+            </div>
+            <h3 [title]="player.name">{{ player.name }}</h3>
+            @if (interactive()) {
+              <p
+                class="player-points"
+                [class.point-difference]="differenceFrom() && differenceFrom() !== player.id"
+              >
+                {{
+                  (differenceFrom() &&
+                  differenceFrom() !== player.id &&
+                  displayPoints(player.id) > 0
+                    ? '+'
+                    : '') + (displayPoints(player.id) | number)
+                }}
+              </p>
+              <button
+                class="difference-button"
+                (click)="pointDifference.emit(player.id)"
+                [attr.aria-label]="('Point differences' | t) + ' ' + player.name"
+                [attr.aria-pressed]="differenceFrom() === player.id"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 8h16m-4-4 4 4-4 4M20 16H4m4-4-4 4 4 4" />
+                </svg>
+              </button>
+            } @else {
+              <p class="player-points">{{ balances()[player.id] | number }}</p>
+            }
+            <span class="riichi-lane" aria-hidden="true"></span>
+            @if (riichiPlayers()[player.id]) {
+              <span
+                class="riichi-stick"
+                role="img"
+                [attr.aria-label]="riichiPlayers()[player.id]"
+              ></span>
+            }
+            <div class="player-status">
+              @if (player.id === winner()) {
+                <span class="winner-label">{{ 'Selected winner' | t }}</span>
               }
             </div>
             @if (interactive()) {
               <div class="seat-actions">
                 <button
+                  [class.action-active]="!!riichiPlayers()[player.id]"
+                  [attr.aria-pressed]="!!riichiPlayers()[player.id]"
                   [disabled]="actionsDisabled()"
                   (click)="quickAction.emit({ player: player.id, type: 'riichi' })"
                 >
                   {{ 'Riichi' | t }}
                 </button>
                 <button
+                  [class.action-active]="callCounts()[player.id] > 0"
+                  [attr.aria-pressed]="callCounts()[player.id] > 0"
                   [disabled]="actionsDisabled()"
                   (click)="quickAction.emit({ player: player.id, type: 'calls' })"
                 >
                   {{ 'Call' | t }}
+                  @if (callCounts()[player.id]) {
+                    <span>{{ callCounts()[player.id] }}</span>
+                  }
                 </button>
                 @if (players().length === 3) {
                   <button
+                    [class.action-active]="northCounts()[player.id] > 0"
+                    [attr.aria-pressed]="northCounts()[player.id] > 0"
                     [disabled]="actionsDisabled()"
                     (click)="quickAction.emit({ player: player.id, type: 'kita' })"
                   >
                     {{ 'Kita' | t }}
+                    @if (northCounts()[player.id]) {
+                      <span>{{ northCounts()[player.id] }}</span>
+                    }
                   </button>
                 }
               </div>

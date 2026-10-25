@@ -7,7 +7,6 @@
   flex-direction: column;
   gap: 8px;
   min-height: 480px;
-  max-height: 900px;
 }
 .game-heading {
   display: flex;
@@ -33,13 +32,45 @@ h1 {
   color: var(--muted);
 }
 .live-table {
-  flex: 1;
+  flex: 0 0 auto;
+  height: min(680px, calc(100dvh - var(--app-header-height, 0px) - 200px));
   min-height: 0;
 }
 .indicator-bar,
 .game-bottom {
   display: flex;
   gap: 8px;
+}
+.indicator-bar {
+  flex: 1;
+  min-height: 48px;
+}
+.indicator-bar button {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--subtle-surface);
+  color: var(--text);
+}
+.game-heading h1 {
+  flex: 1;
+}
+.dice-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  flex-shrink: 0;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--green);
+  background: var(--surface);
+}
+.dice-icon svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
 }
 .indicator-bar button {
   flex: 1;
@@ -54,7 +85,7 @@ h1 {
   gap: 2px;
 }
 .indicator-preview app-tile-art {
-  width: 18px;
+  width: 32px;
 }
 .indicator-bar small {
   display: block;
@@ -179,74 +210,13 @@ h1 {
 .mini-tiles app-tile-art {
   width: 32px;
 }
-.dice {
-  display: flex;
-  justify-content: center;
-  gap: 28px;
-  padding: 28px 0;
-  perspective: 500px;
-}
-.die {
-  width: 76px;
-  height: 76px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  gap: 5px;
-  padding: 12px;
-  background: var(--surface);
-  border: 2px solid var(--border);
-  border-radius: 14px;
-  box-shadow: 3px 5px 0 var(--border);
-}
-.die span {
-  visibility: hidden;
-  border-radius: 50%;
-  background: var(--text);
-}
-.die span.visible {
-  visibility: visible;
-}
-.die.one span {
-  background: #ba3c32;
-}
-.rolling .die {
-  animation: dice-tumble 750ms ease-out both;
-}
-.rolling .die:nth-child(2) {
-  animation-direction: reverse;
-}
-.dice-result {
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-  min-height: 28px;
-}
-@keyframes dice-tumble {
-  0% {
-    transform: translateY(-14px) rotateX(0deg) rotateZ(-25deg);
-  }
-  35% {
-    transform: translateY(6px) rotateX(190deg) rotateZ(130deg);
-  }
-  65% {
-    transform: translateY(-9px) rotateX(300deg) rotateZ(280deg);
-  }
-  85% {
-    transform: translateY(3px) rotateX(360deg) rotateZ(350deg);
-  }
-  100% {
-    transform: translateY(0) rotateX(360deg) rotateZ(360deg);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .rolling .die {
-    animation: none;
-  }
-}
 .payment-list strong {
   float: right;
 }
 @media (max-width: 700px) {
+  .live-table {
+    height: min(calc(100vw + 28px), calc(100dvh - 200px));
+  }
   .game-shell {
     height: calc(100dvh - 16px - env(safe-area-inset-bottom));
     min-height: 350px;

@@ -44,7 +44,7 @@ export async function toggleTheme(page: Page): Promise<void> {
       await Promise.all(
         document
           .getAnimations()
-          .filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity)
+          .filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity)
           .map((animation) => animation.finished.catch(() => undefined)),
       );
     });

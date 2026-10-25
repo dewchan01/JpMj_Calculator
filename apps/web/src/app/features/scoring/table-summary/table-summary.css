@@ -2,30 +2,252 @@
   display: block;
   margin-block: 20px;
 }
+.difference-button {
+  position: absolute;
+  right: -34px;
+  top: 50%;
+  translate: 0 -50%;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 32px;
+  min-height: 32px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--green);
+}
+.difference-button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+.difference-button[aria-pressed='true'] {
+  background: var(--green);
+  color: var(--page);
+}
+.player-seat.comparison-reference {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+.point-difference {
+  font-weight: 650;
+}
+:host(.compact) {
+  margin: 0;
+  min-height: 0;
+}
+:host(.compact) .table-summary {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+:host(.compact) .table-caption {
+  padding: 8px 12px;
+}
+:host(.compact) .table-layout {
+  --hub-width: 180px;
+  --hub-height: 160px;
+  --card-width: 200px;
+  --card-depth: 80px;
+  --seat-gap: 48px;
+  display: block;
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+}
+:host(.compact) .table-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  width: var(--hub-width);
+  height: var(--hub-height);
+}
+:host(.compact) .seat-slot {
+  position: absolute;
+  display: block;
+  width: var(--card-width);
+  height: var(--card-depth);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(var(--seat-angle, 0deg));
+}
+:host(.compact) .slot-bottom {
+  top: calc(50% + var(--hub-height) / 2 + var(--seat-gap) + var(--card-depth) / 2);
+}
+:host(.compact) .slot-top {
+  top: calc(50% - var(--hub-height) / 2 - var(--seat-gap) - var(--card-depth) / 2);
+  --seat-angle: 180deg;
+}
+:host(.compact) .slot-right {
+  left: calc(50% + var(--hub-width) / 2 + var(--seat-gap) + var(--card-depth) / 2);
+  --seat-angle: -90deg;
+}
+:host(.compact) .slot-left,
+:host(.compact) .sanma .slot-top {
+  left: calc(50% - var(--hub-width) / 2 - var(--seat-gap) - var(--card-depth) / 2);
+  top: 50%;
+  --seat-angle: 90deg;
+}
+:host(.compact) .player-seat {
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+}
+:host(.compact) .seat-hit {
+  height: 100%;
+}
+:host(.compact) .seat-label {
+  position: absolute;
+  top: -22px;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  gap: 4px;
+}
+:host(.compact) .seat-label small {
+  font-size: 0.6rem;
+  white-space: nowrap;
+}
+:host(.compact) .seat-label .yakitori-label {
+  padding: 0 3px;
+  border-radius: 4px;
+}
+:host(.compact) .player-seat h3 {
+  margin: 0;
+  line-height: 20px;
+}
+:host(.compact) .player-points {
+  font-size: 2rem;
+  line-height: 40px;
+}
+:host(.compact) .player-status:empty {
+  display: none;
+}
+:host(.compact) .seat-actions {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  flex-wrap: nowrap;
+}
+:host(.compact) .riichi-stick {
+  top: calc(6.5px - var(--seat-gap));
+  width: 68px;
+}
+.riichi-lane {
+  position: absolute;
+  top: calc(4px - var(--seat-gap, 48px));
+  left: 50%;
+  translate: -50% 0;
+  width: 76px;
+  height: 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+:host(.compact) .seat-actions button.action-active {
+  background: var(--green);
+  color: var(--page);
+  border-color: var(--green);
+}
+:host(.compact) .seat-actions button span {
+  margin-left: 3px;
+  font-weight: 750;
+}
+@media (max-width: 700px) {
+  :host(.compact) .table-layout {
+    --hub-width: 88px;
+    --hub-height: 96px;
+    --card-width: 128px;
+    --card-depth: 48px;
+    --seat-gap: 38px;
+  }
+  :host(.compact) .player-seat {
+    padding: 4px;
+  }
+  :host(.compact) .seat-label {
+    gap: 2px;
+    line-height: 12px;
+    align-items: center;
+  }
+  :host(.compact) .seat-label > abbr {
+    width: 16px;
+    height: 16px;
+    font-size: 0.6rem;
+  }
+  :host(.compact) .seat-label small {
+    font-size: 0.6rem;
+  }
+  :host(.compact) .player-seat h3 {
+    font-size: 0.7rem;
+    line-height: 14px;
+    margin: 0;
+  }
+  :host(.compact) .player-points {
+    font-size: 1.25rem;
+    line-height: 26px;
+  }
+  :host(.compact) .seat-actions {
+    gap: 3px;
+    top: calc(100% + 4px);
+  }
+  :host(.compact) .seat-actions button {
+    min-height: 32px;
+    font-size: 0.6rem;
+  }
+  :host(.compact) .table-center {
+    padding: 6px 4px;
+  }
+  :host(.compact) .table-round {
+    font-size: 1rem;
+  }
+  :host(.compact) .table-honba {
+    font-size: 0.65rem;
+    margin: 2px 0 4px;
+  }
+  :host(.compact) .table-pot {
+    flex-direction: column;
+    gap: 2px;
+    font-size: 0.6rem;
+    padding-top: 4px;
+  }
+  :host(.compact) .table-pot strong {
+    font-size: 0.85rem;
+  }
+}
+@media (max-width: 370px) {
+  :host(.compact) .table-layout {
+    --hub-width: 80px;
+    --hub-height: 80px;
+    --card-width: 112px;
+    --card-depth: 44px;
+    --seat-gap: 32px;
+  }
+  :host(.compact) .player-points {
+    font-size: 1.1rem;
+    line-height: 22px;
+  }
+  :host(.compact) .table-round {
+    font-size: 0.85rem;
+  }
+  :host(.compact) .table-honba {
+    line-height: 12px;
+  }
+  :host(.compact) .table-pot {
+    line-height: 10px;
+    padding-top: 2px;
+  }
+}
 .seat-slot {
   display: contents;
-}
-.difference-button {
-  position: relative;
-  z-index: 2;
-  display: block;
-  width: 100%;
-  border: 0;
-  border-radius: 5px;
-  padding: 0;
-  background: transparent;
-  color: inherit;
-  text-align: left;
-}
-.difference-button small {
-  font-size: 0.6rem;
-  color: var(--muted);
-}
-.difference-icon::after {
-  content: '↔';
-}
-.difference-button:hover {
-  background: var(--subtle-surface);
 }
 .riichi-stick {
   position: absolute;
@@ -167,39 +389,6 @@
 .seat-hit:focus-visible {
   outline: 3px solid var(--green);
   outline-offset: -3px;
-}
-:host(.compact) {
-  margin: 0;
-  min-height: 0;
-}
-:host(.compact) .table-summary {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-:host(.compact) .table-layout {
-  flex: 1;
-  min-height: 0;
-  grid-template-rows: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-  padding: 8px;
-}
-:host(.compact) .table-caption {
-  padding: 8px 12px;
-}
-:host(.compact) .player-seat {
-  padding: 8px;
-}
-:host(.compact) .table-center {
-  padding: 10px 4px;
-}
-:host(.compact) .player-status {
-  margin-top: 3px;
-  font-size: 0.58rem;
-  gap: 2px;
-}
-:host(.compact) .player-seat h3 {
-  margin: 4px 0;
 }
 .seat-top {
   grid-column: 2;
@@ -346,135 +535,4 @@
 }
 :host-context([data-theme='dark']) .dealer .seat-label small {
   color: #f3d58d;
-}
-@media (max-width: 700px) and (max-height: 760px) {
-  :host(.compact) .player-seat {
-    padding: 4px;
-  }
-  :host(.compact) .seat-label > abbr {
-    width: 18px;
-    height: 18px;
-  }
-  :host(.compact) .player-seat h3 {
-    margin: 2px 0;
-  }
-  :host(.compact) .player-status span {
-    padding: 0 3px;
-  }
-  :host(.compact) .seat-actions {
-    margin-top: 3px;
-  }
-}
-:host(.compact) .seat-slot {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr);
-  place-items: center;
-  min-width: 0;
-  min-height: 0;
-  container-type: size;
-}
-:host(.compact) .slot-top {
-  grid-column: 2;
-  grid-row: 1;
-}
-:host(.compact) .slot-bottom {
-  grid-column: 2;
-  grid-row: 3;
-}
-:host(.compact) .slot-left {
-  grid-column: 1;
-  grid-row: 2;
-}
-:host(.compact) .slot-right {
-  grid-column: 3;
-  grid-row: 2;
-}
-:host(.compact) .sanma .slot-top {
-  grid-column: 1;
-  grid-row: 2;
-}
-:host(.compact) .player-seat {
-  width: min(220px, calc(100cqi - 12px));
-  transform: rotate(var(--seat-angle, 0deg));
-  grid-column: 1;
-  grid-row: 1;
-}
-:host(.compact) .slot-top {
-  --seat-angle: 180deg;
-}
-:host(.compact) .slot-right {
-  --seat-angle: -90deg;
-}
-:host(.compact) .slot-left,
-:host(.compact) .sanma .slot-top {
-  --seat-angle: 90deg;
-}
-:host(.compact) .slot-left .player-seat,
-:host(.compact) .slot-right .player-seat,
-:host(.compact) .sanma .slot-top .player-seat {
-  width: min(220px, calc(100cqb - 32px));
-}
-:host(.compact) .player-status {
-  position: absolute;
-  bottom: -20px;
-  left: 0;
-  right: 0;
-  justify-content: center;
-  flex-wrap: nowrap;
-  white-space: nowrap;
-  margin: 0;
-}
-@media (max-width: 700px) {
-  :host(.compact) .table-center {
-    width: calc(100% - 8px);
-    justify-self: center;
-  }
-  :host(.compact) .slot-right .player-seat {
-    translate: -4px 0;
-  }
-  :host(.compact) .slot-left .player-seat,
-  :host(.compact) .sanma .slot-top .player-seat {
-    translate: 4px 0;
-  }
-  :host(.compact) .seat-hit {
-    height: 24px;
-  }
-  :host(.compact) .player-seat {
-    padding: 4px;
-  }
-  :host(.compact) .seat-label {
-    position: absolute;
-    top: 4px;
-    left: 4px;
-  }
-  :host(.compact) .seat-label > abbr {
-    width: 18px;
-    height: 18px;
-  }
-  :host(.compact) .seat-label small {
-    position: absolute;
-    top: -21px;
-    left: 0;
-    white-space: nowrap;
-  }
-  :host(.compact) .player-seat h3 {
-    margin: 0;
-    padding-left: 22px;
-    min-height: 18px;
-    line-height: 18px;
-    font-size: 0.65rem;
-  }
-  :host(.compact) .difference-button {
-    min-height: 28px;
-    font-size: 1rem;
-  }
-  :host(.compact) .seat-actions {
-    margin-top: 2px;
-    gap: 3px;
-  }
-  :host(.compact) .seat-actions button {
-    min-height: 36px;
-    font-size: 0.6rem;
-  }
 }

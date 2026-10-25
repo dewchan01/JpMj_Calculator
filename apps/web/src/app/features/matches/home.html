@@ -2,6 +2,47 @@
 @if (error()) {
   <app-error-notice [message]="error()" />
 }
+<div class="setup-tools" [attr.aria-label]="'Table tools' | t" role="group">
+  <button
+    (click)="playersDialog.showModal()"
+    [attr.aria-label]="'Saved players' | t"
+    [title]="'Saved players' | t"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="9" cy="7" r="3" />
+      <path d="M3 21v-4a6 6 0 0 1 12 0v4m1-17a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 5v3" />
+    </svg>
+  </button>
+  <button
+    (click)="swapDialog.showModal()"
+    [attr.aria-label]="'Quick swap' | t"
+    [title]="'Quick swap' | t"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 7h16m-4-4 4 4-4 4M20 17H4m4-4-4 4 4 4" />
+    </svg>
+  </button>
+  <button
+    (click)="randomizePlayers()"
+    [attr.aria-label]="'Random positions' | t"
+    [title]="'Random positions' | t"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 6h3c5 0 7 12 12 12h3m-4-4 4 4-4 4M3 18h3c2 0 4-3 6-6s4-6 6-6h3m-4-4 4 4-4 4" />
+    </svg>
+  </button>
+  <button
+    (click)="diceDialog.showModal(); diceRequest.set(diceRequest() + 1)"
+    [attr.aria-label]="'Dice' | t"
+    [title]="'Dice' | t"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="3" y="3" width="18" height="18" rx="4" />
+      <path d="M7 7h.01M12 12h.01M17 17h.01" stroke-width="3" stroke-linecap="round" />
+    </svg>
+  </button>
+</div>
+<p class="seat-notice" role="status">{{ seatNotice() | t }}</p>
 <div class="home-grid home-content">
   <section class="card setup-card">
     <div class="section-heading">
@@ -33,15 +74,13 @@
       {{ 'Match name' | t }}
       <input [formField]="setupForm.name" [attr.placeholder]="'Saturday afternoon' | t" />
     </label>
-    <button class="player-library-open" (click)="playersDialog.showModal()">
-      {{ 'Saved players' | t }}
-    </button>
     <div class="players-grid">
       @for (seat of seats.slice(0, count()); track seat; let i = $index) {
         <label>
           {{ seat + ' seat' | t }}
           <select
-            (change)="choosePlayer(i, $event)"
+            [ngModel]="savedPlayerId(i)"
+            (ngModelChange)="choosePlayer(i, $event)"
             [attr.aria-label]="('Saved players' | t) + ' ' + (seat | t)"
           >
             <option value="">{{ 'Choose a saved player' | t }}</option>
@@ -123,4 +162,42 @@
       <p class="hint">{{ 'Save names here, then choose them for any seat.' | t }}</p>
     }
   </section>
+</dialog>
+<dialog #swapDialog class="players-dialog" aria-labelledby="swap-title">
+  <header class="players-heading">
+    <h2 id="swap-title">{{ 'Quick swap' | t }}</h2>
+    <button (click)="swapDialog.close()">{{ 'Return' | t }}</button>
+  </header>
+  <div class="tool-body">
+    <label>
+      {{ 'First seat' | t }}
+      <select [(ngModel)]="swapA">
+        @for (name of activeNames(); track $index; let i = $index) {
+          <option [ngValue]="i">{{ seats[i] | t }} · {{ name }}</option>
+        }
+      </select>
+    </label>
+    <label>
+      {{ 'Second seat' | t }}
+      <select [(ngModel)]="swapB">
+        @for (name of activeNames(); track $index; let i = $index) {
+          <option [ngValue]="i">{{ seats[i] | t }} · {{ name }}</option>
+        }
+      </select>
+    </label>
+    <button
+      class="primary full"
+      [disabled]="swapA === swapB"
+      (click)="swapPlayers(); swapDialog.close()"
+    >
+      {{ 'Swap positions' | t }}
+    </button>
+  </div>
+</dialog>
+<dialog #diceDialog class="players-dialog" aria-labelledby="setup-dice-title">
+  <header class="players-heading">
+    <h2 id="setup-dice-title">{{ 'Dice' | t }}</h2>
+    <button (click)="diceDialog.close()">{{ 'Return' | t }}</button>
+  </header>
+  <div class="tool-body"><app-dice-simulator [request]="diceRequest()" /></div>
 </dialog>

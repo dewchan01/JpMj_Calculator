@@ -1,7 +1,39 @@
-.player-library-open {
-  margin-block: 12px;
+.setup-tools {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.setup-tools button {
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  min-height: 44px;
   border: 1px solid var(--border);
   border-radius: 8px;
+  color: var(--green);
+  background: var(--subtle-surface);
+  font-size: 0.75rem;
+}
+.setup-tools svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+.seat-notice {
+  margin: 4px 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.seat-notice:empty {
+  display: none;
+}
+.tool-body {
+  padding: 16px;
+  display: grid;
+  gap: 12px;
 }
 .players-dialog {
   width: min(520px, calc(100vw - 24px));

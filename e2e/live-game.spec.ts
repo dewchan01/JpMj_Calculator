@@ -42,10 +42,17 @@ for (const width of [390, 1280])
         .click();
       await expect(page.locator('.table-pot strong')).toHaveText('1,000');
       await expect(page.locator('.riichi-stick')).toHaveCount(1);
-      await expect(page.locator('.slot-right .player-seat')).toHaveCSS(
-        'transform',
-        'matrix(0, -1, 1, 0, 0, 0)',
+      const lane = (await page.locator('.slot-right .riichi-lane').boundingBox())!;
+      const stick = (await page.locator('.riichi-stick').boundingBox())!;
+      expect(Math.abs(stick.x + stick.width / 2 - (lane.x + lane.width / 2))).toBeLessThanOrEqual(
+        1.1,
       );
+      expect(
+        await page.locator('.slot-right').evaluate((e) => {
+          const m = new DOMMatrix(getComputedStyle(e).transform);
+          return [m.a, m.b, m.c, m.d];
+        }),
+      ).toEqual([0, -1, 1, 0]);
       await playerAction(page, 'Player 3');
       if (count === 3) {
         await prompt(page).getByRole('button', { name: 'North extraction', exact: true }).click();
@@ -55,15 +62,28 @@ for (const width of [390, 1280])
         await enterLiveTiles(page, 'Meld tiles', '111z');
         await prompt(page).getByRole('button', { name: 'Record action', exact: true }).click();
       }
-      await page.getByRole('button', { name: 'Point differences Player 2', exact: true }).click();
       await expect(
-        prompt(page).getByRole('combobox', { name: 'Compare from player', exact: true }),
-      ).toHaveValue('p1');
-      await prompt(page)
-        .getByRole('combobox', { name: 'Compare from player', exact: true })
-        .selectOption('p1');
-      await expect(prompt(page)).toContainText('-1,000');
-      await prompt(page).getByRole('button', { name: 'Close', exact: true }).click();
+        page
+          .locator('.player-seat')
+          .filter({ hasText: 'Player 3' })
+          .getByRole('button', { name: count === 3 ? 'Kita 1' : 'Call 1', exact: true }),
+      ).toHaveAttribute('aria-pressed', 'true');
+      await expect(page.locator('.call-status')).toHaveCount(0);
+      await page.getByRole('button', { name: 'Point differences Player 2', exact: true }).click();
+      await expect(prompt(page)).not.toBeVisible();
+      await expect(page.locator('.point-difference')).toHaveCount(count - 1);
+      await expect(
+        page.locator('.player-seat').filter({ hasText: 'Player 1' }).locator('.player-points'),
+      ).toHaveText('+1,000');
+      await page.getByRole('button', { name: 'Point differences Player 2', exact: true }).click();
+      await expect(page.locator('.point-difference')).toHaveCount(0);
+      await expect(
+        page.getByRole('button', { name: 'Point differences', exact: true }),
+      ).toHaveCount(0);
+      await expect(
+        page.locator('.slot-right').getByRole('button', { name: 'Riichi', exact: true }),
+      ).toHaveAttribute('aria-pressed', 'true');
+      await expect(page.locator('.riichi-lane')).toHaveCount(count);
       await gameMenu(page, 'Pause game');
       await expect(page.getByRole('button', { name: 'Game timer', exact: true })).toContainText(
         'Paused',
@@ -128,7 +148,7 @@ test('saved player library survives reload and fills a chosen seat', async ({ pa
   await page.getByRole('textbox', { name: 'Player name', exact: true }).fill('Alice');
   await page.getByRole('button', { name: 'Add player', exact: true }).click();
   await page.getByRole('button', { name: 'Return', exact: true }).click();
-  await expect(page.locator('.players-dialog')).not.toBeVisible();
+  await expect(page.locator('dialog[aria-labelledby="players-title"]')).not.toBeVisible();
   await page.reload();
   await page
     .getByRole('combobox', { name: 'Saved players East', exact: true })
@@ -230,6 +250,15 @@ test('short phone tables keep player actions inside their cards without overlapp
           b = boxes[j];
         expect(a.right <= b.x || b.right <= a.x || a.bottom <= b.y || b.bottom <= a.y).toBe(true);
       }
+    const centre = boxes[0];
+    const gaps = [
+      boxes[1].y - centre.bottom,
+      boxes[2].x - centre.right,
+      count === 3 ? centre.x - boxes[3].right : centre.y - boxes[3].bottom,
+    ];
+    if (count === 4) gaps.push(centre.x - boxes[4].right);
+    expect(Math.max(...gaps) - Math.min(...gaps)).toBeLessThan(1);
+    expect(Math.min(...gaps)).toBeGreaterThan(0);
     expect(
       await page
         .locator('.seat-actions button')

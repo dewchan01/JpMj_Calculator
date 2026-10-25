@@ -17,9 +17,16 @@ export class TableSummary {
   readonly playerAction = output<string>();
   readonly quickAction = output<{ player: string; type: string }>();
   readonly actionsDisabled = input(false);
-  readonly statuses = input<Record<string, string>>({});
+  readonly callCounts = input<Record<string, number>>({});
+  readonly northCounts = input<Record<string, number>>({});
   readonly riichiPlayers = input<Record<string, string>>({});
   readonly pointDifference = output<string>();
+  readonly differenceFrom = input('');
+  displayPoints(id: string): number {
+    return this.differenceFrom() && this.differenceFrom() !== id
+      ? this.balances()[id] - this.balances()[this.differenceFrom()]
+      : this.balances()[id];
+  }
   readonly viewSeats = input<string[]>([]);
   private readonly i18n = inject(I18n);
   readonly players = input.required<{ id: string; name: string }[]>();

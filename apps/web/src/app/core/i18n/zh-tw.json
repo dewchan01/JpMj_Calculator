@@ -1,4 +1,11 @@
 {
+  "Table tools": "牌桌工具",
+  "Quick swap": "快速換位",
+  "Random positions": "隨機排位",
+  "First seat": "第一個座位",
+  "Second seat": "第二個座位",
+  "Positions swapped.": "已交換座位。",
+  "Positions randomized.": "已隨機安排座位。",
   "Rolling…": "擲骰中…",
   "Cancel Riichi · refund 1,000 points": "取消立直・退回 1,000 點",
   "No Riichi declaration to cancel.": "沒有可取消的立直宣言。",

@@ -1,3 +1,4 @@
+import { DiceSimulator } from '../../../shared/dice-simulator/dice-simulator';
 import {
   Component,
   DestroyRef,
@@ -92,12 +93,14 @@ type Panel =
     TileArt,
     MatchHistory,
     FinalResults,
+    DiceSimulator,
     ErrorNotice,
   ],
   templateUrl: './game-table.html',
   styleUrl: './game-table.css',
 })
 export class GameTable {
+  readonly indicatorKinds = ['dora', 'ura'] as const;
   readonly i18n = inject(I18n);
   private readonly repo = inject(Repository);
   private readonly route = inject(ActivatedRoute);
@@ -144,24 +147,21 @@ export class GameTable {
         ]),
     ),
   );
-  readonly tableStatuses = computed(() =>
+  readonly callCounts = computed(() =>
     Object.fromEntries(
       (this.match()?.players ?? []).map((p) => {
-        const state = livePlayer(this.match()!, p.id);
-        return [
-          p.id,
-          [
-            state.melds.length ? `${state.melds.length} ${this.i18n.t('Melds')}` : '',
-            state.kita.length ? `${state.kita.length} ${this.i18n.t('North')}` : '',
-          ]
-            .filter(Boolean)
-            .join(' · '),
-        ];
+        return [p.id, livePlayer(this.match()!, p.id).melds.length];
       }),
+    ),
+  );
+  readonly northCounts = computed(() =>
+    Object.fromEntries(
+      (this.match()?.players ?? []).map((p) => [p.id, livePlayer(this.match()!, p.id).kita.length]),
     ),
   );
   selected = '';
   basis = '';
+  readonly comparisonPlayer = signal('');
   callType: Meld['type'] | 'kita' = 'pon';
   callText = '';
   callSource = '';
@@ -193,18 +193,7 @@ export class GameTable {
   editNames: string[] = [];
   swapA = '';
   swapB = '';
-  dice: number[] = [];
-  readonly diceRolling = signal(false);
-  private diceTimer: ReturnType<typeof setTimeout> | undefined;
-  readonly dieDots = [0, 1, 2, 3, 4, 5, 6, 7, 8];
-  readonly diePips: Record<number, number[]> = {
-    1: [4],
-    2: [0, 8],
-    3: [0, 4, 8],
-    4: [0, 2, 6, 8],
-    5: [0, 2, 4, 6, 8],
-    6: [0, 2, 3, 5, 6, 8],
-  };
+  readonly diceRequest = signal(0);
   readonly ruleName = ruleName;
   readonly tableRules = tableRules;
   readonly abortiveReasons: AbortiveReason[] = [
@@ -218,7 +207,6 @@ export class GameTable {
     const interval = setInterval(() => this.now.set(Date.now()), 1000);
     inject(DestroyRef).onDestroy(() => {
       clearInterval(interval);
-      clearTimeout(this.diceTimer);
     });
     void this.load();
   }
@@ -283,9 +271,9 @@ export class GameTable {
       return [];
     }
   }
-  indicatorTiles(): Tile[] {
+  indicatorTiles(kind: 'dora' | 'ura' = 'dora'): Tile[] {
     try {
-      return parseTiles(this.match()?.live?.dora ?? '', 'table-indicator');
+      return parseTiles(this.match()?.live?.[kind] ?? '', 'table-indicator-' + kind);
     } catch {
       return [];
     }
@@ -451,7 +439,7 @@ export class GameTable {
   }
   showPlayerDifference(player: string): void {
     this.basis = player;
-    this.open('difference');
+    this.comparisonPlayer.update((current) => (current === player ? '' : player));
   }
   async saveCall(): Promise<void> {
     await this.act(async () => {
@@ -868,19 +856,7 @@ export class GameTable {
     });
   }
   rollDice(): void {
-    if (this.diceRolling()) return;
-    const bytes = new Uint8Array(2);
-    const result: number[] = [];
-    while (result.length < 2) {
-      crypto.getRandomValues(bytes);
-      for (const value of bytes) if (value < 252 && result.length < 2) result.push((value % 6) + 1);
-    }
-    this.dice = result;
-    this.diceRolling.set(true);
-    this.diceTimer = setTimeout(
-      () => this.diceRolling.set(false),
-      matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 750,
-    );
+    this.diceRequest.update((value) => value + 1);
   }
   exportMatch(): void {
     const m = this.match();

@@ -2,6 +2,17 @@
   <div class="game-shell">
     <header class="game-heading">
       <h1>{{ m.name }}</h1>
+      <button
+        class="dice-icon"
+        (click)="open('dice'); rollDice()"
+        [attr.aria-label]="'Dice' | t"
+        [title]="'Dice' | t"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="4" />
+          <path d="M7 7h.01M12 12h.01M17 17h.01" stroke-width="3" stroke-linecap="round" />
+        </svg>
+      </button>
       <button class="quiet clock" (click)="open('menu')" [attr.aria-label]="'Game timer' | t">
         {{ time(elapsed()) }}
         @if (paused()) {
@@ -26,26 +37,31 @@
       [pot]="book().table"
       [ruleName]="ruleName(m.rules)"
       [yakitoriPenalty]="tableRules(m.rules).yakitoriPenalty"
-      [statuses]="tableStatuses()"
+      [callCounts]="callCounts()"
+      [northCounts]="northCounts()"
       [riichiPlayers]="riichiPlayers()"
+      [differenceFrom]="comparisonPlayer()"
       [viewSeats]="m.viewSeats ?? []"
       (playerAction)="open('player', $event)"
       (quickAction)="tableAction($event)"
       (pointDifference)="showPlayerDifference($event)"
     />
     <div class="indicator-bar">
-      <button (click)="open('indicators')" [attr.aria-label]="'Dora / Ura' | t">
-        {{ 'Dora / Ura' | t }}
-        <span class="indicator-preview">
-          @for (tile of indicatorTiles(); track tile.id) {
-            <app-tile-art [tile]="tile" [decorative]="true" />
-          } @empty {
-            <small>—</small>
-          }
-        </span>
-      </button>
-      <button (click)="open('dice'); rollDice()">{{ 'Dice' | t }}</button>
-      <button (click)="open('difference')">{{ 'Point differences' | t }}</button>
+      @for (kind of indicatorKinds; track kind) {
+        <button
+          (click)="open('indicators')"
+          [attr.aria-label]="(kind === 'dora' ? 'Dora indicators' : 'Ura indicators') | t"
+        >
+          {{ (kind === 'dora' ? 'Dora indicators' : 'Ura indicators') | t }}
+          <span class="indicator-preview">
+            @for (tile of indicatorTiles(kind); track tile.id) {
+              <app-tile-art [tile]="tile" [decorative]="true" />
+            } @empty {
+              <small>—</small>
+            }
+          </span>
+        </button>
+      }
     </div>
     @if (m.showPointDifferences) {
       <p class="difference-strip">
@@ -551,25 +567,7 @@
           </p>
         }
         @case ('dice') {
-          <div class="dice" [class.rolling]="diceRolling()" aria-hidden="true">
-            @for (face of dice; track $index) {
-              <div class="die" [class.one]="face === 1">
-                @for (dot of dieDots; track dot) {
-                  <span [class.visible]="diePips[face].includes(dot)"></span>
-                }
-              </div>
-            }
-          </div>
-          <p class="dice-result" role="status">
-            @if (diceRolling()) {
-              {{ 'Rolling…' | t }}
-            } @else {
-              {{ dice[0] }} + {{ dice[1] }} = {{ dice[0] + dice[1] }}
-            }
-          </p>
-          <button class="primary full" (click)="rollDice()" [disabled]="diceRolling()">
-            {{ 'Roll two dice' | t }}
-          </button>
+          <app-dice-simulator [request]="diceRequest()" />
         }
         @case ('help') {
           <p>

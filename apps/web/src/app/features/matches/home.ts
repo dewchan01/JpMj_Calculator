@@ -12,7 +12,8 @@ import { type Match } from '../../../../../../packages/mahjong-core/ledger';
 import { RulePicker } from '../../shared/rules/rule-picker';
 import { Repository } from './data-access/repository';
 import { PlayerLibrary } from './data-access/player-library';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { DiceSimulator } from '../../shared/dice-simulator/dice-simulator';
 import { emptyLive } from '../../../../../../packages/mahjong-core/live';
 @Component({
   imports: [
@@ -24,11 +25,55 @@ import { emptyLive } from '../../../../../../packages/mahjong-core/live';
     RouterLink,
     DecimalPipe,
     ReactiveFormsModule,
+    FormsModule,
+    DiceSimulator,
   ],
   templateUrl: './home.html',
   styleUrl: './home.css',
 })
 export class Home {
+  swapA = 0;
+  swapB = 1;
+  readonly diceRequest = signal(0);
+  readonly seatNotice = signal('');
+  activeNames(): string[] {
+    return this.setup()
+      .names.slice(0, this.count())
+      .map((name, i) => name.trim() || this.i18n.t(`Player ${i + 1}`));
+  }
+  savedPlayerId(index: number): string {
+    return (
+      this.playerLibrary.players().find((player) => player.name === this.setup().names[index])
+        ?.id ?? ''
+    );
+  }
+  swapPlayers(): void {
+    const names = this.activeNames();
+    if (this.swapA === this.swapB || !names[this.swapA] || !names[this.swapB]) return;
+    [names[this.swapA], names[this.swapB]] = [names[this.swapB], names[this.swapA]];
+    this.setup.update((setup) => ({
+      ...setup,
+      names: [...names, ...setup.names.slice(this.count())],
+    }));
+    this.seatNotice.set('Positions swapped.');
+  }
+  randomizePlayers(): void {
+    const names = this.activeNames();
+    for (let i = names.length - 1; i > 0; i--) {
+      const bytes = new Uint32Array(1),
+        limit = Math.floor(0x100000000 / (i + 1)) * (i + 1);
+      do {
+        crypto.getRandomValues(bytes);
+      } while (bytes[0] >= limit);
+      const j = bytes[0] % (i + 1);
+      [names[i], names[j]] = [names[j], names[i]];
+    }
+    this.setup.update((setup) => ({
+      ...setup,
+      names: [...names, ...setup.names.slice(this.count())],
+    }));
+    this.seatNotice.set('Positions randomized.');
+  }
   readonly playerError = signal('');
   readonly playerLibrary = inject(PlayerLibrary);
   readonly playerName = new FormControl('', { nonNullable: true });
@@ -49,10 +94,8 @@ export class Home {
       this.playerError.set('Could not save player.');
     }
   }
-  choosePlayer(index: number, event: Event): void {
-    const player = this.playerLibrary
-      .players()
-      .find((p) => p.id === (event.target as HTMLSelectElement).value);
+  choosePlayer(index: number, id: string): void {
+    const player = this.playerLibrary.players().find((p) => p.id === id);
     if (player)
       this.setup.update((setup) => ({
         ...setup,
@@ -75,6 +118,9 @@ export class Home {
   });
   setCount(count: 3 | 4): void {
     this.count.set(count);
+    this.swapA = 0;
+    this.swapB = 1;
+    this.seatNotice.set('');
   }
   async create(): Promise<void> {
     if (this.busy()) return;
