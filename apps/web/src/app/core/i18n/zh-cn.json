@@ -1173,5 +1173,12 @@
   "JSON format": "档案格式：JSON",
   "Sound effects": "音效",
   "Japanese device voice when available; otherwise a short tone.": "使用装置的日文语音；若无可用语音，则播放短提示音。",
-  "Recorded calls from Myinstants. Unavailable calls use Japanese device speech or a short tone.": "使用 Myinstants 录音；缺少的动作改用装置日文语音或短提示音。"
+  "Recorded calls from Myinstants. Unavailable calls use Japanese device speech or a short tone.": "使用 Myinstants 录音；缺少的动作改用装置日文语音或短提示音。",
+  "Edit hand": "编辑本局",
+  "Saving recalculates later hands. Cancel keeps the original record.": "储存后会重算后续牌局；取消会保留原纪录。",
+  "This record is not an editable hand.": "这笔纪录不是可编辑的牌局。",
+  "Edited hand ends the match before a later recorded hand.": "修改会让对局在后续已记录牌局之前结束，请先修正相关纪录。",
+  "A later hand is missing scoring data and cannot be recalculated.": "后续牌局缺少计分资料，无法重算。",
+  "Only a settled hand can replace a record.": "请完成本局结算后再储存。",
+  "Recorded hands can be edited; later hands are recalculated when saved.": "可编辑已记录的牌局，储存后会重算后续牌局。"
 }

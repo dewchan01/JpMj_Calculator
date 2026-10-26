@@ -33,7 +33,6 @@ test('indicator tray reserves empty space and accepts dragged palette tiles', as
     .locator('.indicator-bar')
     .getByRole('button', { name: 'Dora indicators', exact: true })
     .click();
-  await page.getByRole('button', { name: 'Enter Dora indicators', exact: true }).click();
   const editor = page.getByRole('dialog', { name: 'Enter Dora indicators', exact: true });
   const tray = editor.locator('.tile-input-tray');
   await expect(tray.locator('.tile')).toHaveCount(0);

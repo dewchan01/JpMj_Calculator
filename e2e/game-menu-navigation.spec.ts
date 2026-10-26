@@ -9,7 +9,13 @@ test('game menu has icons and subdialogs return directly to the menu', async ({ 
   for (const label of ['Dora indicators', 'Ura indicators']) {
     await page.locator('.indicator-bar').getByRole('button', { name: label, exact: true }).click();
     await expect(page.locator('.game-prompt .menu-back')).toHaveCount(0);
-    await page.locator('.close-prompt').click();
+    await page
+      .getByRole('dialog', { name: 'Enter ' + label, exact: true })
+      .getByRole('button', { name: 'Done', exact: true })
+      .click();
+    await expect(
+      page.getByRole('dialog', { name: 'Enter ' + label, exact: true }),
+    ).not.toBeVisible();
   }
   await page
     .locator('.player-seat')
@@ -17,7 +23,7 @@ test('game menu has icons and subdialogs return directly to the menu', async ({ 
     .getByRole('button', { name: 'Riichi', exact: true })
     .click();
   await expect(page.locator('.game-prompt .menu-back')).toHaveCount(0);
-  await page.locator('.close-prompt').click();
+  await expect(page.locator('.game-prompt')).not.toBeVisible();
   await page.getByRole('button', { name: 'End this hand', exact: true }).click();
   await page.locator('.game-prompt').getByRole('button', { name: 'Win', exact: true }).click();
   await page.locator('.menu-back').click();

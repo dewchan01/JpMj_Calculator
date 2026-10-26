@@ -1,5 +1,6 @@
 import { DialogBackdrop } from '../../../shared/dialog-backdrop';
 import { GameSounds } from '../../../core/sound/game-sounds';
+import { handEditDraft, finishHandEdit } from './hand-edit';
 import { DiceSimulator } from '../../../shared/dice-simulator/dice-simulator';
 import {
   Component,
@@ -137,10 +138,56 @@ export class GameTable {
   readonly error = signal('');
   readonly busy = signal(false);
   readonly now = signal(Date.now());
+  readonly editingHand = signal<string | null>(null);
+  private originalMatch?: Match;
+  readonly directIndicator = signal<'dora' | 'ura' | null>(null);
+  editHand(eventId: string): void {
+    if (this.busy() || this.editingHand()) return;
+    try {
+      const original = this.match()!;
+      const draft = handEditDraft(original, eventId);
+      this.originalMatch = original;
+      this.editingHand.set(eventId);
+      this.match.set(draft);
+      this.dora = draft.live?.dora ?? '';
+      this.ura = draft.live?.ura ?? '';
+      this.panelParents.set([]);
+      this.startOutcome();
+    } catch (error) {
+      this.fail(error);
+    }
+  }
+  cancelHandEdit(): void {
+    if (this.originalMatch) this.match.set(this.originalMatch);
+    this.originalMatch = undefined;
+    this.editingHand.set(null);
+  }
+  onPromptClosed(): void {
+    if (this.editingHand()) this.cancelHandEdit();
+    this.error.set('');
+  }
+  async finishDirectIndicator(confirmed: boolean): Promise<void> {
+    this.directIndicator.set(null);
+    if (!confirmed) {
+      this.dora = this.match()?.live?.dora ?? '';
+      this.ura = this.match()?.live?.ura ?? '';
+      return;
+    }
+    const dora = this.dora,
+      ura = this.ura;
+    await this.saveIndicators();
+    if (this.error()) {
+      const error = this.error();
+      this.open('indicators');
+      this.dora = dora;
+      this.ura = ura;
+      this.error.set(error);
+    }
+  }
   readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('prompt');
   readonly panel = signal<Panel>('menu');
   readonly panelParents = signal<Panel[]>([]);
-  readonly canDismissPrompt = () => this.panelParents().length === 0;
+  readonly canDismissPrompt = () => !this.busy() && this.panelParents().length === 0;
   navigatePanel(panel: Panel): void {
     if (panel === this.panel()) return;
     this.panelParents.update((parents) => [...parents, this.panel()]);
@@ -223,6 +270,7 @@ export class GameTable {
   method: 'ron' | 'tsumo' = 'ron';
   winners: Record<string, boolean> = {};
   playerWinSelected = false;
+  private winSoundPlayed = false;
   discarder = '';
   handText = '';
   winningIndex = -1;
@@ -399,7 +447,7 @@ export class GameTable {
     )
       updated = { ...updated, liveUndo: [] };
     updated.updatedAt = new Date().toISOString();
-    await this.repo.save(updated, previous?.updatedAt);
+    if (!this.editingHand()) await this.repo.save(updated, previous?.updatedAt);
     this.match.set(updated);
     this.now.set(Date.now());
   }
@@ -437,13 +485,24 @@ export class GameTable {
     }
     if (!this.dialog().nativeElement.open) this.dialog().nativeElement.showModal();
   }
-  close(): void {
+  close(continueEditing = false): void {
+    if (this.editingHand() && continueEditing) {
+      this.panelParents.set([]);
+      this.panel.set('outcome');
+      return;
+    }
+    if (this.editingHand()) this.cancelHandEdit();
     this.dialog().nativeElement.close();
     this.error.set('');
   }
   openIndicators(kind: 'dora' | 'ura'): void {
-    this.open('indicators');
+    const m = this.match();
+    if (!m || this.busy()) return;
+    this.error.set('');
+    this.dora = m.live?.dora ?? '';
+    this.ura = m.live?.ura ?? '';
     this.indicatorKind.set(kind);
+    this.directIndicator.set(kind);
   }
   async pause(): Promise<void> {
     await this.act(async () => {
@@ -471,17 +530,24 @@ export class GameTable {
       if (this.paused()) throw new Error('Resume the game before recording actions.');
       if (this.doubleRiichi && !this.firstTurn)
         throw new Error('Confirm the uninterrupted first turn.');
-      await this.persist(
-        declareRiichi(this.match()!, this.selected, this.doubleRiichi, newId(), undefined, {
+      const declared = declareRiichi(
+        this.match()!,
+        this.selected,
+        this.doubleRiichi,
+        newId(),
+        undefined,
+        {
           doubleBeforeRecordedCalls: this.doubleRiichi && this.firstTurn,
-        }),
-        true,
+        },
       );
       this.sounds.play(this.doubleRiichi ? 'doubleRiichi' : 'riichi');
-      this.close();
+      await this.persist(declared, true);
+      this.close(true);
     });
   }
   startCall(type: Meld['type'] | 'kita'): void {
+    if (this.paused() || this.busy() || this.match()?.ended) return;
+    this.sounds.play(type);
     this.legalKan = false;
     this.callType = type;
     this.callText = type === 'kita' ? '4z' : '';
@@ -510,7 +576,7 @@ export class GameTable {
     await this.act(async () => {
       if (this.paused()) throw new Error('Resume the game before recording actions.');
       await this.persist(cancelRiichi(this.match()!, this.selected));
-      this.close();
+      this.close(true);
     });
   }
   async tableAction(action: { player: string; type: string }): Promise<void> {
@@ -548,6 +614,8 @@ export class GameTable {
     const player = this.selected;
     this.startOutcome();
     this.playerWinSelected = true;
+    this.sounds.play(method);
+    this.winSoundPlayed = true;
     this.winners = { [player]: true };
     this.method = method;
     this.discarder = this.players.find((other) => other.id !== player)?.id ?? '';
@@ -644,6 +712,23 @@ export class GameTable {
           callOrder: live.calls + 1,
         });
       }
+      if (
+        ruleSettings(m.rules).redFives &&
+        ['ankan', 'daiminkan', 'kakan'].includes(this.callType)
+      ) {
+        const kan =
+          this.callType === 'kakan'
+            ? state.melds.find((meld) => meld.id === this.upgradeId)
+            : state.melds[state.melds.length - 1];
+        if (
+          kan &&
+          kan.tiles.length === 4 &&
+          [4, 13, 22].includes(kindIndex(kan.tiles[0].kind)) &&
+          !kan.tiles.some((tile) => tile.isRed)
+        ) {
+          kan.tiles[3] = { ...kan.tiles[3], isRed: true };
+        }
+      }
       live.players[this.selected] = state;
       live.calls++;
       live.actions = [
@@ -662,12 +747,10 @@ export class GameTable {
       if (kans > 4) throw new Error('At most four Kans can be recorded in a hand.');
       await this.persist({ ...m, live }, true);
       if (!['chi', 'pon', 'kita'].includes(this.callType)) {
-        this.sounds.play(this.callType);
         this.indicatorKind.set('dora');
         this.open('indicators');
       } else {
-        this.sounds.play(this.callType);
-        if (!keepOpen) this.close();
+        if (!keepOpen) this.close(true);
       }
     });
   }
@@ -691,10 +774,11 @@ export class GameTable {
         throw new Error('Indicators cannot exceed one plus the recorded Kan count.');
       validateRevealed(m, live);
       await this.persist({ ...m, live }, true);
-      this.close();
+      this.close(true);
     });
   }
   startOutcome(): void {
+    this.winSoundPlayed = false;
     this.playerWinSelected = false;
     this.inputs = [];
     this.round = null;
@@ -717,6 +801,10 @@ export class GameTable {
     }
     this.inputs = [];
     this.winnerIndex = 0;
+    if (!this.winSoundPlayed) {
+      this.sounds.play(this.method);
+      this.winSoundPlayed = true;
+    }
     this.beginHand();
   }
   beginHand(): void {
@@ -919,9 +1007,22 @@ export class GameTable {
       const updated = settleRound(m, event, this.round);
       const clock = clockAt(m.clock!, !updated.ended);
       clock.handStartMs = clock.elapsedMs;
+      if (this.editingHand() && this.originalMatch) {
+        const original = this.originalMatch;
+        const rebuilt = finishHandEdit(original, this.editingHand()!, {
+          ...updated,
+          live: emptyLive(),
+          clock,
+        });
+        await this.repo.save(rebuilt, original.updatedAt);
+        this.originalMatch = undefined;
+        this.editingHand.set(null);
+        this.match.set(rebuilt);
+        this.close();
+        this.open('history');
+        return;
+      }
       await this.persist({ ...updated, live: emptyLive(), clock });
-      const method = this.inputs[0]?.win.method;
-      if (method) this.sounds.play(method);
       this.inputs = [];
       this.round = null;
       this.drawInput = undefined;

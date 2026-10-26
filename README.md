@@ -24,7 +24,7 @@ The development server intentionally does not enable the service worker. Load th
 
 ## Play at a table
 
-Save reusable player names on My table, choose them for seats, then start a 3P/4P match. The game opens a compact live table. Tap a player to record Riichi, Chi/Pon/Kan or 3P North extraction; update Dora/Ura from the table. End this hand guides you through winner(s), method, concealed tiles, winning tile and conditional claims before settlement. The floating menu contains pause/resume, full-match ending, history/export/undo, game information, display settings, display seat swaps and help. The timer survives reloads and excludes pauses. Dice and point differences are available beside the table. See [Live table flow](docs/live-table.md).
+Save reusable player names on My table, choose them for seats, then start a 3P/4P match. The game opens a compact live table. Tap a player to record Riichi, Chi/Pon/Kan or 3P North extraction; tap Dora/Ura below the table to open the tile sheet directly; Done saves the indicators. End this hand guides you through winner(s), method, concealed tiles, winning tile and conditional claims before settlement. The floating menu contains pause/resume, full-match ending, history/export/undo, game information, display settings, display seat swaps and help. The timer survives reloads and excludes pauses. Dice and point differences are available beside the table. See [Live table flow](docs/live-table.md).
 
 ## Try a hand in Quick score
 
@@ -45,7 +45,7 @@ Others > Sound effects offers previews and a saved mute preference for call anno
 - **Tenhou:** those special forms remain single Yakuman; triple Ron is an abortive draw; Pao covers the whole combined Yakuman hand. The preset selects open Tanyao and red fives.
 - **Custom:** save named, separate 3P/4P profiles on Settings. Configure game progression, bankruptcy ending, starting/return scores, Noten, Honba, Yakitori, Uma, tied ranks, final rounding, money/chip conversion, Wareme, Riichi escrow recipients and existing hand-scoring options. 3P supports Tsumo loss, North-bisection without loss, and equal shares ignoring the dealer. The no-100-point-stick option rounds each hand payment upward to 1,000 after Honba/Wareme. Each setting has expandable help.
 
-Settings are saved as a versioned snapshot when creating a match. Existing matches keep their snapshots; switching Quick score presets preserves entered tiles. Existing version-1 matches remain readable, and historical score results are not recalculated.
+Settings are saved as a versioned snapshot when creating a match. Existing matches keep their snapshots; switching Quick score presets preserves entered tiles. Existing version-1 matches remain readable, and historical score results stay unchanged unless a user explicitly edits a hand.
 
 For **multiple Ron**, review each winner’s hand and use **Add Ron winner**. Enter all winners, then review and confirm the combined settlement. Every hand must use the same discarded tile and round context. Honba goes to the nearest eligible winner once. Riichi escrow follows the saved nearest-winner or split policy.
 
@@ -147,3 +147,10 @@ explanation below the title. This hidden trigger alone has no ripple. Detailed r
 logs are separate; see [diagnostics](docs/recognition-and-storage.md).
 
 Final results show raw points, Oka, Uma, net chips and money when a table ends. Money is `(final score × rate) + (net chips × chip value)`, rounded to two decimals with any residual assigned to first place. Chip transfers for valid Ippatsu, actual red/ura tiles and configured Yakuman awards are recorded separately from points. Chip value 0 disables chips. Undo removes the latest event’s point transfers, chip changes and final penalties together. The app calculates balances and never sends payments. Custom rules and matches are local to this browser origin.
+
+Hand history on the live table offers Edit hand for each recorded win or draw. Re-enter the outcome,
+players, calls, tiles and claims, then confirm settlement. Saving atomically recalculates subsequent
+hands, balances, escrow, chips and round progression; cancel leaves the original untouched. Original
+event IDs, dates and play durations are preserved, with prior versions stored in event revisions.
+A later hand lacking scoring metadata, an unaffordable Riichi deposit, or an edit that ends the match
+before another recorded hand blocks saving rather than dropping records.

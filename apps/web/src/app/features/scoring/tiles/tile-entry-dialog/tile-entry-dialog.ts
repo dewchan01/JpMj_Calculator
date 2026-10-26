@@ -10,6 +10,7 @@ import {
   inject,
   signal,
   viewChild,
+  output,
 } from '@angular/core';
 import { TranslatePipe } from '../../../../core/i18n/i18n';
 
@@ -24,6 +25,17 @@ export class TileEntryDialog {
   readonly label = input('Enter tiles');
   readonly buttonText = input<string>();
   readonly canFinish = input(true);
+  readonly showTrigger = input(true);
+  readonly closed = output<boolean>();
+  private confirmed = false;
+  finish(): void {
+    this.confirmed = true;
+    this.close();
+  }
+  onClosed(): void {
+    this.opened.set(false);
+    this.closed.emit(this.confirmed);
+  }
   readonly opened = signal(false);
   readonly dragOffset = signal(0);
   readonly dragging = signal(false);
@@ -43,6 +55,7 @@ export class TileEntryDialog {
   }
   show(): void {
     if (this.closing) return;
+    this.confirmed = false;
     this.dragOffset.set(0);
     this.opened.set(true);
     this.dialog().nativeElement.showModal();

@@ -45,6 +45,13 @@ the table total, recalculate rank/settlement and append a scoreAdjustment ledger
 remain intact. Delete opens a confirmation. Save game/Discard game are offered for a just-ended live
 game, not an already saved result. PNG sharing uses native file sharing or a download fallback.
 
+Live-table History additionally offers Edit hand on each win/draw with a round snapshot. It restores
+that hand into an in-memory draft for full outcome, player, call, tile and claim entry. Saving replays
+later hands and final settlement in one version-checked write; Cancel preserves the original. Earlier
+versions are retained in event revisions. Missing later scoring inputs or contradictory progression
+blocks the save instead of deleting subsequent records. This action is distinct from the saved-result
+pencil, which adjusts final points/date only.
+
 ## Player pages
 
 Click a player row to open /records/player/:name. Overview, Statistics and Explore share dates and

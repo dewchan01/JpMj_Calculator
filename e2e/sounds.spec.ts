@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { beginWin, finishWin } from './helpers/game';
+import { finishWin, playerAction, prompt } from './helpers/game';
 
 test('all six downloaded MP3 files load and decode locally', async ({ page }) => {
   await page.goto('/');
@@ -87,9 +87,31 @@ test('sound previews, persistent mute and successful live declarations', async (
   await expect.poll(played).toEqual(['/sounds/ichihime/riichi.mp3']);
   await riichi.click();
   expect(await played()).toEqual(['/sounds/ichihime/riichi.mp3']);
-  await beginWin(page);
+  const expected = ['/sounds/ichihime/riichi.mp3'];
+  for (const [label, recording] of [
+    ['Chi', 'chi'],
+    ['Pon', 'pon'],
+    ['Open Kan', 'kan'],
+    ['Concealed Kan', 'kan'],
+  ]) {
+    await playerAction(page, 'Player 1');
+    await prompt(page).getByRole('button', { name: label, exact: true }).click();
+    expected.push('/sounds/ichihime/' + recording + '.mp3');
+    await expect.poll(played).toEqual(expected);
+    await prompt(page).getByRole('button', { name: 'Close', exact: true }).click();
+  }
+  await playerAction(page, 'Player 2');
+  await prompt(page).getByRole('button', { name: 'Tsumo · self draw', exact: true }).click();
+  expected.push('/sounds/ichihime/tsumo.mp3');
+  await expect.poll(played).toEqual(expected);
+  await prompt(page).getByRole('button', { name: 'Close', exact: true }).click();
+  await playerAction(page, 'Player 1');
+  await prompt(page).getByRole('button', { name: 'Ron · discard', exact: true }).click();
+  expected.push('/sounds/ichihime/ron.mp3');
+  await expect.poll(played).toEqual(expected);
+  await prompt(page).getByRole('button', { name: 'Next', exact: true }).click();
   await finishWin(page);
-  await expect.poll(played).toEqual(['/sounds/ichihime/riichi.mp3', '/sounds/ichihime/ron.mp3']);
+  await expect.poll(played).toEqual(expected);
   await page.reload();
   expect(await played()).toEqual([]);
 });

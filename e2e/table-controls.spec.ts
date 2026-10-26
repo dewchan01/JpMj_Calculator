@@ -91,9 +91,10 @@ test('Riichi and indicator dialogs contain only their selected operation and pre
     ['Ura indicators', 'Dora indicators', '2z'],
   ] as const) {
     await page.locator('.indicator-bar').getByRole('button', { name: label, exact: true }).click();
+    await expect(page.getByRole('dialog', { name: 'Enter ' + label, exact: true })).toBeVisible();
+    await expect(prompt(page)).not.toBeVisible();
     await expect(prompt(page).locator(`app-tile-input[data-label="${other}"]`)).toHaveCount(0);
     await enterLiveTiles(page, label, notation);
-    await prompt(page).getByRole('button', { name: 'Save indicators', exact: true }).click();
     await expect(prompt(page)).not.toBeVisible();
   }
   await page.reload();

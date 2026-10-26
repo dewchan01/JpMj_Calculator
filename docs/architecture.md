@@ -69,3 +69,9 @@ Quick score (`/score`) is independent of saved matches (`/score/:id`). It has it
 `TileDropZones` presents open-meld, concealed-Kan and optional 3P North targets. `TileReorder` emits pointer drops as well as reorder events, isolates nested entry-dialog drags, and scrolls near viewport/dialog edges. Zone buttons provide a non-drag alternative. Scorer assignment reuses existing validation and physical tile IDs, undo and draft persistence. Open-meld drops open a native dialog for call details; concealed Kan and North are assigned directly. A complete matching triplet or quad can be selected from a single dragged tile; Chi and ambiguous groups require explicit selection. Assigned groups and their actions remain in the first hand card, with call-order editing collapsed by default.
 
 For active games, round controls are hidden and the saved match is authoritative, including when restoring old drafts. Quick score retains manual round controls. Tile-verification status remains readable in old drafts, but no checkbox or verified-status requirement gates settlement or multiple-Ron queuing. Valid structure, claims, scoring fingerprints and explicit save actions remain in place.
+
+Historical hand editing uses game-table/hand-edit.ts to create an isolated prefix draft and replay the
+later ledger suffix. UI draft mutations bypass repository writes. Only a successful full replay is
+saved against the original updatedAt; revisions retain the replaced hand while undo remains a
+separate latest-event operation. TileInput directEntry opens TileEntryDialog on render and receives
+its confirmed/dismissed close result, enabling one-step indicator editing.

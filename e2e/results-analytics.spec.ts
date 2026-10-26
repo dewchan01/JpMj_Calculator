@@ -250,7 +250,13 @@ test('root backdrops close, nested prompts stay open, and reopening resumes the 
     .locator('.indicator-bar')
     .getByRole('button', { name: 'Dora indicators', exact: true })
     .click();
+  await expect(
+    page.getByRole('dialog', { name: 'Enter Dora indicators', exact: true }),
+  ).toBeVisible();
   await page.mouse.click(2, 2);
+  await expect(
+    page.getByRole('dialog', { name: 'Enter Dora indicators', exact: true }),
+  ).not.toBeVisible();
   await expect(prompt(page)).not.toBeVisible();
   await page.locator('.floating-menu').click();
   await prompt(page).getByRole('button', { name: 'Help', exact: true }).click();

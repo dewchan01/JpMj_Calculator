@@ -1,6 +1,17 @@
 import { newId } from '../../../../core/id/new-id';
 import { ErrorNotice } from '../../../../shared/error-notice/error-notice';
-import { Component, computed, inject, input, linkedSignal, model, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  model,
+  signal,
+  afterNextRender,
+  output,
+  viewChild,
+} from '@angular/core';
 import { form, FormField } from '@angular/forms/signals';
 import {
   kindAt,
@@ -32,6 +43,14 @@ import { PhotoCapture } from '../../capture/photo-capture/photo-capture';
   host: { '[attr.data-label]': 'label()' },
 })
 export class TileInput {
+  readonly directEntry = input(false);
+  readonly entryClosed = output<boolean>();
+  private readonly entry = viewChild.required(TileEntryDialog);
+  constructor() {
+    afterNextRender(() => {
+      if (this.directEntry()) this.entry().show();
+    });
+  }
   readonly notationHintId = `notation-hint-${newId()}`;
   readonly value = model('');
   readonly label = input.required<string>();

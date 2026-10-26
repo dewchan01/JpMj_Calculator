@@ -31,9 +31,13 @@ export async function playerAction(page: Page, name: string): Promise<void> {
   await page.getByRole('button', { name: 'Player actions ' + name, exact: true }).click();
 }
 export async function enterLiveTiles(page: Page, label: string, notation: string): Promise<void> {
-  const input = prompt(page).locator(`app-tile-input[data-label="${label}"]`);
-  await input.getByRole('button', { name: 'Enter ' + label, exact: true }).click();
+  const input = page.locator(`app-tile-input[data-label="${label}"]`);
   const editor = page.getByRole('dialog', { name: 'Enter ' + label, exact: true });
+  if (
+    !(await editor.isVisible()) &&
+    (await input.getByRole('button', { name: 'Enter ' + label, exact: true }).count())
+  )
+    await input.getByRole('button', { name: 'Enter ' + label, exact: true }).click();
   await editor.getByText('Type tile notation instead', { exact: true }).click();
   await editor.getByRole('textbox', { name: label, exact: true }).fill(notation);
   await editor.getByRole('button', { name: 'Apply notation', exact: true }).click();

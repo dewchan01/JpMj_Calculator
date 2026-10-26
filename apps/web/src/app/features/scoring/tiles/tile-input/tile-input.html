@@ -1,18 +1,24 @@
 <section [attr.aria-label]="label() | t">
-  <h3>{{ label() | t }}</h3>
+  @if (!directEntry()) {
+    <h3>{{ label() | t }}</h3>
+  }
   <div class="indicator-editor">
-    @if (tiles().length) {
-      <div class="selected-tiles">
-        @for (tile of tiles(); track tile.id; let index = $index) {
-          <button class="tile" (click)="remove(index)" [attr.aria-label]="removeLabel(tile)">
-            <app-tile-art [tile]="tile" [decorative]="true" />
-          </button>
-        }
-      </div>
-    } @else {
-      <p class="input-empty">{{ 'No tiles selected' | t }}</p>
+    @if (!directEntry()) {
+      @if (tiles().length) {
+        <div class="selected-tiles">
+          @for (tile of tiles(); track tile.id; let index = $index) {
+            <button class="tile" (click)="remove(index)" [attr.aria-label]="removeLabel(tile)">
+              <app-tile-art [tile]="tile" [decorative]="true" />
+            </button>
+          }
+        </div>
+      } @else {
+        <p class="input-empty">{{ 'No tiles selected' | t }}</p>
+      }
     }
     <app-tile-entry-dialog
+      [showTrigger]="!directEntry()"
+      (closed)="entryClosed.emit($event)"
       [label]="'Enter ' + label()"
       buttonText="Enter"
       [canFinish]="!entryError()"

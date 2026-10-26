@@ -41,14 +41,14 @@ Implementation inventory checked against the repository on 2026-10-26. Source-re
 | Recognition          | Configured Roboflow browser worker, JSON API or offline mock; editable independent target previews                                 |
 | Offline              | Production service worker caches application/artwork; recognition network/model requirements remain separate                       |
 
-Hand history cannot be freely rewritten; latest-event undo and final-score corrections are distinct.
+Each recorded hand with a round snapshot can be re-entered from live-table History; later hands are replayed atomically. Missing later scoring metadata or contradictory progression blocks saving. Latest-event undo and final-score corrections remain distinct.
 Existing table names/seating are not editable as a general post-creation editor. Missing historical
 hand metadata is unavailable rather than assumed false. Rates are based on recorded hands, not a
 full wall/discard simulator. M.League resemblance has minimum sample/metadata requirements.
 
 ## Validation and remaining work
 
-The latest completed unit run has **224 passing tests in 18 Vitest spec files**. Lint, TypeScript
+The latest completed unit run has **230 passing tests in 19 Vitest spec files**. Lint, TypeScript
 and the production build passed. Focused Chromium checks cover live games, player actions, record lists,
 results, quick-score isolation and table controls. They cover direct Riichi, manually recorded late Double Riichi,
 persisted declarations and recorded-call handling, player Ron/Tsumo
@@ -57,6 +57,11 @@ routes, recognition previews, JSON transfer, player analysis, sticky spacing, co
 mobile animations and accessibility. Result comparison checks include a separate rank row and narrow-screen fit;
 record-list checks verify Player heading/name alignment at 320, 390 and 1280 pixels. These are named subsets,
 not a fresh full-suite certification.
+
+The current hand-edit/indicator checks cover earlier-hand replacement, replay of later Ron/Tsumo,
+multiple Ron and draws, revisions, final escrow, cancellation, reloads, direct indicator sheets and
+invalid-indicator recovery. Two separately executed short-phone Home setup height checks (360 and
+390 pixels at 667 pixels high) failed their no-scroll assertion; this run does not certify that layout.
 
 The 2026-10-26 documentation refresh does not certify a new deployment. Use the commands in
 [maintenance](maintenance.md#verification) for a current release check. The 2026-10-23

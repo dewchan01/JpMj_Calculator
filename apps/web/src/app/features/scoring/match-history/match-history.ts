@@ -7,6 +7,7 @@ import { tileLabel } from '../../../../../../../packages/mahjong-core/index';
 import { type Match, type LedgerEvent } from '../../../../../../../packages/mahjong-core/ledger';
 import { ruleName, type RuleProfile } from '../../../../../../../packages/mahjong-rules/index';
 import { I18n, TranslatePipe } from '../../../core/i18n/i18n';
+import { editableHand } from '../game-table/hand-edit';
 @Component({
   selector: 'app-match-history',
   imports: [SignedValue, TileArt, LocalDatePipe, DecimalPipe, TranslatePipe],
@@ -27,6 +28,9 @@ export class MatchHistory {
   readonly readOnly = input(false);
   readonly exportRequested = output<void>();
   readonly undoRequested = output<void>();
+  readonly allowHandEditing = input(false);
+  readonly editRequested = output<string>();
+  readonly editableHand = editableHand;
   readonly events = computed(() => [...(this.match()?.events ?? [])].reverse());
   readonly handPlayers = computed(() => {
     const match = this.match();

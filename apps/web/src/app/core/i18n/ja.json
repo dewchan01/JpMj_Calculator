@@ -1173,5 +1173,12 @@
   "JSON format": "ファイル形式：JSON",
   "Sound effects": "効果音",
   "Japanese device voice when available; otherwise a short tone.": "端末の日本語音声を使用し、利用できない場合は短い通知音を再生します。",
-  "Recorded calls from Myinstants. Unavailable calls use Japanese device speech or a short tone.": "Myinstantsの録音を使用します。未収録の宣言は端末の日本語音声または通知音になります。"
+  "Recorded calls from Myinstants. Unavailable calls use Japanese device speech or a short tone.": "Myinstantsの録音を使用します。未収録の宣言は端末の日本語音声または通知音になります。",
+  "Edit hand": "局を編集",
+  "Saving recalculates later hands. Cancel keeps the original record.": "保存時に後続の局を再計算します。キャンセルで元の記録を保持します。",
+  "This record is not an editable hand.": "この記録は編集可能な局ではありません。",
+  "Edited hand ends the match before a later recorded hand.": "編集後は後続の記録より前に対局が終了するため保存できません。",
+  "A later hand is missing scoring data and cannot be recalculated.": "後続の局の点数計算データが不足しています。",
+  "Only a settled hand can replace a record.": "精算済みの局のみ保存できます。",
+  "Recorded hands can be edited; later hands are recalculated when saved.": "記録済みの局を編集できます。保存時に後続の局を再計算します。"
 }

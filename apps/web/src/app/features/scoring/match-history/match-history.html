@@ -8,8 +8,10 @@
   @if (!readOnly()) {
     <p class="hint">
       {{
-        'Older events cannot be edited. Undo the latest event to restore its transfers and previous round state.'
-          | t
+        (allowHandEditing()
+          ? 'Recorded hands can be edited; later hands are recalculated when saved.'
+          : 'Older events cannot be edited. Undo the latest event to restore its transfers and previous round state.'
+        ) | t
       }}
     </p>
   }
@@ -41,6 +43,15 @@
           }
         </span>
       </summary>
+      @if (allowHandEditing() && editableHand(event)) {
+        <button
+          class="secondary edit-hand"
+          [disabled]="busy()"
+          (click)="editRequested.emit(event.id)"
+        >
+          {{ 'Edit hand' | t }}
+        </button>
+      }
       <div class="hand-players" role="group" [attr.aria-label]="'Player balances' | t">
         @for (player of handPlayers().get(event.id); track player.id) {
           <button

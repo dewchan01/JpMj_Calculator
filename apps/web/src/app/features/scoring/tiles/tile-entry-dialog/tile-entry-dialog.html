@@ -1,11 +1,13 @@
-<button class="secondary" [attr.aria-label]="label() | t" (click)="show()">
-  {{ buttonText() ?? label() | t }}
-</button>
+@if (showTrigger()) {
+  <button class="secondary" [attr.aria-label]="label() | t" (click)="show()">
+    {{ buttonText() ?? label() | t }}
+  </button>
+}
 <dialog
   appDialogBackdrop
   #dialog
   [attr.aria-label]="label() | t"
-  (close)="opened.set(false)"
+  (close)="onClosed()"
   (cancel)="$event.preventDefault(); close()"
   (touchstart)="touchStart($event)"
   (touchmove)="touchMove($event)"
@@ -18,7 +20,7 @@
     <div class="sheet-grip" aria-hidden="true"><span></span></div>
     <header>
       <h2>{{ label() | t }}</h2>
-      <button class="secondary" (click)="close()" [disabled]="!canFinish()">
+      <button class="secondary" (click)="finish()" [disabled]="!canFinish()">
         {{ 'Done' | t }}
       </button>
     </header>

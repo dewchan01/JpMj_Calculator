@@ -12,6 +12,7 @@ export interface RoundState {
   endReason?: string;
 }
 export interface LedgerEvent {
+  revisions?: { timestamp: string; event: Omit<LedgerEvent, 'revisions'> }[];
   id: string;
   timestamp: string;
   type:
