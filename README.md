@@ -37,7 +37,7 @@ Save reusable player names on My table, choose them for seats, then start a 3P/4
 
 Data and drafts stay in IndexedDB on this browser. Others > Data provides separate Import data / Export data actions using JSON files, filtered by game, player and inclusive local dates; existing game IDs are skipped on import. See [data transfer](docs/data-transfer.md). Site-data deletion removes local matches. Dealer rotation, honba, round wind, extension rounds, bankruptcy and first-place dealer finish are automatic after settlement. Undo restores points and the preceding round state.
 
-Others > Sound effects offers previews and a saved mute preference for call announcements. Available local Japanese device voices are used, with generated tones as fallback; no game voice recordings are bundled. See [live-table behavior](docs/live-table.md).
+Others > Sound effects offers previews and a saved mute preference for call announcements. Six Myinstants Ichihime MP3 recordings are bundled and cached offline; missing clips and playback failures fall back to local Japanese device voices or generated tones. Source pages and rights notes are recorded in [sound provenance](apps/web/public/sounds/ichihime/SOURCES.md). See [live-table behavior](docs/live-table.md).
 
 ## Rule presets and advanced conditions
 

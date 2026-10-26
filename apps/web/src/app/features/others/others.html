@@ -49,15 +49,29 @@
           {{ 'Sound effects' | t }}
         </label>
         <p class="hint">
-          {{ 'Japanese device voice when available; otherwise a short tone.' | t }}
+          {{
+            'Recorded calls from Myinstants. Unavailable calls use Japanese device speech or a short tone.'
+              | t
+          }}
         </p>
-        <div class="sound-previews">
+        <ul class="sound-previews">
           @for (call of sounds.previews; track call) {
-            <button (click)="sounds.play(call)" [disabled]="!sounds.enabled()">
-              {{ soundLabels[call] | t }}
-            </button>
+            <li>
+              <span>{{ soundLabels[call] | t }}</span>
+              <button
+                class="sound-play"
+                (click)="sounds.play(call)"
+                [disabled]="!sounds.enabled()"
+                [attr.aria-label]="soundLabels[call] | t"
+                [title]="soundLabels[call] | t"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M11 4 6 8H3v8h3l5 4Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14" />
+                </svg>
+              </button>
+            </li>
           }
-        </div>
+        </ul>
       }
       @case ('version') {
         <dl>

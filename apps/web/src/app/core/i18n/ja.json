@@ -1172,5 +1172,6 @@
   "Export data": "データをエクスポート",
   "JSON format": "ファイル形式：JSON",
   "Sound effects": "効果音",
-  "Japanese device voice when available; otherwise a short tone.": "端末の日本語音声を使用し、利用できない場合は短い通知音を再生します。"
+  "Japanese device voice when available; otherwise a short tone.": "端末の日本語音声を使用し、利用できない場合は短い通知音を再生します。",
+  "Recorded calls from Myinstants. Unavailable calls use Japanese device speech or a short tone.": "Myinstantsの録音を使用します。未収録の宣言は端末の日本語音声または通知音になります。"
 }

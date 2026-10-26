@@ -48,7 +48,7 @@ full wall/discard simulator. M.League resemblance has minimum sample/metadata re
 
 ## Validation and remaining work
 
-The latest completed unit run has **222 passing tests in 18 Vitest spec files**. Lint, TypeScript
+The latest completed unit run has **224 passing tests in 18 Vitest spec files**. Lint, TypeScript
 and the production build passed. Focused Chromium checks cover live games, player actions, record lists,
 results, quick-score isolation and table controls. They cover direct Riichi, manually recorded late Double Riichi,
 persisted declarations and recorded-call handling, player Ron/Tsumo

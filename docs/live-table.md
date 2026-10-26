@@ -7,10 +7,14 @@ Chi, open/added/concealed Kan, Riichi, Double Riichi, Ron and Tsumo. Successful 
 declarations play once; Ron/Tsumo play after confirmed settlement. Undo, failed validation and reloads
 do not replay calls. Audio failures never prevent saving a game action.
 
-Playback uses an available local Japanese device voice through the
-[Web Speech API](https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis/getVoices),
-with a short generated Web Audio tone when no local Japanese voice is available. No external voice
-recordings or speech services are bundled; the voice and audio availability depend on the device.
+Playback prefers six bundled Ichihime MP3 clips downloaded from the user-selected Myinstants pages.
+Open, added and concealed Kan share the Kan clip. North and Double Riichi use an available local
+Japanese device voice through the [Web Speech API](https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis/getVoices),
+then generated tones if unavailable. Playback failure also uses this fallback. Clips are cached
+offline and interrupted when muted or replaced by another call.
+
+See [source and rights notes](../apps/web/public/sounds/ichihime/SOURCES.md). Download availability
+is not an open license; no open redistribution license was identified on the source pages.
 
 `/score` remains the independent quick calculator. `/score/:id` now opens the live table: player balances, round, Honba, escrow, timer, indicator control, dice and point differences. The main table fits the viewport at supported phone and desktop sizes; detailed operations open native dialogs. Very short viewports, large accessibility text and long histories can still require scrolling inside dialogs.
 

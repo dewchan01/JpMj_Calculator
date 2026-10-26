@@ -5,7 +5,7 @@
 The app now includes final table Uma/Oka/chip/money settlement, completed-game records, player
 analytics, JSON import/export under Others > Data, correction prompts, responsive sheets,
 scrollable player selection and session diagnostics. Component HTML/CSS/TS are colocated;
-18 Vitest spec files contain 222 passing tests. Playwright remains a separate browser suite.
+18 Vitest spec files contain 224 passing tests. Playwright remains a separate browser suite.
 Recent interface updates include compact history rows with right-side chevrons, horizontal player
 selectors and shared details, recorded call/Riichi markers below points, and permanent saved-rule
 sections. Settings omits the introductory paragraph and keeps its heading close to the player-count

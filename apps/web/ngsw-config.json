@@ -15,6 +15,7 @@
           "/config.json",
           "/version.json",
           "/icons/**",
+          "/sounds/**/*.mp3",
           "/tiles/**/*.svg"
         ]
       }

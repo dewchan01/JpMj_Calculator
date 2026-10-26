@@ -16,6 +16,8 @@ describe('game sounds', () => {
       },
     );
     vi.stubGlobal('AudioContext', undefined);
+    vi.stubGlobal('Audio', undefined);
+    vi.stubGlobal('document', { baseURI: 'https://example.com/app/' });
     return { service: new GameSounds(), store, speech, voice };
   }
   it('speaks each declaration using a local Japanese voice', () => {
@@ -53,5 +55,54 @@ describe('game sounds', () => {
       throw new Error('unavailable');
     });
     expect(() => service.play('chi')).not.toThrow();
+  });
+  it('prefers recordings and stops playback when muted', () => {
+    const { service, speech } = setup();
+    const pause = vi.fn();
+    const play = vi.fn(() => Promise.resolve());
+    const sources: string[] = [];
+    vi.stubGlobal(
+      'Audio',
+      class {
+        pause = pause;
+        play = play;
+        constructor(src: string) {
+          sources.push(src);
+        }
+      },
+    );
+    service.play('pon');
+    service.play('ankan');
+    expect(sources).toEqual([
+      'https://example.com/app/sounds/ichihime/pon.mp3',
+      'https://example.com/app/sounds/ichihime/kan.mp3',
+    ]);
+    expect(speech.speak).not.toHaveBeenCalled();
+    service.setEnabled(false);
+    expect(pause).toHaveBeenCalledTimes(2);
+  });
+  it('falls back when a recording cannot play, but skips stale rejected playback', async () => {
+    const { service, speech } = setup();
+    let reject!: (reason: Error) => void;
+    vi.stubGlobal(
+      'Audio',
+      class {
+        pause() {}
+        play() {
+          return new Promise<void>((_, fail) => {
+            reject = fail;
+          });
+        }
+      },
+    );
+    service.play('ron');
+    reject(new Error('unsupported'));
+    await Promise.resolve();
+    expect(speech.speak).toHaveBeenCalledOnce();
+    service.play('pon');
+    service.setEnabled(false);
+    reject(new Error('canceled'));
+    await Promise.resolve();
+    expect(speech.speak).toHaveBeenCalledOnce();
   });
 });

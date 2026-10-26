@@ -1172,5 +1172,6 @@
   "Export data": "汇出资料",
   "JSON format": "档案格式：JSON",
   "Sound effects": "音效",
-  "Japanese device voice when available; otherwise a short tone.": "使用装置的日文语音；若无可用语音，则播放短提示音。"
+  "Japanese device voice when available; otherwise a short tone.": "使用装置的日文语音；若无可用语音，则播放短提示音。",
+  "Recorded calls from Myinstants. Unavailable calls use Japanese device speech or a short tone.": "使用 Myinstants 录音；缺少的动作改用装置日文语音或短提示音。"
 }

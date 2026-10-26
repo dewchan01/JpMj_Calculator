@@ -1,10 +1,52 @@
 import { test, expect } from '@playwright/test';
 import { beginWin, finishWin } from './helpers/game';
 
+test('all six downloaded MP3 files load and decode locally', async ({ page }) => {
+  await page.goto('/');
+  const durations = await page.evaluate(async () => {
+    return Promise.all(
+      ['pon', 'chi', 'kan', 'riichi', 'ron', 'tsumo'].map(
+        (call) =>
+          new Promise<number>((resolve, reject) => {
+            const audio = document.createElement('audio');
+            const timeout = setTimeout(
+              () => reject(new Error('Audio load timed out: ' + call)),
+              5000,
+            );
+            audio.onloadedmetadata = () => {
+              clearTimeout(timeout);
+              resolve(audio.duration);
+              audio.removeAttribute('src');
+              audio.load();
+            };
+            audio.onerror = () => {
+              clearTimeout(timeout);
+              reject(new Error('Invalid MP3: ' + call));
+            };
+            audio.src = new URL('sounds/ichihime/' + call + '.mp3', document.baseURI).href;
+            audio.load();
+          }),
+      ),
+    );
+  });
+  expect(durations).toHaveLength(6);
+  for (const duration of durations) expect(duration).toBeGreaterThan(0);
+});
+
 test('sound previews, persistent mute and successful live declarations', async ({ page }) => {
   await page.addInitScript(() => {
     const calls: string[] = [];
     Object.defineProperty(window, 'playedCalls', { value: calls });
+    Object.defineProperty(window, 'Audio', {
+      value: class {
+        constructor(private src: string) {}
+        pause() {}
+        play() {
+          calls.push(new URL(this.src).pathname);
+          return Promise.resolve();
+        }
+      },
+    });
     Object.defineProperty(window, 'AudioContext', { value: undefined });
     Object.defineProperty(window, 'SpeechSynthesisUtterance', {
       value: class {
@@ -42,12 +84,12 @@ test('sound previews, persistent mute and successful live declarations', async (
     .filter({ hasText: 'Player 2' })
     .getByRole('button', { name: 'Riichi', exact: true });
   await riichi.click();
-  await expect.poll(played).toEqual(['リーチ']);
+  await expect.poll(played).toEqual(['/sounds/ichihime/riichi.mp3']);
   await riichi.click();
-  expect(await played()).toEqual(['リーチ']);
+  expect(await played()).toEqual(['/sounds/ichihime/riichi.mp3']);
   await beginWin(page);
   await finishWin(page);
-  await expect.poll(played).toEqual(['リーチ', 'ロン']);
+  await expect.poll(played).toEqual(['/sounds/ichihime/riichi.mp3', '/sounds/ichihime/ron.mp3']);
   await page.reload();
   expect(await played()).toEqual([]);
 });

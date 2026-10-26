@@ -13,12 +13,24 @@ export const callSounds = {
   tsumo: 'ツモ',
 } as const;
 export type CallSound = keyof typeof callSounds;
+export const recordedCalls: Partial<Record<CallSound, string>> = {
+  pon: 'pon',
+  chi: 'chi',
+  daiminkan: 'kan',
+  kakan: 'kan',
+  ankan: 'kan',
+  riichi: 'riichi',
+  ron: 'ron',
+  tsumo: 'tsumo',
+};
 
 @Service()
 export class GameSounds {
   readonly enabled = signal(this.readPreference());
   readonly previews = Object.keys(callSounds) as CallSound[];
   private context?: AudioContext;
+  private audio?: HTMLAudioElement;
+  private playback = 0;
 
   private readPreference(): boolean {
     try {
@@ -36,6 +48,10 @@ export class GameSounds {
       /* In-memory setting still works. */
     }
     if (!enabled && typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
+    if (!enabled) {
+      this.playback++;
+      this.audio?.pause();
+    }
   }
 
   unlock(): void {
@@ -53,7 +69,35 @@ export class GameSounds {
 
   play(call: CallSound): void {
     if (!this.enabled()) return;
+    const playback = ++this.playback;
+    this.audio?.pause();
+    if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
     this.unlock();
+    const recording = recordedCalls[call];
+    if (recording && typeof Audio !== 'undefined') {
+      try {
+        const audio = new Audio(
+          new URL('sounds/ichihime/' + recording + '.mp3', document.baseURI).href,
+        );
+        this.audio = audio;
+        audio.volume = 0.7;
+        let failed = false;
+        const fallback = () => {
+          if (failed || playback !== this.playback || !this.enabled()) return;
+          failed = true;
+          this.playFallback(call);
+        };
+        audio.onerror = fallback;
+        void audio.play().catch(fallback);
+        return;
+      } catch {
+        /* Use device speech if media playback is unavailable. */
+      }
+    }
+    this.playFallback(call);
+  }
+
+  private playFallback(call: CallSound): void {
     try {
       if (
         typeof speechSynthesis !== 'undefined' &&
