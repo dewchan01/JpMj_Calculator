@@ -4,7 +4,7 @@
 }
 .difference-button {
   position: absolute;
-  right: -34px;
+  right: 4px;
   top: 50%;
   translate: 0 -50%;
   z-index: 3;
@@ -26,13 +26,13 @@
   stroke: currentColor;
   stroke-width: 1.8;
 }
+.difference-button {
+  touch-action: none;
+  user-select: none;
+}
 .difference-button[aria-pressed='true'] {
   background: var(--green);
   color: var(--page);
-}
-.player-seat.comparison-reference {
-  outline: 2px solid var(--green);
-  outline-offset: 2px;
 }
 .point-difference {
   font-weight: 650;
@@ -50,11 +50,11 @@
   padding: 8px 12px;
 }
 :host(.compact) .table-layout {
-  --hub-width: 180px;
-  --hub-height: 160px;
-  --card-width: 200px;
-  --card-depth: 80px;
-  --seat-gap: 48px;
+  --hub-width: 136px;
+  --hub-height: 136px;
+  --card-width: 220px;
+  --card-depth: 86px;
+  --seat-gap: 44px;
   display: block;
   flex: 1;
   min-height: 0;
@@ -67,6 +67,63 @@
   translate: -50% -50%;
   width: var(--hub-width);
   height: var(--hub-height);
+}
+.center-action {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: inherit;
+  font-size: 1.1rem;
+  line-height: 1.25;
+  font-weight: 650;
+}
+.center-action:hover:not(:disabled) {
+  background: rgb(255 255 255 / 8%);
+}
+.center-action svg {
+  width: 30px;
+  height: 30px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+.center-action:focus-visible {
+  outline: 3px solid var(--page);
+  outline-offset: -6px;
+}
+:host(.compact) .table-center.round-control {
+  border-radius: 50%;
+}
+.center-riichi-stick {
+  position: relative;
+  display: block;
+  width: 68%;
+  height: 12px;
+  border: 1px solid #8c9088;
+  border-radius: 3px;
+  background: #fffdf3;
+  box-shadow: 0 2px 4px #0003;
+}
+.center-riichi-stick::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #b83232;
 }
 :host(.compact) .seat-slot {
   position: absolute;
@@ -117,16 +174,31 @@
   white-space: nowrap;
 }
 :host(.compact) .seat-label .yakitori-label {
-  padding: 0 3px;
-  border-radius: 4px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  margin-left: 0;
+  min-width: 20px;
+  background: var(--tray-surface);
+  position: relative;
+  z-index: 2;
+}
+.yakitori-label img {
+  display: block;
+}
+:host-context([data-theme='dark']) .yakitori-label img {
+  filter: invert(90%);
 }
 :host(.compact) .player-seat h3 {
   margin: 0;
   line-height: 20px;
+  padding-right: 30px;
 }
 :host(.compact) .player-points {
   font-size: 2rem;
   line-height: 40px;
+  padding-right: 30px;
 }
 :host(.compact) .player-status:empty {
   display: none;
@@ -165,46 +237,50 @@
 @media (max-width: 700px) {
   :host(.compact) .table-layout {
     --hub-width: 88px;
-    --hub-height: 96px;
-    --card-width: 128px;
-    --card-depth: 48px;
-    --seat-gap: 38px;
+    --hub-height: 88px;
+    --card-width: 140px;
+    --card-depth: 50px;
+    --seat-gap: 44px;
   }
   :host(.compact) .player-seat {
-    padding: 4px;
+    padding: 3px;
   }
   :host(.compact) .seat-label {
-    gap: 2px;
-    line-height: 12px;
+    gap: 4px;
+    line-height: 16px;
     align-items: center;
   }
   :host(.compact) .seat-label > abbr {
-    width: 16px;
-    height: 16px;
-    font-size: 0.6rem;
+    width: 18px;
+    height: 18px;
+    font-size: 0.7rem;
   }
   :host(.compact) .seat-label small {
-    font-size: 0.6rem;
+    font-size: 0.7rem;
   }
   :host(.compact) .player-seat h3 {
-    font-size: 0.7rem;
-    line-height: 14px;
+    font-size: 0.8rem;
+    line-height: 18px;
     margin: 0;
   }
   :host(.compact) .player-points {
-    font-size: 1.25rem;
+    font-size: 1.4rem;
     line-height: 26px;
   }
   :host(.compact) .seat-actions {
-    gap: 3px;
-    top: calc(100% + 4px);
+    gap: 4px;
+    top: calc(100% + 6px);
   }
   :host(.compact) .seat-actions button {
-    min-height: 32px;
-    font-size: 0.6rem;
+    min-height: 34px;
+    font-size: 0.7rem;
   }
   :host(.compact) .table-center {
     padding: 6px 4px;
+  }
+  .center-action {
+    font-size: 0.95rem;
+    gap: 5px;
   }
   :host(.compact) .table-round {
     font-size: 1rem;
@@ -224,12 +300,19 @@
   }
 }
 @media (max-width: 370px) {
+  :host(.compact) .player-seat h3 {
+    font-size: 0.7rem;
+    line-height: 14px;
+  }
+  :host(.compact) .seat-actions button {
+    font-size: 0.65rem;
+  }
   :host(.compact) .table-layout {
     --hub-width: 80px;
     --hub-height: 80px;
     --card-width: 112px;
     --card-depth: 44px;
-    --seat-gap: 32px;
+    --seat-gap: 40px;
   }
   :host(.compact) .player-points {
     font-size: 1.1rem;
@@ -535,4 +618,21 @@
 }
 :host-context([data-theme='dark']) .dealer .seat-label small {
   color: #f3d58d;
+}
+
+:host(.compact) .yakitori-label img {
+  width: 14px;
+  height: 14px;
+}
+:host(.compact) .seat-label .yakitori-label {
+  min-width: 16px;
+}
+
+:host(.compact) .yakitori-label img {
+  width: 18px;
+  height: 10px;
+}
+:host(.compact) .seat-label .yakitori-label {
+  min-width: 18px;
+  margin-inline-start: 3px;
 }

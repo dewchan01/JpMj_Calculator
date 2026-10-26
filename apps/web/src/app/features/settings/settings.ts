@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { RuleLibrary } from './rule-library';
 import { settingGroups } from '../../shared/rules/settings-fields';
 import { ErrorNotice } from '../../shared/error-notice/error-notice';
@@ -18,7 +18,8 @@ import {
 } from '../../../../../../packages/mahjong-rules/index';
 
 @Component({
-  imports: [ReactiveFormsModule, RouterLink, TranslatePipe, ErrorNotice],
+  imports: [ReactiveFormsModule, TranslatePipe, ErrorNotice],
+  host: { '(window:blur)': "help.set('')", '(document:visibilitychange)': "help.set('')" },
   templateUrl: './settings.html',
   styleUrl: './settings.css',
 })
@@ -35,6 +36,19 @@ export class Settings {
   readonly selected = signal(this.base().id);
   readonly errors = signal<string[]>([]);
   readonly notice = signal('');
+  readonly help = signal('');
+  holdHelp(key: string, event: PointerEvent): void {
+    if (event.button !== 0) return;
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+    this.help.set(key);
+  }
+  helpKey(key: string, event: KeyboardEvent): void {
+    if (event.key === ' ' || event.key === 'Enter') {
+      event.preventDefault();
+      this.help.set(key);
+    } else if (event.key === 'Escape') this.help.set('');
+  }
+
   readonly groups = settingGroups;
   readonly ruleName = ruleName;
   readonly form = new FormGroup<Record<string, FormControl<string | number | boolean>>>(

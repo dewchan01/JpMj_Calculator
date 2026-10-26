@@ -1,5 +1,5 @@
 import { beginWin, finishWin, gameMenu, prompt } from './helpers/game';
-import { openQuickScore } from './helpers/navigation';
+import { leaveGame, openQuickScore } from './helpers/navigation';
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
@@ -21,7 +21,7 @@ test('dealer bonus in split Tsumo payments can be chosen and saved', async ({ pa
   await expect(page.locator('.rules-heading strong')).toHaveText('Dealer split');
   await expect(page.locator('.rules-summary details')).toHaveCount(0);
   await expect(
-    page.locator('.rules-summary').getByRole('link', { name: 'Settings', exact: true }),
+    page.locator('.rules-summary').getByRole('button', { name: 'Rules', exact: true }),
   ).toBeVisible();
 });
 
@@ -33,8 +33,31 @@ for (const width of [390, 1280]) {
     await page.goto('/');
     const nav = page.getByRole('navigation');
     await expect(page.getByRole('combobox', { name: 'Rule preset', exact: true })).toHaveCount(0);
+    await leaveGame(page);
     await nav.getByRole('link', { name: 'Settings', exact: true }).click();
     await expect(page).toHaveURL(/\/settings$/);
+    await expect(page.locator('.rule-library .segmented button')).toHaveText([
+      '4 players',
+      '3 players',
+    ]);
+    const firstHelp = page.locator('.setting-help').first();
+    await firstHelp.locator('button').hover();
+    await expect(firstHelp.getByRole('tooltip')).toBeHidden();
+    await page.mouse.down();
+    await expect(firstHelp.getByRole('tooltip')).toBeVisible();
+    const field = await firstHelp.locator('..').boundingBox();
+    const bubble = await firstHelp.getByRole('tooltip').boundingBox();
+    expect(bubble!.x).toBeGreaterThanOrEqual(field!.x);
+    expect(bubble!.x + bubble!.width).toBeLessThanOrEqual(field!.x + field!.width + 1);
+    await page.screenshot({ path: `artifacts/settings-hint-${width}.png` });
+    await page.mouse.up();
+    await expect(firstHelp.getByRole('tooltip')).toBeHidden();
+    await firstHelp.locator('button').focus();
+    await page.keyboard.down('Space');
+    await expect(firstHelp.getByRole('tooltip')).toBeVisible();
+    await page.keyboard.up('Space');
+    await expect(firstHelp.getByRole('tooltip')).toBeHidden();
+    await page.getByRole('heading', { name: 'Settings', exact: true }).hover();
     await page.getByRole('textbox', { name: 'Custom rule name', exact: true }).fill('Four friends');
     await page.getByRole('spinbutton', { name: 'Starting points', exact: true }).fill('30000');
     await page.getByRole('button', { name: 'Use these rules', exact: true }).click();
@@ -59,6 +82,7 @@ for (const width of [390, 1280]) {
       .getByRole('combobox', { name: 'Rules', exact: true })
       .selectOption({ label: '4P · Yonma' });
     await expect(page.locator('.rules-heading')).toContainText('Four friends');
+    await leaveGame(page);
     await nav.getByRole('link', { name: 'Settings', exact: true }).click();
     await page.getByRole('button', { name: '4 players', exact: true }).click();
     await expect(
@@ -73,6 +97,7 @@ for (const width of [390, 1280]) {
           JSON.parse(localStorage.getItem('riichi-rule-library-v1')!).applied['4'].startingPoints,
       ),
     ).toBe(30000);
+    await leaveGame(page);
     await nav.getByRole('link', { name: 'Settings', exact: true }).click();
     await page.getByRole('button', { name: '4 players', exact: true }).click();
     await expect(
@@ -82,7 +107,7 @@ for (const width of [390, 1280]) {
     const help = page
       .locator('.setting-field')
       .filter({ has: page.getByRole('combobox', { name: 'End below zero', exact: true }) });
-    await help.getByText('What does this mean?', { exact: true }).click();
+    await help.getByRole('button', { name: /What does this mean/ }).click();
     await expect(help).toContainText('not an additional bonus');
     const axe = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
@@ -100,6 +125,7 @@ for (const width of [390, 1280]) {
       '30,000',
       '30,000',
     ]);
+    await leaveGame(page);
     await nav.getByRole('link', { name: 'Settings', exact: true }).click();
     await page.getByRole('spinbutton', { name: 'Starting points', exact: true }).fill('40000');
     await page.getByRole('button', { name: 'Use these rules', exact: true }).click();
@@ -113,6 +139,7 @@ for (const width of [390, 1280]) {
       '30,000',
     ]);
 
+    await leaveGame(page);
     await nav.getByRole('link', { name: 'Settings', exact: true }).click();
     await page.reload();
     await expect(

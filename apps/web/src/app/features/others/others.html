@@ -2,31 +2,39 @@
   <header class="others-heading">
     <h1>{{ 'Others' | t }}</h1>
   </header>
-  <nav class="other-list" [attr.aria-label]="'Other options' | t">
-    @for (entry of entries; track entry.path) {
-      <a [routerLink]="entry.path">
-        <span class="entry-mark" aria-hidden="true">{{ entry.mark }}</span>
-        <span>{{ entry.title | t }}</span>
-        <span class="chevron" aria-hidden="true">›</span>
-      </a>
-      @if (entry.title === 'Developer') {
-        @if (configuration.supportEmail()) {
-          <a [href]="'mailto:' + configuration.supportEmail()">
-            <span class="entry-mark" aria-hidden="true">@</span>
-            <span>
-              {{ 'Send email' | t }}
-              <small>{{ configuration.supportEmail() }}</small>
-            </span>
-            <span class="chevron" aria-hidden="true">↗</span>
-          </a>
-        } @else {
-          <div class="unavailable">{{ 'Support email is not configured.' | t }}</div>
-        }
-      }
+  <nav class="other-options" [attr.aria-label]="'Other options' | t">
+    @for (group of groups; track group.title) {
+      <section class="option-group">
+        <h2>{{ group.title | t }}</h2>
+        <div class="other-list">
+          @for (entry of group.entries; track entry.path) {
+            <a [routerLink]="entry.path" [attr.aria-label]="entry.title | t">
+              <span class="entry-mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path [attr.d]="entry.icon" /></svg>
+              </span>
+              <span>
+                {{ entry.title | t }}
+                @if (entry.title === 'Developer' && configuration.supportEmail()) {
+                  <small>{{ configuration.supportEmail() }}</small>
+                }
+              </span>
+              <span class="chevron" aria-hidden="true">›</span>
+            </a>
+          }
+        </div>
+      </section>
     }
   </nav>
+  <app-storage-status />
 } @else {
-  <a class="back-link" routerLink="/others">← {{ 'Others' | t }}</a>
+  <a
+    class="back-link back-button"
+    routerLink="/others"
+    [attr.aria-label]="'Others' | t"
+    [title]="'Others' | t"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m7-7-7 7 7 7" /></svg>
+  </a>
   <h1>{{ title() | t }}</h1>
   <section class="card other-detail">
     @switch (section()) {

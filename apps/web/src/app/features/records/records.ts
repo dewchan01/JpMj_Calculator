@@ -1,3 +1,4 @@
+import { DialogBackdrop } from '../../shared/dialog-backdrop';
 import { Component, computed, inject, signal, viewChild, ElementRef } from '@angular/core';
 import { DatePipe, DecimalPipe, KeyValuePipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
@@ -13,6 +14,7 @@ import { durationMinutes, filterMatches, playerRecords } from './record-stats';
 
 @Component({
   imports: [
+    DialogBackdrop,
     DatePipe,
     DecimalPipe,
     KeyValuePipe,

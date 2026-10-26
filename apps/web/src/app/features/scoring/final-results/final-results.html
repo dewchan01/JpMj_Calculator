@@ -1,55 +1,232 @@
-<section class="card final-results">
-  <h2>{{ 'Final results' | t }}</h2>
+<section class="final-results">
+  <div class="result-toolbar" role="group" [attr.aria-label]="'Result view' | t">
+    @for (item of views; track item) {
+      <button [attr.aria-pressed]="view() === item" (click)="view.set(item)">
+        {{ viewLabels[item] | t }}
+      </button>
+    }
+    <button class="share-image" (click)="shareImage()" [disabled]="busy()">
+      {{ 'Share image' | t }}
+    </button>
+  </div>
+  @if (notice()) {
+    <p role="alert">{{ notice() | t }}</p>
+  }
+  @switch (view()) {
+    @case ('table') {
+      <div class="result-table">
+        <table>
+          <caption>{{ 'Final results' | t }}</caption>
+          <thead>
+            <tr>
+              <th>{{ 'Rank' | t }}</th>
+              <th>{{ 'Player' | t }}</th>
+              <th>{{ 'Points' | t }}</th>
+              <th>{{ 'Final score' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.id) {
+              <tr>
+                <td>{{ row.rank }}</td>
+                <th scope="row" [title]="row.name">
+                  <button class="player-detail" (click)="selected.set(row.id); view.set('list')">
+                    {{ row.name }}
+                  </button>
+                </th>
+                <td>{{ row.points | number }}</td>
+                <td>
+                  {{ row.finalScore | number: '1.0-3' }}
+                  @if (settings().bettingRate || settings().chipValue) {
+                    <small>
+                      {{ row.totalMoney | number: '1.2-2' }} {{ settings().currency }}
+                      <br />
+                      {{ 'Chip money' | t }} {{ row.chipMoney | number: '1.2-2' }}
+                    </small>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+    @case ('list') {
+      <div class="player-filter">
+        <button (click)="selected.set('')">{{ 'All players' | t }}</button>
+      </div>
+      @for (row of rows(); track row.id) {
+        @if (!selected() || selected() === row.id) {
+          <article class="standing-card">
+            <h3>#{{ row.rank }} {{ row.name }}</h3>
+            <dl>
+              <div>
+                <dt>{{ 'Points' | t }}</dt>
+                <dd>{{ row.points | number }}</dd>
+              </div>
+              <div>
+                <dt>{{ 'Final score' | t }}</dt>
+                <dd>{{ row.finalScore | number: '1.0-3' }}</dd>
+              </div>
+              <div>
+                <dt>{{ 'Uma' | t }} / {{ 'Oka' | t }}</dt>
+                <dd>{{ row.uma }} / {{ row.oka }}</dd>
+              </div>
+              <div>
+                <dt>{{ 'Net chips' | t }}</dt>
+                <dd>{{ row.chips }}</dd>
+              </div>
+              @if (settings().bettingRate || settings().chipValue) {
+                <div>
+                  <dt>{{ 'Score money' | t }}</dt>
+                  <dd>{{ row.scoreMoney | number: '1.2-2' }}</dd>
+                </div>
+                <div>
+                  <dt>{{ 'Chip money' | t }}</dt>
+                  <dd>{{ row.chipMoney | number: '1.2-2' }}</dd>
+                </div>
+                <div>
+                  <dt>{{ 'Total money' | t }}</dt>
+                  <dd>{{ row.totalMoney | number: '1.2-2' }} {{ settings().currency }}</dd>
+                </div>
+              }
+            </dl>
+            <button (click)="selected.set(row.id); view.set('statistics')">
+              {{ 'Statistics' | t }}
+            </button>
+          </article>
+        }
+      }
+    }
+    @case ('statistics') {
+      <h3>{{ 'Score history' | t }}</h3>
+      <div class="graph-legend">
+        <button [attr.aria-pressed]="!selected()" (click)="selected.set('')">
+          {{ 'All players' | t }}
+        </button>
+        @for (player of match().players; track player.id) {
+          <button [attr.aria-pressed]="selected() === player.id" (click)="selected.set(player.id)">
+            <span [style.background]="color(player.id)"></span>
+            {{ player.name }}
+          </button>
+        }
+      </div>
+      <svg
+        class="score-graph"
+        viewBox="0 0 720 290"
+        role="img"
+        [attr.aria-label]="'Score history' | t"
+      >
+        <title>{{ 'Score history' | t }}</title>
+        <path d="M70 20V250H700" class="axis" />
+        <text x="2" y="30">{{ range().max | number: '1.0-0' }}</text>
+        <text x="2" y="250">{{ range().min | number: '1.0-0' }}</text>
+        <text x="70" y="280">{{ 'Start' | t }}</text>
+        <text x="655" y="280">{{ 'End' | t }}</text>
+        @for (player of plotted(); track player.id) {
+          <polyline
+            [attr.points]="line(player.id)"
+            [attr.stroke]="color(player.id)"
+            fill="none"
+            stroke-width="3"
+          />
+          @for (point of statistics().points; track $index; let index = $index) {
+            <circle
+              [attr.cx]="x(index)"
+              [attr.cy]="y(point.balances[player.id])"
+              r="4"
+              [attr.fill]="color(player.id)"
+            >
+              <title>
+                {{ player.name }} · {{ point.label }}: {{ point.balances[player.id] | number }}
+              </title>
+            </circle>
+          }
+        }
+      </svg>
+      <details class="score-data">
+        <summary>{{ 'Score history data' | t }}</summary>
+        <table>
+          <thead>
+            <tr>
+              <th>{{ 'Hand' | t }}</th>
+              @for (player of plotted(); track player.id) {
+                <th [title]="player.name">{{ player.name }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (point of statistics().points; track $index) {
+              <tr>
+                <th scope="row">{{ point.label | t }}</th>
+                @for (player of plotted(); track player.id) {
+                  <td>{{ point.balances[player.id] | number }}</td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </details>
+      @for (player of visiblePlayers(); track player.id) {
+        <article class="standing-card">
+          <h3>#{{ rank(player.id) }} {{ player.name }}</h3>
+          <p class="hint">{{ player.hands }} {{ 'Recorded hands' | t }}</p>
+          <dl>
+            @for (field of fields; track field.key) {
+              <div>
+                <dt>{{ field.label | t }}</dt>
+                <dd>{{ value(player, field) }}</dd>
+              </div>
+            }
+          </dl>
+        </article>
+      }
+      <p class="hint">
+        {{
+          'Rates use recorded hands. Tenpai rate uses recorded exhaustive draws. Missing data is shown as —.'
+            | t
+        }}
+      </p>
+      <p class="hint">
+        {{
+          'Win scores include Honba and awarded Riichi sticks. Winning streaks count consecutive won hands.'
+            | t
+        }}
+      </p>
+    }
+    @case ('history') {
+      <app-match-history [match]="match()" [rules]="match().rules" [readOnly]="true" />
+    }
+  }
   <p class="hint">
     {{
       'Final score = (points − return score) ÷ 1,000 + Oka + Uma. Money = final score × rate + net chips × chip value.'
         | t
     }}
   </p>
-  <div class="result-table">
-    <table>
-      <thead>
-        <tr>
-          <th scope="col">{{ 'Rank' | t }}</th>
-          <th scope="col">{{ 'Player' | t }}</th>
-          <th scope="col">{{ 'Points' | t }}</th>
-          <th scope="col">{{ 'Uma' | t }}</th>
-          <th scope="col">{{ 'Oka' | t }}</th>
-          <th scope="col">{{ 'Final score' | t }}</th>
-          <th scope="col">{{ 'Net chips' | t }}</th>
-          @if (settings().bettingRate || settings().chipValue) {
-            <th scope="col">{{ settings().currency || ('Money' | t) }}</th>
-          }
-        </tr>
-      </thead>
-      <tbody>
-        @for (row of rows(); track row.id) {
-          <tr>
-            <td>{{ row.rank }}</td>
-            <th scope="row">{{ row.name }}</th>
-            <td>{{ row.points | number }}</td>
-            <td>{{ row.uma | number: '1.0-3' }}</td>
-            <td>{{ row.oka | number: '1.0-3' }}</td>
-            <td>{{ row.finalScore | number: '1.0-3' }}</td>
-            <td>{{ row.chips }}</td>
-            @if (settings().bettingRate || settings().chipValue) {
-              <td>
-                <strong>{{ row.totalMoney | number: '1.2-2' }}</strong>
-                <small>
-                  {{ 'Score money' | t }} {{ row.scoreMoney | number: '1.2-2' }} ·
-                  {{ 'Chip money' | t }} {{ row.chipMoney | number: '1.2-2' }}
-                </small>
-              </td>
-            }
-          </tr>
-        }
-      </tbody>
-    </table>
-  </div>
-  <p class="hint">
-    {{
-      'Amounts are calculated from this table’s saved rules. No payments are sent. Undoing the final settlement also restores its penalties and chips.'
-        | t
-    }}
-  </p>
+  @if (match().ended) {
+    <div class="result-actions">
+      <button class="primary" (click)="keepGame()" [disabled]="busy()">
+        {{ 'Save game' | t }}
+      </button>
+      <button class="danger" (click)="confirmDiscard.set(true)" [disabled]="busy()">
+        {{ 'Discard game' | t }}
+      </button>
+    </div>
+    <p class="hint">
+      {{
+        'This game is saved automatically. Save keeps the record; discard removes it and its history.'
+          | t
+      }}
+    </p>
+    @if (confirmDiscard()) {
+      <div class="discard-confirm" role="group" [attr.aria-label]="'Discard game' | t">
+        <p>{{ 'Delete this game and all its history?' | t }}</p>
+        <button (click)="confirmDiscard.set(false)">{{ 'Cancel' | t }}</button>
+        <button class="danger" (click)="discardGame()" [disabled]="busy()">
+          {{ 'Delete' | t }}
+        </button>
+      </div>
+    }
+  }
 </section>

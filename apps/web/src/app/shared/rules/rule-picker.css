@@ -24,3 +24,133 @@
   font-size: 0.8rem;
   padding: 10px 0;
 }
+
+.rules-heading button {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 8px 14px;
+}
+.rules-dialog {
+  margin: auto;
+  width: min(440px, calc(100vw - 24px));
+  max-height: calc(100dvh - 32px);
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+}
+.rules-dialog::backdrop {
+  background: #0007;
+}
+.rules-dialog header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.rules-dialog h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+.rule-choices {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.rule-choices button {
+  padding: 10px 14px;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+.rules-dialog header button:not(.back-button) {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 8px 14px;
+}
+.rule-choices button[aria-pressed='true'] {
+  background: var(--green);
+  color: var(--page);
+}
+
+.rules-heading > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+.rules-heading > button svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  flex-shrink: 0;
+}
+:host-context(.setup-card) .rules-summary {
+  padding: 10px 12px;
+  margin-block: 8px;
+}
+
+.rules-dialog header {
+  gap: 8px;
+}
+.rules-dialog header h2 {
+  flex: 1;
+}
+:host-context(.setup-card) .rules-heading strong {
+  font-size: 1rem;
+}
+:host-context(.setup-card) .rules-heading small {
+  font-size: 0.75rem;
+}
+:host-context(.setup-card) .rules-heading > button {
+  font-size: 0.85rem;
+}
+
+.rules-summary:not(.locked-rules),
+:host-context(.setup-card) .rules-summary:not(.locked-rules) {
+  padding: 0;
+  margin-block: 8px 12px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+.rules-heading.rule-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-content: stretch;
+  gap: 7px;
+}
+.rules-heading.rule-field > .field-control {
+  display: flex;
+  justify-content: space-between;
+  min-height: var(--field-control-height);
+  padding: var(--field-control-padding);
+  font-size: var(--field-font-size);
+}
+.rules-heading.rule-field strong {
+  font: inherit;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rules-dialog header {
+  position: sticky;
+  top: -16px;
+  padding-block: 8px;
+  z-index: 2;
+  background: var(--surface);
+}

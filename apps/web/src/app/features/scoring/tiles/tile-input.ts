@@ -2,7 +2,13 @@ import { newId } from '../../../core/id/new-id';
 import { ErrorNotice } from '../../../shared/error-notice/error-notice';
 import { Component, computed, inject, input, linkedSignal, model, signal } from '@angular/core';
 import { form, FormField } from '@angular/forms/signals';
-import { kindIndex, parseTiles, type Tile } from '../../../../../../../packages/mahjong-core/index';
+import {
+  kindAt,
+  kindIndex,
+  parseTiles,
+  type Tile,
+} from '../../../../../../../packages/mahjong-core/index';
+import { TileReorder } from './tile-reorder';
 import { I18n, TranslatePipe } from '../../../core/i18n/i18n';
 import { TileArt } from '../../../shared/tile-art/tile-art';
 import { TilePicker } from './tile-picker';
@@ -19,6 +25,7 @@ import { PhotoCapture } from '../capture/photo-capture';
     FormField,
     TileEntryDialog,
     PhotoCapture,
+    TileReorder,
   ],
   templateUrl: './tile-input.html',
   styleUrl: './tile-input.css',
@@ -54,6 +61,18 @@ export class TileInput {
   add(tile: Tile): void {
     this.value.set(this.notation([...this.tiles(), tile]));
     this.error.set('');
+  }
+  dropTile(event: { index: number; target: string }): void {
+    if (event.target !== 'preview' || event.index >= 100) return;
+    this.add({ id: newId(), kind: kindAt(event.index % 34), isRed: event.index >= 34 });
+  }
+  reorderTiles(event: { from: number; to: number }): void {
+    const tiles = [...this.tiles()];
+    if (event.from < 0 || event.to < 0 || event.to >= tiles.length) return;
+    const [tile] = tiles.splice(event.from, 1);
+    if (!tile) return;
+    tiles.splice(event.to, 0, tile);
+    this.value.set(this.notation(tiles));
   }
   applyPhoto(tiles: Tile[]): void {
     this.value.set(this.notation(tiles));

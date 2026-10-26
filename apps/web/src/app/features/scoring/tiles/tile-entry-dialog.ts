@@ -1,3 +1,4 @@
+import { DialogBackdrop } from '../../../shared/dialog-backdrop';
 import { NgTemplateOutlet } from '@angular/common';
 import {
   Component,
@@ -15,7 +16,7 @@ import { TranslatePipe } from '../../../core/i18n/i18n';
 /** Lazily renders entry tools in a native, keyboard-accessible modal. */
 @Component({
   selector: 'app-tile-entry-dialog',
-  imports: [NgTemplateOutlet, TranslatePipe],
+  imports: [DialogBackdrop, NgTemplateOutlet, TranslatePipe],
   templateUrl: './tile-entry-dialog.html',
   styleUrl: './tile-entry-dialog.css',
 })

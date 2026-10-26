@@ -1,12 +1,16 @@
 import { beginWin, finishWin, gameMenu, prompt } from './helpers/game';
 import { setLanguage, openRules } from './helpers/navigation';
 import { expect, test } from '@playwright/test';
+import { choosePlayer } from './helpers/players';
 
 test('zh-TW table history persists offline and preserves user names', async ({ page, context }) => {
   await page.setViewportSize({ width: 375, height: 812 });
+  await page.addInitScript(() =>
+    localStorage.setItem('riichi-players-v1', JSON.stringify([{ id: 'east-name', name: 'East' }])),
+  );
   await page.goto('/');
   await page.getByRole('textbox', { name: 'Match name', exact: true }).fill('My table name');
-  await page.getByRole('textbox', { name: 'South player name', exact: true }).fill('East');
+  await choosePlayer(page, 'South', 'East');
   await page.getByRole('button', { name: /Start match/ }).click();
   await beginWin(page, 'East');
   await finishWin(page);

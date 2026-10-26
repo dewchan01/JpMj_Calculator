@@ -2,23 +2,26 @@
   <div class="game-shell">
     <header class="game-heading">
       <h1>{{ m.name }}</h1>
-      <button
-        class="dice-icon"
-        (click)="open('dice'); rollDice()"
-        [attr.aria-label]="'Dice' | t"
-        [title]="'Dice' | t"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="3" y="3" width="18" height="18" rx="4" />
-          <path d="M7 7h.01M12 12h.01M17 17h.01" stroke-width="3" stroke-linecap="round" />
-        </svg>
-      </button>
       <button class="quiet clock" (click)="open('menu')" [attr.aria-label]="'Game timer' | t">
         {{ time(elapsed()) }}
         @if (paused()) {
           <small>{{ 'Paused' | t }}</small>
         }
       </button>
+      <div class="round-status" [attr.aria-label]="'Table details' | t">
+        <span class="table-round">
+          {{ m.roundWind | t }}
+          <b>{{ m.handNumber }}</b>
+        </span>
+        <span class="table-honba">
+          {{ 'Honba' | t }}
+          <strong>{{ m.honba }}</strong>
+        </span>
+        <span class="table-pot">
+          {{ 'Riichi pot' | t }}
+          <strong>{{ book().table | number }}</strong>
+        </span>
+      </div>
     </header>
     <app-error-notice [message]="prompt.open ? '' : error()" />
     <app-table-summary
@@ -26,6 +29,8 @@
       [interactive]="!m.ended"
       [actionsDisabled]="paused() || busy()"
       [compact]="true"
+      [liveControls]="true"
+      [ended]="!!m.ended"
       [players]="m.players"
       [balances]="book().players"
       [dealer]="m.dealerId"
@@ -45,11 +50,12 @@
       (playerAction)="open('player', $event)"
       (quickAction)="tableAction($event)"
       (pointDifference)="showPlayerDifference($event)"
+      (handAction)="open(m.ended ? 'results' : 'outcome'); !m.ended && startOutcome()"
     />
     <div class="indicator-bar">
       @for (kind of indicatorKinds; track kind) {
         <button
-          (click)="open('indicators')"
+          (click)="openIndicators(kind)"
           [attr.aria-label]="(kind === 'dora' ? 'Dora indicators' : 'Ura indicators') | t"
         >
           {{ (kind === 'dora' ? 'Dora indicators' : 'Ura indicators') | t }}
@@ -63,23 +69,17 @@
         </button>
       }
     </div>
-    @if (m.showPointDifferences) {
-      <p class="difference-strip">
-        {{ name(basis) }}:
-        @for (p of players; track p.id) {
-          @if (p.id !== basis) {
-            <span>{{ p.name }} {{ book().players[basis] - book().players[p.id] | number }}</span>
-          }
-        }
-      </p>
-    }
-    <div class="game-bottom">
+    <div class="game-tools">
       <button
-        class="primary"
-        [disabled]="paused() && !m.ended"
-        (click)="open(m.ended ? 'results' : 'outcome'); !m.ended && startOutcome()"
+        class="dice-icon"
+        (click)="open('dice'); rollDice()"
+        [attr.aria-label]="'Dice' | t"
+        [title]="'Dice' | t"
       >
-        {{ (m.ended ? 'Final results' : 'End this hand') | t }}
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="4" />
+          <path d="M7 7h.01M12 12h.01M17 17h.01" stroke-width="3" stroke-linecap="round" />
+        </svg>
       </button>
       <button class="floating-menu" (click)="open('menu')" [attr.aria-label]="'Game menu' | t">
         •••
@@ -89,10 +89,29 @@
 } @else {
   <app-error-notice [message]="error()" />
 }
-<dialog #prompt class="game-prompt" aria-labelledby="game-prompt-title" (close)="error.set('')">
+<dialog
+  appDialogBackdrop
+  [dialogCanDismiss]="canDismissPrompt"
+  #prompt
+  class="game-prompt"
+  aria-labelledby="game-prompt-title"
+  (close)="error.set('')"
+>
   <header class="prompt-heading">
+    @if (panelParents().length > 0) {
+      <button
+        class="menu-back back-button"
+        (click)="backPanel()"
+        [attr.aria-label]="'Back' | t"
+        [title]="'Back' | t"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m7-7-7 7 7 7" /></svg>
+      </button>
+    }
     <h2 id="game-prompt-title">{{ panelTitle() | t }}</h2>
-    <button class="quiet close-prompt" (click)="close()" [attr.aria-label]="'Close' | t">×</button>
+    <button class="icon-button close-prompt" (click)="close()" [attr.aria-label]="'Close' | t">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
+    </button>
   </header>
   <div class="prompt-body">
     <app-error-notice [messages]="error().split('\n')" />
@@ -102,26 +121,73 @@
           <div class="menu-list">
             @if (!m.ended) {
               <button (click)="undoAction()" [disabled]="busy() || !m.liveUndo?.length">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 10h10a6 6 0 1 1-5 9M4 10l5-5m-5 5 5 5" />
+                </svg>
                 {{ 'Undo previous action' | t }}
               </button>
-              <button (click)="pause()">{{ (paused() ? 'Resume game' : 'Pause game') | t }}</button>
+              <button (click)="pause()">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path [attr.d]="paused() ? 'm8 4 12 8-12 8Z' : 'M8 5v14M16 5v14'" />
+                </svg>
+                {{ (paused() ? 'Resume game' : 'Pause game') | t }}
+              </button>
               <button (click)="startOutcome()" [disabled]="paused()">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
                 {{ 'End this hand' | t }}
               </button>
-              <button class="danger" (click)="panel.set('finish')">
+              <button class="danger" (click)="navigatePanel('finish')">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 4h12v16H6zM9 8h6m-6 4h6" />
+                </svg>
                 {{ 'End entire match' | t }}
               </button>
             } @else {
-              <button (click)="panel.set('results')">{{ 'Final results' | t }}</button>
+              <button (click)="navigatePanel('results')">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m8 12 3 3 5-6M12 3l3 3h4v4l2 3-2 3v4h-4l-3 2-3-2H5v-4l-2-3 2-3V6h4Z" />
+                </svg>
+                {{ 'Final results' | t }}
+              </button>
             }
-            <button (click)="panel.set('history')">
+            <button (click)="navigatePanel('history')">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 4h16v16H4zM8 8h8m-8 4h8m-8 4h5" />
+              </svg>
               {{ 'History' | t }} · {{ m.events.length }}
             </button>
-            <button (click)="panel.set('info')">{{ 'Edit game info' | t }}</button>
-            <button (click)="panel.set('settings')">{{ 'In-game settings' | t }}</button>
-            <button (click)="panel.set('seats')">{{ 'Change seats' | t }}</button>
-            <button (click)="panel.set('help')">{{ 'Help' | t }}</button>
-            <a routerLink="/">{{ 'My table' | t }}</a>
+            <button (click)="navigatePanel('info')">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m4 16 12-12 4 4-12 12H4z" />
+              </svg>
+              {{ 'Edit game info' | t }}
+            </button>
+            <button (click)="navigatePanel('settings')">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 7h16M4 17h16M8 4v6m8 4v6" />
+              </svg>
+              {{ 'In-game settings' | t }}
+            </button>
+            <button (click)="navigatePanel('seats')">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 7h16m-4-4 4 4-4 4M20 17H4m4-4-4 4 4 4" />
+              </svg>
+              {{ 'Change seats' | t }}
+            </button>
+            <button (click)="navigatePanel('help')">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M9 9a3 3 0 1 1 5 2c-2 1-2 2-2 3m0 3h.01M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20"
+                />
+              </svg>
+              {{ 'Help' | t }}
+            </button>
+            <button class="return-table" (click)="returnToTables()" [disabled]="busy()">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m3 10 9-7 9 7v11h-7v-7h-4v7H3Z" />
+              </svg>
+              {{ 'My table' | t }}
+            </button>
           </div>
         }
         @case ('player') {
@@ -129,25 +195,27 @@
           @if (paused()) {
             <p>{{ 'Resume the game before recording actions.' | t }}</p>
           }
-          @if (currentPlayer.riichi === 'none' && playerMode() !== 'calls') {
-            <label class="check">
-              <input type="checkbox" [(ngModel)]="doubleRiichi" />
-              {{ 'Double Riichi' | t }}
-            </label>
-            @if (doubleRiichi) {
+          @if (playerMode() !== 'calls') {
+            @if (currentPlayer.riichi === 'none') {
               <label class="check">
-                <input type="checkbox" [(ngModel)]="firstTurn" />
-                {{ 'Uninterrupted first turn' | t }}
+                <input type="checkbox" [(ngModel)]="doubleRiichi" />
+                {{ 'Double Riichi' | t }}
               </label>
+              @if (doubleRiichi) {
+                <label class="check">
+                  <input type="checkbox" [(ngModel)]="firstTurn" />
+                  {{ 'Uninterrupted first turn' | t }}
+                </label>
+              }
+              <button (click)="riichi()" [disabled]="busy() || paused()">
+                {{ 'Declare Riichi · 1,000 points' | t }}
+              </button>
+            } @else if (currentPlayer.riichi !== 'none') {
+              <p>{{ (currentPlayer.riichi === 'double' ? 'Double Riichi' : 'Riichi') | t }}</p>
+              <button (click)="cancelDeclaration()" [disabled]="busy() || paused()">
+                {{ 'Cancel Riichi · refund 1,000 points' | t }}
+              </button>
             }
-            <button (click)="riichi()" [disabled]="busy() || paused()">
-              {{ 'Declare Riichi · 1,000 points' | t }}
-            </button>
-          } @else if (currentPlayer.riichi !== 'none') {
-            <p>{{ statuses()[selected] }}</p>
-            <button (click)="cancelDeclaration()" [disabled]="busy() || paused()">
-              {{ 'Cancel Riichi · refund 1,000 points' | t }}
-            </button>
           }
           @if (playerMode() !== 'riichi') {
             <div class="button-grid">
@@ -171,26 +239,28 @@
               }
             </div>
           }
-          @for (meld of currentPlayer.melds; track meld.id; let i = $index) {
-            <div class="recorded-call">
-              <span>{{ meld.type | t }}</span>
-              <div class="mini-tiles">
-                @for (tile of meld.tiles; track tile.id) {
-                  <app-tile-art [tile]="tile" />
-                }
+          @if (playerMode() !== 'riichi') {
+            @for (meld of currentPlayer.melds; track meld.id; let i = $index) {
+              <div class="recorded-call">
+                <span>{{ meld.type | t }}</span>
+                <div class="mini-tiles">
+                  @for (tile of meld.tiles; track tile.id) {
+                    <app-tile-art [tile]="tile" />
+                  }
+                </div>
+                <button class="quiet danger" (click)="removeCall(i)" [disabled]="paused()">
+                  {{ 'Remove' | t }}
+                </button>
               </div>
-              <button class="quiet danger" (click)="removeCall(i)" [disabled]="paused()">
-                {{ 'Remove' | t }}
-              </button>
-            </div>
-          }
-          @if (currentPlayer.kita.length) {
-            <div class="explain-row">
-              <span>{{ 'North' | t }} × {{ currentPlayer.kita.length }}</span>
-              <button class="quiet" (click)="removeNorth()" [disabled]="paused()">
-                {{ 'Remove one North' | t }}
-              </button>
-            </div>
+            }
+            @if (currentPlayer.kita.length) {
+              <div class="explain-row">
+                <span>{{ 'North' | t }} × {{ currentPlayer.kita.length }}</span>
+                <button class="quiet" (click)="removeNorth()" [disabled]="paused()">
+                  {{ 'Remove one North' | t }}
+                </button>
+              </div>
+            }
           }
         }
         @case ('call') {
@@ -261,26 +331,31 @@
         }
         @case ('indicators') {
           <p class="hint">{{ 'After a Kan, add the newly revealed indicator here.' | t }}</p>
-          <app-tile-input
-            label="Dora indicators"
-            [(value)]="dora"
-            [playerCount]="m.playerCount"
-            [redFives]="false"
-          />
-          <app-tile-input
-            label="Ura indicators"
-            [(value)]="ura"
-            [playerCount]="m.playerCount"
-            [redFives]="false"
-          />
+          @if (indicatorKind() === 'dora') {
+            <app-tile-input
+              label="Dora indicators"
+              [(value)]="dora"
+              [playerCount]="m.playerCount"
+              [redFives]="false"
+            />
+          } @else {
+            <app-tile-input
+              label="Ura indicators"
+              [(value)]="ura"
+              [playerCount]="m.playerCount"
+              [redFives]="false"
+            />
+          }
           <button class="primary" (click)="saveIndicators()" [disabled]="busy() || m.ended">
             {{ 'Save indicators' | t }}
           </button>
         }
         @case ('outcome') {
           <div class="menu-list">
-            <button (click)="panel.set('win')">{{ 'Win' | t }}</button>
-            <button (click)="drawType = 'exhaustive'; tenpai = {}; nagashi = {}; panel.set('draw')">
+            <button (click)="navigatePanel('win')">{{ 'Win' | t }}</button>
+            <button
+              (click)="drawType = 'exhaustive'; tenpai = {}; nagashi = {}; navigatePanel('draw')"
+            >
               {{ 'Record draw' | t }}
             </button>
           </div>
@@ -394,7 +469,7 @@
             </label>
           }
           <div class="action-row">
-            <button class="quiet" (click)="panel.set('hand')">{{ 'Back' | t }}</button>
+            <button class="quiet" (click)="backPanel()">{{ 'Back' | t }}</button>
             <button class="primary" (click)="reviewWinner()">{{ 'Review settlement' | t }}</button>
           </div>
         }
@@ -508,17 +583,40 @@
           <button class="primary" (click)="saveInfo()" [disabled]="busy()">{{ 'Save' | t }}</button>
         }
         @case ('settings') {
-          <p>{{ ruleName(m.rules) | t }}</p>
+          <p>
+            {{
+              m.rules.preset === 'custom' && m.rules.name ? m.rules.name : (ruleName(m.rules) | t)
+            }}
+          </p>
           <p class="hint">
             {{
               'This match keeps its saved rule snapshot. Start a new match to use different rules.'
                 | t
             }}
           </p>
-          <button (click)="toggleDifference()" [attr.aria-pressed]="!!m.showPointDifferences">
-            {{ 'Show point differences on the table' | t }}
-          </button>
-          <a routerLink="/settings">{{ 'Settings' | t }}</a>
+          <p>
+            {{ 'Game length' | t }}:
+            {{ (m.gameLength === 'east' ? 'East-only game' : 'East and South game') | t }} ·
+            {{ m.playerCount }}P · v{{ m.rules.version }}
+          </p>
+          @for (group of settingGroups; track group.title) {
+            <details class="saved-rule-group">
+              <summary>{{ group.title | t }}</summary>
+              <dl>
+                @for (field of group.fields; track field.key) {
+                  @if (
+                    (!field.threeOnly || m.playerCount === 3) &&
+                    (field.key !== 'uma4' || m.playerCount === 4)
+                  ) {
+                    <div>
+                      <dt>{{ field.label | t }}</dt>
+                      <dd>{{ settingValue(field) }}</dd>
+                    </div>
+                  }
+                }
+              </dl>
+            </details>
+          }
         }
         @case ('seats') {
           <p class="hint">

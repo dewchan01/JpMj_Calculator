@@ -1,0 +1,81 @@
+import { test, expect } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+
+for (const width of [390, 1280]) {
+  test(`player picker at ${width}px searches, sorts, pages, creates and prevents duplicate seats`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 740 });
+    await page.addInitScript(() =>
+      localStorage.setItem(
+        'riichi-players-v1',
+        JSON.stringify(
+          [
+            'Zephyr',
+            'Alice',
+            'Cara',
+            'Dana',
+            'Bob',
+            'Hana',
+            'Ian',
+            'Faye',
+            'Gus',
+            'Jin',
+            'Kai',
+            'Lyn',
+          ].map((name, i) => ({ id: 'saved-' + i, name })),
+        ),
+      ),
+    );
+    await page.goto('/');
+    await expect(page.locator('.players-grid input, .players-grid select')).toHaveCount(0);
+    const tools = (await page.locator('.setup-tools').boundingBox())!;
+    const card = (await page.locator('.setup-card').boundingBox())!;
+    expect(card.y - tools.y - tools.height).toBeGreaterThanOrEqual(4);
+    expect(card.y - tools.y - tools.height).toBeLessThanOrEqual(16);
+    await page.getByRole('button', { name: 'Choose player East', exact: true }).click();
+    const picker = page.locator('dialog[aria-labelledby="players-title"]');
+    await expect(picker.locator('.player-select')).toHaveCount(4);
+    await expect(picker.locator('.player-select').first()).toHaveText('Alice');
+    await picker.getByRole('button', { name: 'Z–A', exact: true }).click();
+    await expect(picker.locator('.player-select').first()).toHaveText('Zephyr');
+    await picker.getByRole('button', { name: 'Next page', exact: true }).click();
+    await expect(picker.locator('.player-pagination')).toContainText('2 / 3');
+    await picker.getByRole('searchbox', { name: 'Search players', exact: true }).fill('Bob');
+    await expect(picker.locator('.player-select')).toHaveCount(1);
+    await picker.getByRole('button', { name: 'Bob', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Choose player East', exact: true })).toHaveText(
+      'Bob',
+    );
+    await page.getByRole('button', { name: 'Choose player South', exact: true }).click();
+    await picker.getByRole('searchbox', { name: 'Search players', exact: true }).fill('Bob');
+    await expect(picker.locator('.player-select')).toBeDisabled();
+    await picker.getByRole('searchbox', { name: 'Search players', exact: true }).fill('');
+    expect(await picker.evaluate((dialog) => dialog.scrollHeight <= dialog.clientHeight)).toBe(
+      true,
+    );
+    expect(
+      (await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze())
+        .violations,
+    ).toEqual([]);
+    await page.screenshot({ path: `artifacts/player-picker-${width}.png` });
+    await picker.getByRole('button', { name: 'New player', exact: true }).click();
+    await picker.getByRole('textbox', { name: 'Player name', exact: true }).fill('Eve');
+    await picker.getByRole('button', { name: 'Add player', exact: true }).click();
+    await expect(picker).not.toBeVisible();
+    await expect(page.getByRole('button', { name: 'Choose player South', exact: true })).toHaveText(
+      'Eve',
+    );
+    await page.getByRole('button', { name: 'Saved players', exact: true }).click();
+    await picker.getByRole('searchbox', { name: 'Search players', exact: true }).fill('Eve');
+    await expect(picker.locator('.player-result')).toHaveText('Eve Remove');
+    await picker
+      .getByRole('combobox', { name: 'Filter players', exact: true })
+      .selectOption('available');
+    await expect(picker.locator('.player-result')).toHaveCount(0);
+    await picker
+      .getByRole('combobox', { name: 'Filter players', exact: true })
+      .selectOption('seated');
+    await expect(picker.locator('.player-result')).toHaveText('Eve Remove');
+  });
+}

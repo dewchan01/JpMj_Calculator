@@ -1,3 +1,4 @@
+import { leaveGame } from './helpers/navigation';
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { presetRules, tableRules } from '../packages/mahjong-rules/index';
@@ -12,6 +13,7 @@ for (const width of [320, 390, 1280]) {
     await expect(page.getByText('Saved tables', { exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: /Start match/ }).click();
     await expect(page).toHaveURL(/\/score\/[^/]+$/);
+    await leaveGame(page);
     const base = presetRules('custom', 3);
     const rules = { ...base, table: { ...tableRules(base), bettingRate: 2, currency: 'USD' } };
 
@@ -26,7 +28,7 @@ for (const width of [320, 390, 1280]) {
       players: [
         { id: 'a', name: 'Alice' },
         { id: 'b', name: 'Bob' },
-        { id: 'c', name: 'Carol' },
+        { id: 'c', name: 'Carol with a very long player name' },
       ],
       initialBalances: { a: 35000, b: 35000, c: 35000 },
       initialDealerId: 'a',
@@ -80,6 +82,8 @@ for (const width of [320, 390, 1280]) {
     const nav = page.getByRole('navigation');
     await nav.getByRole('link', { name: 'Records', exact: true }).click();
     await expect(page.locator('.game-card')).toHaveCount(3);
+    await expect(page.getByRole('link', { name: 'Details', exact: true })).toHaveCount(2);
+    await expect(page.getByRole('link', { name: 'Open table', exact: true })).toHaveCount(1);
     await expect(page.locator('.game-card h2').first()).toHaveText('Ongoing friends');
     await page.getByRole('combobox', { name: 'Sort games', exact: true }).selectOption('oldest');
     await expect(page.locator('.game-card h2').first()).toHaveText('September friends');
@@ -139,12 +143,43 @@ for (const width of [320, 390, 1280]) {
     await page.screenshot({ path: `artifacts/records-players-${width}.png`, fullPage: true });
     await page.getByRole('button', { name: 'Games', exact: true }).click();
     expect(
+      await page
+        .locator('.game-card .table-scroll')
+        .evaluateAll((tables) => tables.every((table) => table.scrollWidth <= table.clientWidth)),
+    ).toBe(true);
+    const longName = page
+      .locator('.game-card .player-name')
+      .filter({ hasText: 'Carol with a very long player name' })
+      .first();
+    await expect(longName).toHaveCSS('text-overflow', 'ellipsis');
+    if (width <= 700)
+      expect(await longName.evaluate((cell) => cell.scrollWidth > cell.clientWidth)).toBe(true);
+    const card = page.locator('.game-card').first();
+    const status = (await card.locator('.game-status').boundingBox())!;
+    const table = (await card.locator('table').boundingBox())!;
+    const date = (await card.locator('.game-meta .hint').boundingBox())!;
+    expect(Math.abs(date.y + date.height / 2 - status.y - status.height / 2)).toBeLessThan(1);
+    expect(
+      await page
+        .locator('.game-status.completed')
+        .first()
+        .evaluate((e) => getComputedStyle(e).backgroundColor),
+    ).not.toBe(
+      await page
+        .locator('.game-status.ongoing')
+        .first()
+        .evaluate((e) => getComputedStyle(e).backgroundColor),
+    );
+    expect(status.y + status.height).toBeLessThanOrEqual(table.y);
+    expect(Math.abs(status.x + status.width - table.x - table.width)).toBeLessThan(1);
+    expect(
       (await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze())
         .violations,
     ).toEqual([]);
     await page.screenshot({ path: `artifacts/records-games-${width}.png`, fullPage: true });
     await page.getByRole('link', { name: 'October friends', exact: true }).click();
     await expect(page).toHaveURL(/\/score\/october$/);
+    await leaveGame(page);
     await nav.getByRole('link', { name: 'Records', exact: true }).click();
     page.once('dialog', (dialog) => dialog.accept());
     await page.getByRole('button', { name: 'Delete October friends', exact: true }).click();

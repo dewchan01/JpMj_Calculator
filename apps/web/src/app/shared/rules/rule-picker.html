@@ -1,20 +1,30 @@
-<section class="rules-summary">
-  <div class="rules-heading">
-    <div>
-      <small>{{ 'Rules' | t }} · {{ profile().playerCount }}P</small>
-      <strong>
-        {{
-          profile().preset === 'custom' && profile().name
-            ? profile().name
-            : (ruleName(profile()) | t)
-        }}
-      </strong>
+<section class="rules-summary" [class.locked-rules]="locked()">
+  @if (!locked()) {
+    <div class="rules-heading rule-field">
+      <span class="field-label">{{ 'Rule preset' | t }}</span>
+      <button
+        class="field-control"
+        (click)="error.set(''); rulesDialog.showModal()"
+        aria-haspopup="dialog"
+        [attr.aria-label]="'Rules' | t"
+      >
+        <strong>
+          {{
+            profile().preset === 'custom' && profile().name
+              ? profile().name
+              : (ruleName(profile()) | t)
+          }}
+        </strong>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+      </button>
     </div>
-    <a routerLink="/settings" [queryParams]="{ players: profile().playerCount }">
-      {{ 'Settings' | t }}
-    </a>
-  </div>
-  @if (locked()) {
+  } @else {
+    <div class="rules-heading">
+      <div>
+        <small>{{ 'Rules' | t }} ? {{ profile().playerCount }}P</small>
+        <strong>{{ profile().name ?? (ruleName(profile()) | t) }}</strong>
+      </div>
+    </div>
     <p class="hint">
       {{
         'This match keeps its saved rule snapshot. Start a new match to use different rules.' | t
@@ -22,3 +32,36 @@
     </p>
   }
 </section>
+<dialog appDialogBackdrop #rulesDialog class="rules-dialog" aria-labelledby="choose-rules-title">
+  <header>
+    <h2 id="choose-rules-title">{{ 'Rules' | t }} · {{ profile().playerCount }}P</h2>
+    <a
+      class="back-button settings-link"
+      routerLink="/settings"
+      [queryParams]="{ players: profile().playerCount }"
+      [attr.aria-label]="'Settings' | t"
+      [title]="'Settings' | t"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16M8 4v6m8 4v6" /></svg>
+    </a>
+    <button
+      class="back-button"
+      [attr.aria-label]="'Close' | t"
+      [title]="'Close' | t"
+      (click)="rulesDialog.close()"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
+    </button>
+  </header>
+  <app-error-notice [message]="error()" />
+  <div class="rule-choices">
+    @for (choice of choices(); track choice.id) {
+      <button
+        [attr.aria-pressed]="choice.id === profile().id"
+        (click)="choose(choice, rulesDialog)"
+      >
+        {{ choice.name ?? (ruleName(choice) | t) }}
+      </button>
+    }
+  </div>
+</dialog>

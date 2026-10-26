@@ -1,5 +1,10 @@
 import { Component, computed, inject, input, output } from '@angular/core';
-import { kindAt, type Tile, tileLabel } from '../../../../../../../packages/mahjong-core/index';
+import {
+  kindAt,
+  kindIndex,
+  type Tile,
+  tileLabel,
+} from '../../../../../../../packages/mahjong-core/index';
 import { I18n, TranslatePipe } from '../../../core/i18n/i18n';
 import { TileArt } from '../../../shared/tile-art/tile-art';
 
@@ -12,6 +17,10 @@ export class TilePicker {
   readonly playerCount = input.required<3 | 4>();
   readonly redFives = input(true);
   readonly tilePicked = output<Tile>();
+  readonly dragEnabled = input(false);
+  dragIndex(tile: Tile): number | null {
+    return this.dragEnabled() ? kindIndex(tile.kind) + (tile.isRed ? 34 : 0) : null;
+  }
   private readonly i18n = inject(I18n);
   readonly rows = computed(() =>
     [

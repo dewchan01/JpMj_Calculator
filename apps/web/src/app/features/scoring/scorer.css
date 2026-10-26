@@ -179,3 +179,7 @@
   background: var(--page);
   border-bottom: 1px solid var(--border);
 }
+
+.quick-score-back {
+  margin-bottom: 12px;
+}

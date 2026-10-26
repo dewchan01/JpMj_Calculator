@@ -1,4 +1,5 @@
 import { ErrorNotice } from '../../../shared/error-notice/error-notice';
+import { DialogBackdrop } from '../../../shared/dialog-backdrop';
 import {
   Component,
   DestroyRef,
@@ -17,7 +18,7 @@ interface InstallPrompt extends Event {
 
 @Component({
   selector: 'app-install-banner',
-  imports: [ErrorNotice, TranslatePipe],
+  imports: [ErrorNotice, TranslatePipe, DialogBackdrop],
   templateUrl: './install-banner.html',
   styleUrl: './install-banner.css',
 })

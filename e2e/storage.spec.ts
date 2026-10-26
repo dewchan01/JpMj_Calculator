@@ -1,4 +1,4 @@
-import { openRules, setLanguage } from './helpers/navigation';
+import { setLanguage } from './helpers/navigation';
 import { expect, test } from '@playwright/test';
 
 test('storage usage updates and warns at 80% and 95%, including zh-TW', async ({ page }) => {
@@ -9,7 +9,7 @@ test('storage usage updates and warns at 80% and 95%, including zh-TW', async ({
   });
   await page.goto('/');
   await expect(page.locator('app-storage-status')).toHaveCount(0);
-  await openRules(page);
+  await page.locator('.app-navigation a[href$="/others"]').click();
   const panel = page.getByRole('region', { name: 'Browser storage', exact: true });
   await expect(panel.getByRole('meter')).toHaveAttribute('value', '20');
   await expect(panel.locator('.storage-warning')).toHaveCount(0);
@@ -37,7 +37,7 @@ for (const scenario of ['rejected', 'missing-quota', 'zero-quota'] as const) {
       });
     }, scenario);
     await page.goto('/');
-    await openRules(page);
+    await page.locator('.app-navigation a[href$="/others"]').click();
     await expect(
       page.getByText('Storage usage is unavailable in this browser. Saving may still work.'),
     ).toBeVisible();

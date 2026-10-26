@@ -22,17 +22,45 @@
 .setting-field label {
   margin-bottom: 6px;
 }
+.setting-field {
+  position: relative;
+}
 .setting-help {
-  color: var(--muted);
-  font-size: 0.75rem;
+  z-index: 2;
 }
-.setting-help summary {
-  cursor: pointer;
+.setting-help.open {
+  z-index: 5;
+}
+.help-button {
+  display: grid;
+  place-items: center;
   min-height: 28px;
+  width: 28px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--muted);
+  color: var(--muted);
+  background: var(--surface);
+  font-size: 0.8rem;
 }
-.setting-help p {
-  padding: 8px 0;
-  line-height: 1.7;
+.help-bubble {
+  display: none;
+  position: absolute;
+  top: 36px;
+  left: 0;
+  width: 100%;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 6px 24px #0002;
+  font-size: 0.65rem;
+  line-height: 1.5;
+}
+.setting-help.open .help-bubble {
+  display: block;
 }
 .settings-actions {
   margin-top: 20px;
@@ -42,4 +70,70 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 20px;
   }
+}
+
+.setting-field {
+  display: grid;
+  grid-template-columns: auto 28px 1fr;
+  align-items: center;
+  column-gap: 6px;
+  row-gap: 6px;
+}
+.setting-field > label {
+  display: contents;
+}
+.setting-label {
+  grid-column: 1;
+  grid-row: 1;
+  padding: 0;
+}
+.setting-field > label > input,
+.setting-field > label > select {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+.setting-field > label.check {
+  display: flex;
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0;
+}
+.setting-help {
+  position: static;
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.help-bubble::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 20px;
+  width: 10px;
+  height: 10px;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  rotate: 45deg;
+}
+
+.help-button {
+  width: 14px;
+  height: 14px;
+  min-height: 14px;
+  font-size: 0.5rem;
+}
+.setting-field {
+  grid-template-columns: auto 14px 1fr;
+}
+
+.help-button {
+  position: relative;
+  touch-action: none;
+  user-select: none;
+}
+.help-button::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
 }

@@ -4,18 +4,15 @@ import { Component, computed, inject } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
-import { StorageStatus } from './shared/storage-status/storage-status';
-import { BuildInfo } from './core/build-info';
 import { Theme } from './core/theme/theme';
 @Component({
   selector: 'app-root',
-  imports: [StorageStatus, TranslatePipe, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [TranslatePipe, RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
 export class App {
   readonly configuration = inject(CaptureConfiguration);
-  readonly version = inject(BuildInfo).value;
   constructor() {
     void this.configuration.load();
   }
@@ -27,7 +24,6 @@ export class App {
     ),
     { initialValue: this.router.url },
   );
-  readonly showStorage = computed(() => this.currentUrl().split(/[?#]/)[0] === '/others/rules');
   readonly tableActive = computed(() => {
     const path = this.currentUrl().split(/[?#]/)[0];
     return path === '/' || path === '/score' || path.startsWith('/score/');

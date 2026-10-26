@@ -19,7 +19,7 @@ for (const count of [3, 4])
       await prompt(page)
         .getByRole('button', { name: /Declare Riichi/ })
         .click();
-      await expect(table.locator('.table-pot strong')).toHaveText('1,000');
+      await expect(page.locator('.round-status .table-pot strong')).toHaveText('1,000');
       await expect(table.locator('.player-seat').nth(1).locator('.player-points')).toHaveText(
         count === 3 ? '34,000' : '24,000',
       );
@@ -37,6 +37,6 @@ for (const count of [3, 4])
           .violations,
       ).toEqual([]);
       await recordDraw(page, ['Player 2']);
-      await expect(table.locator('.table-round')).toHaveText('east 2');
+      await expect(page.locator('.round-status .table-round')).toHaveText('east 2');
     });
   }

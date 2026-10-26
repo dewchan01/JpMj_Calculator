@@ -1,5 +1,7 @@
 @if (!installed() && !dismissed()) {
   <dialog
+    appDialogBackdrop
+    (close)="dismissed.set(true)"
     #popup
     class="install-banner"
     [attr.aria-label]="'Install app' | t"

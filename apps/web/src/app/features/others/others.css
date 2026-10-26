@@ -1,11 +1,9 @@
 :host {
   display: block;
-  max-width: 760px;
-  margin-inline: auto;
 }
 h1 {
   font-size: 2rem;
-  margin: 12px 0 24px;
+  margin: 0 0 24px;
 }
 h2 {
   font-size: 1.05rem;
@@ -58,10 +56,8 @@ small {
   font-size: 0.7rem;
   overflow-wrap: anywhere;
 }
-.back-link {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
+.back-link:hover {
+  background: var(--tray-surface);
 }
 .other-detail {
   padding: 24px;
@@ -110,4 +106,22 @@ dd {
   .other-list a {
     min-height: 60px;
   }
+}
+
+.option-group + .option-group {
+  margin-top: 24px;
+}
+.option-group h2 {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.entry-mark svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }

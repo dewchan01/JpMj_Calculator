@@ -1,3 +1,4 @@
+import { DialogBackdrop } from '../../../shared/dialog-backdrop';
 import { DiceSimulator } from '../../../shared/dice-simulator/dice-simulator';
 import {
   Component,
@@ -10,7 +11,8 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { settingGroups, type SettingField } from '../../../shared/rules/settings-fields';
 import { newId } from '../../../core/id/new-id';
 import { I18n, TranslatePipe } from '../../../core/i18n/i18n';
 import { Repository } from '../../matches/data-access/repository';
@@ -84,9 +86,9 @@ type Panel =
   | 'results';
 @Component({
   imports: [
+    DialogBackdrop,
     FormsModule,
     DecimalPipe,
-    RouterLink,
     TranslatePipe,
     TableSummary,
     TileInput,
@@ -100,7 +102,32 @@ type Panel =
   styleUrl: './game-table.css',
 })
 export class GameTable {
+  private readonly router = inject(Router);
+  readonly settingGroups = settingGroups;
+  readonly savedSettings = computed<Record<string, string | number | boolean>>(() => {
+    const m = this.match();
+    if (!m) return {};
+    const { uma, ...table } = tableRules(m.rules);
+    return {
+      ...table,
+      ...ruleSettings(m.rules),
+      startingPoints: m.rules.startingPoints,
+      kiriage: m.rules.kiriage,
+      openTanyao: m.rules.openTanyao,
+      ...Object.fromEntries(uma.map((value, i) => ['uma' + (i + 1), value])),
+    };
+  });
+  settingValue(field: SettingField): string {
+    const value = this.savedSettings()[field.key];
+    if (typeof value === 'boolean') return this.i18n.t(value ? 'Enabled' : 'Disabled');
+    const option = field.options?.find((option) => option.value === value);
+    if (option) return this.i18n.t(option.label);
+    return typeof value === 'number'
+      ? new Intl.NumberFormat(this.i18n.locale()).format(value)
+      : value || '—';
+  }
   readonly indicatorKinds = ['dora', 'ura'] as const;
+  readonly indicatorKind = signal<'dora' | 'ura'>('dora');
   readonly i18n = inject(I18n);
   private readonly repo = inject(Repository);
   private readonly route = inject(ActivatedRoute);
@@ -110,6 +137,25 @@ export class GameTable {
   readonly now = signal(Date.now());
   readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('prompt');
   readonly panel = signal<Panel>('menu');
+  readonly panelParents = signal<Panel[]>([]);
+  readonly canDismissPrompt = () => this.panelParents().length === 0;
+  navigatePanel(panel: Panel): void {
+    if (panel === this.panel()) return;
+    this.panelParents.update((parents) => [...parents, this.panel()]);
+    this.panel.set(panel);
+    this.error.set('');
+  }
+  backPanel(): void {
+    const parents = this.panelParents();
+    const previous = parents.at(-1);
+    if (!previous) {
+      this.close();
+      return;
+    }
+    this.panelParents.set(parents.slice(0, -1));
+    this.panel.set(previous);
+    this.error.set('');
+  }
   readonly playerMode = signal('all');
   readonly book = computed(() =>
     this.match() ? balances(this.match()!) : { players: {}, table: 0 },
@@ -238,6 +284,9 @@ export class GameTable {
     return this.players.find((p) => p.id === id)?.name ?? id;
   }
   panelTitle(): string {
+    if (this.panel() === 'indicators')
+      return this.indicatorKind() === 'dora' ? 'Dora indicators' : 'Ura indicators';
+    if (this.panel() === 'player' && this.playerMode() === 'riichi') return 'Riichi';
     const titles: Record<Panel, string> = {
       menu: 'Game menu',
       player: 'Player actions',
@@ -324,6 +373,9 @@ export class GameTable {
           },
           live: initialLive(match),
         });
+      const current = this.match()!;
+      if (!current.ended && current.clock && !current.clock.runningSince)
+        await this.persist({ ...current, clock: clockAt(current.clock, true) });
       this.basis = match.players[0].id;
     } catch (e) {
       this.fail(e);
@@ -363,6 +415,7 @@ export class GameTable {
   open(panel: Panel, player?: string): void {
     this.playerMode.set('all');
     this.error.set('');
+    this.panelParents.set([]);
     this.panel.set(panel);
     if (player) {
       this.selected = player;
@@ -384,12 +437,29 @@ export class GameTable {
     this.dialog().nativeElement.close();
     this.error.set('');
   }
+  openIndicators(kind: 'dora' | 'ura'): void {
+    this.open('indicators');
+    this.indicatorKind.set(kind);
+  }
   async pause(): Promise<void> {
     await this.act(async () => {
       const m = this.match()!;
       if (m.ended) return;
       await this.persist({ ...m, clock: clockAt(m.clock!, this.paused()) });
       this.close();
+    });
+  }
+  async returnToTables(): Promise<void> {
+    await this.act(async () => {
+      const m = this.match()!;
+      if (!m.ended)
+        await this.persist({
+          ...m,
+          clock: m.clock
+            ? clockAt(m.clock, false)
+            : { elapsedMs: 0, runningSince: null, handStartMs: 0 },
+        });
+      await this.router.navigateByUrl('/');
     });
   }
   async riichi(): Promise<void> {
@@ -417,7 +487,7 @@ export class GameTable {
         : (this.players.find((p) => p.id !== this.selected)?.id ?? '');
     this.called = 0;
     this.upgradeId = this.currentPlayer.melds.find((m) => m.type === 'pon')?.id ?? '';
-    this.panel.set('call');
+    this.navigatePanel('call');
   }
   async undoAction(): Promise<void> {
     await this.act(async () => {
@@ -438,8 +508,8 @@ export class GameTable {
     if (action.type === 'kita') this.startCall('kita');
   }
   showPlayerDifference(player: string): void {
-    this.basis = player;
-    this.comparisonPlayer.update((current) => (current === player ? '' : player));
+    if (player) this.basis = player;
+    this.comparisonPlayer.set(player);
   }
   async saveCall(): Promise<void> {
     await this.act(async () => {
@@ -544,14 +614,19 @@ export class GameTable {
         .filter((meld) => !['chi', 'pon'].includes(meld.type)).length;
       if (kans > 4) throw new Error('At most four Kans can be recorded in a hand.');
       await this.persist({ ...m, live }, true);
-      if (!['chi', 'pon', 'kita'].includes(this.callType)) this.panel.set('indicators');
-      else this.close();
+      if (!['chi', 'pon', 'kita'].includes(this.callType)) {
+        this.indicatorKind.set('dora');
+        this.open('indicators');
+      } else this.close();
     });
   }
   async saveIndicators(): Promise<void> {
     await this.act(async () => {
       const m = this.match()!;
-      const live = { ...(m.live ?? emptyLive()), dora: this.dora, ura: this.ura };
+      const live = {
+        ...(m.live ?? emptyLive()),
+        [this.indicatorKind()]: this.indicatorKind() === 'dora' ? this.dora : this.ura,
+      };
       const kans = Object.values(live.players)
         .flatMap((p) => p.melds)
         .filter((meld) => !['chi', 'pon'].includes(meld.type)).length;
@@ -569,7 +644,7 @@ export class GameTable {
     this.winners = {};
     this.method = 'ron';
     this.discarder = this.players[0]?.id ?? '';
-    this.panel.set('outcome');
+    this.navigatePanel('outcome');
   }
   nextWinners(): void {
     this.error.set('');
@@ -592,7 +667,7 @@ export class GameTable {
     this.claims = {};
     this.firstTurn = false;
     this.wareme = this.match()?.live?.waremePlayerId ?? '';
-    this.panel.set('hand');
+    this.navigatePanel('hand');
   }
   nextHand(): void {
     this.error.set('');
@@ -603,7 +678,7 @@ export class GameTable {
       this.error.set('Enter the concealed hand and select its winning tile.');
       return;
     }
-    this.panel.set('details');
+    this.navigatePanel('details');
   }
   get claimOptions(): { key: string; label: string }[] {
     const tsumo = this.method === 'tsumo',
@@ -721,7 +796,7 @@ export class GameTable {
       if (!round.isValid) throw new Error(round.errors.join('\n'));
       this.inputs = candidate;
       this.round = round;
-      this.panel.set('review');
+      this.navigatePanel('review');
     } catch (e) {
       this.fail(e);
     }
@@ -745,7 +820,7 @@ export class GameTable {
       return;
     }
     this.error.set('');
-    this.panel.set('review');
+    this.navigatePanel('review');
   }
   async settle(): Promise<void> {
     await this.act(async () => {
@@ -800,7 +875,7 @@ export class GameTable {
       const updated = finishMatch(m, newId());
       updated.events[updated.events.length - 1].liveBefore = structuredClone(m.live ?? emptyLive());
       await this.persist({ ...updated, clock: clockAt(m.clock!, false) });
-      this.panel.set('results');
+      this.open('results');
     });
   }
   async undo(): Promise<void> {
@@ -816,7 +891,7 @@ export class GameTable {
       const clock = clockAt(m.clock!, false);
       clock.handStartMs = Math.max(0, clock.handStartMs - (last.durationMs ?? 0));
       await this.persist({ ...updated, live, clock });
-      this.panel.set('history');
+      this.navigatePanel('history');
     });
   }
   async saveInfo(): Promise<void> {
@@ -847,12 +922,6 @@ export class GameTable {
       [order[a], order[b]] = [order[b], order[a]];
       await this.persist({ ...m, viewSeats: order });
       this.close();
-    });
-  }
-  async toggleDifference(): Promise<void> {
-    await this.act(async () => {
-      const m = this.match()!;
-      await this.persist({ ...m, showPointDifferences: !m.showPointDifferences });
     });
   }
   rollDice(): void {

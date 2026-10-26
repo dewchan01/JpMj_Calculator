@@ -2,6 +2,7 @@
   {{ buttonText() ?? label() | t }}
 </button>
 <dialog
+  appDialogBackdrop
   #dialog
   [attr.aria-label]="label() | t"
   (close)="opened.set(false)"

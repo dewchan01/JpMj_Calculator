@@ -1461,3 +1461,137 @@ footer {
   font-variant-numeric: tabular-nums;
   font-size: 0.75rem;
 }
+
+.workspace:not(.live-page) .page-heading {
+  padding-top: 0;
+}
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+  margin-bottom: 16px;
+}
+.back-link:hover {
+  background: var(--tray-surface);
+}
+
+.back-button,
+.back-link.back-button {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+  line-height: 1;
+}
+.back-button svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.back-button:hover {
+  background: var(--tray-surface);
+}
+
+@media (max-width: 700px) {
+  .workspace main:has(.setup-tools) {
+    min-height: 0;
+    padding-bottom: 8px;
+  }
+}
+
+.palette-tile[data-tile-index] {
+  touch-action: none;
+}
+
+:root {
+  --field-control-height: 46px;
+  --field-control-padding: 10px 12px;
+  --field-font-size: 1rem;
+  --field-label-size: 0.85rem;
+}
+.form-compact {
+  --field-control-height: 40px;
+  --field-control-padding: 8px 12px;
+}
+label,
+.field-label {
+  font-size: var(--field-label-size);
+  font-weight: 550;
+}
+.field-label {
+  display: block;
+}
+input:not([type='checkbox']),
+select,
+.field-control {
+  min-height: var(--field-control-height);
+  padding: var(--field-control-padding);
+  font-size: var(--field-font-size);
+  color: var(--green);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 100%;
+  min-width: 0;
+}
+select {
+  padding-right: 28px;
+}
+.field-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  text-align: left;
+}
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+}
+.icon-button svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.back-link.back-button,
+.quick-score-back {
+  position: sticky;
+  top: calc(var(--app-header-height, 0px) + 12px);
+  z-index: 21;
+  box-shadow: 0 3px 12px #0002;
+}

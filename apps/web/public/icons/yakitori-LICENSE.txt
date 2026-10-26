@@ -1,0 +1,10 @@
+Yakitori Mahjong marker: icons/yakitori.svg
+
+Vector adaptation of "Mahjong yakitori.jpg" by Cangjie6.
+Source: https://commons.wikimedia.org/wiki/File:Mahjong_yakitori.jpg
+License: Creative Commons Attribution-ShareAlike 4.0 International
+https://creativecommons.org/licenses/by-sa/4.0/
+
+Changes: redrawn as a simplified transparent SVG, with the photo background
+and Japanese lettering omitted for legibility at small sizes.
+This adapted SVG is distributed under CC BY-SA 4.0.

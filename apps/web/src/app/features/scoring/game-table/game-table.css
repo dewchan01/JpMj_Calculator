@@ -14,6 +14,22 @@
   justify-content: space-between;
   gap: 10px;
   min-height: 44px;
+  flex-wrap: wrap;
+}
+.round-status {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--subtle-surface);
+  font-size: 1rem;
+}
+.round-status > span {
+  white-space: nowrap;
 }
 h1 {
   font-size: 1.1rem;
@@ -32,18 +48,53 @@ h1 {
   color: var(--muted);
 }
 .live-table {
-  flex: 0 0 auto;
-  height: min(680px, calc(100dvh - var(--app-header-height, 0px) - 200px));
+  flex: 1;
   min-height: 0;
 }
-.indicator-bar,
-.game-bottom {
+.indicator-bar {
   display: flex;
   gap: 8px;
 }
 .indicator-bar {
-  flex: 1;
-  min-height: 48px;
+  flex: 0 0 80px;
+  min-height: 64px;
+}
+.game-tools {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 44px;
+}
+.game-tools .floating-menu {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  box-shadow: none;
+}
+.saved-rule-group {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+.saved-rule-group summary {
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 650;
+}
+.saved-rule-group dl {
+  margin: 0;
+}
+.saved-rule-group dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+}
+.saved-rule-group dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 600;
 }
 .indicator-bar button {
   border: 1px solid var(--border);
@@ -93,12 +144,6 @@ h1 {
   max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-.game-bottom {
-  justify-content: space-between;
-}
-.game-bottom .primary {
-  flex: 1;
 }
 .floating-menu {
   border-radius: 50%;
@@ -215,11 +260,12 @@ h1 {
 }
 @media (max-width: 700px) {
   .live-table {
-    height: min(calc(100vw + 28px), calc(100dvh - 200px));
+    height: auto;
   }
   .game-shell {
     height: calc(100dvh - 16px - env(safe-area-inset-bottom));
     min-height: 350px;
+    padding: 4px;
   }
   .game-heading {
     min-height: 40px;
@@ -231,4 +277,65 @@ h1 {
   .button-grid button {
     padding: 10px 6px;
   }
+}
+
+.indicator-bar button {
+  display: grid;
+  grid-template-rows: 20px 1fr;
+  align-items: start;
+  justify-items: center;
+  gap: 2px;
+}
+.indicator-preview {
+  align-items: center;
+  min-height: 38px;
+}
+@media (max-width: 700px) {
+  .game-shell {
+    padding-inline: 0;
+  }
+}
+
+.menu-list button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+}
+.menu-list svg,
+.menu-back svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.prompt-heading h2 {
+  flex: 1;
+}
+.menu-back {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  min-height: 40px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.close-prompt {
+  display: grid;
+  place-items: center;
+}
+.close-prompt svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
 }

@@ -1,4 +1,11 @@
-<a class="text-link" routerLink="/others">← {{ 'Others' | t }}</a>
+<a
+  class="back-link back-button"
+  routerLink="/others"
+  [attr.aria-label]="'Others' | t"
+  [title]="'Others' | t"
+>
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m7-7-7 7 7 7" /></svg>
+</a>
 <section class="page-heading">
   <p class="eyebrow">{{ 'Know your rules' | t }}</p>
   <h1>{{ 'Transparent by design.' | t }}</h1>

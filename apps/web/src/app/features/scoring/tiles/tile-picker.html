@@ -6,6 +6,7 @@
         @for (tile of row.tiles; track tile.id) {
           <button
             class="tile palette-tile"
+            [attr.data-tile-index]="dragIndex(tile)"
             (click)="tilePicked.emit(tile)"
             [attr.aria-label]="label(tile)"
           >
@@ -22,6 +23,7 @@
         @for (tile of reds(); track tile.id) {
           <button
             class="tile palette-tile"
+            [attr.data-tile-index]="dragIndex(tile)"
             (click)="tilePicked.emit(tile)"
             [attr.aria-label]="label(tile)"
           >

@@ -1,7 +1,9 @@
 <section class="card">
   <div class="section-heading spread">
     <h2>{{ 'Auditable hand history' | t }}</h2>
-    <button class="secondary" (click)="exportRequested.emit()">{{ 'Export JSON' | t }}</button>
+    @if (!readOnly()) {
+      <button class="secondary" (click)="exportRequested.emit()">{{ 'Export JSON' | t }}</button>
+    }
   </div>
   <p class="hint">
     {{
@@ -116,11 +118,13 @@
       }
     </details>
   }
-  <button
-    class="secondary danger"
-    (click)="undoRequested.emit()"
-    [disabled]="busy() || !match()?.events?.length"
-  >
-    {{ 'Undo last ledger event' | t }}
-  </button>
+  @if (!readOnly()) {
+    <button
+      class="secondary danger"
+      (click)="undoRequested.emit()"
+      [disabled]="busy() || !match()?.events?.length"
+    >
+      {{ 'Undo last ledger event' | t }}
+    </button>
+  }
 </section>

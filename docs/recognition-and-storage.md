@@ -155,7 +155,7 @@ script-created storage proactively for inactive origins in applicable browsing c
 Storage belongs to an origin (scheme, hostname and port). `localhost:4200`, `localhost:4300` and a
 deployed HTTPS site have separate databases. Switching URLs does not migrate matches.
 
-The app shows `navigator.storage.estimate()` usage and quota on every page. It refreshes after
+The app shows `navigator.storage.estimate()` usage and quota below the grouped list on the Others page. It refreshes after
 match/draft writes and deletions, on window focus, every 30 seconds, and through a manual refresh
 button. Warnings appear at 80% and become urgent at 95%. Estimates cover the entire origin,
 including offline caches; they are not an exact database size or a guarantee that a save will fit.

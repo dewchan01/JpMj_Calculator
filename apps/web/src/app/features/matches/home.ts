@@ -1,3 +1,4 @@
+import { DialogBackdrop } from '../../shared/dialog-backdrop';
 import { newId } from '../../core/id/new-id';
 import { TableSetup } from './table-setup';
 import { RuleLibrary } from '../settings/rule-library';
@@ -17,6 +18,7 @@ import { DiceSimulator } from '../../shared/dice-simulator/dice-simulator';
 import { emptyLive } from '../../../../../../packages/mahjong-core/live';
 @Component({
   imports: [
+    DialogBackdrop,
     ErrorNotice,
     InstallBanner,
     RulePicker,
@@ -32,6 +34,85 @@ import { emptyLive } from '../../../../../../packages/mahjong-core/live';
   styleUrl: './home.css',
 })
 export class Home {
+  readonly pickerSeat = signal<number | null>(null);
+  readonly playerPanel = signal<'list' | 'add'>('list');
+  readonly canDismissPlayers = () => this.playerPanel() !== 'add';
+  readonly playerSearch = signal('');
+  readonly playerFilter = signal<'all' | 'available' | 'seated'>('all');
+  readonly playerSort = signal<'asc' | 'desc' | 'newest'>('asc');
+  readonly playerPage = signal(0);
+  readonly pageSize = 4;
+  readonly filteredPlayers = computed(() => {
+    const query = this.playerSearch().trim().toLocaleLowerCase();
+    const players = this.playerLibrary
+      .players()
+      .filter((p) => p.name.toLocaleLowerCase().includes(query))
+      .filter(
+        (p) =>
+          this.playerFilter() === 'all' ||
+          this.setup().names.slice(0, this.count()).includes(p.name) ===
+            (this.playerFilter() === 'seated'),
+      );
+    if (this.playerSort() === 'newest') return players.reverse();
+    const direction = this.playerSort() === 'asc' ? 1 : -1;
+    return players.sort(
+      (a, b) => direction * a.name.localeCompare(b.name, this.i18n.locale(), { numeric: true }),
+    );
+  });
+  readonly playerPages = computed(() =>
+    Math.max(1, Math.ceil(this.filteredPlayers().length / this.pageSize)),
+  );
+  readonly visiblePlayers = computed(() =>
+    this.filteredPlayers().slice(
+      this.playerPage() * this.pageSize,
+      (this.playerPage() + 1) * this.pageSize,
+    ),
+  );
+  openPlayers(dialog: HTMLDialogElement, seat: number | null = null): void {
+    this.pickerSeat.set(seat);
+    this.playerSearch.set('');
+    this.playerFilter.set('all');
+    this.playerPage.set(0);
+    this.playerError.set('');
+    this.playerPanel.set('list');
+    dialog.showModal();
+  }
+  filterPlayers(event: Event): void {
+    this.playerSearch.set((event.target as HTMLInputElement).value);
+    this.playerPage.set(0);
+  }
+  filterSeats(event: Event): void {
+    this.playerFilter.set(
+      (event.target as HTMLSelectElement).value as 'all' | 'available' | 'seated',
+    );
+    this.playerPage.set(0);
+  }
+  sortPlayers(sort: 'asc' | 'desc' | 'newest'): void {
+    this.playerSort.set(sort);
+    this.playerPage.set(0);
+  }
+  alreadySeated(name: string): boolean {
+    return (
+      this.pickerSeat() !== null &&
+      this.setup()
+        .names.slice(0, this.count())
+        .some((other, index) => index !== this.pickerSeat() && other === name)
+    );
+  }
+  selectPlayer(id: string): boolean {
+    const index = this.pickerSeat();
+    const player = this.playerLibrary.players().find((player) => player.id === id);
+    if (index === null || !player) return false;
+    if (this.alreadySeated(player.name)) {
+      this.playerError.set('Choose a different player for each seat.');
+      return false;
+    }
+    this.setup.update((setup) => ({
+      ...setup,
+      names: setup.names.map((name, seat) => (seat === index ? player.name : name)),
+    }));
+    return true;
+  }
   swapA = 0;
   swapB = 1;
   readonly diceRequest = signal(0);
@@ -40,12 +121,6 @@ export class Home {
     return this.setup()
       .names.slice(0, this.count())
       .map((name, i) => name.trim() || this.i18n.t(`Player ${i + 1}`));
-  }
-  savedPlayerId(index: number): string {
-    return (
-      this.playerLibrary.players().find((player) => player.name === this.setup().names[index])
-        ?.id ?? ''
-    );
   }
   swapPlayers(): void {
     const names = this.activeNames();
@@ -72,17 +147,27 @@ export class Home {
       ...setup,
       names: [...names, ...setup.names.slice(this.count())],
     }));
-    this.seatNotice.set('Positions randomized.');
+    this.seatNotice.set('');
   }
   readonly playerError = signal('');
   readonly playerLibrary = inject(PlayerLibrary);
   readonly playerName = new FormControl('', { nonNullable: true });
-  addPlayer(): void {
+  addPlayer(dialog?: HTMLDialogElement): void {
     this.playerError.set('');
     try {
-      this.playerLibrary.add(this.playerName.value);
+      const player = this.playerLibrary.add(this.playerName.value);
       this.playerName.reset();
       this.playerError.set('');
+      if (this.pickerSeat() !== null) {
+        if (this.selectPlayer(player.id)) dialog?.close();
+      } else {
+        this.playerPanel.set('list');
+        this.playerSearch.set('');
+        this.playerFilter.set('all');
+        this.playerPage.set(
+          Math.floor(this.filteredPlayers().findIndex((p) => p.id === player.id) / this.pageSize),
+        );
+      }
     } catch (e) {
       this.playerError.set(e instanceof Error ? e.message : 'Could not save player.');
     }
@@ -90,17 +175,10 @@ export class Home {
   removePlayer(id: string): void {
     try {
       this.playerLibrary.remove(id);
+      this.playerPage.set(Math.min(this.playerPage(), this.playerPages() - 1));
     } catch {
       this.playerError.set('Could not save player.');
     }
-  }
-  choosePlayer(index: number, id: string): void {
-    const player = this.playerLibrary.players().find((p) => p.id === id);
-    if (player)
-      this.setup.update((setup) => ({
-        ...setup,
-        names: setup.names.map((name, i) => (i === index ? player.name : name)),
-      }));
   }
   readonly library = inject(RuleLibrary);
   readonly i18n = inject(I18n);

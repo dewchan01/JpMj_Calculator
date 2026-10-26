@@ -4,7 +4,7 @@
 }
 <div class="setup-tools" [attr.aria-label]="'Table tools' | t" role="group">
   <button
-    (click)="playersDialog.showModal()"
+    (click)="openPlayers(playersDialog)"
     [attr.aria-label]="'Saved players' | t"
     [title]="'Saved players' | t"
   >
@@ -44,62 +44,58 @@
 </div>
 <p class="seat-notice" role="status">{{ seatNotice() | t }}</p>
 <div class="home-grid home-content">
-  <section class="card setup-card">
+  <section class="card setup-card form-compact">
     <div class="section-heading">
-      <span class="step">01</span>
       <h1 class="setup-heading">{{ 'Set the table' | t }}</h1>
       <a class="text-link quick-score-link" routerLink="/score">{{ 'Quick score' | t }}</a>
     </div>
     <div class="segmented" [attr.aria-label]="'Player count' | t">
       <button [class.selected]="count() === 4" (click)="setCount(4)">
         {{ '4 players' | t }}
-        <small>{{ 'Yonma' | t }}</small>
       </button>
       <button [class.selected]="count() === 3" (click)="setCount(3)">
         {{ '3 players' | t }}
-        <small>{{ 'Sanma' | t }}</small>
       </button>
     </div>
     <app-rule-picker [profile]="rules()" />
-    @if (rules().preset !== 'm-league') {
+    <div class="setup-fields">
+      @if (rules().preset !== 'm-league') {
+        <label>
+          {{ 'Game length' | t }}
+          <select [formField]="setupForm.gameLength">
+            <option value="east">{{ 'East only' | t }}</option>
+            <option value="south">{{ 'East + South' | t }}</option>
+          </select>
+        </label>
+      }
       <label>
-        {{ 'Game length' | t }}
-        <select [formField]="setupForm.gameLength">
-          <option value="east">{{ 'East-only game' | t }}</option>
-          <option value="south">{{ 'East and South game' | t }}</option>
-        </select>
+        {{ 'Match name' | t }}
+        <input [formField]="setupForm.name" [attr.placeholder]="'Saturday afternoon' | t" />
       </label>
-    }
-    <label>
-      {{ 'Match name' | t }}
-      <input [formField]="setupForm.name" [attr.placeholder]="'Saturday afternoon' | t" />
-    </label>
+    </div>
     <div class="players-grid">
       @for (seat of seats.slice(0, count()); track seat; let i = $index) {
-        <label>
-          {{ seat + ' seat' | t }}
-          <select
-            [ngModel]="savedPlayerId(i)"
-            (ngModelChange)="choosePlayer(i, $event)"
-            [attr.aria-label]="('Saved players' | t) + ' ' + (seat | t)"
+        <div class="seat-choice">
+          <span class="field-label">{{ seat + ' seat' | t }}</span>
+          <button
+            class="field-control"
+            (click)="openPlayers(playersDialog, i)"
+            [attr.aria-label]="('Choose player' | t) + ' ' + (seat | t)"
           >
-            <option value="">{{ 'Choose a saved player' | t }}</option>
-            @for (player of playerLibrary.players(); track player.id) {
-              <option [value]="player.id">{{ player.name }}</option>
-            }
-          </select>
-          <input
-            [formField]="setupForm.names[i]"
-            [attr.placeholder]="'Player ' + (i + 1) | t"
-            [attr.aria-label]="seat + ' player name' | t"
-          />
-        </label>
+            <strong>{{ setup().names[i] || ('Player ' + (i + 1) | t) }}</strong>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="9" cy="8" r="3" />
+              <path d="M3 21v-3a6 6 0 0 1 12 0v3m4-13v8m-4-4h8" />
+            </svg>
+          </button>
+        </div>
       }
     </div>
     <p class="hint">
       {{ rules().startingPoints | number }} {{ 'points each' | t }}
-      <br />
-      {{ 'Dealer rotation, honba and match endings follow the selected rules.' | t }}
+      <span class="setup-note">
+        {{ 'Dealer rotation, honba and match endings follow the selected rules.' | t }}
+      </span>
     </p>
     <button class="primary full" (click)="create()" [disabled]="busy()">
       {{ 'Start match' | t }}
@@ -133,40 +129,136 @@
     <a class="text-link" routerLink="/score">{{ 'Just score a hand →' | t }}</a>
   </aside>
 </div>
-<dialog #playersDialog class="players-dialog" aria-labelledby="players-title">
+<dialog
+  appDialogBackdrop
+  [dialogCanDismiss]="canDismissPlayers"
+  #playersDialog
+  class="players-dialog"
+  aria-labelledby="players-title"
+>
   <header class="players-heading">
-    <h2 id="players-title">{{ 'Saved players' | t }}</h2>
-    <button (click)="playersDialog.close()">{{ 'Return' | t }}</button>
+    <h2 id="players-title">
+      {{ (pickerSeat() === null ? 'Saved players' : 'Choose player') | t }}
+      @if (pickerSeat() !== null) {
+        · {{ seats[pickerSeat()!] | t }}
+      }
+    </h2>
+    <button
+      class="back-button"
+      [attr.aria-label]="(playerPanel() === 'add' ? 'Back' : 'Close') | t"
+      [title]="(playerPanel() === 'add' ? 'Back' : 'Close') | t"
+      (click)="playerPanel() === 'add' ? playerPanel.set('list') : playersDialog.close()"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          [attr.d]="playerPanel() === 'add' ? 'M19 12H5m7-7-7 7 7 7' : 'm6 6 12 12M6 18 18 6'"
+        />
+      </svg>
+    </button>
   </header>
   <section class="player-library">
     <app-error-notice [message]="playerError()" />
-    <div class="action-row">
+    @if (playerPanel() === 'add') {
+      <div class="action-row">
+        <label>
+          {{ 'Player name' | t }}
+          <input
+            [formControl]="playerName"
+            maxlength="40"
+            (keydown.enter)="addPlayer(playersDialog)"
+          />
+        </label>
+        <button class="primary" (click)="addPlayer(playersDialog)">{{ 'Add player' | t }}</button>
+      </div>
+    } @else {
       <label>
-        {{ 'Player name' | t }}
-        <input [formControl]="playerName" maxlength="40" (keydown.enter)="addPlayer()" />
+        {{ 'Search players' | t }}
+        <input type="search" [value]="playerSearch()" (input)="filterPlayers($event)" />
       </label>
-      <button (click)="addPlayer()">{{ 'Add player' | t }}</button>
-    </div>
-    @for (player of playerLibrary.players(); track player.id) {
-      <div class="explain-row">
-        <span>{{ player.name }}</span>
-        <button
-          class="quiet danger"
-          (click)="removePlayer(player.id)"
-          [attr.aria-label]="('Remove' | t) + ' ' + player.name"
-        >
-          {{ 'Remove' | t }}
+      <div class="player-sort" role="group" [attr.aria-label]="'Sort players' | t">
+        <button (click)="sortPlayers('asc')" [attr.aria-pressed]="playerSort() === 'asc'">
+          A–Z
+        </button>
+        <button (click)="sortPlayers('desc')" [attr.aria-pressed]="playerSort() === 'desc'">
+          Z–A
+        </button>
+        <button (click)="sortPlayers('newest')" [attr.aria-pressed]="playerSort() === 'newest'">
+          {{ 'Newest first' | t }}
         </button>
       </div>
-    } @empty {
-      <p class="hint">{{ 'Save names here, then choose them for any seat.' | t }}</p>
+      <label class="player-filter">
+        {{ 'Filter players' | t }}
+        <select [value]="playerFilter()" (change)="filterSeats($event)">
+          <option value="all">{{ 'All players' | t }}</option>
+          <option value="available">{{ 'Available players' | t }}</option>
+          <option value="seated">{{ 'Seated players' | t }}</option>
+        </select>
+      </label>
+      <div class="player-results">
+        @for (player of visiblePlayers(); track player.id) {
+          <div class="player-result">
+            @if (pickerSeat() !== null) {
+              <button
+                class="player-select"
+                [disabled]="alreadySeated(player.name)"
+                (click)="selectPlayer(player.id) && playersDialog.close()"
+              >
+                {{ player.name }}
+                @if (alreadySeated(player.name)) {
+                  <small>{{ 'Already seated' | t }}</small>
+                }
+              </button>
+            } @else {
+              <span>{{ player.name }}</span>
+            }
+            @if (pickerSeat() === null) {
+              <button
+                class="quiet danger"
+                (click)="removePlayer(player.id)"
+                [attr.aria-label]="('Remove' | t) + ' ' + player.name"
+              >
+                {{ 'Remove' | t }}
+              </button>
+            }
+          </div>
+        } @empty {
+          <p class="hint">{{ 'No players found.' | t }}</p>
+        }
+      </div>
+      <div class="player-pagination">
+        <button
+          (click)="playerPage.set(playerPage() - 1)"
+          [disabled]="playerPage() === 0"
+          [attr.aria-label]="'Previous page' | t"
+        >
+          ‹
+        </button>
+        <span>{{ playerPage() + 1 }} / {{ playerPages() }} · {{ filteredPlayers().length }}</span>
+        <button
+          (click)="playerPage.set(playerPage() + 1)"
+          [disabled]="playerPage() + 1 >= playerPages()"
+          [attr.aria-label]="'Next page' | t"
+        >
+          ›
+        </button>
+        <button (click)="playerPanel.set('add'); playerError.set('')">
+          {{ 'New player' | t }}
+        </button>
+      </div>
     }
   </section>
 </dialog>
-<dialog #swapDialog class="players-dialog" aria-labelledby="swap-title">
+<dialog appDialogBackdrop #swapDialog class="players-dialog" aria-labelledby="swap-title">
   <header class="players-heading">
     <h2 id="swap-title">{{ 'Quick swap' | t }}</h2>
-    <button (click)="swapDialog.close()">{{ 'Return' | t }}</button>
+    <button
+      class="back-button"
+      [attr.aria-label]="'Close' | t"
+      [title]="'Close' | t"
+      (click)="swapDialog.close()"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
+    </button>
   </header>
   <div class="tool-body">
     <label>
@@ -194,10 +286,17 @@
     </button>
   </div>
 </dialog>
-<dialog #diceDialog class="players-dialog" aria-labelledby="setup-dice-title">
+<dialog appDialogBackdrop #diceDialog class="players-dialog" aria-labelledby="setup-dice-title">
   <header class="players-heading">
     <h2 id="setup-dice-title">{{ 'Dice' | t }}</h2>
-    <button (click)="diceDialog.close()">{{ 'Return' | t }}</button>
+    <button
+      class="back-button"
+      [attr.aria-label]="'Close' | t"
+      [title]="'Close' | t"
+      (click)="diceDialog.close()"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
+    </button>
   </header>
   <div class="tool-body"><app-dice-simulator [request]="diceRequest()" /></div>
 </dialog>

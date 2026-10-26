@@ -30,10 +30,12 @@
     <button class="quiet" (click)="reset()">{{ 'Reset filters' | t }}</button>
   }
 </div>
-<dialog #filterDialog class="filter-dialog" aria-labelledby="filter-title">
+<dialog appDialogBackdrop #filterDialog class="filter-dialog" aria-labelledby="filter-title">
   <header class="filter-dialog-heading">
     <h2 id="filter-title">{{ 'Filter records' | t }}</h2>
-    <button class="quiet" (click)="filterDialog.close()" [attr.aria-label]="'Close' | t">×</button>
+    <button class="icon-button" (click)="filterDialog.close()" [attr.aria-label]="'Close' | t">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
+    </button>
   </header>
   <div class="filters" [formGroup]="filterDraft">
     <label>
@@ -134,8 +136,32 @@
   </p>
   @for (game of games(); track game.match.id) {
     <article class="card game-card">
+      <div class="game-actions">
+        <a
+          class="icon-action"
+          [routerLink]="['/score', game.match.id]"
+          [attr.aria-label]="(game.match.ended ? 'Details' : 'Open table') | t"
+          [title]="(game.match.ended ? 'Details' : 'Open table') | t"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              [attr.d]="game.match.ended ? 'M5 3h14v18H5zM9 7h6m-6 5h6m-6 5h4' : 'm8 4 12 8-12 8Z'"
+            />
+          </svg>
+        </a>
+        <button
+          class="icon-action danger"
+          (click)="remove(game.match)"
+          [attr.aria-label]="('Delete' | t) + ' ' + game.match.name"
+          [title]="'Delete' | t"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7" />
+          </svg>
+        </button>
+      </div>
       <header>
-        <div>
+        <div class="game-description">
           <span class="eyebrow">
             {{ game.match.playerCount }}P ·
             {{ (game.match.gameLength === 'east' ? 'East-only game' : 'East and South game') | t }}
@@ -143,13 +169,31 @@
           <h2>
             <a [routerLink]="['/score', game.match.id]">{{ game.match.name }}</a>
           </h2>
-          <p class="hint">
-            {{ game.match.createdAt | date: 'medium' : undefined : i18n.locale() }} ·
-            {{ game.minutes }} {{ 'minutes' | t }} · {{ game.match.events.length }}
-            {{ 'events' | t }}
-          </p>
+          <div class="game-meta">
+            <p class="hint">
+              {{ game.match.createdAt | date: 'medium' : undefined : i18n.locale() }} ·
+              {{ game.minutes }} {{ 'minutes' | t }} · {{ game.match.events.length }}
+              {{ 'events' | t }}
+            </p>
+            <span
+              class="pill game-status"
+              [class.completed]="game.match.ended"
+              [class.ongoing]="!game.match.ended"
+              [class.paused]="
+                !game.match.ended && !!game.match.clock && !game.match.clock.runningSince
+              "
+            >
+              {{
+                (game.match.ended
+                  ? 'Completed'
+                  : game.match.clock && !game.match.clock.runningSince
+                    ? 'Paused'
+                    : 'In progress'
+                ) | t
+              }}
+            </span>
+          </div>
         </div>
-        <span class="pill">{{ (game.match.ended ? 'Completed' : 'In progress') | t }}</span>
       </header>
       <div
         class="table-scroll"
@@ -172,7 +216,7 @@
             @for (row of game.rows; track row.id) {
               <tr>
                 <td>{{ row.rank }}</td>
-                <th scope="row">{{ row.name }}</th>
+                <th scope="row" class="player-name" [title]="row.name">{{ row.name }}</th>
                 <td>{{ row.points | number }}</td>
                 <td>{{ game.match.ended ? (row.finalScore | number: '1.0-2') : '—' }}</td>
                 <td>
@@ -183,16 +227,6 @@
             }
           </tbody>
         </table>
-      </div>
-      <div class="game-actions">
-        <a class="text-link" [routerLink]="['/score', game.match.id]">{{ 'Open table' | t }} ↗</a>
-        <button
-          class="quiet danger"
-          (click)="remove(game.match)"
-          [attr.aria-label]="('Delete' | t) + ' ' + game.match.name"
-        >
-          {{ 'Delete' | t }}
-        </button>
       </div>
     </article>
   } @empty {

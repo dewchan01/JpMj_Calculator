@@ -14,6 +14,7 @@ export class MatchHistory {
   readonly match = input.required<Match | null>();
   readonly rules = input.required<RuleProfile>();
   readonly busy = input(false);
+  readonly readOnly = input(false);
   readonly exportRequested = output<void>();
   readonly undoRequested = output<void>();
   readonly events = computed(() => [...(this.match()?.events ?? [])].reverse());

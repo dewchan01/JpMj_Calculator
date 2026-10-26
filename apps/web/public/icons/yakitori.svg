@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 72" fill="none" stroke="#243d34" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+  <title>Yakitori Mahjong marker</title>
+  <metadata>Vector adaptation of Mahjong yakitori.jpg by Cangjie6, Wikimedia Commons, CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:Mahjong_yakitori.jpg</metadata>
+  <path d="M5 17 110 59q12 5 4 10-5 3-10-2"/>
+  <ellipse cx="16" cy="16" rx="4" ry="15" transform="rotate(23 16 16)"/>
+  <ellipse cx="96" cy="52" rx="4" ry="15" transform="rotate(23 96 52)"/>
+  <path d="M44 30 32 20q-5-5-1-11 5-7 13-3 5 2 7 9l5 8 14-13q5-4 12 0l8 5-27 15q-5 4 0 8l6 5 10-3-1 10-13-2-12 9q-8 5-12-2l-4-7-14 7q-7 3-10-3-3-6 2-10Z"/>
+  <path d="m35 4-2-4m10 5 1-5m5 11 5-4M67 16l12 4m-18 2 10 3M23 40l5 11m3-15 5 10m16 12-2 8m-4-1 8 2m13-20 9 12 7 1"/>
+  <circle cx="39" cy="14" r="2.6" fill="#243d34" stroke="none"/>
+</svg>

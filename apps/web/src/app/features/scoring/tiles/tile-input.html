@@ -14,50 +14,65 @@
     }
     <app-tile-entry-dialog [label]="'Enter ' + label()" buttonText="Enter">
       <ng-template>
-        <div class="selected-tiles" role="group" [attr.aria-label]="'Tile preview' | t">
-          @for (tile of tiles(); track tile.id; let index = $index) {
-            <button class="tile" (click)="remove(index)" [attr.aria-label]="removeLabel(tile)">
-              <app-tile-art [tile]="tile" [decorative]="true" />
-            </button>
-          }
+        <div appTileReorder (tileDropped)="dropTile($event)">
+          <div
+            class="selected-tiles tile-input-tray"
+            data-tile-drop-target="preview"
+            role="group"
+            [attr.aria-label]="'Tile preview' | t"
+          >
+            <div class="selected-tiles" appTileReorder (tileReordered)="reorderTiles($event)">
+              @for (tile of tiles(); track tile.id; let index = $index) {
+                <button
+                  class="tile"
+                  [attr.data-tile-index]="index"
+                  (click)="remove(index)"
+                  [attr.aria-label]="removeLabel(tile)"
+                >
+                  <app-tile-art [tile]="tile" [decorative]="true" />
+                </button>
+              }
+            </div>
+          </div>
+          <details
+            #picker
+            class="picker"
+            [open]="pickerOpen()"
+            (toggle)="pickerOpen.set(picker.open)"
+          >
+            <summary>{{ 'Choose tiles' | t }}</summary>
+            @if (pickerOpen()) {
+              <app-tile-picker
+                [playerCount]="playerCount()"
+                [redFives]="redFives()"
+                [dragEnabled]="true"
+                (tilePicked)="add($event)"
+              />
+            }
+          </details>
+          <details class="advanced">
+            <summary>{{ 'Type tile notation instead' | t }}</summary>
+            <label>
+              {{ label() | t }}
+              <input
+                [formField]="editForm.notation"
+                placeholder="4p 1z"
+                [attr.aria-describedby]="notationHintId"
+              />
+            </label>
+            <p class="hint" [id]="notationHintId">
+              {{
+                'Use m for characters, p for circles, s for bamboo, and z for honors (1–7: East, South, West, North, white, green, red). Example: 4p 1z = 4 circles and East. Enter the indicators shown on the table, not the bonus tiles.'
+                  | t
+              }}
+            </p>
+            <button class="secondary" (click)="edit()">{{ 'Apply notation' | t }}</button>
+            @if (error()) {
+              <app-error-notice [message]="error()" />
+            }
+          </details>
+          <app-photo-capture [playerCount]="playerCount()" (tilesConfirmed)="applyPhoto($event)" />
         </div>
-        <details
-          #picker
-          class="picker"
-          [open]="pickerOpen()"
-          (toggle)="pickerOpen.set(picker.open)"
-        >
-          <summary>{{ 'Choose tiles' | t }}</summary>
-          @if (pickerOpen()) {
-            <app-tile-picker
-              [playerCount]="playerCount()"
-              [redFives]="redFives()"
-              (tilePicked)="add($event)"
-            />
-          }
-        </details>
-        <details class="advanced">
-          <summary>{{ 'Type tile notation instead' | t }}</summary>
-          <label>
-            {{ label() | t }}
-            <input
-              [formField]="editForm.notation"
-              placeholder="4p 1z"
-              [attr.aria-describedby]="notationHintId"
-            />
-          </label>
-          <p class="hint" [id]="notationHintId">
-            {{
-              'Use m for characters, p for circles, s for bamboo, and z for honors (1–7: East, South, West, North, white, green, red). Example: 4p 1z = 4 circles and East. Enter the indicators shown on the table, not the bonus tiles.'
-                | t
-            }}
-          </p>
-          <button class="secondary" (click)="edit()">{{ 'Apply notation' | t }}</button>
-          @if (error()) {
-            <app-error-notice [message]="error()" />
-          }
-        </details>
-        <app-photo-capture [playerCount]="playerCount()" (tilesConfirmed)="applyPhoto($event)" />
       </ng-template>
     </app-tile-entry-dialog>
   </div>

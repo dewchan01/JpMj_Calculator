@@ -1,6 +1,6 @@
 import { openQuickScore } from './helpers/navigation';
 import { test, expect } from '@playwright/test';
-test.use({ storageState: { cookies: [], origins: [] } });
+test.use({ storageState: { cookies: [], origins: [] }, serviceWorkers: 'block' });
 
 for (const width of [390, 1280]) {
   test(`shared collection reorders without deleting tiles at ${width}px`, async ({ page }) => {
@@ -85,11 +85,18 @@ test('home offers installation, hides in standalone mode, and shows configured s
   await page.goto('/');
   await expect(page.getByRole('dialog', { name: 'Install app', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Next time', exact: true }).click();
-  await expect(page.locator('footer')).toContainText('v1.2.3 · Commit abcdef12');
-  await expect(page.getByRole('link', { name: 'Support: support@example.com' })).toHaveAttribute(
+  await expect(page.locator('footer')).toHaveCount(0);
+  await page.locator('.app-navigation a[href$="/others"]').click();
+  await page.getByRole('link', { name: 'Version', exact: true }).click();
+  await expect(page.locator('.other-detail')).toContainText('v1.2.3');
+  await expect(page.locator('.other-detail')).toContainText('abcdef12');
+  await page.locator('.back-link').click();
+  await page.getByRole('link', { name: 'Developer', exact: true }).click();
+  await expect(page.getByRole('link', { name: /Send email/ })).toHaveAttribute(
     'href',
     'mailto:support@example.com',
   );
+  await page.locator('.app-navigation a').first().click();
   await expect(page.locator('.local-badge')).toHaveCount(0);
   await page.addInitScript(() => {
     const original = window.matchMedia.bind(window);

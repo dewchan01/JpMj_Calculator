@@ -1,12 +1,41 @@
-<div class="dice" [class.rolling]="diceRolling()" aria-hidden="true">
-  @for (face of dice; track $index) {
-    <div class="die" [class.one]="face === 1">
-      @for (dot of dieDots; track dot) {
-        <span [class.visible]="diePips[face].includes(dot)"></span>
-      }
-    </div>
-  }
-</div>
+<button
+  class="dice-trigger"
+  [attr.aria-label]="'Roll two dice' | t"
+  [title]="'Roll two dice' | t"
+  (click)="rollDice()"
+  [disabled]="diceRolling()"
+>
+  <div
+    class="dice"
+    [class.rolling]="diceRolling()"
+    [class.settled]="!diceRolling()"
+    aria-hidden="true"
+  >
+    @for (face of dice; track $index) {
+      <div class="die-stage">
+        <div
+          class="die"
+          [attr.data-result]="face"
+          [style.--face-x]="orientations[face].x + 'deg'"
+          [style.--face-y]="orientations[face].y + 'deg'"
+        >
+          @for (side of faces; track side) {
+            <div
+              [class]="'die-face face-' + side"
+              [class.one]="side === 1"
+              [class.shown]="side === face"
+              [attr.data-face]="side"
+            >
+              @for (dot of dieDots; track dot) {
+                <span [class.visible]="diePips[side].includes(dot)"></span>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</button>
 <p class="dice-result" role="status">
   @if (diceRolling()) {
     {{ 'Rolling…' | t }}
@@ -14,6 +43,3 @@
     {{ dice[0] }} + {{ dice[1] }} = {{ dice[0] + dice[1] }}
   }
 </p>
-<button class="primary full" (click)="rollDice()" [disabled]="diceRolling()">
-  {{ 'Roll two dice' | t }}
-</button>

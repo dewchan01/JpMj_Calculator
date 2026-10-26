@@ -146,3 +146,18 @@
     --app-header-height: 0px;
   }
 }
+
+.workspace:not(.live-page) main {
+  padding-top: 24px;
+}
+@media (max-width: 700px) {
+  .workspace:not(.live-page) main {
+    padding-top: 16px;
+  }
+}
+
+@media (max-width: 700px) {
+  .workspace.live-page .shell {
+    padding-inline: 4px;
+  }
+}

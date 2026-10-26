@@ -47,3 +47,20 @@ details {
 .advanced {
   font-size: 0.75rem;
 }
+
+.tile-input-tray {
+  min-height: 80px;
+  padding: 8px;
+  margin-bottom: 12px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  background: var(--subtle-surface);
+}
+.tile-input-tray.tile-drop-active {
+  border-color: var(--green);
+  background: var(--tray-surface);
+  box-shadow: inset 0 0 0 1px var(--green);
+}
+.tile-input-tray .tile {
+  touch-action: none;
+}

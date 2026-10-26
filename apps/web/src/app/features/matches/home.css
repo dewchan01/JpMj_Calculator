@@ -2,7 +2,44 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
-  margin-bottom: 12px;
+  margin: 0 0 8px;
+}
+.home-content {
+  padding-top: 0;
+}
+.seat-choice > span {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.seat-choice > button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 52px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  background: var(--surface);
+  text-align: left;
+}
+.seat-choice strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.seat-choice svg {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
 }
 .setup-tools button {
   display: grid;
@@ -63,7 +100,7 @@
   margin: 0;
   font-size: 1rem;
 }
-.players-heading button {
+.players-heading button:not(.back-button) {
   min-height: 44px;
   padding: 8px 18px;
   background: var(--green);
@@ -71,11 +108,209 @@
   border-radius: 8px;
 }
 .player-library {
-  padding: 16px;
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+.player-library label {
+  margin: 0;
+}
+.player-sort {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.player-sort button,
+.player-pagination button {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--subtle-surface);
+  color: var(--green);
+}
+.player-sort button[aria-pressed='true'] {
+  background: var(--green);
+  color: var(--page);
+}
+.player-results {
+  min-height: 176px;
+}
+.player-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  border-bottom: 1px solid var(--border);
+}
+.player-result > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.player-select {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--subtle-surface);
+  color: var(--text);
+  text-align: left;
+}
+.player-select small {
+  color: var(--muted);
+  font-size: 0.65rem;
+}
+.player-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 0.7rem;
+}
+.player-pagination button {
+  min-width: 36px;
 }
 .player-library .action-row {
   display: flex;
   flex-wrap: wrap;
   align-items: end;
   gap: 8px;
+}
+
+.player-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+}
+.player-filter select {
+  flex: 1;
+  min-width: 0;
+  padding-block: 6px;
+  min-height: 36px;
+}
+
+.setup-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+.setup-fields label {
+  min-width: 0;
+}
+.setup-note {
+  display: block;
+}
+@media (max-width: 700px) {
+  .setup-card {
+    padding: 12px;
+  }
+  .setup-card .section-heading {
+    margin-bottom: 8px;
+    gap: 8px;
+  }
+  .setup-card .setup-heading {
+    font-size: 1.1rem;
+  }
+  .setup-card .segmented {
+    margin-bottom: 8px;
+  }
+  .setup-card .segmented button {
+    min-height: 36px;
+    padding: 6px;
+    font-size: 0.8rem;
+  }
+  .setup-fields {
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .setup-fields label {
+    font-size: 0.7rem;
+    margin: 0;
+  }
+  .setup-fields input,
+  .setup-fields select {
+    min-height: 36px;
+    padding: 6px 8px;
+    font-size: 0.75rem;
+    margin-top: 4px;
+    width: 100%;
+  }
+  .players-grid {
+    gap: 6px 8px;
+  }
+  .seat-choice > span {
+    font-size: 0.7rem;
+    margin-bottom: 3px;
+  }
+  .seat-choice > button {
+    min-height: 38px;
+    padding: 6px 8px;
+    font-size: 0.75rem;
+  }
+  .setup-card > .hint {
+    margin: 8px 0;
+    font-size: 0.65rem;
+  }
+  .setup-note {
+    display: none;
+  }
+  .setup-card > .primary {
+    min-height: 40px;
+    padding: 8px 12px;
+  }
+}
+
+@media (max-width: 370px) {
+  .setup-fields select {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 700px) {
+  .setup-card .setup-heading {
+    font-size: 1.3rem;
+  }
+  .setup-card .segmented button {
+    font-size: 1rem;
+  }
+  .setup-fields label,
+  .seat-choice > span {
+    font-size: 0.9rem;
+  }
+  .setup-fields input,
+  .setup-fields select {
+    font-size: 0.9rem;
+  }
+  .seat-choice > button {
+    font-size: 1rem;
+  }
+  .setup-card > .hint {
+    font-size: 0.8rem;
+  }
+  .setup-card > .primary {
+    font-size: 1rem;
+  }
+}
+
+.setup-fields label,
+.seat-choice > .field-label {
+  font-size: var(--field-label-size);
+}
+.setup-fields input,
+.setup-fields select,
+.seat-choice > .field-control {
+  min-height: var(--field-control-height);
+  padding: var(--field-control-padding);
+  font-size: var(--field-font-size);
+  border-color: var(--border);
+  border-radius: 8px;
+}
+.setup-fields select {
+  padding-right: 28px;
 }

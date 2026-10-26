@@ -1,13 +1,22 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { choosePlayer } from './helpers/players';
 
 for (const width of [390, 1280]) {
   test(`setup tools at ${width}px swap and randomize active players and open animated dice`, async ({
     page,
   }) => {
     await page.setViewportSize({ width, height: 800 });
+    await page.addInitScript(() =>
+      localStorage.setItem(
+        'riichi-players-v1',
+        JSON.stringify(['Alice', 'Bob', 'Cara', 'Dana'].map((name, i) => ({ id: 'p' + i, name }))),
+      ),
+    );
     await page.goto('/');
     const tools = page.getByRole('group', { name: 'Table tools', exact: true });
+    await expect(tools).toBeVisible();
+    await expect(tools.getByRole('button')).toHaveCount(4);
     expect(
       await tools
         .getByRole('button')
@@ -27,9 +36,7 @@ for (const width of [390, 1280]) {
     expect(toolBox.y + toolBox.height).toBeLessThanOrEqual(countBox.y);
     const seats = ['East', 'South', 'West', 'North'];
     for (const [index, name] of ['Alice', 'Bob', 'Cara', 'Dana'].entries()) {
-      await page
-        .getByRole('textbox', { name: seats[index] + ' player name', exact: true })
-        .fill(name);
+      await choosePlayer(page, seats[index], name);
     }
     await page.getByRole('button', { name: /3 players/ }).click();
     await tools.getByRole('button', { name: 'Quick swap', exact: true }).click();
@@ -42,22 +49,22 @@ for (const width of [390, 1280]) {
       .getByRole('combobox', { name: 'Second seat', exact: true })
       .selectOption({ label: 'West · Cara' });
     await swap.getByRole('button', { name: 'Swap positions', exact: true }).click();
-    await expect(page.getByRole('textbox', { name: 'South player name', exact: true })).toHaveValue(
+    await expect(page.getByRole('button', { name: 'Choose player South', exact: true })).toHaveText(
       'Cara',
     );
-    await expect(page.getByRole('textbox', { name: 'West player name', exact: true })).toHaveValue(
+    await expect(page.getByRole('button', { name: 'Choose player West', exact: true })).toHaveText(
       'Bob',
     );
     await tools.getByRole('button', { name: 'Random positions', exact: true }).click();
     await expect
       .poll(() =>
         page
-          .locator('.players-grid input')
-          .evaluateAll((inputs) => inputs.map((input) => (input as HTMLInputElement).value).sort()),
+          .locator('.seat-choice strong')
+          .evaluateAll((names) => names.map((name) => name.textContent!.trim()).sort()),
       )
       .toEqual(['Alice', 'Bob', 'Cara']);
     await page.getByRole('button', { name: /4 players/ }).click();
-    await expect(page.getByRole('textbox', { name: 'North player name', exact: true })).toHaveValue(
+    await expect(page.getByRole('button', { name: 'Choose player North', exact: true })).toHaveText(
       'Dana',
     );
     await tools.getByRole('button', { name: 'Dice', exact: true }).click();
@@ -73,7 +80,7 @@ for (const width of [390, 1280]) {
     await dice.getByRole('button', { name: 'Roll two dice', exact: true }).click();
     await expect(dice.locator('.dice')).not.toHaveClass(/rolling/);
     await expect(dice.locator('.die').first()).toHaveCSS('animation-name', 'none');
-    await dice.getByRole('button', { name: 'Return', exact: true }).click();
+    await dice.getByRole('button', { name: 'Close', exact: true }).click();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );

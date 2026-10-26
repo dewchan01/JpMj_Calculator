@@ -13,6 +13,15 @@ export class DiceSimulator {
   dice = [1, 1];
   private diceTimer: ReturnType<typeof setTimeout> | undefined;
   readonly dieDots = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+  readonly faces = [1, 2, 3, 4, 5, 6];
+  readonly orientations: Record<number, { x: number; y: number }> = {
+    1: { x: 0, y: 0 },
+    2: { x: -90, y: 0 },
+    3: { x: 0, y: -90 },
+    4: { x: 0, y: 90 },
+    5: { x: 90, y: 0 },
+    6: { x: 0, y: 180 },
+  };
   readonly diePips: Record<number, number[]> = {
     1: [4],
     2: [0, 8],
@@ -39,7 +48,7 @@ export class DiceSimulator {
     this.diceRolling.set(true);
     this.diceTimer = setTimeout(
       () => this.diceRolling.set(false),
-      matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 750,
+      matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 950,
     );
   }
 }

@@ -99,25 +99,6 @@
   <div class="shell">
     <main id="main">
       <router-outlet />
-      @if (showStorage()) {
-        <app-storage-status />
-      }
     </main>
   </div>
-  <footer>
-    <a href="https://github.com/FluffyStuff/riichi-mahjong-tiles">
-      {{ 'Tile artwork by FluffyStuff (CC0)' | t }}
-    </a>
-    <br />
-    {{ 'Scoring stays on this device. Photo API mode uploads selected images.' | t }}
-    <p class="build-details">
-      v{{ version().version }} · {{ 'Commit' | t }} {{ version().commit
-      }}{{ version().dirty ? ' *' : '' }}
-    </p>
-    @if (configuration.supportEmail()) {
-      <a [href]="'mailto:' + configuration.supportEmail()">
-        {{ 'Support' | t }}: {{ configuration.supportEmail() }}
-      </a>
-    }
-  </footer>
 </div>

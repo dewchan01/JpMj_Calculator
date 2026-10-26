@@ -9,8 +9,8 @@
 </section>
 <section class="card rule-library">
   <div class="segmented" [attr.aria-label]="'Player count' | t">
-    <button [class.selected]="count() === 3" (click)="setCount(3)">{{ '3 players' | t }}</button>
     <button [class.selected]="count() === 4" (click)="setCount(4)">{{ '4 players' | t }}</button>
+    <button [class.selected]="count() === 3" (click)="setCount(3)">{{ '3 players' | t }}</button>
   </div>
   <div class="form-grid">
     <label>
@@ -48,7 +48,7 @@
                 @if (field.type === 'checkbox') {
                   <input type="checkbox" [formControl]="form.controls[field.key]" />
                 }
-                {{ field.label | t }}
+                <span class="setting-label">{{ field.label | t }}</span>
                 @switch (field.type) {
                   @case ('number') {
                     <input
@@ -72,10 +72,28 @@
                 }
               </label>
               @if (field.hint) {
-                <details class="setting-help">
-                  <summary>{{ 'What does this mean?' | t }}</summary>
-                  <p>{{ field.hint | t }}</p>
-                </details>
+                <div class="setting-help" [class.open]="help() === field.key">
+                  <button
+                    type="button"
+                    class="help-button"
+                    [attr.aria-label]="(field.label | t) + ': ' + ('What does this mean?' | t)"
+                    [attr.aria-expanded]="help() === field.key"
+                    [attr.aria-describedby]="'hint-' + field.key"
+                    (pointerdown)="holdHelp(field.key, $event)"
+                    (pointerup)="help.set('')"
+                    (pointercancel)="help.set('')"
+                    (lostpointercapture)="help.set('')"
+                    (keydown)="helpKey(field.key, $event)"
+                    (keyup)="help.set('')"
+                    (blur)="help.set('')"
+                    (contextmenu)="$event.preventDefault()"
+                  >
+                    ?
+                  </button>
+                  <p class="help-bubble" role="tooltip" [id]="'hint-' + field.key">
+                    {{ field.hint | t }}
+                  </p>
+                </div>
               }
             </div>
           }
@@ -95,6 +113,5 @@
     @if (base().preset === 'custom' && base().name) {
       <button class="quiet danger" (click)="remove()">{{ 'Delete custom rules' | t }}</button>
     }
-    <a routerLink="/">{{ 'My table' | t }}</a>
   </div>
 </section>

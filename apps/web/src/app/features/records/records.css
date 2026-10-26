@@ -231,3 +231,145 @@ thead th {
     flex-wrap: wrap;
   }
 }
+
+.game-card {
+  position: relative;
+}
+.game-card header {
+  padding-right: 104px;
+  flex-wrap: wrap;
+}
+.game-actions {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  margin: 0;
+  gap: 6px;
+}
+.icon-action {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--green);
+}
+.icon-action:hover {
+  background: var(--tray-surface);
+}
+.icon-action svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.game-card header {
+  display: block;
+  padding-right: 0;
+}
+.game-card .eyebrow,
+.game-card h2 {
+  padding-right: 104px;
+}
+.game-description {
+  min-width: 0;
+  width: 100%;
+}
+.game-card table {
+  table-layout: fixed;
+  white-space: normal;
+}
+.game-card th,
+.game-card td {
+  padding: 12px 4px;
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+.game-card thead th {
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+.game-card th:nth-child(1) {
+  width: 10%;
+}
+.game-card th:nth-child(2) {
+  width: 24%;
+}
+.game-card th:nth-child(3) {
+  width: 23%;
+}
+.game-card th:nth-child(4) {
+  width: 20%;
+}
+.game-card th:nth-child(5) {
+  width: 23%;
+}
+.game-card .player-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.game-card .table-scroll {
+  overflow-x: hidden;
+}
+.game-card th:first-child,
+.game-card td:first-child {
+  padding-inline: 2px;
+}
+.game-card thead th:first-child {
+  white-space: nowrap;
+}
+
+.game-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 12px;
+}
+.game-meta .hint {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+.game-status {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.game-status.ongoing {
+  background: #e8f1ff;
+  color: #154c88;
+  border: 1px solid #abc9ec;
+}
+.game-status.completed {
+  background: #e7f3ea;
+  color: #285638;
+  border: 1px solid #b2d4bb;
+}
+.game-status.paused {
+  background: #fff3d7;
+  color: #704800;
+  border: 1px solid #ddc58f;
+}
+:host-context([data-theme='dark']) .game-status.ongoing {
+  background: #183a5c;
+  color: #c5e0ff;
+  border-color: #496b8d;
+}
+:host-context([data-theme='dark']) .game-status.completed {
+  background: #234631;
+  color: #c4e9ce;
+  border-color: #4b7659;
+}
+:host-context([data-theme='dark']) .game-status.paused {
+  background: #503e1c;
+  color: #ffe0a0;
+  border-color: #826a37;
+}

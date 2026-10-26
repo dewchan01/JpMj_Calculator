@@ -1,3 +1,4 @@
+import { DialogBackdrop } from '../../shared/dialog-backdrop';
 import { newId } from '../../core/id/new-id';
 import { FinalResults } from './final-results/final-results';
 import { QuickScoreSession } from './quick-score-session';
@@ -102,6 +103,7 @@ const emptyFlags = (): Flags => ({
 });
 @Component({
   imports: [
+    DialogBackdrop,
     FinalResults,
     ErrorNotice,
     TileInput,

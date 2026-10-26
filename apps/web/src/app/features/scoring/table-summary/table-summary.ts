@@ -1,19 +1,27 @@
 import { Component, computed, inject, input, output } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
+import { DecimalPipe, NgOptimizedImage } from '@angular/common';
 import { WINDS, type Wind } from '../../../../../../../packages/mahjong-core/index';
 import { I18n, TranslatePipe } from '../../../core/i18n/i18n';
 import type { LedgerEvent } from '../../../../../../../packages/mahjong-core/ledger';
 
 @Component({
   selector: 'app-table-summary',
-  imports: [DecimalPipe, TranslatePipe],
+  imports: [DecimalPipe, NgOptimizedImage, TranslatePipe],
   templateUrl: './table-summary.html',
   styleUrl: './table-summary.css',
-  host: { '[class.interactive]': 'interactive()', '[class.compact]': 'compact()' },
+  host: {
+    '[class.interactive]': 'interactive()',
+    '[class.compact]': 'compact()',
+    '(window:blur)': 'releaseComparison()',
+    '(document:visibilitychange)': 'releaseComparison()',
+  },
 })
 export class TableSummary {
   readonly interactive = input(false);
   readonly compact = input(false);
+  readonly liveControls = input(false);
+  readonly ended = input(false);
+  readonly handAction = output<void>();
   readonly playerAction = output<string>();
   readonly quickAction = output<{ player: string; type: string }>();
   readonly actionsDisabled = input(false);
@@ -22,6 +30,37 @@ export class TableSummary {
   readonly riichiPlayers = input<Record<string, string>>({});
   readonly pointDifference = output<string>();
   readonly differenceFrom = input('');
+  private comparisonHeld = false;
+  private heldPointer: number | null = null;
+  holdComparison(event: PointerEvent, player: string): void {
+    if (event.button !== 0 || this.comparisonHeld) return;
+    event.preventDefault();
+    this.heldPointer = event.pointerId;
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+    this.comparisonHeld = true;
+    this.pointDifference.emit(player);
+  }
+  holdKeyboard(event: KeyboardEvent, player: string): void {
+    if (![' ', 'Enter'].includes(event.key)) return;
+    event.preventDefault();
+    if (event.repeat || this.comparisonHeld) return;
+    this.comparisonHeld = true;
+    this.pointDifference.emit(player);
+  }
+  releaseKeyboard(event: KeyboardEvent): void {
+    if (![' ', 'Enter', 'Escape'].includes(event.key)) return;
+    event.preventDefault();
+    this.releaseComparison();
+  }
+  releasePointer(event: PointerEvent): void {
+    if (this.heldPointer === event.pointerId) this.releaseComparison();
+  }
+  releaseComparison(): void {
+    if (!this.comparisonHeld) return;
+    this.comparisonHeld = false;
+    this.heldPointer = null;
+    this.pointDifference.emit('');
+  }
   displayPoints(id: string): number {
     return this.differenceFrom() && this.differenceFrom() !== id
       ? this.balances()[id] - this.balances()[this.differenceFrom()]
