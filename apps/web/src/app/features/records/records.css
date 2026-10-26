@@ -1,5 +1,28 @@
 :host {
   display: block;
+  --records-top-gap: 24px;
+}
+.records-controls {
+  position: sticky;
+  top: calc(var(--app-header-height, 0px) + var(--records-top-gap));
+  z-index: 10;
+  padding-block: 8px;
+  margin-bottom: 12px;
+  background: var(--page);
+  border-bottom: 1px solid var(--border);
+}
+.records-controls::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: 100%;
+  height: var(--records-top-gap);
+  background: var(--page);
+}
+@media (max-width: 700px) {
+  :host {
+    --records-top-gap: 16px;
+  }
 }
 .sr-only {
   position: absolute;
@@ -20,7 +43,7 @@
   gap: 16px;
 }
 .records-heading {
-  margin-bottom: 24px;
+  margin-bottom: 8px;
 }
 h1,
 h2,
@@ -29,7 +52,7 @@ p {
 }
 h1 {
   margin-bottom: 0;
-  font-size: 2.25rem;
+  font-size: 1.5rem;
 }
 .filters {
   display: grid;
@@ -39,15 +62,26 @@ h1 {
   padding: 16px 20px;
 }
 .filter-bar {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: end;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 .filter-bar > button:first-child {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-height: var(--field-control-height);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding-inline: 10px;
+  white-space: nowrap;
+}
+.filter-bar > .quiet {
+  grid-column: 1 / -1;
+  justify-self: start;
 }
 .filter-dialog {
   width: min(520px, calc(100vw - 24px));
@@ -98,15 +132,46 @@ h1 {
   justify-self: start;
 }
 .records-toolbar {
-  flex-wrap: wrap;
-  margin-bottom: 16px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+  gap: 8px;
 }
 .records-toolbar .segmented {
+  grid-column: 1 / -1;
   margin: 0;
   min-width: 220px;
 }
+.mode-chips {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 2px 6px;
+  scrollbar-width: thin;
+}
+.filter-chip {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.filter-chip[aria-pressed='true'] {
+  color: var(--surface);
+  background: var(--green);
+  border-color: var(--green);
+}
+.records-toolbar .segmented button {
+  min-height: 40px;
+  padding-block: 6px;
+}
 .records-toolbar label {
-  max-width: 300px;
+  min-width: 0;
 }
 .game-card {
   padding: 24px;
@@ -158,6 +223,54 @@ thead th {
 .player-card {
   padding: 12px;
 }
+.player-display-name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.player-record-row {
+  position: relative;
+}
+.player-profile-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.player-profile-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+}
+.player-record-row:hover,
+.player-record-row:focus-within {
+  background: var(--tray-surface);
+}
+.player-profile-link:focus-visible {
+  outline: none;
+}
+.player-profile-link:focus-visible::after {
+  outline: 2px solid var(--green);
+  outline-offset: -2px;
+}
+.player-game-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--tray-surface);
+  color: var(--muted);
+  font-size: 0.65rem;
+  font-weight: 400;
+  white-space: nowrap;
+}
+.player-game-count strong {
+  color: var(--text);
+  font-weight: 650;
+}
 .money-line {
   display: block;
 }
@@ -181,21 +294,18 @@ thead th {
     line-height: 1.4;
   }
   .player-card th:first-child {
-    width: 18%;
+    width: 26%;
   }
   .player-card th:nth-child(2) {
-    width: 10%;
+    width: 15%;
   }
   .player-card th:nth-child(3) {
-    width: 14%;
-  }
-  .player-card th:nth-child(4) {
     width: 21%;
   }
-  .player-card th:nth-child(5) {
-    width: 17%;
+  .player-card th:nth-child(4) {
+    width: 18%;
   }
-  .player-card th:nth-child(6) {
+  .player-card th:nth-child(5) {
     width: 20%;
   }
   .player-card .money-currency {
@@ -234,6 +344,22 @@ thead th {
 
 .game-card {
   position: relative;
+}
+.game-card-link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+}
+.game-card-link:focus-visible {
+  outline: 3px solid var(--green);
+  outline-offset: 3px;
+}
+.game-card:hover {
+  border-color: var(--green);
+}
+.game-actions {
+  z-index: 2;
 }
 .game-card header {
   padding-right: 104px;
@@ -277,7 +403,7 @@ thead th {
 }
 .game-card .eyebrow,
 .game-card h2 {
-  padding-right: 104px;
+  padding-right: 0;
 }
 .game-description {
   min-width: 0;

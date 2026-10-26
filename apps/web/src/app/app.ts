@@ -12,6 +12,9 @@ import { Theme } from './core/theme/theme';
   styleUrl: './app.css',
 })
 export class App {
+  private readonly tabScroll = inject(TabScroll);
+  private readonly diagnosticLog = inject(DiagnosticLog);
+  private readonly ripples = inject(ButtonRipples);
   readonly configuration = inject(CaptureConfiguration);
   constructor() {
     void this.configuration.load();
@@ -37,3 +40,6 @@ export class App {
       this.i18n.set(value);
   }
 }
+import { ButtonRipples } from './shared/ripple';
+import { DiagnosticLog } from './core/diagnostic-log';
+import { TabScroll } from './shared/tab-scroll';

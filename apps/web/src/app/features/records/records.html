@@ -1,129 +1,136 @@
-<header class="records-heading">
-  <div>
-    <p class="eyebrow">{{ 'Saved tables' | t }}</p>
-    <h1>{{ 'Records' | t }}</h1>
-  </div>
-  <span class="pill">{{ matches().length }} {{ 'local' | t }}</span>
-</header>
-@if (error()) {
-  <app-error-notice [message]="error()" />
-}
-<div class="filter-bar">
-  <button (click)="openFilters()" aria-haspopup="dialog">
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="1.8"
-      aria-hidden="true"
-    >
-      <path d="M3 5h18l-7 8v6l-4 2v-8Z" />
-    </svg>
-    {{ 'Filter records' | t }}
-    @if (activeFilterCount()) {
-      <span class="pill">{{ activeFilterCount() }}</span>
-    }
-  </button>
-  @if (activeFilterCount()) {
-    <button class="quiet" (click)="reset()">{{ 'Reset filters' | t }}</button>
-  }
-</div>
-<dialog appDialogBackdrop #filterDialog class="filter-dialog" aria-labelledby="filter-title">
-  <header class="filter-dialog-heading">
-    <h2 id="filter-title">{{ 'Filter records' | t }}</h2>
-    <button class="icon-button" (click)="filterDialog.close()" [attr.aria-label]="'Close' | t">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
-    </button>
+<div class="records-controls">
+  <header class="records-heading">
+    <div>
+      <h1>{{ 'Records' | t }}</h1>
+    </div>
   </header>
-  <div class="filters" [formGroup]="filterDraft">
-    <label>
-      {{ 'From date' | t }}
-      <input type="date" formControlName="from" />
-    </label>
-    <label>
-      {{ 'To date' | t }}
-      <input type="date" formControlName="to" />
-    </label>
-    <label>
-      {{ 'Game mode' | t }}
-      <select formControlName="mode">
-        <option value="">{{ 'All modes' | t }}</option>
-        <option value="4-east">{{ '4P East-only' | t }}</option>
-        <option value="4-south">{{ '4P East and South' | t }}</option>
-        <option value="3-east">{{ '3P East-only' | t }}</option>
-        <option value="3-south">{{ '3P East and South' | t }}</option>
-      </select>
-    </label>
-    <label>
-      {{ 'Participant' | t }}
-      <select formControlName="participant">
-        <option value="">{{ 'All participants' | t }}</option>
-        @for (name of participants(); track name) {
-          <option [value]="name">{{ name }}</option>
-        }
-      </select>
-    </label>
-    @if (invalidDraftDates()) {
-      <app-error-notice [message]="'From date must not be after to date.'" />
+  @if (error()) {
+    <app-error-notice [message]="error()" />
+  }
+  <div class="filter-bar filter-controls">
+    <button (click)="openFilters()" aria-haspopup="dialog">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        aria-hidden="true"
+      >
+        <path d="M3 5h18l-7 8v6l-4 2v-8Z" />
+      </svg>
+      {{ 'Filter records' | t }}
+      @if (activeFilterCount()) {
+        <span class="pill">{{ activeFilterCount() }}</span>
+      }
+    </button>
+    @if (view() === 'games') {
+      <label>
+        <span class="sr-only">{{ 'Sort games' | t }}</span>
+        <select [formControl]="gameSort">
+          <option value="newest">{{ 'Newest first' | t }}</option>
+          <option value="oldest">{{ 'Oldest first' | t }}</option>
+        </select>
+      </label>
+    } @else {
+      <label>
+        <span class="sr-only">{{ 'Sort players' | t }}</span>
+        <select [formControl]="playerSort">
+          <option value="name">{{ 'Name: A to Z' | t }}</option>
+          <option value="games">{{ 'Game count: highest first' | t }}</option>
+          <option value="rank">{{ 'Average rank: best first' | t }}</option>
+          <option value="points">{{ 'Total points: highest first' | t }}</option>
+          <option value="score">{{ 'Total score: highest first' | t }}</option>
+          <option value="money">{{ 'Total money: highest first' | t }}</option>
+        </select>
+      </label>
+      @if (currencies().length > 1) {
+        <label>
+          {{ 'Money sort currency' | t }}
+          <select [formControl]="currency">
+            @for (unit of currencies(); track unit) {
+              <option [value]="unit">{{ unit || ('Unspecified currency' | t) }}</option>
+            }
+          </select>
+        </label>
+      }
     }
   </div>
-  <footer class="filter-dialog-actions">
-    <button class="quiet" (click)="filterDraft.reset()">{{ 'Reset filters' | t }}</button>
-    <button class="primary" (click)="applyFilters()" [disabled]="invalidDraftDates()">
-      {{ 'Apply filters' | t }}
-    </button>
-  </footer>
-</dialog>
-<div class="records-toolbar">
-  <div class="segmented" [attr.aria-label]="'Record view' | t">
-    <button
-      [class.selected]="view() === 'games'"
-      [attr.aria-pressed]="view() === 'games'"
-      (click)="view.set('games')"
-    >
-      {{ 'Games' | t }}
-    </button>
-    <button
-      [class.selected]="view() === 'players'"
-      [attr.aria-pressed]="view() === 'players'"
-      (click)="view.set('players')"
-    >
-      {{ 'Players' | t }}
-    </button>
-  </div>
-  @if (view() === 'games') {
-    <label>
-      {{ 'Sort games' | t }}
-      <select [formControl]="gameSort">
-        <option value="newest">{{ 'Newest first' | t }}</option>
-        <option value="oldest">{{ 'Oldest first' | t }}</option>
-      </select>
-    </label>
-  } @else {
-    <label>
-      {{ 'Sort players' | t }}
-      <select [formControl]="playerSort">
-        <option value="name">{{ 'Name: A to Z' | t }}</option>
-        <option value="games">{{ 'Game count: highest first' | t }}</option>
-        <option value="rank">{{ 'Average rank: best first' | t }}</option>
-        <option value="points">{{ 'Total points: highest first' | t }}</option>
-        <option value="score">{{ 'Total score: highest first' | t }}</option>
-        <option value="money">{{ 'Total money: highest first' | t }}</option>
-      </select>
-    </label>
-    @if (currencies().length > 1) {
+  <dialog
+    appResponsiveSheet
+    appDialogBackdrop
+    #filterDialog
+    class="filter-dialog"
+    aria-labelledby="filter-title"
+  >
+    <header class="filter-dialog-heading">
+      <h2 id="filter-title">{{ 'Filter records' | t }}</h2>
+      <button class="icon-button" (click)="filterDialog.close()" [attr.aria-label]="'Close' | t">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
+      </button>
+    </header>
+    <div class="filters filter-controls" [formGroup]="filterDraft">
       <label>
-        {{ 'Money sort currency' | t }}
-        <select [formControl]="currency">
-          @for (unit of currencies(); track unit) {
-            <option [value]="unit">{{ unit || ('Unspecified currency' | t) }}</option>
+        {{ 'From date' | t }}
+        <input type="date" formControlName="from" />
+      </label>
+      <label>
+        {{ 'To date' | t }}
+        <input type="date" formControlName="to" />
+      </label>
+      <label>
+        {{ 'Participant' | t }}
+        <select formControlName="participant">
+          <option value="">{{ 'All participants' | t }}</option>
+          @for (name of participants(); track name) {
+            <option [value]="name">{{ name }}</option>
           }
         </select>
       </label>
-    }
-  }
+      @if (invalidDraftDates()) {
+        <app-error-notice [message]="'From date must not be after to date.'" />
+      }
+    </div>
+    <footer class="filter-dialog-actions">
+      <button class="quiet" (click)="filterDraft.reset()">{{ 'Reset filters' | t }}</button>
+      <button class="primary" (click)="applyFilters()" [disabled]="invalidDraftDates()">
+        {{ 'Apply filters' | t }}
+      </button>
+    </footer>
+  </dialog>
+  <div class="records-toolbar filter-controls">
+    <div class="segmented" [attr.aria-label]="'Record view' | t">
+      <button
+        [class.selected]="view() === 'games'"
+        [attr.aria-pressed]="view() === 'games'"
+        (click)="view.set('games')"
+      >
+        {{ 'Games' | t }}
+      </button>
+      <button
+        [class.selected]="view() === 'players'"
+        [attr.aria-pressed]="view() === 'players'"
+        (click)="view.set('players')"
+      >
+        {{ 'Players' | t }}
+      </button>
+    </div>
+    <div class="mode-chips" role="group" [attr.aria-label]="'Game mode' | t">
+      @for (mode of modes; track mode.value) {
+        <button
+          class="filter-chip"
+          [attr.aria-pressed]="filters.controls.mode.value === mode.value"
+          (click)="filters.controls.mode.setValue(mode.value)"
+        >
+          {{ mode.label | t }}
+        </button>
+      }
+      @if (activeFilterCount()) {
+        <button class="filter-chip" (click)="reset()">{{ 'Reset filters' | t }}</button>
+      }
+    </div>
+  </div>
 </div>
 @if (loading()) {
   <p role="status">{{ 'Loading records…' | t }}</p>
@@ -136,30 +143,11 @@
   </p>
   @for (game of games(); track game.match.id) {
     <article class="card game-card">
-      <div class="game-actions">
-        <a
-          class="icon-action"
-          [routerLink]="['/score', game.match.id]"
-          [attr.aria-label]="(game.match.ended ? 'Details' : 'Open table') | t"
-          [title]="(game.match.ended ? 'Details' : 'Open table') | t"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              [attr.d]="game.match.ended ? 'M5 3h14v18H5zM9 7h6m-6 5h6m-6 5h4' : 'm8 4 12 8-12 8Z'"
-            />
-          </svg>
-        </a>
-        <button
-          class="icon-action danger"
-          (click)="remove(game.match)"
-          [attr.aria-label]="('Delete' | t) + ' ' + game.match.name"
-          [title]="'Delete' | t"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7" />
-          </svg>
-        </button>
-      </div>
+      <a
+        class="game-card-link"
+        [routerLink]="['/records', game.match.id]"
+        [attr.aria-label]="('Final results' | t) + ': ' + game.match.name"
+      ></a>
       <header>
         <div class="game-description">
           <span class="eyebrow">
@@ -167,37 +155,19 @@
             {{ (game.match.gameLength === 'east' ? 'East-only game' : 'East and South game') | t }}
           </span>
           <h2>
-            <a [routerLink]="['/score', game.match.id]">{{ game.match.name }}</a>
+            {{ game.match.name }}
           </h2>
           <div class="game-meta">
             <p class="hint">
-              {{ game.match.createdAt | date: 'medium' : undefined : i18n.locale() }} ·
-              {{ game.minutes }} {{ 'minutes' | t }} · {{ game.match.events.length }}
+              {{ game.match.createdAt | localDate }} · {{ game.minutes }} {{ 'minutes' | t }} ·
+              {{ game.match.events.length }}
               {{ 'events' | t }}
             </p>
-            <span
-              class="pill game-status"
-              [class.completed]="game.match.ended"
-              [class.ongoing]="!game.match.ended"
-              [class.paused]="
-                !game.match.ended && !!game.match.clock && !game.match.clock.runningSince
-              "
-            >
-              {{
-                (game.match.ended
-                  ? 'Completed'
-                  : game.match.clock && !game.match.clock.runningSince
-                    ? 'Paused'
-                    : 'In progress'
-                ) | t
-              }}
-            </span>
           </div>
         </div>
       </header>
       <div
         class="table-scroll"
-        tabindex="0"
         role="region"
         [attr.aria-label]="('Leaderboard' | t) + ' ' + game.match.name"
       >
@@ -249,7 +219,6 @@
         <thead>
           <tr>
             <th>{{ 'Player' | t }}</th>
-            <th>{{ 'Game count' | t }}</th>
             <th>{{ 'Average rank' | t }}</th>
             <th>{{ 'Total points' | t }}</th>
             <th>{{ 'Total score' | t }}</th>
@@ -258,11 +227,25 @@
         </thead>
         <tbody>
           @for (player of players(); track player.name) {
-            <tr>
-              <th scope="row">{{ player.name }}</th>
-              <td>
-                {{ player.games }}
-              </td>
+            <tr class="player-record-row">
+              <th scope="row" class="player-identity" [attr.aria-label]="player.name">
+                <a
+                  class="player-profile-link player-display-name"
+                  [routerLink]="['/records/player', player.name]"
+                  [queryParams]="{
+                    from: filters.controls.from.value,
+                    to: filters.controls.to.value,
+                    mode: filters.controls.mode.value,
+                  }"
+                  [title]="player.name"
+                >
+                  {{ player.name }}
+                </a>
+                <span class="player-game-count">
+                  <span>{{ 'Game count' | t }}</span>
+                  <strong>{{ player.games }}</strong>
+                </span>
+              </th>
               <td>
                 {{ player.averageRank | number: '1.2-2' }}
               </td>
@@ -283,7 +266,7 @@
             </tr>
           } @empty {
             <tr>
-              <td colspan="6">{{ 'No completed games match these filters.' | t }}</td>
+              <td colspan="5">{{ 'No completed games match these filters.' | t }}</td>
             </tr>
           }
         </tbody>

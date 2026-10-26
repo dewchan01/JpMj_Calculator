@@ -1,18 +1,75 @@
 <section class="final-results">
-  <div class="result-toolbar" role="group" [attr.aria-label]="'Result view' | t">
-    @for (item of views; track item) {
-      <button [attr.aria-pressed]="view() === item" (click)="view.set(item)">
-        {{ viewLabels[item] | t }}
+  <div class="result-controls page-sticky-controls">
+    <ng-content select="[resultHeading]" />
+    <div class="result-header">
+      <div class="segmented result-tabs" role="group" [attr.aria-label]="'Result view' | t">
+        @for (item of tabs; track item) {
+          <button
+            [class.selected]="tab() === item"
+            [attr.aria-pressed]="tab() === item"
+            (click)="tab.set(item); editing.set(false)"
+          >
+            {{ tabLabels[item] | t }}
+          </button>
+        }
+      </div>
+      @if (showEditAction()) {
+        <button
+          class="icon-button"
+          (click)="editScores()"
+          [disabled]="busy()"
+          [attr.aria-label]="'Edit scores' | t"
+          [title]="'Edit scores' | t"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m16 3 5 5-13 13H3v-5ZM14 5l5 5" />
+          </svg>
+        </button>
+      }
+      <button
+        class="icon-button share-image"
+        (click)="shareImage()"
+        [disabled]="busy()"
+        [attr.aria-label]="'Share image' | t"
+        [title]="'Share image' | t"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 16V3m-5 5 5-5 5 5M5 13v7h14v-7" />
+        </svg>
       </button>
+    </div>
+    @if (tab() === 'result') {
+      <div
+        class="result-toolbar result-layout"
+        role="group"
+        [attr.aria-label]="'Result layout' | t"
+      >
+        @for (item of views; track item) {
+          <button [attr.aria-pressed]="view() === item" (click)="view.set(item); selected.set('')">
+            {{ viewLabels[item] | t }}
+          </button>
+        }
+      </div>
     }
-    <button class="share-image" (click)="shareImage()" [disabled]="busy()">
-      {{ 'Share image' | t }}
-    </button>
+    @if (tab() === 'details') {
+      <h3>{{ 'Score history' | t }}</h3>
+      <div class="graph-legend">
+        <button [attr.aria-pressed]="!selected()" (click)="selected.set('')">
+          {{ 'All players' | t }}
+        </button>
+        @for (player of match().players; track player.id) {
+          <button [attr.aria-pressed]="selected() === player.id" (click)="selected.set(player.id)">
+            <span [style.background]="color(player.id)"></span>
+            {{ player.name }}
+          </button>
+        }
+      </div>
+    }
   </div>
   @if (notice()) {
     <p role="alert">{{ notice() | t }}</p>
   }
-  @switch (view()) {
+  @switch (tab() === 'result' ? view() : tab() === 'details' ? 'statistics' : 'history') {
     @case ('table') {
       <div class="result-table">
         <table>
@@ -52,65 +109,73 @@
       </div>
     }
     @case ('list') {
-      <div class="player-filter">
-        <button (click)="selected.set('')">{{ 'All players' | t }}</button>
-      </div>
-      @for (row of rows(); track row.id) {
-        @if (!selected() || selected() === row.id) {
-          <article class="standing-card">
-            <h3>#{{ row.rank }} {{ row.name }}</h3>
-            <dl>
-              <div>
-                <dt>{{ 'Points' | t }}</dt>
-                <dd>{{ row.points | number }}</dd>
-              </div>
-              <div>
-                <dt>{{ 'Final score' | t }}</dt>
-                <dd>{{ row.finalScore | number: '1.0-3' }}</dd>
-              </div>
-              <div>
-                <dt>{{ 'Uma' | t }} / {{ 'Oka' | t }}</dt>
-                <dd>{{ row.uma }} / {{ row.oka }}</dd>
-              </div>
-              <div>
-                <dt>{{ 'Net chips' | t }}</dt>
-                <dd>{{ row.chips }}</dd>
-              </div>
-              @if (settings().bettingRate || settings().chipValue) {
-                <div>
-                  <dt>{{ 'Score money' | t }}</dt>
-                  <dd>{{ row.scoreMoney | number: '1.2-2' }}</dd>
-                </div>
-                <div>
-                  <dt>{{ 'Chip money' | t }}</dt>
-                  <dd>{{ row.chipMoney | number: '1.2-2' }}</dd>
-                </div>
-                <div>
-                  <dt>{{ 'Total money' | t }}</dt>
-                  <dd>{{ row.totalMoney | number: '1.2-2' }} {{ settings().currency }}</dd>
-                </div>
+      <div class="result-table comparison-table">
+        <table>
+          <caption>{{ 'Final results' | t }}</caption>
+          <thead>
+            <tr>
+              <th scope="col">{{ 'Player' | t }}</th>
+              @for (row of rows(); track row.id) {
+                <th scope="col">#{{ row.rank }} {{ row.name }}</th>
               }
-            </dl>
-            <button (click)="selected.set(row.id); view.set('statistics')">
-              {{ 'Statistics' | t }}
-            </button>
-          </article>
-        }
-      }
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">{{ 'Points' | t }}</th>
+              @for (row of rows(); track row.id) {
+                <td>{{ row.points | number }}</td>
+              }
+            </tr>
+            <tr>
+              <th scope="row">{{ 'Final score' | t }}</th>
+              @for (row of rows(); track row.id) {
+                <td>{{ row.finalScore | number: '1.0-3' }}</td>
+              }
+            </tr>
+            <tr>
+              <th scope="row">{{ 'Uma' | t }}</th>
+              @for (row of rows(); track row.id) {
+                <td>{{ row.uma | number }}</td>
+              }
+            </tr>
+            <tr>
+              <th scope="row">{{ 'Oka' | t }}</th>
+              @for (row of rows(); track row.id) {
+                <td>{{ row.oka | number }}</td>
+              }
+            </tr>
+            <tr>
+              <th scope="row">{{ 'Net chips' | t }}</th>
+              @for (row of rows(); track row.id) {
+                <td>{{ row.chips | number }}</td>
+              }
+            </tr>
+            @if (settings().bettingRate || settings().chipValue) {
+              <tr>
+                <th scope="row">{{ 'Score money' | t }}</th>
+                @for (row of rows(); track row.id) {
+                  <td>{{ row.scoreMoney | number: '1.2-2' }}</td>
+                }
+              </tr>
+              <tr>
+                <th scope="row">{{ 'Chip money' | t }}</th>
+                @for (row of rows(); track row.id) {
+                  <td>{{ row.chipMoney | number: '1.2-2' }}</td>
+                }
+              </tr>
+              <tr>
+                <th scope="row">{{ 'Total money' | t }}</th>
+                @for (row of rows(); track row.id) {
+                  <td>{{ row.totalMoney | number: '1.2-2' }}</td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     }
     @case ('statistics') {
-      <h3>{{ 'Score history' | t }}</h3>
-      <div class="graph-legend">
-        <button [attr.aria-pressed]="!selected()" (click)="selected.set('')">
-          {{ 'All players' | t }}
-        </button>
-        @for (player of match().players; track player.id) {
-          <button [attr.aria-pressed]="selected() === player.id" (click)="selected.set(player.id)">
-            <span [style.background]="color(player.id)"></span>
-            {{ player.name }}
-          </button>
-        }
-      </div>
       <svg
         class="score-graph"
         viewBox="0 0 720 290"
@@ -167,14 +232,16 @@
           </tbody>
         </table>
       </details>
-      @for (player of visiblePlayers(); track player.id) {
-        <article class="standing-card">
-          <h3>#{{ rank(player.id) }} {{ player.name }}</h3>
-          <p class="hint">{{ player.hands }} {{ 'Recorded hands' | t }}</p>
+      @for (field of fields; track field.key) {
+        <article class="standing-card metric-card">
+          <h3>{{ field.label | t }}</h3>
           <dl>
-            @for (field of fields; track field.key) {
+            @for (player of visiblePlayers(); track player.id) {
               <div>
-                <dt>{{ field.label | t }}</dt>
+                <dt>
+                  <span class="rank-badge">#{{ rank(player.id) }}</span>
+                  {{ player.name }}
+                </dt>
                 <dd>{{ value(player, field) }}</dd>
               </div>
             }
@@ -204,12 +271,12 @@
         | t
     }}
   </p>
-  @if (match().ended) {
+  @if (match().ended && offerGameActions()) {
     <div class="result-actions">
       <button class="primary" (click)="keepGame()" [disabled]="busy()">
         {{ 'Save game' | t }}
       </button>
-      <button class="danger" (click)="confirmDiscard.set(true)" [disabled]="busy()">
+      <button class="action-delete danger" (click)="confirmDiscard.set(true)" [disabled]="busy()">
         {{ 'Discard game' | t }}
       </button>
     </div>
@@ -222,11 +289,69 @@
     @if (confirmDiscard()) {
       <div class="discard-confirm" role="group" [attr.aria-label]="'Discard game' | t">
         <p>{{ 'Delete this game and all its history?' | t }}</p>
-        <button (click)="confirmDiscard.set(false)">{{ 'Cancel' | t }}</button>
-        <button class="danger" (click)="discardGame()" [disabled]="busy()">
+        <button class="action-cancel" (click)="confirmDiscard.set(false)">
+          {{ 'Cancel' | t }}
+        </button>
+        <button class="action-delete danger" (click)="discardGame()" [disabled]="busy()">
           {{ 'Delete' | t }}
         </button>
       </div>
     }
   }
 </section>
+<dialog
+  appDialogBackdrop
+  #scoreDialog
+  class="app-dialog"
+  aria-labelledby="score-dialog-title"
+  (close)="editing.set(false)"
+>
+  <header class="dialog-header">
+    <h2 id="score-dialog-title">{{ 'Edit scores' | t }}</h2>
+    <button class="icon-button" (click)="scoreDialog.close()" [attr.aria-label]="'Close' | t">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
+    </button>
+  </header>
+  <form class="dialog-body score-editor" (ngSubmit)="saveScores()">
+    <p class="hint">
+      {{
+        'Enter final points. The total must stay unchanged; ranks and final scores update automatically.'
+          | t
+      }}
+    </p>
+    @if (notice()) {
+      <p role="alert">{{ notice() | t }}</p>
+    }
+    <label>
+      {{ 'Game date' | t }}
+      <input
+        type="datetime-local"
+        required
+        name="gameDate"
+        [ngModel]="dateDraft()"
+        (ngModelChange)="dateDraft.set($event)"
+      />
+    </label>
+    <div class="dialog-fields">
+      @for (player of match().players; track player.id) {
+        <label>
+          {{ player.name }}
+          <input
+            type="number"
+            step="1"
+            required
+            [name]="player.id"
+            [ngModel]="pointDraft()[player.id]"
+            (ngModelChange)="setPointDraft(player.id, $event)"
+          />
+        </label>
+      }
+    </div>
+    <div class="dialog-actions">
+      <button class="action-cancel" type="button" (click)="scoreDialog.close()">
+        {{ 'Cancel' | t }}
+      </button>
+      <button type="submit" class="primary" [disabled]="busy()">{{ 'Save scores' | t }}</button>
+    </div>
+  </form>
+</dialog>

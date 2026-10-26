@@ -12,8 +12,29 @@
     } @else {
       <p class="input-empty">{{ 'No tiles selected' | t }}</p>
     }
-    <app-tile-entry-dialog [label]="'Enter ' + label()" buttonText="Enter">
+    <app-tile-entry-dialog
+      [label]="'Enter ' + label()"
+      buttonText="Enter"
+      [canFinish]="!entryError()"
+    >
       <ng-template>
+        @if (meldType()) {
+          <p class="hint" role="status">
+            @if (meldType() === 'chi') {
+              {{ 'Chi requires three consecutive suited tiles.' | t }}
+            } @else if (meldType() === 'kakan') {
+              {{ 'Choose a Pon and its matching fourth tile.' | t }}
+            } @else {
+              {{
+                'Choose one tile; matching tiles are filled automatically. Select a red five if the set contains one.'
+                  | t
+              }}
+            }
+          </p>
+          @if (entryError()) {
+            <app-error-notice [message]="entryError()" />
+          }
+        }
         <div appTileReorder (tileDropped)="dropTile($event)">
           <div
             class="selected-tiles tile-input-tray"

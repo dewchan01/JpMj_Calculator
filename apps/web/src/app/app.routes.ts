@@ -14,6 +14,16 @@ export const routes: Routes = [
     loadComponent: () => import('./features/others/others').then((module) => module.Others),
   },
   {
+    path: 'records/player/:name',
+    loadComponent: () =>
+      import('./features/records/player-profile').then((module) => module.PlayerProfile),
+  },
+  {
+    path: 'records/:id',
+    loadComponent: () =>
+      import('./features/records/record-result').then((module) => module.RecordResult),
+  },
+  {
     path: 'records',
     loadComponent: () => import('./features/records/records').then((module) => module.Records),
   },

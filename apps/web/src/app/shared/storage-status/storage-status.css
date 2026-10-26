@@ -3,7 +3,8 @@
   margin-top: 2rem;
 }
 .storage-status {
-  border: 1px solid #c7c7bd;
+  border: 1px solid var(--border);
+  background: var(--surface);
   border-radius: 12px;
   padding: 1rem;
 }

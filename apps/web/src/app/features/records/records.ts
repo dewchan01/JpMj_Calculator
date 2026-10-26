@@ -1,9 +1,11 @@
+import { ResponsiveSheet } from '../../shared/responsive-sheet';
 import { DialogBackdrop } from '../../shared/dialog-backdrop';
 import { Component, computed, inject, signal, viewChild, ElementRef } from '@angular/core';
-import { DatePipe, DecimalPipe, KeyValuePipe } from '@angular/common';
+import { DecimalPipe, KeyValuePipe } from '@angular/common';
+import { LocalDatePipe } from '../../core/i18n/local-date';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Repository } from '../matches/data-access/repository';
 import { I18n, TranslatePipe } from '../../core/i18n/i18n';
 import { ErrorNotice } from '../../shared/error-notice/error-notice';
@@ -14,8 +16,9 @@ import { durationMinutes, filterMatches, playerRecords } from './record-stats';
 
 @Component({
   imports: [
+    ResponsiveSheet,
     DialogBackdrop,
-    DatePipe,
+    LocalDatePipe,
     DecimalPipe,
     KeyValuePipe,
     ReactiveFormsModule,
@@ -27,12 +30,22 @@ import { durationMinutes, filterMatches, playerRecords } from './record-stats';
   styleUrl: './records.css',
 })
 export class Records {
+  private readonly route = inject(ActivatedRoute);
   private readonly repo = inject(Repository);
   readonly i18n = inject(I18n);
   readonly matches = signal<Match[]>([]);
   readonly error = signal('');
   readonly loading = signal(true);
-  readonly view = signal<'games' | 'players'>('games');
+  readonly view = signal<'games' | 'players'>(
+    this.route.snapshot.queryParamMap.get('view') === 'players' ? 'players' : 'games',
+  );
+  readonly modes = [
+    { value: '', label: 'All modes' },
+    { value: '4-east', label: '4P East-only' },
+    { value: '4-south', label: '4P East and South' },
+    { value: '3-east', label: '3P East-only' },
+    { value: '3-south', label: '3P East and South' },
+  ];
   readonly filters = new FormGroup({
     from: new FormControl('', { nonNullable: true }),
     to: new FormControl('', { nonNullable: true }),
@@ -43,7 +56,6 @@ export class Records {
   readonly filterDraft = new FormGroup({
     from: new FormControl('', { nonNullable: true }),
     to: new FormControl('', { nonNullable: true }),
-    mode: new FormControl('', { nonNullable: true }),
     participant: new FormControl('', { nonNullable: true }),
   });
   private readonly draftChanges = toSignal(this.filterDraft.valueChanges, {
@@ -55,12 +67,13 @@ export class Records {
   });
   readonly activeFilterCount = computed(() => Object.values(this.changes()).filter(Boolean).length);
   openFilters(): void {
-    this.filterDraft.setValue(this.filters.getRawValue());
+    const { from, to, participant } = this.filters.getRawValue();
+    this.filterDraft.setValue({ from, to, participant });
     this.filterDialog().nativeElement.showModal();
   }
   applyFilters(): void {
     if (this.invalidDraftDates()) return;
-    this.filters.setValue(this.filterDraft.getRawValue());
+    this.filters.patchValue(this.filterDraft.getRawValue());
     this.filterDialog().nativeElement.close();
   }
   private readonly changes = toSignal(this.filters.valueChanges, {
@@ -141,13 +154,19 @@ export class Records {
     });
   });
   constructor() {
+    const query = this.route.snapshot.queryParamMap;
+    this.filters.patchValue({
+      from: query.get('from') ?? '',
+      to: query.get('to') ?? '',
+      mode: query.get('mode') ?? '',
+    });
     void this.load();
   }
   async load(): Promise<void> {
     this.loading.set(true);
     this.error.set('');
     try {
-      this.matches.set(await this.repo.list());
+      this.matches.set((await this.repo.list()).filter((match) => match.ended));
       if (!this.currencies().includes(this.currency.value))
         this.currency.setValue(this.currencies()[0] ?? '');
     } catch {
@@ -158,14 +177,5 @@ export class Records {
   }
   reset(): void {
     this.filters.reset({ from: '', to: '', mode: '', participant: '' });
-  }
-  async remove(match: Match): Promise<void> {
-    if (!confirm(this.i18n.t(`Delete ${match.name} and its local history?`))) return;
-    try {
-      await this.repo.remove(match.id);
-      await this.load();
-    } catch {
-      this.error.set('Could not delete match.');
-    }
   }
 }

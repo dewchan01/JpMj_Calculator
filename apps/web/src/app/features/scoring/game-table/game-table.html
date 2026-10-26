@@ -280,15 +280,9 @@
           @if (callType === 'kita') {
             <p>{{ 'Record one extracted North tile.' | t }}</p>
           } @else {
-            @if (callType !== 'chi' && callType !== 'kakan') {
-              <p class="hint">
-                {{
-                  'Choose one tile; matching tiles are filled automatically. Select a red five if the set contains one.'
-                    | t
-                }}
-              </p>
-            }
             <app-tile-input
+              [meldType]="callType"
+              [upgradeKind]="upgradeTileKind()"
               [label]="callType === 'kakan' ? 'Fourth tile' : 'Meld tiles'"
               [(value)]="callText"
               [playerCount]="m.playerCount"
@@ -558,7 +552,11 @@
           </button>
         }
         @case ('results') {
-          <app-final-results [match]="m" />
+          <app-final-results
+            [match]="m"
+            [offerGameActions]="true"
+            (matchChanged)="match.set($event)"
+          />
         }
         @case ('history') {
           <app-match-history

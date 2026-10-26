@@ -81,13 +81,33 @@ for (const width of [320, 390, 1280]) {
     }, game);
     const nav = page.getByRole('navigation');
     await nav.getByRole('link', { name: 'Records', exact: true }).click();
-    await expect(page.locator('.game-card')).toHaveCount(3);
-    await expect(page.getByRole('link', { name: 'Details', exact: true })).toHaveCount(2);
-    await expect(page.getByRole('link', { name: 'Open table', exact: true })).toHaveCount(1);
-    await expect(page.locator('.game-card h2').first()).toHaveText('Ongoing friends');
+    await expect(page.locator('.game-card')).toHaveCount(2);
+    const controls = await page.locator('.records-controls').boundingBox();
+    expect(controls!.height).toBeLessThan(240);
+    await page.evaluate(() => window.scrollTo(0, 200));
+    const scrolledControls = await page.locator('.records-controls').boundingBox();
+    expect(Math.abs(scrolledControls!.y - controls!.y)).toBeLessThan(1);
+    expect(scrolledControls!.x).toBe(controls!.x);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const filter = await page
+      .getByRole('button', { name: 'Filter records', exact: true })
+      .boundingBox();
+    const sort = await page
+      .getByRole('combobox', { name: 'Sort games', exact: true })
+      .boundingBox();
+    expect(Math.abs(filter!.y - sort!.y)).toBeLessThan(2);
+    expect(sort!.x).toBeGreaterThan(filter!.x);
+    await expect(page.locator('.mode-chips')).toHaveCSS('overflow-x', 'auto');
+    await expect(page.locator('.game-card-link')).toHaveCount(2);
+    await expect(page.getByRole('link', { name: 'Open table', exact: true })).toHaveCount(0);
+    await expect(page.locator('.game-card h2').first()).toHaveText('October friends');
     await page.getByRole('combobox', { name: 'Sort games', exact: true }).selectOption('oldest');
     await expect(page.locator('.game-card h2').first()).toHaveText('September friends');
-    await expect(page.getByLabel('From date', { exact: true })).not.toBeVisible();
+    await expect(
+      page
+        .locator('dialog[aria-labelledby="filter-title"]')
+        .getByLabel('From date', { exact: true }),
+    ).not.toBeVisible();
     await page.getByRole('button', { name: 'Filter records', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'Filter records', exact: true });
     await expect(dialog).toBeVisible();
@@ -98,13 +118,19 @@ for (const width of [320, 390, 1280]) {
     const bounds = (await dialog.boundingBox())!;
     expect(bounds.height).toBeLessThan(600);
     await page.screenshot({ path: `artifacts/records-filter-${width}.png` });
-    await page.getByLabel('From date', { exact: true }).fill('2026-10-01');
-    await page.getByLabel('To date', { exact: true }).fill('2026-10-01');
-    await page.getByRole('combobox', { name: 'Game mode', exact: true }).selectOption('3-east');
+    await page
+      .locator('dialog[aria-labelledby="filter-title"]')
+      .getByLabel('From date', { exact: true })
+      .fill('2026-10-01');
+    await page
+      .locator('dialog[aria-labelledby="filter-title"]')
+      .getByLabel('To date', { exact: true })
+      .fill('2026-10-01');
     await page.getByRole('combobox', { name: 'Participant', exact: true }).selectOption('Alice');
-    await expect(page.locator('.game-card')).toHaveCount(3);
+    await expect(page.locator('.game-card')).toHaveCount(2);
     await page.getByRole('button', { name: 'Apply filters', exact: true }).click();
     await expect(dialog).not.toBeVisible();
+    await page.getByRole('button', { name: '3P East-only', exact: true }).click();
     await expect(page.locator('.game-card')).toHaveCount(1);
     await expect(page.locator('.game-card')).toContainText('90 minutes');
     await expect(page.locator('.game-card tbody tr').first()).toContainText('41,000');
@@ -116,7 +142,8 @@ for (const width of [320, 390, 1280]) {
     const alice = page
       .locator('.player-card tbody tr')
       .filter({ has: page.getByRole('rowheader', { name: 'Alice', exact: true }) });
-    await expect(alice.locator('td').first()).toContainText('2');
+    await expect(alice.locator('.player-game-count strong')).toHaveText('2');
+    await expect(page.locator('.player-card thead th')).toHaveCount(5);
     if (width <= 700) {
       expect(
         await page.locator('.player-card td').evaluateAll((cells) =>
@@ -155,44 +182,56 @@ for (const width of [320, 390, 1280]) {
     if (width <= 700)
       expect(await longName.evaluate((cell) => cell.scrollWidth > cell.clientWidth)).toBe(true);
     const card = page.locator('.game-card').first();
-    const status = (await card.locator('.game-status').boundingBox())!;
     const table = (await card.locator('table').boundingBox())!;
     const date = (await card.locator('.game-meta .hint').boundingBox())!;
-    expect(Math.abs(date.y + date.height / 2 - status.y - status.height / 2)).toBeLessThan(1);
-    expect(
-      await page
-        .locator('.game-status.completed')
-        .first()
-        .evaluate((e) => getComputedStyle(e).backgroundColor),
-    ).not.toBe(
-      await page
-        .locator('.game-status.ongoing')
-        .first()
-        .evaluate((e) => getComputedStyle(e).backgroundColor),
-    );
-    expect(status.y + status.height).toBeLessThanOrEqual(table.y);
-    expect(Math.abs(status.x + status.width - table.x - table.width)).toBeLessThan(1);
+    await expect(page.locator('.game-status')).toHaveCount(0);
+    await expect(page.locator('.game-card .game-actions')).toHaveCount(0);
+    if (width > 700) {
+      await page.locator('.language-select').selectOption('ja');
+      await expect(page.locator('.game-meta .hint').first()).toContainText('2026/09/01');
+      await page.locator('.language-select').selectOption('zh-TW');
+      await expect(page.locator('.game-meta .hint').first()).toContainText('2026年9月1日');
+      await page.locator('.language-select').selectOption('en');
+    }
+    expect(date.y + date.height).toBeLessThanOrEqual(table.y);
     expect(
       (await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze())
         .violations,
     ).toEqual([]);
     await page.screenshot({ path: `artifacts/records-games-${width}.png`, fullPage: true });
-    await page.getByRole('link', { name: 'October friends', exact: true }).click();
-    await expect(page).toHaveURL(/\/score\/october$/);
-    await leaveGame(page);
-    await nav.getByRole('link', { name: 'Records', exact: true }).click();
-    page.once('dialog', (dialog) => dialog.accept());
-    await page.getByRole('button', { name: 'Delete October friends', exact: true }).click();
-    await expect(page.locator('.game-card')).toHaveCount(2);
+    await page.getByRole('link', { name: 'Final results: October friends', exact: true }).click();
+    await expect(page).toHaveURL(/\/records\/october$/);
+    await expect(page.locator('app-final-results')).toBeVisible();
+    await expect(page.locator('app-game-table')).toHaveCount(0);
+    await page
+      .locator('.record-management')
+      .getByRole('button', { name: 'Delete', exact: true })
+      .click();
+    await page
+      .getByRole('dialog', { name: 'Delete', exact: true })
+      .getByRole('button', { name: 'Delete', exact: true })
+      .click();
+    await expect(page).toHaveURL(/\/records$/);
+    await expect(page.locator('.game-card')).toHaveCount(1);
     await page.getByRole('button', { name: 'Filter records', exact: true }).click();
-    await page.getByLabel('From date', { exact: true }).fill('2026-10-02');
-    await page.getByLabel('To date', { exact: true }).fill('2026-10-01');
+    await page
+      .locator('dialog[aria-labelledby="filter-title"]')
+      .getByLabel('From date', { exact: true })
+      .fill('2026-10-02');
+    await page
+      .locator('dialog[aria-labelledby="filter-title"]')
+      .getByLabel('To date', { exact: true })
+      .fill('2026-10-01');
     await expect(page.getByRole('alert')).toContainText('From date must not be after to date.');
     await expect(page.getByRole('button', { name: 'Apply filters', exact: true })).toBeDisabled();
     await page.keyboard.press('Escape');
     await expect(dialog).not.toBeVisible();
-    await expect(page.locator('.game-card')).toHaveCount(2);
+    await expect(page.locator('.game-card')).toHaveCount(1);
     await page.getByRole('button', { name: 'Filter records', exact: true }).click();
-    await expect(page.getByLabel('From date', { exact: true })).toHaveValue('');
+    await expect(
+      page
+        .locator('dialog[aria-labelledby="filter-title"]')
+        .getByLabel('From date', { exact: true }),
+    ).toHaveValue('');
   });
 }

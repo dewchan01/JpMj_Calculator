@@ -34,6 +34,16 @@ export class Repository {
     await this.db.drafts.delete(id);
     void this.storage.refresh();
   }
+  async importGames(matches: Match[]): Promise<number> {
+    const count = await this.db.transaction('rw', this.db.matches, async () => {
+      const existing = new Set(await this.db.matches.toCollection().primaryKeys());
+      const added = matches.filter((match) => !existing.has(match.id));
+      await this.db.matches.bulkAdd(structuredClone(added));
+      return added.length;
+    });
+    void this.storage.refresh();
+    return count;
+  }
   async draft(id: string): Promise<string | undefined> {
     return (await this.db.drafts.get(id))?.value;
   }

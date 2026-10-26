@@ -23,6 +23,7 @@ import { TranslatePipe } from '../../../core/i18n/i18n';
 export class TileEntryDialog {
   readonly label = input('Enter tiles');
   readonly buttonText = input<string>();
+  readonly canFinish = input(true);
   readonly opened = signal(false);
   readonly dragOffset = signal(0);
   readonly dragging = signal(false);

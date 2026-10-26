@@ -125,3 +125,105 @@ dd {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+.license-content {
+  display: grid;
+  gap: 28px;
+}
+.other-detail .license-content h2 {
+  margin: 0 0 12px;
+}
+.other-detail .license-content p {
+  margin: 0 0 12px;
+}
+.other-detail .license-content p:last-child {
+  margin-bottom: 0;
+}
+.others-heading h1 {
+  margin: 0;
+}
+.other-detail .developer-info {
+  display: grid;
+  gap: 16px;
+}
+.other-detail .developer-info h2,
+.other-detail .developer-info p {
+  margin: 0;
+}
+.developer-info a {
+  overflow-wrap: anywhere;
+}
+.developer-name {
+  padding: 0;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  text-align: left;
+}
+.log-sheet {
+  position: fixed;
+  inset: auto 0 0;
+  width: min(760px, 100vw);
+  max-width: 100vw;
+  height: min(75dvh, 720px);
+  margin: 0 auto;
+  border-radius: 20px 20px 0 0;
+  overflow: hidden;
+}
+.log-sheet[open] {
+  display: flex;
+  flex-direction: column;
+}
+.log-sheet .dialog-header {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+.log-title {
+  display: contents;
+}
+.log-title .hint {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  margin: 0;
+}
+.log-body {
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1;
+  display: block;
+}
+.log-entries {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.log-entries li {
+  padding-block: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.log-entries time,
+.log-level {
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-right: 12px;
+}
+.log-entries pre {
+  margin: 6px 0 0;
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.log-actions {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}

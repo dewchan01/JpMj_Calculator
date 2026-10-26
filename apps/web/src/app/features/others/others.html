@@ -1,5 +1,5 @@
 @if (!section()) {
-  <header class="others-heading">
+  <header class="others-heading page-sticky-controls">
     <h1>{{ 'Others' | t }}</h1>
   </header>
   <nav class="other-options" [attr.aria-label]="'Other options' | t">
@@ -25,6 +25,7 @@
       </section>
     }
   </nav>
+  <app-data-transfer />
   <app-storage-status />
 } @else {
   <a
@@ -51,29 +52,43 @@
         </dl>
       }
       @case ('developer') {
-        <h2>{{ configuration.developerName() }}</h2>
-        <p>{{ 'Independent Mahjong scoring, made for your table.' | t }}</p>
-        @if (configuration.supportEmail()) {
-          <a [href]="'mailto:' + configuration.supportEmail()">
-            {{ 'Send email' | t }} · {{ configuration.supportEmail() }}
-          </a>
-        }
+        <div class="developer-info">
+          <h2>
+            <button class="developer-name" data-no-ripple (click)="revealLogs(logDialog)">
+              {{ configuration.developerName() }}
+            </button>
+          </h2>
+          <p>{{ 'Independent Mahjong scoring, made for your table.' | t }}</p>
+          @if (configuration.supportEmail()) {
+            <a [href]="'mailto:' + configuration.supportEmail()">
+              {{ 'Send email' | t }} · {{ configuration.supportEmail() }}
+            </a>
+          }
+        </div>
       }
       @case ('terms') {
         <p>{{ 'Terms and conditions have not been published for this build.' | t }}</p>
       }
       @case ('license') {
-        <h2>{{ 'Application' | t }}</h2>
-        <p>{{ 'An application license has not been specified in this repository.' | t }}</p>
-        <h2>{{ 'Tile artwork' | t }}</h2>
-        <p>
-          <a href="https://github.com/FluffyStuff/riichi-mahjong-tiles">
-            {{ 'Tile artwork by FluffyStuff (CC0)' | t }}
-          </a>
-        </p>
-        <a href="tiles/LICENSE.md">{{ 'Read tile artwork license' | t }}</a>
-        <h2>{{ 'Third-party software' | t }}</h2>
-        <a href="3rdpartylicenses.txt">{{ 'Read third-party license notices' | t }}</a>
+        <div class="license-content">
+          <section>
+            <h2>{{ 'Application' | t }}</h2>
+            <p>{{ 'An application license has not been specified in this repository.' | t }}</p>
+          </section>
+          <section>
+            <h2>{{ 'Tile artwork' | t }}</h2>
+            <p>
+              <a href="https://github.com/FluffyStuff/riichi-mahjong-tiles">
+                {{ 'Tile artwork by FluffyStuff (CC0)' | t }}
+              </a>
+            </p>
+            <a href="tiles/LICENSE.md">{{ 'Read tile artwork license' | t }}</a>
+          </section>
+          <section>
+            <h2>{{ 'Third-party software' | t }}</h2>
+            <a href="3rdpartylicenses.txt">{{ 'Read third-party license notices' | t }}</a>
+          </section>
+        </div>
       }
       @case ('language') {
         <label>
@@ -114,3 +129,33 @@
     }
   </section>
 }
+<dialog appDialogBackdrop #logDialog class="app-dialog log-sheet" aria-labelledby="logs-title">
+  <header class="dialog-header">
+    <div class="log-title">
+      <h2 id="logs-title">{{ 'Logs' | t }}</h2>
+      <p class="hint">{{ 'Logs from this session, newest first (up to 200 entries).' | t }}</p>
+    </div>
+    <div class="log-actions">
+      <button class="action-delete" (click)="logs.clear()" [disabled]="!logs.entries().length">
+        {{ 'Clear logs' | t }}
+      </button>
+
+      <button class="icon-button" (click)="logDialog.close()" [attr.aria-label]="'Close' | t">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
+      </button>
+    </div>
+  </header>
+  <div class="dialog-body log-body">
+    <ol class="log-entries">
+      @for (entry of logs.entries().slice().reverse(); track entry.id) {
+        <li>
+          <time>{{ entry.timestamp | localDate }}</time>
+          <span class="log-level">{{ entry.level }}</span>
+          <pre>{{ entry.message }}</pre>
+        </li>
+      } @empty {
+        <li>{{ 'No logs.' | t }}</li>
+      }
+    </ol>
+  </div>
+</dialog>

@@ -12,12 +12,9 @@ export class PlayerLibrary {
       const data: unknown = JSON.parse(localStorage.getItem('riichi-players-v1') ?? '[]');
       if (Array.isArray(data))
         this.players.set(
-          data
-            .filter(
-              (p): p is SavedPlayer =>
-                !!p && typeof p.id === 'string' && typeof p.name === 'string',
-            )
-            .slice(0, 500),
+          data.filter(
+            (p): p is SavedPlayer => !!p && typeof p.id === 'string' && typeof p.name === 'string',
+          ),
         );
     } catch {
       /* Manual setup remains available. */

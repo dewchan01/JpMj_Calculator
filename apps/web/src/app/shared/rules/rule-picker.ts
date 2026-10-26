@@ -1,3 +1,4 @@
+import { ResponsiveSheet } from '../responsive-sheet';
 import { DialogBackdrop } from '../dialog-backdrop';
 import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -11,7 +12,7 @@ import { ErrorNotice } from '../error-notice/error-notice';
 import { TranslatePipe } from '../../core/i18n/i18n';
 @Component({
   selector: 'app-rule-picker',
-  imports: [DialogBackdrop, TranslatePipe, RouterLink, ErrorNotice],
+  imports: [ResponsiveSheet, DialogBackdrop, TranslatePipe, RouterLink, ErrorNotice],
   templateUrl: './rule-picker.html',
   styleUrl: './rule-picker.css',
 })

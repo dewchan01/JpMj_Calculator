@@ -21,7 +21,8 @@ export interface LedgerEvent {
     | 'abortiveDraw'
     | 'nagashi'
     | 'riichiDeposit'
-    | 'matchEnd';
+    | 'matchEnd'
+    | 'scoreAdjustment';
   durationMs?: number;
   liveBefore?: LiveHand;
   payments: Payment[];

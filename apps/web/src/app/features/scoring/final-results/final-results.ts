@@ -1,4 +1,17 @@
-import { Component, computed, input, inject, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  input,
+  inject,
+  signal,
+  output,
+  viewChild,
+  ElementRef,
+} from '@angular/core';
+import { DialogBackdrop } from '../../../shared/dialog-backdrop';
+import { localDateTimeInput } from '../../../core/i18n/date-format';
+import { FormsModule } from '@angular/forms';
+import { newId } from '../../../core/id/new-id';
 import { Router } from '@angular/router';
 import { Repository } from '../../matches/data-access/repository';
 import { MatchHistory } from '../match-history/match-history';
@@ -8,23 +21,72 @@ import { playerColors, statisticFields, statisticText, statisticsImage } from '.
 import { DecimalPipe } from '@angular/common';
 import { TranslatePipe } from '../../../core/i18n/i18n';
 import type { Match } from '../../../../../../../packages/mahjong-core/ledger';
-import { finalStandings } from '../../../../../../../packages/mahjong-core/final-results';
+import {
+  finalStandings,
+  adjustFinalPoints,
+} from '../../../../../../../packages/mahjong-core/final-results';
 import { tableRules } from '../../../../../../../packages/mahjong-rules/index';
 
 @Component({
   selector: 'app-final-results',
-  imports: [DecimalPipe, TranslatePipe, MatchHistory],
+  imports: [DecimalPipe, TranslatePipe, MatchHistory, FormsModule, DialogBackdrop],
   templateUrl: './final-results.html',
   styleUrl: './final-results.css',
 })
 export class FinalResults {
-  readonly view = signal<'table' | 'list' | 'statistics' | 'history'>('table');
-  readonly views = ['table', 'list', 'statistics', 'history'] as const;
+  readonly offerGameActions = input(false);
+  readonly showEditAction = input(true);
+  private readonly scoreDialog = viewChild.required<ElementRef<HTMLDialogElement>>('scoreDialog');
+  readonly tab = signal<'result' | 'history' | 'details'>('result');
+  readonly tabs = ['result', 'history', 'details'] as const;
+  readonly tabLabels = { result: 'Result', history: 'History', details: 'Details' };
+  readonly editing = signal(false);
+  readonly pointDraft = signal<Record<string, number>>({});
+  readonly dateDraft = signal('');
+  setPointDraft(id: string, value: number): void {
+    this.pointDraft.update((draft) => ({ ...draft, [id]: value }));
+  }
+  readonly matchChanged = output<Match>();
+  editScores(): void {
+    this.pointDraft.set(Object.fromEntries(this.rows().map((row) => [row.id, row.points])));
+    this.notice.set('');
+    this.dateDraft.set(localDateTimeInput(this.match().createdAt));
+    this.editing.set(true);
+    this.scoreDialog().nativeElement.showModal();
+  }
+  async saveScores(): Promise<void> {
+    if (this.busy()) return;
+    this.busy.set(true);
+    this.notice.set('');
+    try {
+      const previous = this.match();
+      const date = new Date(this.dateDraft());
+      if (!Number.isFinite(date.getTime())) throw new Error('Enter a valid game date.');
+      const now = new Date().toISOString();
+      const updated = {
+        ...adjustFinalPoints(previous, this.pointDraft(), newId(), now),
+        createdAt:
+          this.dateDraft() === localDateTimeInput(previous.createdAt)
+            ? previous.createdAt
+            : date.toISOString(),
+        updatedAt: now,
+      };
+      await this.repo.save(updated, previous.updatedAt);
+      this.savedMatch.set(updated);
+      this.matchChanged.emit(updated);
+      this.editing.set(false);
+      this.scoreDialog().nativeElement.close();
+    } catch (error) {
+      this.notice.set(error instanceof Error ? error.message : 'Could not save match.');
+    } finally {
+      this.busy.set(false);
+    }
+  }
+  readonly view = signal<'table' | 'list'>('table');
+  readonly views = ['table', 'list'] as const;
   readonly viewLabels = {
     table: 'Table',
     list: 'List',
-    statistics: 'Statistics',
-    history: 'History',
   };
   readonly selected = signal('');
   readonly confirmDiscard = signal(false);
@@ -79,7 +141,7 @@ export class FinalResults {
         this.statistics().points,
         (key) => this.i18n.t(key),
         this.i18n.locale(),
-        this.view() === 'statistics' || this.view() === 'list' ? this.selected() : '',
+        this.tab() === 'details' || this.view() === 'list' ? this.selected() : '',
       );
       const file = new File([blob], 'mahjong-results.png', { type: 'image/png' });
       if (navigator.canShare?.({ files: [file] }))
@@ -121,7 +183,9 @@ export class FinalResults {
       this.busy.set(false);
     }
   }
-  readonly match = input.required<Match>();
+  readonly sourceMatch = input.required<Match>({ alias: 'match' });
+  private readonly savedMatch = signal<Match | null>(null);
+  readonly match = computed(() => this.savedMatch() ?? this.sourceMatch());
   readonly rows = computed(() => finalStandings(this.match()));
   readonly settings = computed(() => tableRules(this.match().rules));
 }

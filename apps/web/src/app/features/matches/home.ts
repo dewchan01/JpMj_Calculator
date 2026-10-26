@@ -16,8 +16,11 @@ import { PlayerLibrary } from './data-access/player-library';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { DiceSimulator } from '../../shared/dice-simulator/dice-simulator';
 import { emptyLive } from '../../../../../../packages/mahjong-core/live';
+import { adjustFinalPoints } from '../../../../../../packages/mahjong-core/final-results';
+import { localDateTimeInput } from '../../core/i18n/date-format';
 @Component({
   imports: [
+    ResponsiveSheet,
     DialogBackdrop,
     ErrorNotice,
     InstallBanner,
@@ -34,14 +37,30 @@ import { emptyLive } from '../../../../../../packages/mahjong-core/live';
   styleUrl: './home.css',
 })
 export class Home {
+  readonly ongoing = signal<Match[]>([]);
+  resultPoints: number[] = [];
+  resultDate = '';
+  constructor() {
+    void this.loadOngoing();
+  }
+  async loadOngoing(): Promise<void> {
+    try {
+      this.ongoing.set((await this.repo.list()).filter((match) => !match.ended));
+    } catch {
+      this.error.set('Could not load match.');
+    }
+  }
+  openRecordResults(dialog: HTMLDialogElement): void {
+    this.resultPoints = Array(this.count()).fill(this.rules().startingPoints);
+    this.error.set('');
+    this.resultDate = localDateTimeInput(new Date());
+    dialog.showModal();
+  }
   readonly pickerSeat = signal<number | null>(null);
-  readonly playerPanel = signal<'list' | 'add'>('list');
-  readonly canDismissPlayers = () => this.playerPanel() !== 'add';
   readonly playerSearch = signal('');
   readonly playerFilter = signal<'all' | 'available' | 'seated'>('all');
   readonly playerSort = signal<'asc' | 'desc' | 'newest'>('asc');
-  readonly playerPage = signal(0);
-  readonly pageSize = 4;
+  readonly playerLimit = signal(24);
   readonly filteredPlayers = computed(() => {
     const query = this.playerSearch().trim().toLocaleLowerCase();
     const players = this.playerLibrary
@@ -59,37 +78,38 @@ export class Home {
       (a, b) => direction * a.name.localeCompare(b.name, this.i18n.locale(), { numeric: true }),
     );
   });
-  readonly playerPages = computed(() =>
-    Math.max(1, Math.ceil(this.filteredPlayers().length / this.pageSize)),
-  );
-  readonly visiblePlayers = computed(() =>
-    this.filteredPlayers().slice(
-      this.playerPage() * this.pageSize,
-      (this.playerPage() + 1) * this.pageSize,
-    ),
-  );
+  readonly visiblePlayers = computed(() => this.filteredPlayers().slice(0, this.playerLimit()));
+  loadMorePlayers(event: Event): void {
+    const panel = event.target as HTMLElement;
+    if (panel.scrollHeight - panel.scrollTop - panel.clientHeight < 120)
+      this.playerLimit.update((limit) => Math.min(this.filteredPlayers().length, limit + 24));
+  }
   openPlayers(dialog: HTMLDialogElement, seat: number | null = null): void {
     this.pickerSeat.set(seat);
     this.playerSearch.set('');
     this.playerFilter.set('all');
-    this.playerPage.set(0);
+    this.playerLimit.set(24);
     this.playerError.set('');
-    this.playerPanel.set('list');
     dialog.showModal();
+    dialog.querySelector('.player-results')?.scrollTo(0, 0);
   }
   filterPlayers(event: Event): void {
     this.playerSearch.set((event.target as HTMLInputElement).value);
-    this.playerPage.set(0);
+    this.playerLimit.set(24);
   }
   filterSeats(event: Event): void {
     this.playerFilter.set(
       (event.target as HTMLSelectElement).value as 'all' | 'available' | 'seated',
     );
-    this.playerPage.set(0);
+    this.playerLimit.set(24);
   }
   sortPlayers(sort: 'asc' | 'desc' | 'newest'): void {
     this.playerSort.set(sort);
-    this.playerPage.set(0);
+    this.playerLimit.set(24);
+  }
+  changePlayerSort(event: Event): void {
+    const sort = (event.target as HTMLSelectElement).value;
+    if (sort === 'asc' || sort === 'desc' || sort === 'newest') this.sortPlayers(sort);
   }
   alreadySeated(name: string): boolean {
     return (
@@ -156,18 +176,13 @@ export class Home {
     this.playerError.set('');
     try {
       const player = this.playerLibrary.add(this.playerName.value);
-      this.playerName.reset();
       this.playerError.set('');
-      if (this.pickerSeat() !== null) {
-        if (this.selectPlayer(player.id)) dialog?.close();
-      } else {
-        this.playerPanel.set('list');
-        this.playerSearch.set('');
-        this.playerFilter.set('all');
-        this.playerPage.set(
-          Math.floor(this.filteredPlayers().findIndex((p) => p.id === player.id) / this.pageSize),
-        );
-      }
+      if (this.pickerSeat() !== null && !this.selectPlayer(player.id)) return;
+      this.playerName.reset();
+      this.playerSearch.set('');
+      this.playerFilter.set('all');
+      this.playerLimit.set(this.playerLibrary.players().length);
+      dialog?.close();
     } catch (e) {
       this.playerError.set(e instanceof Error ? e.message : 'Could not save player.');
     }
@@ -175,7 +190,6 @@ export class Home {
   removePlayer(id: string): void {
     try {
       this.playerLibrary.remove(id);
-      this.playerPage.set(Math.min(this.playerPage(), this.playerPages() - 1));
     } catch {
       this.playerError.set('Could not save player.');
     }
@@ -200,7 +214,7 @@ export class Home {
     this.swapB = 1;
     this.seatNotice.set('');
   }
-  async create(): Promise<void> {
+  async create(resultsOnly = false): Promise<void> {
     if (this.busy()) return;
     this.busy.set(true);
     this.error.set('');
@@ -221,7 +235,7 @@ export class Home {
       if (new Set(players.map((p) => p.name)).size !== players.length)
         throw new Error('Choose a different player for each seat.');
       const now = new Date().toISOString();
-      const match: Match = {
+      let match: Match = {
         id: newId(),
         schemaVersion: 1,
         name: setup.name.trim() || this.i18n.t(`${this.count()}P table`),
@@ -241,8 +255,24 @@ export class Home {
         clock: { elapsedMs: 0, runningSince: now, handStartMs: 0 },
       };
       match.gameLength = rules.preset === 'm-league' ? 'south' : setup.gameLength;
+      if (resultsOnly) {
+        const date = new Date(this.resultDate);
+        if (!Number.isFinite(date.getTime())) throw new Error('Enter a valid game date.');
+        match = adjustFinalPoints(
+          {
+            ...match,
+            createdAt: date.toISOString(),
+            ended: true,
+            endReason: 'Results only',
+            clock: { elapsedMs: 0, runningSince: null, handStartMs: 0 },
+          },
+          Object.fromEntries(players.map((player, index) => [player.id, this.resultPoints[index]])),
+          newId(),
+          now,
+        );
+      }
       await this.repo.save(match);
-      await this.router.navigate(['/score', match.id]);
+      await this.router.navigate([resultsOnly ? '/records' : '/score', match.id]);
     } catch (e) {
       this.error.set(e instanceof Error ? e.message : 'Could not create match.');
     } finally {
@@ -250,3 +280,4 @@ export class Home {
     }
   }
 }
+import { ResponsiveSheet } from '../../shared/responsive-sheet';

@@ -1,3 +1,4 @@
+import { DataTransfer } from '../records/data-transfer';
 import { Component, computed, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -8,11 +9,23 @@ import { BuildInfo } from '../../core/build-info';
 import { CaptureConfiguration } from '../scoring/capture/capture-config';
 
 @Component({
-  imports: [RouterLink, TranslatePipe, StorageStatus],
+  imports: [DataTransfer, RouterLink, TranslatePipe, StorageStatus, DialogBackdrop, LocalDatePipe],
   templateUrl: './others.html',
   styleUrl: './others.css',
 })
 export class Others {
+  readonly logs = inject(DiagnosticLog);
+  private logTapCount = 0;
+  private lastLogTap = 0;
+  revealLogs(dialog: HTMLDialogElement): void {
+    const now = performance.now();
+    this.logTapCount = now - this.lastLogTap <= 900 ? this.logTapCount + 1 : 1;
+    this.lastLogTap = now;
+    if (this.logTapCount === 3) {
+      this.logTapCount = 0;
+      dialog.showModal();
+    }
+  }
   readonly i18n = inject(I18n);
   readonly theme = inject(Theme);
   readonly build = inject(BuildInfo).value;
@@ -77,3 +90,6 @@ export class Others {
       this.i18n.set(value);
   }
 }
+import { DiagnosticLog } from '../../core/diagnostic-log';
+import { DialogBackdrop } from '../../shared/dialog-backdrop';
+import { LocalDatePipe } from '../../core/i18n/local-date';

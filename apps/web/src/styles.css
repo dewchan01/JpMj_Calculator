@@ -185,6 +185,10 @@ summary:focus-visible {
   outline: 3px solid #bf8c2b;
   outline-offset: 3px;
 }
+select:focus-visible {
+  outline: none;
+  box-shadow: inset 0 -3px 0 var(--green);
+}
 h1,
 h2,
 h3,
@@ -1554,6 +1558,23 @@ select,
   width: 100%;
   min-width: 0;
 }
+.filter-controls label {
+  display: grid;
+  align-content: end;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  text-align: left;
+  font-size: var(--field-label-size);
+  font-weight: 550;
+}
+.filter-controls select,
+.filter-controls input:not([type='checkbox']) {
+  min-height: var(--field-control-height);
+  font-size: var(--field-font-size);
+  border-radius: 8px;
+  background-color: var(--surface);
+}
 select {
   padding-right: 28px;
 }
@@ -1587,6 +1608,70 @@ select {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+.app-dialog {
+  width: min(520px, calc(100vw - 24px));
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+  overflow-y: auto;
+  box-shadow: 0 16px 60px #0003;
+}
+.app-dialog::backdrop {
+  background: #0007;
+}
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.dialog-header h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+.dialog-body {
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+}
+.dialog-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.dialog-fields label {
+  min-width: 0;
+  margin: 0;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.dialog-actions > button {
+  min-height: 44px;
+  padding: 10px 16px;
+}
+.app-dialog .dialog-header .icon-button {
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
 
 .back-link.back-button,
 .quick-score-back {
@@ -1594,4 +1679,75 @@ select {
   top: calc(var(--app-header-height, 0px) + 12px);
   z-index: 21;
   box-shadow: 0 3px 12px #0002;
+}
+.ripple-button {
+  overflow: hidden;
+  isolation: isolate;
+}
+.button-ripple {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+  background: currentColor;
+}
+.page-sticky-controls {
+  --page-sticky-gap: 24px;
+  position: sticky;
+  top: calc(var(--app-header-height, 0px) + var(--page-sticky-gap));
+  z-index: 10;
+  padding-block: 8px;
+  margin-bottom: 16px;
+  background: var(--page);
+}
+.page-sticky-controls::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: 100%;
+  height: var(--page-sticky-gap);
+  background: var(--page);
+}
+@media (max-width: 700px) {
+  .page-sticky-controls {
+    --page-sticky-gap: 16px;
+  }
+}
+button.action-cancel,
+button.action-delete:not(.icon-button) {
+  min-height: 44px;
+  padding: 10px 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.4;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+button.action-cancel {
+  color: var(--text);
+}
+button.action-delete {
+  color: #a03b2f;
+}
+:root[data-theme='dark'] button.action-delete {
+  color: #ffb6a3;
+}
+dialog[appResponsiveSheet].responsive-sheet {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(620px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 48px);
+  border-radius: 16px;
+}
+@media (max-width: 700px) {
+  dialog[appResponsiveSheet].responsive-sheet {
+    inset: auto 0 0;
+    margin: 0 auto;
+    width: 100%;
+    max-width: 100%;
+    max-height: 88dvh;
+    border-radius: 20px 20px 0 0;
+  }
 }

@@ -1,0 +1,79 @@
+.app-dialog .dialog-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.dialog-body > label,
+.dialog-body .hint {
+  margin: 0;
+}
+.transfer-games {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  max-height: 260px;
+  overflow-y: auto;
+  margin: 0;
+}
+.transfer-games label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding-block: 10px;
+  margin: 0;
+  border-bottom: 1px solid var(--border);
+}
+.transfer-games label:last-child {
+  border-bottom: 0;
+}
+.transfer-games input {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.transfer-games small {
+  display: block;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.data-transfer-section {
+  margin-block: 24px;
+}
+.data-transfer-section h2 {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.transfer-options {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.transfer-options button {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-height: 64px;
+  padding: 16px 20px;
+  background: var(--surface);
+  color: var(--text);
+  border: 0;
+  text-align: left;
+}
+.transfer-options button + button {
+  border-top: 1px solid var(--border);
+}
+.transfer-options span:nth-child(2) {
+  flex: 1;
+}
+.transfer-options svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

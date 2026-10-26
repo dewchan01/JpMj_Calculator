@@ -1,4 +1,6 @@
 import type { Match } from '../../../../../../../packages/mahjong-core/ledger';
+import { localizedDate } from '../../../core/i18n/date-format';
+import type { Language } from '../../../core/i18n/messages';
 import type { FinalStanding } from '../../../../../../../packages/mahjong-core/final-results';
 import type { PlayerStatistics, ScorePoint } from './match-statistics';
 export const playerColors = ['#176947', '#245fb3', '#a45116', '#913d78'];
@@ -39,7 +41,7 @@ export async function statisticsImage(
   players: PlayerStatistics[],
   points: ScorePoint[],
   t: (key: string) => string,
-  locale: string,
+  locale: Language,
   selected = '',
 ): Promise<Blob> {
   const canvas = document.createElement('canvas');
@@ -58,7 +60,7 @@ export async function statisticsImage(
       ' \u00b7 ' +
       match.playerCount +
       'P \u00b7 ' +
-      new Date(match.updatedAt).toLocaleDateString(locale),
+      localizedDate(match.updatedAt, locale, 'date'),
     48,
     90,
   );

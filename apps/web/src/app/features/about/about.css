@@ -1,0 +1,27 @@
+.rule-references {
+  margin-bottom: 20px;
+}
+.rule-references ul {
+  display: grid;
+  gap: 12px;
+  padding: 0;
+  margin-bottom: 0;
+  list-style: none;
+}
+.rule-references a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 44px;
+}
+.rule-references svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

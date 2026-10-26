@@ -4,6 +4,8 @@
   afterRenderEffect,
   computed,
   input,
+  inject,
+  effect,
   viewChild,
 } from '@angular/core';
 import { TranslatePipe } from '../../core/i18n/i18n';
@@ -24,6 +26,11 @@ export class ErrorNotice {
   );
   private readonly alert = viewChild<ElementRef<HTMLElement>>('alert');
   constructor() {
+    const log = inject(DiagnosticLog);
+    effect(() => {
+      const messages = this.content();
+      for (const message of messages) log.add('error', message);
+    });
     afterRenderEffect(() => {
       if (!this.content().length || !this.focusOnShow()) return;
       const element = this.alert()?.nativeElement;
@@ -44,3 +51,4 @@ export class ErrorNotice {
     });
   }
 }
+import { DiagnosticLog } from '../../core/diagnostic-log';

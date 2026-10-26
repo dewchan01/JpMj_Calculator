@@ -1,4 +1,4 @@
-import { balances, type Match } from './ledger';
+import { appendEvent, balances, roundState, type Match } from './ledger';
 import { tableRules } from '../mahjong-rules/index';
 
 export interface FinalStanding {
@@ -13,6 +13,48 @@ export interface FinalStanding {
   scoreMoney: number;
   chipMoney: number;
   totalMoney: number;
+}
+
+/** Corrections remain auditable and never rewrite the recorded hands. */
+export function adjustFinalPoints(
+  match: Match,
+  points: Record<string, number>,
+  eventId: string,
+  timestamp: string,
+): Match {
+  if (!match.ended) throw new Error('Only completed games can be edited.');
+  const current = balances(match);
+  const ids = match.players.map((player) => player.id);
+  if (
+    Object.keys(points).length !== ids.length ||
+    ids.some((id) => !Number.isSafeInteger(points[id]))
+  )
+    throw new Error('Enter integer points for every player.');
+  if (
+    ids.reduce((sum, id) => sum + points[id], 0) !==
+    ids.reduce((sum, id) => sum + current.players[id], 0)
+  )
+    throw new Error('Total points must match the table total.');
+  const deltas = ids.map((id) => ({ id, value: points[id] - current.players[id] }));
+  const payments = [];
+  for (const payer of deltas.filter((delta) => delta.value < 0)) {
+    for (const receiver of deltas.filter((delta) => delta.value > 0)) {
+      const amount = Math.min(-payer.value, receiver.value);
+      if (!amount) continue;
+      payments.push({ from: payer.id, to: receiver.id, amount, reason: 'Final score correction' });
+      payer.value += amount;
+      receiver.value -= amount;
+    }
+  }
+  if (!payments.length) return match;
+  return appendEvent(match, {
+    id: eventId,
+    timestamp,
+    type: 'scoreAdjustment',
+    payments,
+    before: roundState(match),
+    after: roundState(match),
+  });
 }
 
 /** Money is derived from the immutable rule snapshot; it never changes the points ledger. */

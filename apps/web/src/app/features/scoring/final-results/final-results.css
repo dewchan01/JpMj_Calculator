@@ -2,6 +2,47 @@
   display: block;
   min-width: 0;
 }
+.result-controls {
+  padding-block: 8px 1px;
+  margin-bottom: 12px;
+  background: var(--page);
+}
+.comparison-table {
+  overflow-x: auto;
+}
+.comparison-table table {
+  min-width: 0;
+  table-layout: fixed;
+}
+:host-context(dialog) .result-controls {
+  --page-sticky-gap: 0px;
+  top: 0;
+}
+.comparison-table th,
+.comparison-table td {
+  width: auto;
+  text-align: right;
+  padding: 12px 8px;
+}
+.comparison-table th:first-child {
+  text-align: left;
+}
+.result-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.result-tabs {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+.result-tabs button {
+  min-width: 0;
+  padding: 9px 6px;
+  font-size: 0.85rem;
+}
 .result-toolbar,
 .result-actions,
 .graph-legend,
@@ -25,13 +66,26 @@
   color: var(--text);
   font-size: 0.75rem;
 }
+.result-layout,
+.player-filter,
+.graph-legend {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding-block: 2px 6px;
+}
+.result-layout button,
+.graph-legend button,
+.player-filter button {
+  border-radius: 999px;
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 7px 12px;
+}
 .result-toolbar button[aria-pressed='true'],
 .graph-legend button[aria-pressed='true'] {
   background: var(--green);
   color: var(--surface);
-}
-.result-toolbar .share-image {
-  margin-left: auto;
 }
 .result-table table {
   width: 100%;
@@ -86,6 +140,35 @@ small {
   border-radius: 10px;
   margin: 10px 0;
   background: var(--surface);
+}
+.rank-badge {
+  color: var(--green);
+  font-weight: 650;
+}
+.metric-card dl {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.metric-card dl div {
+  padding: 8px;
+  background: var(--tray-surface);
+  border-radius: 8px;
+}
+.metric-card dt {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.score-editor {
+  margin: 0;
+}
+.score-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.score-fields label {
+  min-width: 0;
 }
 h3 {
   font-size: 0.95rem;
@@ -146,6 +229,13 @@ dd {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
+}
+.graph-legend {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding: 2px 2px 6px;
+  scrollbar-width: thin;
 }
 .graph-legend span {
   width: 10px;
@@ -169,4 +259,20 @@ dd {
 :host-context([data-theme='dark']) .result-actions .danger,
 :host-context([data-theme='dark']) .discard-confirm .danger {
   color: #ffb6a3;
+}
+
+.result-table.comparison-table table {
+  font-size: clamp(0.625rem, 2.4vw, 0.8rem);
+}
+.comparison-table th,
+.comparison-table td {
+  padding: 10px 3px;
+}
+.comparison-table th:first-child {
+  width: 24%;
+}
+.comparison-table th:not(:first-child),
+.comparison-table td {
+  width: auto;
+  text-align: right;
 }

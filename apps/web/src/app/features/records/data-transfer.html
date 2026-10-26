@@ -1,0 +1,106 @@
+<section class="data-transfer-section">
+  <h2>{{ 'Data' | t }}</h2>
+  <div class="transfer-options">
+    <button (click)="open(transferDialog, 'import')" aria-haspopup="dialog">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4" />
+      </svg>
+      <span>{{ 'Import JSON' | t }}</span>
+      <span aria-hidden="true">›</span>
+    </button>
+    <button (click)="open(transferDialog, 'export')" aria-haspopup="dialog">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 15V3m-5 5 5-5 5 5M4 17v4h16v-4" />
+      </svg>
+      <span>{{ 'Export JSON' | t }}</span>
+      <span aria-hidden="true">›</span>
+    </button>
+  </div>
+</section>
+<dialog appDialogBackdrop #transferDialog class="app-dialog" aria-labelledby="transfer-title">
+  <header class="dialog-header">
+    <h2 id="transfer-title">{{ (importing() ? 'Import JSON' : 'Export JSON') | t }}</h2>
+    <button class="icon-button" (click)="transferDialog.close()" [attr.aria-label]="'Close' | t">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
+    </button>
+  </header>
+  <div class="dialog-body">
+    @if (importing()) {
+      <label>
+        {{ 'Import JSON file' | t }}
+        <input
+          type="file"
+          accept=".json,application/json"
+          [disabled]="busy()"
+          (change)="readFile($event)"
+        />
+      </label>
+    }
+    <p class="hint">
+      {{ 'Choose whole games by player and date. Existing game IDs are skipped on import.' | t }}
+    </p>
+    @if (error()) {
+      <p role="alert">{{ error() | t }}</p>
+    }
+    @if (status()) {
+      <p role="status">{{ status() | t }}</p>
+    }
+    <div class="dialog-fields">
+      <label>
+        {{ 'From date' | t }}
+        <input type="date" [ngModel]="from()" (ngModelChange)="from.set($event)" />
+      </label>
+      <label>
+        {{ 'To date' | t }}
+        <input type="date" [ngModel]="to()" (ngModelChange)="to.set($event)" />
+      </label>
+    </div>
+    <label>
+      {{ 'Player' | t }}
+      <select [ngModel]="player()" (ngModelChange)="player.set($event)">
+        <option value="">{{ 'All players' | t }}</option>
+        @for (name of players(); track name) {
+          <option [value]="name">{{ name }}</option>
+        }
+      </select>
+    </label>
+    @if (invalidDates()) {
+      <p role="alert">{{ 'From date must not be after to date.' | t }}</p>
+    }
+    <fieldset class="transfer-games" [disabled]="busy()">
+      <legend>{{ 'Games' | t }} · {{ selected().length }} / {{ filtered().length }}</legend>
+      @for (game of filtered(); track game.id) {
+        <label>
+          <input type="checkbox" [checked]="!excluded().has(game.id)" (change)="toggle(game.id)" />
+          <span>
+            {{ game.name }}
+            <small>{{ game.createdAt | localDate: 'date' }}</small>
+          </span>
+        </label>
+      } @empty {
+        <p class="hint">{{ 'No games found.' | t }}</p>
+      }
+    </fieldset>
+    <div class="dialog-actions">
+      <button class="action-cancel" (click)="transferDialog.close()">{{ 'Cancel' | t }}</button>
+      @if (importing()) {
+        <button
+          class="primary"
+          (click)="import()"
+          [disabled]="busy() || invalidDates() || !selected().length"
+        >
+          {{ 'Import selected games' | t }}
+        </button>
+      }
+      @if (!importing()) {
+        <button
+          class="primary"
+          (click)="export()"
+          [disabled]="busy() || invalidDates() || !selected().length"
+        >
+          {{ 'Export selected games' | t }}
+        </button>
+      }
+    </div>
+  </div>
+</dialog>

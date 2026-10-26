@@ -1,0 +1,507 @@
+<div class="page-sticky-controls profile-sticky">
+  <header class="profile-heading">
+    <a
+      class="icon-button"
+      routerLink="/records"
+      [queryParams]="backQuery()"
+      [attr.aria-label]="'Back' | t"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 5-7 7 7 7M5 12h14" /></svg>
+    </a>
+    <div>
+      <p class="eyebrow">{{ 'Player analysis' | t }}</p>
+      <h1>{{ name() }}</h1>
+    </div>
+  </header>
+  <app-error-notice [message]="error()" />
+  <div class="profile-controls">
+    <div class="filter-chips" role="group" [attr.aria-label]="'Player count' | t">
+      <button [attr.aria-pressed]="count() === 4" (click)="setCount(4)">
+        {{ '4 players' | t }}
+      </button>
+      <button [attr.aria-pressed]="count() === 3" (click)="setCount(3)">
+        {{ '3 players' | t }}
+      </button>
+      <button
+        class="profile-filter-button"
+        (click)="openFilters(filterDialog)"
+        aria-haspopup="dialog"
+      >
+        {{ 'Filter records' | t }}
+      </button>
+    </div>
+    <div class="segmented" role="group" [attr.aria-label]="'Player analysis' | t">
+      @for (item of tabs; track item.key) {
+        <button
+          [class.selected]="tab() === item.key"
+          [attr.aria-pressed]="tab() === item.key"
+          (click)="tab.set(item.key)"
+        >
+          {{ item.label | t }}
+        </button>
+      }
+    </div>
+  </div>
+</div>
+@if (invalidDates()) {
+  <app-error-notice [message]="'From date must not be after to date.'" />
+}
+@if (loading()) {
+  <p role="status">{{ 'Loading records…' | t }}</p>
+} @else if (!analysis().games.length) {
+  <p class="empty">{{ 'No completed games match these filters.' | t }}</p>
+} @else {
+  <p class="profile-sample hint">
+    {{ format(analysis().games.length) }} {{ 'completed games' | t }} ·
+    {{ format(analysis().hands.length) }} {{ 'Recorded hands' | t }}
+  </p>
+  @if (tab() === 'overview') {
+    <section class="card analysis-section">
+      <h2>{{ 'Rank trend (Last 16 games)' | t }}</h2>
+      <p class="hint">{{ 'Earlier games on the left. Lower rank is better.' | t }}</p>
+      <svg
+        class="trend-chart"
+        viewBox="0 0 700 220"
+        role="img"
+        [attr.aria-label]="'Rank trend (Last 16 games)' | t"
+      >
+        <title>{{ 'Rank trend (Last 16 games)' | t }}</title>
+        @for (item of analysis().histogram; track item.rank) {
+          <path [attr.d]="'M40 ' + rankY(item.rank) + 'H660'" class="grid-line" />
+          <text x="12" [attr.y]="rankY(item.rank) + 5">{{ item.rank }}</text>
+        }
+        <polyline [attr.points]="rankLine(analysis().games)" class="rank-line" />
+        @for (game of analysis().recent; track game.match.id; let index = $index) {
+          <circle
+            [attr.cx]="rankX(index, analysis().recent.length)"
+            [attr.cy]="rankY(game.rank)"
+            r="5"
+            class="rank-dot"
+          >
+            <title>{{ game.match.createdAt | localDate: 'date' }} · {{ game.rank }}</title>
+          </circle>
+        }
+        <text x="40" y="212">{{ analysis().recent[0].match.createdAt | localDate: 'date' }}</text>
+        <text x="660" y="212" text-anchor="end">
+          {{ analysis().recent[analysis().recent.length - 1].match.createdAt | localDate: 'date' }}
+        </text>
+      </svg>
+      <section class="chart-data">
+        <h3>{{ 'Chart data' | t }}</h3>
+        <ol class="game-links">
+          @for (game of analysis().recent; track game.match.id) {
+            <li>
+              <a [routerLink]="['/records', game.match.id]">
+                {{ game.match.createdAt | localDate: 'date' }} · {{ 'Rank' | t }} {{ game.rank }} ·
+                {{ format(game.score) }}
+              </a>
+            </li>
+          }
+        </ol>
+      </section>
+    </section>
+    <div class="analysis-grid">
+      <section class="card analysis-section">
+        <h2>{{ 'Rank distribution' | t }}</h2>
+        <div class="histogram" role="group" [attr.aria-label]="'Rank distribution' | t">
+          @for (item of analysis().histogram; track item.rank) {
+            <div class="histogram-column">
+              <strong>{{ item.count }}</strong>
+              <div class="histogram-track">
+                <span [style.height.%]="bar(item.count, analysis().games.length)"></span>
+              </div>
+              <span>#{{ item.rank }}</span>
+              <small>{{ format(item.count / analysis().games.length, 'percent') }}</small>
+            </div>
+          }
+        </div>
+      </section>
+      <section class="card analysis-section">
+        <h2>{{ 'Recent trend' | t }}</h2>
+        <dl class="metric-grid">
+          <div>
+            <dt>{{ 'Recent average rank' | t }}</dt>
+            <dd>{{ format(analysis().trend.recentRank) }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'Previous average rank' | t }}</dt>
+            <dd>{{ format(analysis().trend.previousRank) }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'Recent average score' | t }}</dt>
+            <dd>{{ format(analysis().trend.recentScore) }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'Previous average score' | t }}</dt>
+            <dd>{{ format(analysis().trend.previousScore) }}</dd>
+          </div>
+        </dl>
+        <p class="hint">{{ 'Latest 16 games compared with the preceding 16 games.' | t }}</p>
+      </section>
+      <section class="card analysis-section">
+        <h2>{{ 'Play tendency' | t }}</h2>
+        @for (item of tendency; track item.key) {
+          <div class="rate-row">
+            <span>{{ item.label | t }}</span>
+            <strong>{{ format(analysis().metrics[item.key], 'percent') }}</strong>
+            <div class="rate-track">
+              <span [style.width.%]="(analysis().metrics[item.key] ?? 0) * 100"></span>
+            </div>
+          </div>
+        }
+      </section>
+      <section class="card analysis-section">
+        <h2>{{ 'Rank variance / stability' | t }}</h2>
+        <dl class="metric-grid">
+          <div>
+            <dt>{{ 'Rank variance' | t }}</dt>
+            <dd>{{ format(analysis().metrics['variance']) }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'Stability score' | t }}</dt>
+            <dd>{{ format(analysis().metrics['stability']) }} / 100</dd>
+          </div>
+        </dl>
+        <p class="hint">
+          {{
+            'Stability = 100 × (1 − rank variance / maximum variance). Higher means less rank variation, not stronger play.'
+              | t
+          }}
+        </p>
+      </section>
+    </div>
+    <section class="card analysis-section">
+      <h2>{{ 'Win score distribution' | t }}</h2>
+      @for (bin of analysis().distribution; track bin.lower) {
+        <div class="rate-row">
+          <span>{{ scoreBin(bin.lower, bin.upper) }}</span>
+          <strong>{{ bin.count }}</strong>
+          <div class="rate-track">
+            <span [style.width.%]="bar(bin.count, scoredWins())"></span>
+          </div>
+        </div>
+      }
+      <p class="hint">
+        {{
+          'Winning receipts include Honba and awarded Riichi sticks; final penalties and score corrections are excluded.'
+            | t
+        }}
+      </p>
+    </section>
+    <section class="card analysis-section">
+      <h2>{{ 'M-league resemblance' | t }}</h2>
+      @for (player of resemblance(); track player.name) {
+        <div class="resemblance-row">
+          <strong>{{ player.name }}</strong>
+          <span>{{ format(player.similarity) }}%</span>
+          <small>
+            {{ format(player.games) }} {{ 'Game count' | t }} · {{ format(player.hands) }}
+            {{ 'Recorded hands' | t }}
+          </small>
+        </div>
+      } @empty {
+        <p class="hint">
+          {{ 'Requires at least 20 recorded 4P hands and three available comparison metrics.' | t }}
+        </p>
+      }
+      <p class="hint">
+        {{
+          'Descriptive similarity among eight reference players, not a skill rating. Rules and payment conventions may differ.'
+            | t
+        }}
+      </p>
+      <details>
+        <summary>{{ 'Method and source' | t }}</summary>
+        <p class="hint">
+          {{
+            'Uses win rate, deal-in rate, open rate, Riichi rate and average win score. Similarity is 100 × max(0, 1 − RMS normalized distance); scales are 10, 8, 20, 20 percentage points and 4,000 points. Missing metrics are omitted.'
+              | t
+          }}
+        </p>
+        <p>
+          <a [href]="reference.source" target="_blank" rel="noopener noreferrer">
+            {{ 'Official M.League statistics' | t }}
+          </a>
+          · {{ reference.season }} · {{ reference.date | localDate: 'date' }}
+        </p>
+      </details>
+    </section>
+  }
+  @if (tab() === 'stats' || tab() === 'explore') {
+    <label class="compare-control">
+      {{ 'Compare with' | t }}
+      <select [value]="compare()" (change)="setValue($event, 'compare')">
+        <option value="">{{ 'No comparison' | t }}</option>
+        @for (peer of peers(); track peer) {
+          <option [value]="peer">{{ peer }}</option>
+        }
+      </select>
+    </label>
+  }
+  @if (tab() === 'stats') {
+    <p class="hint">
+      {{
+        'Score includes Uma and Oka. Points are net raw-point changes. Plus/minus rates use final score. Currencies stay separate.'
+          | t
+      }}
+    </p>
+    <div class="analysis-grid">
+      @for (group of groups; track group.label) {
+        <section class="card analysis-section stats-group">
+          <h2>{{ group.label | t }}</h2>
+          <dl class="stats-list">
+            @for (field of group.fields; track field.key) {
+              <div>
+                <dt>{{ field.label | t }}</dt>
+                <dd>
+                  <span>{{ name() }}</span>
+                  <strong>{{ format(analysis().metrics[field.key], field.format) }}</strong>
+                  @if (comparison(); as other) {
+                    <span>{{ other.name }}</span>
+                    <strong class="comparison-value">
+                      {{ format(other.metrics[field.key], field.format) }}
+                    </strong>
+                  }
+                </dd>
+              </div>
+            }
+          </dl>
+        </section>
+      }
+      <section class="card analysis-section">
+        <h2>{{ 'Money stats' | t }}</h2>
+        @for (entry of analysis().money; track entry.currency) {
+          <h3>{{ entry.currency || ('Unspecified currency' | t) }}</h3>
+          <dl class="metric-grid">
+            <div>
+              <dt>{{ 'Total money' | t }}</dt>
+              <dd>{{ format(entry.total, 'money') }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'Average money' | t }}</dt>
+              <dd>{{ format(entry.average, 'money') }}</dd>
+            </div>
+          </dl>
+        }
+        @if (comparison(); as other) {
+          <h3>{{ other.name }}</h3>
+          @for (entry of other.money; track entry.currency) {
+            <p>
+              {{ entry.currency || ('Unspecified currency' | t) }} · {{ 'Total money' | t }}
+              {{ format(entry.total, 'money') }} · {{ 'Average money' | t }}
+              {{ format(entry.average, 'money') }}
+            </p>
+          }
+        }
+      </section>
+    </div>
+    <details class="metric-definitions">
+      <summary>{{ 'How these rates are calculated' | t }}</summary>
+      <p>
+        {{
+          'Hand rates exclude abortive draws and score corrections. Conditional rates use only hands with the corresponding recorded state. Dama means closed without Riichi. Ron and Tsumo rates use recorded hands, not only wins.'
+            | t
+        }}
+      </p>
+      <p>
+        {{
+          'Vs-state deal-in rates use hands with at least one opponent recorded in that state. Multiple Ron counts once per state; payments to winners in that state are combined.'
+            | t
+        }}
+      </p>
+      <p>
+        {{
+          'Tenpai rates use recorded exhaustive draws. Dealer Tsumo payment rate uses dealer hands; average Renchan counts additional consecutive dealer hands per recorded dealer run. Bust means raw points below zero. Missing metadata is shown as —.'
+            | t
+        }}
+      </p>
+    </details>
+  }
+  @if (tab() === 'explore') {
+    @if (comparison(); as other) {
+      <section class="card analysis-section">
+        <h2>{{ 'Player comparison' | t }}</h2>
+        <div class="comparison-heading">
+          <strong>{{ name() }}</strong>
+          <strong>{{ other.name }}</strong>
+        </div>
+        @for (key of comparisonFields; track key.key) {
+          <div class="compare-row">
+            <span>{{ key.label | t }}</span>
+            <strong>
+              {{
+                format(
+                  analysis().metrics[key.key],
+                  key.key === 'win' || key.key === 'deal' ? 'percent' : 'number'
+                )
+              }}
+            </strong>
+            <strong>
+              {{
+                format(
+                  other.metrics[key.key],
+                  key.key === 'win' || key.key === 'deal' ? 'percent' : 'number'
+                )
+              }}
+            </strong>
+          </div>
+        }
+        <svg
+          class="trend-chart"
+          viewBox="0 0 700 220"
+          role="img"
+          [attr.aria-label]="'Player comparison' | t"
+        >
+          <title>{{ 'Rank trend (Last 16 games)' | t }}</title>
+          <path d="M40 30V180H660" class="grid-line" />
+          <polyline class="rank-line" [attr.points]="rankLine(analysis().games)" />
+          <polyline class="compare-line" [attr.points]="rankLine(other.games)" />
+        </svg>
+        <p class="hint">
+          {{
+            'Solid line: selected player. Dashed line: comparison player. Each line shows that player’s latest 16 games in order; dates may differ.'
+              | t
+          }}
+        </p>
+      </section>
+    }
+    <section class="card analysis-section">
+      <h2>{{ 'Player chemistry' | t }}</h2>
+      <label>
+        {{ 'Shared opponent' | t }}
+        <select [value]="opponent()" (change)="setValue($event, 'opponent')">
+          <option value="">{{ 'All players' | t }}</option>
+          @for (row of analysis().chemistry; track row.name) {
+            <option [value]="row.name">{{ row.name }}</option>
+          }
+        </select>
+      </label>
+      <p class="hint">
+        {{
+          'Average rank and score in games shared with each opponent. Finishing ahead excludes tied ranks; this is association, not causation.'
+            | t
+        }}
+      </p>
+      @for (row of chemistry(); track row.name) {
+        <article class="chemistry-card">
+          <button (click)="opponent.set(row.name)">{{ row.name }}</button>
+          <dl class="metric-grid">
+            <div>
+              <dt>{{ 'Shared games' | t }}</dt>
+              <dd>{{ row.games }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'Average rank' | t }}</dt>
+              <dd>{{ format(row.averageRank) }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'Average score' | t }}</dt>
+              <dd>{{ format(row.averageScore) }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'Finish ahead rate' | t }}</dt>
+              <dd>{{ format(row.ahead, 'percent') }}</dd>
+            </div>
+          </dl>
+        </article>
+      }
+      <details>
+        <summary>{{ 'Shared game history' | t }}</summary>
+        <ol class="game-links">
+          @for (game of sharedGames(); track game.match.id) {
+            <li>
+              <a [routerLink]="['/records', game.match.id]">
+                {{ game.match.name }} · {{ game.match.createdAt | localDate: 'date' }} · #{{
+                  game.rank
+                }}
+              </a>
+            </li>
+          }
+        </ol>
+      </details>
+    </section>
+    <section class="card analysis-section">
+      <h2>{{ 'Seat analysis' | t }}</h2>
+      <p class="hint">
+        {{
+          'Game rank uses the starting seat. Hand rates use the seat recorded for that hand.' | t
+        }}
+      </p>
+      <div class="seat-grid">
+        @for (seat of analysis().seats; track seat.seat) {
+          <article class="seat-card">
+            <h3>{{ seats[seat.seat] | t }}</h3>
+            <dl class="metric-grid">
+              <div>
+                <dt>{{ 'Game count' | t }}</dt>
+                <dd>{{ seat.games }}</dd>
+              </div>
+              <div>
+                <dt>{{ 'Average rank' | t }}</dt>
+                <dd>{{ format(seat.averageRank) }}</dd>
+              </div>
+              <div>
+                <dt>{{ 'Recorded hands' | t }}</dt>
+                <dd>{{ seat.hands }}</dd>
+              </div>
+              <div>
+                <dt>{{ 'Win rate' | t }}</dt>
+                <dd>{{ format(seat.winRate, 'percent') }}</dd>
+              </div>
+              <div>
+                <dt>{{ 'Deal-in rate' | t }}</dt>
+                <dd>{{ format(seat.dealRate, 'percent') }}</dd>
+              </div>
+            </dl>
+          </article>
+        }
+      </div>
+    </section>
+  }
+}
+
+<dialog
+  appResponsiveSheet
+  appDialogBackdrop
+  #filterDialog
+  class="app-dialog"
+  aria-labelledby="player-filter-title"
+>
+  <header class="dialog-header">
+    <h2 id="player-filter-title">{{ 'Filter records' | t }}</h2>
+    <button class="icon-button" (click)="filterDialog.close()" [attr.aria-label]="'Close' | t">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
+    </button>
+  </header>
+  <div class="dialog-body filter-controls">
+    <div class="dialog-fields">
+      <label>
+        {{ 'From date' | t }}
+        <input type="date" [value]="filterDraft().from" (change)="updateFilter($event, 'from')" />
+      </label>
+      <label>
+        {{ 'To date' | t }}
+        <input type="date" [value]="filterDraft().to" (change)="updateFilter($event, 'to')" />
+      </label>
+    </div>
+    <label>
+      {{ 'Game length' | t }}
+      <select [value]="filterDraft().length" (change)="updateFilter($event, 'length')">
+        <option value="">{{ 'All modes' | t }}</option>
+        <option value="east">{{ 'East only' | t }}</option>
+        <option value="south">{{ 'East + South' | t }}</option>
+      </select>
+    </label>
+    @if (invalidDraftDates()) {
+      <app-error-notice [message]="'From date must not be after to date.'" />
+    }
+    <div class="dialog-actions">
+      <button (click)="filterDraft.set({ from: '', to: '', length: '' })">
+        {{ 'Reset filters' | t }}
+      </button>
+      <button class="primary" (click)="applyFilters(filterDialog)" [disabled]="invalidDraftDates()">
+        {{ 'Apply filters' | t }}
+      </button>
+    </div>
+  </div>
+</dialog>

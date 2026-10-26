@@ -1,0 +1,37 @@
+.hand-players {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-block: 12px;
+}
+.hand-player {
+  padding: 10px;
+  background: var(--tray-surface);
+  border-radius: 8px;
+  min-width: 0;
+}
+.hand-player h3 {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+.hand-player small {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 400;
+}
+.hand-player dl {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+.hand-player dt {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.hand-player dd {
+  margin: 0;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}

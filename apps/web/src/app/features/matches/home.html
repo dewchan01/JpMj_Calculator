@@ -44,64 +44,89 @@
 </div>
 <p class="seat-notice" role="status">{{ seatNotice() | t }}</p>
 <div class="home-grid home-content">
-  <section class="card setup-card form-compact">
-    <div class="section-heading">
-      <h1 class="setup-heading">{{ 'Set the table' | t }}</h1>
-      <a class="text-link quick-score-link" routerLink="/score">{{ 'Quick score' | t }}</a>
-    </div>
-    <div class="segmented" [attr.aria-label]="'Player count' | t">
-      <button [class.selected]="count() === 4" (click)="setCount(4)">
-        {{ '4 players' | t }}
-      </button>
-      <button [class.selected]="count() === 3" (click)="setCount(3)">
-        {{ '3 players' | t }}
-      </button>
-    </div>
-    <app-rule-picker [profile]="rules()" />
-    <div class="setup-fields">
-      @if (rules().preset !== 'm-league') {
+  <div class="setup-column">
+    <section class="card setup-card form-compact">
+      <div class="section-heading">
+        <h1 class="setup-heading">{{ 'Set the table' | t }}</h1>
+        <a class="text-link quick-score-link" routerLink="/score">{{ 'Quick score' | t }}</a>
+      </div>
+      <div class="segmented" [attr.aria-label]="'Player count' | t">
+        <button [class.selected]="count() === 4" (click)="setCount(4)">
+          {{ '4 players' | t }}
+        </button>
+        <button [class.selected]="count() === 3" (click)="setCount(3)">
+          {{ '3 players' | t }}
+        </button>
+      </div>
+      <app-rule-picker [profile]="rules()" />
+      <div class="setup-fields">
+        @if (rules().preset !== 'm-league') {
+          <label>
+            {{ 'Game length' | t }}
+            <select [formField]="setupForm.gameLength">
+              <option value="east">{{ 'East only' | t }}</option>
+              <option value="south">{{ 'East + South' | t }}</option>
+            </select>
+          </label>
+        }
         <label>
-          {{ 'Game length' | t }}
-          <select [formField]="setupForm.gameLength">
-            <option value="east">{{ 'East only' | t }}</option>
-            <option value="south">{{ 'East + South' | t }}</option>
-          </select>
+          {{ 'Match name' | t }}
+          <input [formField]="setupForm.name" [attr.placeholder]="'Saturday afternoon' | t" />
         </label>
-      }
-      <label>
-        {{ 'Match name' | t }}
-        <input [formField]="setupForm.name" [attr.placeholder]="'Saturday afternoon' | t" />
-      </label>
+      </div>
+      <div class="players-grid">
+        @for (seat of seats.slice(0, count()); track seat; let i = $index) {
+          <div class="seat-choice">
+            <span class="field-label">{{ seat + ' seat' | t }}</span>
+            <button
+              class="field-control"
+              (click)="openPlayers(playersDialog, i)"
+              [attr.aria-label]="('Choose player' | t) + ' ' + (seat | t)"
+            >
+              <strong>{{ setup().names[i] || ('Player ' + (i + 1) | t) }}</strong>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="9" cy="8" r="3" />
+                <path d="M3 21v-3a6 6 0 0 1 12 0v3m4-13v8m-4-4h8" />
+              </svg>
+            </button>
+          </div>
+        }
+      </div>
+      <p class="hint">
+        {{ rules().startingPoints | number }} {{ 'points each' | t }}
+        <span class="setup-note">
+          {{ 'Dealer rotation, honba and match endings follow the selected rules.' | t }}
+        </span>
+      </p>
+      <button class="primary full" (click)="create()" [disabled]="busy()">
+        {{ 'Start match' | t }}
+        <span aria-hidden="true">↗</span>
+      </button>
+    </section>
+    <div class="home-record-actions">
+      <button
+        appRipple
+        class="record-only-button"
+        (click)="openRecordResults(recordResultsDialog)"
+        [disabled]="busy()"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 3h14v18H5zM9 7h6m-6 5h6m-6 5h4" />
+        </svg>
+        {{ 'Record results only' | t }}
+      </button>
+      <button
+        appRipple
+        class="ongoing-button"
+        (click)="ongoingDialog.showModal()"
+        aria-haspopup="dialog"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4 12 8-12 8Z" /></svg>
+        {{ 'Ongoing games' | t }}
+        <span class="pill">{{ ongoing().length }}</span>
+      </button>
     </div>
-    <div class="players-grid">
-      @for (seat of seats.slice(0, count()); track seat; let i = $index) {
-        <div class="seat-choice">
-          <span class="field-label">{{ seat + ' seat' | t }}</span>
-          <button
-            class="field-control"
-            (click)="openPlayers(playersDialog, i)"
-            [attr.aria-label]="('Choose player' | t) + ' ' + (seat | t)"
-          >
-            <strong>{{ setup().names[i] || ('Player ' + (i + 1) | t) }}</strong>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="9" cy="8" r="3" />
-              <path d="M3 21v-3a6 6 0 0 1 12 0v3m4-13v8m-4-4h8" />
-            </svg>
-          </button>
-        </div>
-      }
-    </div>
-    <p class="hint">
-      {{ rules().startingPoints | number }} {{ 'points each' | t }}
-      <span class="setup-note">
-        {{ 'Dealer rotation, honba and match endings follow the selected rules.' | t }}
-      </span>
-    </p>
-    <button class="primary full" (click)="create()" [disabled]="busy()">
-      {{ 'Start match' | t }}
-      <span aria-hidden="true">↗</span>
-    </button>
-  </section>
+  </div>
   <aside class="table-intro">
     <div class="tile-still-life" aria-hidden="true">
       <span>
@@ -130,62 +155,111 @@
   </aside>
 </div>
 <dialog
+  appResponsiveSheet
   appDialogBackdrop
-  [dialogCanDismiss]="canDismissPlayers"
+  #ongoingDialog
+  class="players-dialog app-dialog"
+  aria-labelledby="ongoing-title"
+>
+  <header class="players-heading dialog-header">
+    <h2 id="ongoing-title">{{ 'Ongoing games' | t }}</h2>
+    <button class="icon-button" (click)="ongoingDialog.close()" [attr.aria-label]="'Close' | t">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
+    </button>
+  </header>
+  <div class="ongoing-list">
+    @for (game of ongoing(); track game.id) {
+      <a [routerLink]="['/score', game.id]" (click)="ongoingDialog.close()">
+        <strong>{{ game.name }}</strong>
+        <span>
+          {{ game.players[0].name }} · {{ game.players[1].name }} · {{ game.playerCount }}P
+        </span>
+        <span>{{ 'Resume game' | t }} →</span>
+      </a>
+    } @empty {
+      <p class="hint">{{ 'No ongoing games.' | t }}</p>
+    }
+  </div>
+</dialog>
+<dialog
+  appResponsiveSheet
+  appDialogBackdrop
+  #recordResultsDialog
+  class="players-dialog app-dialog"
+  aria-labelledby="record-results-title"
+>
+  <header class="players-heading dialog-header">
+    <h2 id="record-results-title">{{ 'Record results only' | t }}</h2>
+    <button
+      class="icon-button"
+      (click)="recordResultsDialog.close()"
+      [attr.aria-label]="'Close' | t"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
+    </button>
+  </header>
+  <form class="dialog-body" (ngSubmit)="create(true)">
+    <p class="hint">
+      {{
+        'Use the players and rules selected on My table. Enter final points without recording individual hands.'
+          | t
+      }}
+    </p>
+    <app-error-notice [message]="error()" />
+    <label>
+      {{ 'Game date' | t }}
+      <input type="datetime-local" name="gameDate" required [(ngModel)]="resultDate" />
+    </label>
+    <div class="dialog-fields">
+      @for (name of activeNames(); track $index; let index = $index) {
+        <label>
+          {{ name }}
+          <input
+            type="number"
+            step="1"
+            required
+            [name]="'points-' + index"
+            [(ngModel)]="resultPoints[index]"
+          />
+        </label>
+      }
+    </div>
+    <button class="primary full" type="submit" [disabled]="busy()">{{ 'Save game' | t }}</button>
+  </form>
+</dialog>
+<dialog
+  appResponsiveSheet
+  appDialogBackdrop
   #playersDialog
-  class="players-dialog"
+  class="players-dialog app-dialog player-sheet"
   aria-labelledby="players-title"
 >
-  <header class="players-heading">
+  <header class="players-heading dialog-header">
     <h2 id="players-title">
       {{ (pickerSeat() === null ? 'Saved players' : 'Choose player') | t }}
       @if (pickerSeat() !== null) {
         · {{ seats[pickerSeat()!] | t }}
       }
     </h2>
-    <button
-      class="back-button"
-      [attr.aria-label]="(playerPanel() === 'add' ? 'Back' : 'Close') | t"
-      [title]="(playerPanel() === 'add' ? 'Back' : 'Close') | t"
-      (click)="playerPanel() === 'add' ? playerPanel.set('list') : playersDialog.close()"
-    >
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path
-          [attr.d]="playerPanel() === 'add' ? 'M19 12H5m7-7-7 7 7 7' : 'm6 6 12 12M6 18 18 6'"
-        />
-      </svg>
+    <button class="icon-button" [attr.aria-label]="'Close' | t" (click)="playersDialog.close()">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
     </button>
   </header>
   <section class="player-library">
     <app-error-notice [message]="playerError()" />
-    @if (playerPanel() === 'add') {
-      <div class="action-row">
-        <label>
-          {{ 'Player name' | t }}
-          <input
-            [formControl]="playerName"
-            maxlength="40"
-            (keydown.enter)="addPlayer(playersDialog)"
-          />
-        </label>
-        <button class="primary" (click)="addPlayer(playersDialog)">{{ 'Add player' | t }}</button>
-      </div>
-    } @else {
+    <label>
+      {{ 'Search players' | t }}
+      <input type="search" [value]="playerSearch()" (input)="filterPlayers($event)" />
+    </label>
+    <div class="filter-controls player-filters">
       <label>
-        {{ 'Search players' | t }}
-        <input type="search" [value]="playerSearch()" (input)="filterPlayers($event)" />
+        {{ 'Sort players' | t }}
+        <select [value]="playerSort()" (change)="changePlayerSort($event)">
+          <option value="asc">A–Z</option>
+          <option value="desc">Z–A</option>
+          <option value="newest">{{ 'Newest first' | t }}</option>
+        </select>
       </label>
-      <div class="player-sort" role="group" [attr.aria-label]="'Sort players' | t">
-        <button (click)="sortPlayers('asc')" [attr.aria-pressed]="playerSort() === 'asc'">
-          A–Z
-        </button>
-        <button (click)="sortPlayers('desc')" [attr.aria-pressed]="playerSort() === 'desc'">
-          Z–A
-        </button>
-        <button (click)="sortPlayers('newest')" [attr.aria-pressed]="playerSort() === 'newest'">
-          {{ 'Newest first' | t }}
-        </button>
-      </div>
       <label class="player-filter">
         {{ 'Filter players' | t }}
         <select [value]="playerFilter()" (change)="filterSeats($event)">
@@ -194,62 +268,84 @@
           <option value="seated">{{ 'Seated players' | t }}</option>
         </select>
       </label>
-      <div class="player-results">
-        @for (player of visiblePlayers(); track player.id) {
-          <div class="player-result">
-            @if (pickerSeat() !== null) {
-              <button
-                class="player-select"
-                [disabled]="alreadySeated(player.name)"
-                (click)="selectPlayer(player.id) && playersDialog.close()"
-              >
-                {{ player.name }}
-                @if (alreadySeated(player.name)) {
-                  <small>{{ 'Already seated' | t }}</small>
-                }
-              </button>
-            } @else {
-              <span>{{ player.name }}</span>
-            }
-            @if (pickerSeat() === null) {
-              <button
-                class="quiet danger"
-                (click)="removePlayer(player.id)"
-                [attr.aria-label]="('Remove' | t) + ' ' + player.name"
-              >
-                {{ 'Remove' | t }}
-              </button>
-            }
-          </div>
-        } @empty {
-          <p class="hint">{{ 'No players found.' | t }}</p>
-        }
-      </div>
-      <div class="player-pagination">
-        <button
-          (click)="playerPage.set(playerPage() - 1)"
-          [disabled]="playerPage() === 0"
-          [attr.aria-label]="'Previous page' | t"
-        >
-          ‹
-        </button>
-        <span>{{ playerPage() + 1 }} / {{ playerPages() }} · {{ filteredPlayers().length }}</span>
-        <button
-          (click)="playerPage.set(playerPage() + 1)"
-          [disabled]="playerPage() + 1 >= playerPages()"
-          [attr.aria-label]="'Next page' | t"
-        >
-          ›
-        </button>
-        <button (click)="playerPanel.set('add'); playerError.set('')">
-          {{ 'New player' | t }}
-        </button>
-      </div>
-    }
+    </div>
+    <div
+      class="player-results"
+      (scroll)="loadMorePlayers($event)"
+      tabindex="0"
+      [attr.aria-label]="'Saved players' | t"
+    >
+      @for (player of visiblePlayers(); track player.id) {
+        <div class="player-result">
+          @if (pickerSeat() !== null) {
+            <button
+              class="player-select"
+              [disabled]="alreadySeated(player.name)"
+              (click)="selectPlayer(player.id) && playersDialog.close()"
+            >
+              {{ player.name }}
+              @if (alreadySeated(player.name)) {
+                <small>{{ 'Already seated' | t }}</small>
+              }
+            </button>
+          } @else {
+            <span>{{ player.name }}</span>
+          }
+          @if (pickerSeat() === null) {
+            <button
+              class="icon-button danger action-delete"
+              (click)="removePlayer(player.id)"
+              [attr.aria-label]="('Remove' | t) + ' ' + player.name"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7" />
+              </svg>
+            </button>
+          }
+        </div>
+      } @empty {
+        <p class="hint">{{ 'No players found.' | t }}</p>
+      }
+    </div>
   </section>
+  <button
+    class="icon-button add-player-floating"
+    [attr.aria-label]="'New player' | t"
+    [title]="'New player' | t"
+    (click)="playerError.set(''); addPlayerDialog.showModal()"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+  </button>
 </dialog>
-<dialog appDialogBackdrop #swapDialog class="players-dialog" aria-labelledby="swap-title">
-  <header class="players-heading">
+<dialog appDialogBackdrop #addPlayerDialog class="app-dialog" aria-labelledby="add-player-title">
+  <header class="dialog-header">
+    <h2 id="add-player-title">{{ 'New player' | t }}</h2>
+    <button class="icon-button" [attr.aria-label]="'Close' | t" (click)="addPlayerDialog.close()">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
+    </button>
+  </header>
+  <form class="dialog-body" (ngSubmit)="addPlayer(addPlayerDialog)">
+    <app-error-notice [message]="playerError()" />
+    <label>
+      {{ 'Player name' | t }}
+      <input [formControl]="playerName" maxlength="40" required />
+    </label>
+    <div class="dialog-actions">
+      <button class="action-cancel" type="button" (click)="addPlayerDialog.close()">
+        {{ 'Cancel' | t }}
+      </button>
+      <button class="primary" type="submit">{{ 'Add player' | t }}</button>
+    </div>
+  </form>
+</dialog>
+<dialog
+  appResponsiveSheet
+  appDialogBackdrop
+  #swapDialog
+  class="players-dialog app-dialog"
+  aria-labelledby="swap-title"
+>
+  <header class="players-heading dialog-header">
     <h2 id="swap-title">{{ 'Quick swap' | t }}</h2>
     <button
       class="back-button"
@@ -286,8 +382,14 @@
     </button>
   </div>
 </dialog>
-<dialog appDialogBackdrop #diceDialog class="players-dialog" aria-labelledby="setup-dice-title">
-  <header class="players-heading">
+<dialog
+  appResponsiveSheet
+  appDialogBackdrop
+  #diceDialog
+  class="players-dialog app-dialog"
+  aria-labelledby="setup-dice-title"
+>
+  <header class="players-heading dialog-header">
     <h2 id="setup-dice-title">{{ 'Dice' | t }}</h2>
     <button
       class="back-button"

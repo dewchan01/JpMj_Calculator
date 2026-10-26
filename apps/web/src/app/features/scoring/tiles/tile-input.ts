@@ -37,6 +37,12 @@ export class TileInput {
   readonly label = input.required<string>();
   readonly playerCount = input.required<3 | 4>();
   readonly redFives = input(true);
+  readonly meldType = input<MeldEntryType>();
+  readonly upgradeKind = input<number>();
+  readonly entryError = computed(() => {
+    const type = this.meldType();
+    return type ? meldTileError(this.tiles(), type, this.upgradeKind()) : '';
+  });
   readonly editor = linkedSignal(() => ({ notation: this.value() }));
   readonly editForm = form(this.editor);
   readonly error = signal('');
@@ -94,3 +100,4 @@ export class TileInput {
     }
   }
 }
+import { meldTileError, type MeldEntryType } from './meld-tile-validation';

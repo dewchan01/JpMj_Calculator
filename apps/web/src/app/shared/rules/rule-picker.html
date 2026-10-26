@@ -15,7 +15,9 @@
               : (ruleName(profile()) | t)
           }}
         </strong>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m16 3 5 5-13 13H3v-5ZM14 5l5 5" />
+        </svg>
       </button>
     </div>
   } @else {
@@ -32,7 +34,13 @@
     </p>
   }
 </section>
-<dialog appDialogBackdrop #rulesDialog class="rules-dialog" aria-labelledby="choose-rules-title">
+<dialog
+  appResponsiveSheet
+  appDialogBackdrop
+  #rulesDialog
+  class="rules-dialog"
+  aria-labelledby="choose-rules-title"
+>
   <header>
     <h2 id="choose-rules-title">{{ 'Rules' | t }} · {{ profile().playerCount }}P</h2>
     <a

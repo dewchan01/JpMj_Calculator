@@ -137,3 +137,25 @@
   position: absolute;
   inset: -6px;
 }
+.settings-sticky .page-heading {
+  margin: 0 0 12px;
+}
+.settings-sticky .page-heading h1 {
+  font-size: 1.6rem;
+  margin-bottom: 6px;
+}
+.settings-sticky .page-heading p {
+  font-size: 0.8rem;
+  margin: 0;
+}
+.settings-sticky .rule-library {
+  padding: 0 0 16px;
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--border);
+}
+.settings-sticky .rule-library label {
+  margin-bottom: 0;
+}
+.settings-sticky .segmented {
+  margin-bottom: 12px;
+}

@@ -620,6 +620,12 @@ export class GameTable {
       } else this.close();
     });
   }
+  upgradeTileKind(): number | undefined {
+    const pon = this.currentPlayer?.melds.find(
+      (meld) => meld.id === this.upgradeId && meld.type === 'pon',
+    );
+    return pon ? kindIndex(pon.tiles[0].kind) : undefined;
+  }
   async saveIndicators(): Promise<void> {
     await this.act(async () => {
       const m = this.match()!;

@@ -18,7 +18,9 @@
     <div class="sheet-grip" aria-hidden="true"><span></span></div>
     <header>
       <h2>{{ label() | t }}</h2>
-      <button class="secondary" (click)="close()">{{ 'Done' | t }}</button>
+      <button class="secondary" (click)="close()" [disabled]="!canFinish()">
+        {{ 'Done' | t }}
+      </button>
     </header>
   </div>
   @if (opened()) {

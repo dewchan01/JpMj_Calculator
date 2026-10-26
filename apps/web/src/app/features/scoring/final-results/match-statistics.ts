@@ -65,7 +65,11 @@ export function matchStatistics(match: Match): {
           player.streak = 0;
         }
       }
-      if (event.type === 'matchEnd') points.push({ label: 'End', balances: { ...balances } });
+      if (event.type === 'matchEnd' || event.type === 'scoreAdjustment')
+        points.push({
+          label: event.type === 'matchEnd' ? 'End' : 'Score correction',
+          balances: { ...balances },
+        });
       continue;
     }
     hand++;

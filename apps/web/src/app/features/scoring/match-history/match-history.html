@@ -5,12 +5,14 @@
       <button class="secondary" (click)="exportRequested.emit()">{{ 'Export JSON' | t }}</button>
     }
   </div>
-  <p class="hint">
-    {{
-      'Older events cannot be edited. Undo the latest event to restore its transfers and previous round state.'
-        | t
-    }}
-  </p>
+  @if (!readOnly()) {
+    <p class="hint">
+      {{
+        'Older events cannot be edited. Undo the latest event to restore its transfers and previous round state.'
+          | t
+      }}
+    </p>
+  }
   @if (!match()?.events?.length) {
     <p class="empty">{{ 'No settlements yet.' | t }}</p>
   }
@@ -18,8 +20,41 @@
     <details class="history-event">
       <summary>
         {{ eventLabel(event) }}
-        <small>{{ event.timestamp | date: 'medium' : undefined : i18n.locale() }}</small>
+        <small>{{ event.timestamp | localDate }}</small>
       </summary>
+      @if (event.before; as before) {
+        <p class="hint">
+          {{ before.roundWind | t }} {{ before.handNumber }} · {{ 'Honba' | t }} {{ before.honba }}
+        </p>
+      }
+      <div class="hand-players">
+        @for (player of handPlayers().get(event.id); track player.id) {
+          <article class="hand-player">
+            <h3>
+              {{ player.name }}
+              <small>{{ player.seat + ' seat' | t }}</small>
+            </h3>
+            <dl>
+              <div>
+                <dt>{{ 'Points' | t }}</dt>
+                <dd>{{ player.before | number }} → {{ player.after | number }}</dd>
+              </div>
+              <div>
+                <dt>{{ 'Riichi' | t }}</dt>
+                <dd>{{ player.riichi | t }}</dd>
+              </div>
+              <div>
+                <dt>{{ 'Calls / Kans' | t }}</dt>
+                <dd>{{ player.calls }}</dd>
+              </div>
+              <div>
+                <dt>{{ 'Winning method' | t }}</dt>
+                <dd>{{ player.win | t }}</dd>
+              </div>
+            </dl>
+          </article>
+        }
+      </div>
       @if (event.durationMs !== undefined) {
         <p class="hint">
           {{ 'Recorded play time' | t }}: {{ event.durationMs / 60000 | number: '1.1-1' }}
@@ -30,7 +65,7 @@
         <h3>{{ 'Actions during this hand' | t }}</h3>
         @for (action of event.liveBefore.actions; track $index) {
           <p class="hint">
-            {{ action.timestamp | date: 'shortTime' : undefined : i18n.locale() }} ·
+            {{ action.timestamp | localDate: 'time' }} ·
             {{ action.playerId ? name(action.playerId) : '' }} {{ action.type | t }}
           </p>
         }
