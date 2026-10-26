@@ -1,15 +1,71 @@
-# Local records
+# Local records and player analysis
 
-The Records navigation tab replaces the saved-table list on the home page. All existing IndexedDB matches appear automatically; no migration is needed. Open or delete tables from the Games view.
+## Entry points
 
-Filters open in a compact modal with a two-column layout and a sticky action row. Changes stay in a draft until Apply filters is pressed. Close or Escape discards unapplied changes; Reset filters inside the modal clears the draft, while the reset button on the page clears applied filters. Invalid date ranges keep Apply disabled.
+Records lists **completed games only**. Click anywhere on a game card to open its saved result at
+/records/:id; there is no continue/play action in Records. My table > Ongoing games lists unfinished
+games and automatically resumes the selected game. Record results only sits beside that entry below
+the setup card and stores final points plus a local game date, without inventing hand history.
 
-Filters use the local calendar date when the table was created, inclusive of both endpoints. Game mode combines player count (3P/4P) and game length (East-only/East and South). Participant matches a stored name exactly. Games sort by creation date, newest or oldest first.
+The existing IndexedDB store is reused. Deleting a completed game removes its contribution to
+player statistics. Removing a saved player name does not delete that person's historical games.
 
-Games show current standings, raw points, recorded duration, and final scores/money for completed tables. New live tables use their saved play timer, excluding pauses. Legacy tables without a timer estimate elapsed time from creation to the final recorded event, including breaks.
+## Filters and sorting
 
-Players aggregate completed games only. Existing player IDs belong to each table, so trimmed, case-sensitive names identify people across tables. Using the same name for different people combines their statistics. A participant filter limits the player view to that person.
+Filters use inclusive local creation dates, player count/game length and an exact participant name.
+Game mode chips form one horizontally scrollable row. Sort is beside Filter records. Filter prompts
+use draft values: Apply commits them, Close/Escape discards unapplied changes, Reset in the prompt
+clears its draft, and Reset on the page clears applied filters. Invalid ranges disable Apply.
+Mobile filter prompts are animated sheets; desktop prompts are centered. Shared sticky controls
+retain the page gutter, and new tabs/filter chips reset scrolling.
 
-Total points are the sum of final minus starting balances. Total score includes each game's saved Uma, Oka and rounding rules. Average rank uses the saved tie policy. Money uses the saved betting/chip rules and remains separate by currency; monetary sorting selects one currency rather than adding currencies together. Names sort ascending; game count, points, score and money sort descending; average rank sorts ascending. Name breaks sorting ties.
+Games sort by creation date. Cards show final standings, raw points and recorded duration. Timed
+games exclude pauses; legacy games estimate duration from creation to the last recorded event.
+Players aggregate completed games using trimmed, case-sensitive names across tables. Reusing a name
+combines those records. A participant filter restricts the aggregate view to that person.
 
-Unfinished games appear in Games but do not contribute to player statistics. Deleting a completed table removes its contribution on reload.
+## Saved results
+
+- **Result:** compact standings or a metric-by-player comparison table that fits narrow screens. The comparison table shows names in its header and rank in a separate row; standings align the Player heading with player names.
+  Raw points, converted point score, Uma, Oka and total score are shown; positive adjustments have a green + and deductions a red minus. There is no All players chip or per-player Details button in the comparison table.
+  Each game in the records list also has a Total footer for points, final scores and money.
+  When final results open inside the live-game dialog, the dialog heading stays outside the scrolling content;
+  result tabs stick below it and retain their selected appearance.
+  History uses divider-separated expandable lists without card backgrounds. Collapsed event rows include
+  Ron/Tsumo, Han/Fu, limit names such as Mangan, and recorded Yaku when scoring metadata is available.
+  A chevron expands each event. Its players share one horizontal row with vertical dividers;
+  selecting a player shows their details in a compact shared panel below that row.
+- **History:** expandable event details show points before/after, seats, Riichi, melds, winners and
+  winning methods when those details were recorded.
+- **Details:** score history and metric-grouped statistics; player chips filter both graph and cards.
+
+The title/back/pencil/delete row and tab/layout controls are sticky; Details also keeps its player
+filter row available. Pencil opens the shared final-point/date prompt. Point changes must conserve
+the table total, recalculate rank/settlement and append a scoreAdjustment ledger event. Earlier hands
+remain intact. Delete opens a confirmation. Save game/Discard game are offered for a just-ended live
+game, not an already saved result. PNG sharing uses native file sharing or a download fallback.
+
+## Player pages
+
+Click a player row to open /records/player/:name. Overview, Statistics and Explore share dates and
+player-count filters. Three-player and four-player samples remain separate.
+
+Overview includes the last 16 chronological ranks, rank distribution, recent trend, winning-receipt
+bins, playing tendencies, population rank variance/stability and M.League reference resemblance.
+Statistics groups basic totals, rank rates, win/deal-in rates and scores by hand/opponent state,
+open/Riichi/draw/dealer/Tenpai measures. Explore provides shared-opponent results, comparison curves,
+shared game links and seat analysis. Fourth-place measures are unavailable in 3P.
+
+Total points means final minus starting raw points; score means the saved Uma/Oka/rounding-adjusted
+result. Money uses each game's saved betting/chip rules and stays separate per currency. Sorts use
+name as their tie breaker. Missing legacy metadata is excluded from relevant denominators, not
+counted as zero. Dama means closed without Riichi; an Ankan does not make a hand open. Corrections
+and final penalties/escrow awards are not hand win/deal-in receipts. Tenpai uses recorded exhaustive
+draws. See [live-table metric definitions](live-table.md) for state, stability and sample details.
+
+## Transfer and limitations
+
+JSON import/export is **only under Others > Data**, with separate entries and game/player/date
+selection; see [archive behavior](data-transfer.md). Imported games do not automatically populate
+the independent saved-player name library. No account, cloud synchronization or user-ID QR lookup
+is implemented. Historical hand editing and a general existing-table name/seat editor remain absent.

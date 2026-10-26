@@ -1,5 +1,6 @@
 import { TileArt } from '../../../shared/tile-art/tile-art';
-import { Component, computed, inject, input, output } from '@angular/core';
+import { SignedValue } from '../../../shared/signed-value/signed-value';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { LocalDatePipe } from '../../../core/i18n/local-date';
 import { tileLabel } from '../../../../../../../packages/mahjong-core/index';
@@ -8,11 +9,18 @@ import { ruleName, type RuleProfile } from '../../../../../../../packages/mahjon
 import { I18n, TranslatePipe } from '../../../core/i18n/i18n';
 @Component({
   selector: 'app-match-history',
-  imports: [TileArt, LocalDatePipe, DecimalPipe, TranslatePipe],
+  imports: [SignedValue, TileArt, LocalDatePipe, DecimalPipe, TranslatePipe],
   templateUrl: './match-history.html',
   styleUrl: './match-history.css',
 })
 export class MatchHistory {
+  readonly selectedPlayers = signal<Record<string, string>>({});
+  selectPlayer(eventId: string, playerId: string): void {
+    this.selectedPlayers.update((selected) => ({
+      ...selected,
+      [eventId]: selected[eventId] === playerId ? '' : playerId,
+    }));
+  }
   readonly match = input.required<Match | null>();
   readonly rules = input.required<RuleProfile>();
   readonly busy = input(false);
@@ -33,6 +41,7 @@ export class MatchHistory {
         riichi: string;
         calls: string;
         win: string;
+        marks: string[];
       }[]
     >();
     if (!match) return result;
@@ -62,6 +71,20 @@ export class MatchHistory {
             seat: winds[(index - Math.max(0, dealer) + match.playerCount) % match.playerCount],
             before: before[player.id],
             after: points[player.id],
+            marks: [
+              live?.riichi === 'double' || win?.doubleRiichi
+                ? this.i18n.t('Double Riichi')
+                : live?.riichi === 'riichi' ||
+                    win?.riichi ||
+                    (event.type === 'riichiDeposit' &&
+                      event.payments.some(
+                        (payment) => payment.from === player.id && payment.to === 'table',
+                      ))
+                  ? this.i18n.t('Riichi')
+                  : '',
+              ...(melds ?? []).map((meld) => this.i18n.t(meld.type)),
+              live?.kita.length ? this.i18n.t('North') + ' × ' + live.kita.length : '',
+            ].filter(Boolean),
             riichi:
               event.type === 'riichiDeposit' &&
               event.payments.some((payment) => payment.from === player.id && payment.to === 'table')
@@ -114,6 +137,21 @@ export class MatchHistory {
       event.drawInput?.rules ??
       this.rules()
     );
+  }
+  outcomeMarks(event: LedgerEvent): string[] {
+    const inputs = event.scoringInputs ?? (event.scoringInput ? [event.scoringInput] : []);
+    const results = event.results ?? (event.result ? [event.result] : []);
+    return results.map((result, index) => {
+      const win = inputs[index]?.win ?? event.win;
+      return [
+        win ? this.i18n.t(win.method === 'ron' ? 'Ron · discard' : 'Tsumo · self draw') : '',
+        this.i18n.t(result.han + ' Han · ' + result.fu + ' Fu'),
+        result.limitName ? this.i18n.t(result.limitName) : '',
+        ...result.yaku.map((yaku) => this.i18n.t(yaku.name)),
+      ]
+        .filter(Boolean)
+        .join(' · ');
+    });
   }
   playerList(ids: string[]): string {
     return ids.map((id) => this.name(id)).join(', ') || '—';

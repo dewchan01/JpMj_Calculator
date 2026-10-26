@@ -1,4 +1,4 @@
-import { DialogBackdrop } from '../../../shared/dialog-backdrop';
+import { DialogBackdrop } from '../../../../shared/dialog-backdrop';
 import { NgTemplateOutlet } from '@angular/common';
 import {
   Component,
@@ -11,7 +11,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { TranslatePipe } from '../../../core/i18n/i18n';
+import { TranslatePipe } from '../../../../core/i18n/i18n';
 
 /** Lazily renders entry tools in a native, keyboard-accessible modal. */
 @Component({

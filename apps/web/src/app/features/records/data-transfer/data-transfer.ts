@@ -1,12 +1,12 @@
 import { Component, computed, inject, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Repository } from '../matches/data-access/repository';
-import { TranslatePipe } from '../../core/i18n/i18n';
-import { LocalDatePipe } from '../../core/i18n/local-date';
-import { DialogBackdrop } from '../../shared/dialog-backdrop';
+import { Repository } from '../../matches/data-access/repository';
+import { TranslatePipe } from '../../../core/i18n/i18n';
+import { LocalDatePipe } from '../../../core/i18n/local-date';
+import { DialogBackdrop } from '../../../shared/dialog-backdrop';
 import { gameArchive, parseArchive } from './data-archive';
-import { filterMatches } from './record-stats';
-import type { Match } from '../../../../../../packages/mahjong-core/ledger';
+import { filterMatches } from '../record-stats';
+import type { Match } from '../../../../../../../packages/mahjong-core/ledger';
 
 @Component({
   selector: 'app-data-transfer',

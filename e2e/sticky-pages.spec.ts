@@ -9,6 +9,9 @@ for (const width of [390, 1280]) {
     await page.goto('/');
     await page.locator('.app-navigation a[href$="/settings"]').click();
     const settings = page.locator('.settings-sticky');
+    const heading = (await settings.locator('h1').boundingBox())!;
+    const playerCount = (await settings.locator('.segmented').boundingBox())!;
+    expect(playerCount.y - (heading.y + heading.height)).toBeLessThanOrEqual(12);
     await expect(settings.locator('.rule-library')).not.toHaveClass(/\bcard\b/);
     await expect(settings.locator('.rule-library')).toHaveCSS('border-bottom-width', '1px');
     await page.evaluate(() => scrollTo(0, 800));

@@ -1,13 +1,17 @@
-import { newId } from '../../../core/id/new-id';
-import { ErrorNotice } from '../../../shared/error-notice/error-notice';
+import { newId } from '../../../../core/id/new-id';
+import { ErrorNotice } from '../../../../shared/error-notice/error-notice';
 import { PercentPipe } from '@angular/common';
 import { Component, DestroyRef, computed, inject, input, output, signal } from '@angular/core';
 import { form, FormField } from '@angular/forms/signals';
-import { parseTiles, tileLabel, type Tile } from '../../../../../../../packages/mahjong-core/index';
-import { TranslatePipe } from '../../../core/i18n/i18n';
-import { TileArt } from '../../../shared/tile-art/tile-art';
-import { CaptureConfiguration } from './capture-config';
-import { createRecognizer } from './create-recognizer';
+import {
+  parseTiles,
+  tileLabel,
+  type Tile,
+} from '../../../../../../../../packages/mahjong-core/index';
+import { TranslatePipe } from '../../../../core/i18n/i18n';
+import { TileArt } from '../../../../shared/tile-art/tile-art';
+import { CaptureConfiguration } from '../capture-config';
+import { createRecognizer } from '../create-recognizer';
 
 @Component({
   selector: 'app-photo-capture',

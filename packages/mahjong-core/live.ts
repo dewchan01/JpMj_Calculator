@@ -93,6 +93,7 @@ export function declareRiichi(
   double: boolean,
   eventId: string,
   now = new Date().toISOString(),
+  timing: { doubleBeforeRecordedCalls?: boolean } = {},
 ): Match {
   if (match.ended || !match.players.some((p) => p.id === playerId))
     throw new Error('Select a seated player in an ongoing match.');
@@ -108,7 +109,7 @@ export function declareRiichi(
     throw new Error('This player has already deposited in the current hand.');
   if (state.melds.some((m) => m.type !== 'ankan'))
     throw new Error('Riichi/Ippatsu require a closed hand.');
-  if (double && (match.live?.calls ?? 0))
+  if (double && (match.live?.calls ?? 0) && !timing.doubleBeforeRecordedCalls)
     throw new Error('Double Riichi requires an uninterrupted first turn.');
   if (!tableRules(match.rules).allowNegativeRiichi && balances(match).players[playerId] < 1000)
     throw new Error('Not enough points for a Riichi deposit.');
@@ -126,7 +127,7 @@ export function declareRiichi(
       [playerId]: {
         ...state,
         riichi: double ? 'double' : 'riichi',
-        riichiCalls: match.live?.calls ?? 0,
+        riichiCalls: double && timing.doubleBeforeRecordedCalls ? 0 : (match.live?.calls ?? 0),
       },
     },
     actions: [

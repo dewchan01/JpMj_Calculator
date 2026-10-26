@@ -4,9 +4,9 @@ import {
   kindIndex,
   type Tile,
   tileLabel,
-} from '../../../../../../../packages/mahjong-core/index';
-import { I18n, TranslatePipe } from '../../../core/i18n/i18n';
-import { TileArt } from '../../../shared/tile-art/tile-art';
+} from '../../../../../../../../packages/mahjong-core/index';
+import { I18n, TranslatePipe } from '../../../../core/i18n/i18n';
+import { TileArt } from '../../../../shared/tile-art/tile-art';
 
 @Component({
   selector: 'app-tile-picker',

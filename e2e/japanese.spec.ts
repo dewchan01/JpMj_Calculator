@@ -18,7 +18,11 @@ test('Japanese saved matches and history format dates without changing names', a
   await gameMenu(page, 'History');
   await expect(page.locator('.history-event')).toHaveCount(1);
   await prompt(page).locator('.close-prompt').click();
-  await page.locator('.app-navigation a[href$="/records"]').click();
+  await setLanguage(page, 'en');
+  await gameMenu(page, 'End entire match');
+  await prompt(page).getByRole('button', { name: 'End entire match', exact: true }).click();
+  await prompt(page).getByRole('button', { name: 'Save game', exact: true }).click();
+  await setLanguage(page, 'ja');
   await expect(page.getByText('陳萬發', { exact: true })).toBeVisible();
   expect(errors).toEqual([]);
 });

@@ -1,13 +1,13 @@
-import { ResponsiveSheet } from '../../shared/responsive-sheet';
+import { ResponsiveSheet } from '../../../shared/responsive-sheet';
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { I18n, TranslatePipe } from '../../core/i18n/i18n';
-import { LocalDatePipe } from '../../core/i18n/local-date';
-import { ErrorNotice } from '../../shared/error-notice/error-notice';
-import { DialogBackdrop } from '../../shared/dialog-backdrop';
-import { Repository } from '../matches/data-access/repository';
-import type { Match } from '../../../../../../packages/mahjong-core/ledger';
+import { I18n, TranslatePipe } from '../../../core/i18n/i18n';
+import { LocalDatePipe } from '../../../core/i18n/local-date';
+import { ErrorNotice } from '../../../shared/error-notice/error-notice';
+import { DialogBackdrop } from '../../../shared/dialog-backdrop';
+import { Repository } from '../../matches/data-access/repository';
+import type { Match } from '../../../../../../../packages/mahjong-core/ledger';
 import {
   analyzePlayer,
   analysisGroups,

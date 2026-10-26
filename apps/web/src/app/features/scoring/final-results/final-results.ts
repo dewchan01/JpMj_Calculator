@@ -1,3 +1,4 @@
+import { SignedValue } from '../../../shared/signed-value/signed-value';
 import {
   Component,
   computed,
@@ -29,7 +30,7 @@ import { tableRules } from '../../../../../../../packages/mahjong-rules/index';
 
 @Component({
   selector: 'app-final-results',
-  imports: [DecimalPipe, TranslatePipe, MatchHistory, FormsModule, DialogBackdrop],
+  imports: [SignedValue, DecimalPipe, TranslatePipe, MatchHistory, FormsModule, DialogBackdrop],
   templateUrl: './final-results.html',
   styleUrl: './final-results.css',
 })

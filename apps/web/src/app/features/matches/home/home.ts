@@ -1,23 +1,23 @@
-import { DialogBackdrop } from '../../shared/dialog-backdrop';
-import { newId } from '../../core/id/new-id';
-import { TableSetup } from './table-setup';
-import { RuleLibrary } from '../settings/rule-library';
-import { ErrorNotice } from '../../shared/error-notice/error-notice';
-import { InstallBanner } from './install-banner/install-banner';
-import { I18n, TranslatePipe } from '../../core/i18n/i18n';
+import { DialogBackdrop } from '../../../shared/dialog-backdrop';
+import { newId } from '../../../core/id/new-id';
+import { TableSetup } from '../table-setup';
+import { RuleLibrary } from '../../settings/rule-library';
+import { ErrorNotice } from '../../../shared/error-notice/error-notice';
+import { InstallBanner } from '../install-banner/install-banner';
+import { I18n, TranslatePipe } from '../../../core/i18n/i18n';
 import { Component, computed, inject, signal } from '@angular/core';
 import { applyEach, form, FormField, maxLength } from '@angular/forms/signals';
 import { DecimalPipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
-import { type Match } from '../../../../../../packages/mahjong-core/ledger';
-import { RulePicker } from '../../shared/rules/rule-picker';
-import { Repository } from './data-access/repository';
-import { PlayerLibrary } from './data-access/player-library';
+import { type Match } from '../../../../../../../packages/mahjong-core/ledger';
+import { RulePicker } from '../../../shared/rules/rule-picker/rule-picker';
+import { Repository } from '../data-access/repository';
+import { PlayerLibrary } from '../data-access/player-library';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { DiceSimulator } from '../../shared/dice-simulator/dice-simulator';
-import { emptyLive } from '../../../../../../packages/mahjong-core/live';
-import { adjustFinalPoints } from '../../../../../../packages/mahjong-core/final-results';
-import { localDateTimeInput } from '../../core/i18n/date-format';
+import { DiceSimulator } from '../../../shared/dice-simulator/dice-simulator';
+import { emptyLive } from '../../../../../../../packages/mahjong-core/live';
+import { adjustFinalPoints } from '../../../../../../../packages/mahjong-core/final-results';
+import { localDateTimeInput } from '../../../core/i18n/date-format';
 @Component({
   imports: [
     ResponsiveSheet,
@@ -280,4 +280,4 @@ export class Home {
     }
   }
 }
-import { ResponsiveSheet } from '../../shared/responsive-sheet';
+import { ResponsiveSheet } from '../../../shared/responsive-sheet';

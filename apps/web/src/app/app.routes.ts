@@ -16,12 +16,16 @@ export const routes: Routes = [
   {
     path: 'records/player/:name',
     loadComponent: () =>
-      import('./features/records/player-profile').then((module) => module.PlayerProfile),
+      import('./features/records/player-profile/player-profile').then(
+        (module) => module.PlayerProfile,
+      ),
   },
   {
     path: 'records/:id',
     loadComponent: () =>
-      import('./features/records/record-result').then((module) => module.RecordResult),
+      import('./features/records/record-result/record-result').then(
+        (module) => module.RecordResult,
+      ),
   },
   {
     path: 'records',
@@ -29,11 +33,11 @@ export const routes: Routes = [
   },
   {
     path: '',
-    loadComponent: () => import('./features/matches/home').then((module) => module.Home),
+    loadComponent: () => import('./features/matches/home/home').then((module) => module.Home),
   },
   {
     path: 'score',
-    loadComponent: () => import('./features/scoring/scorer').then((module) => module.Scorer),
+    loadComponent: () => import('./features/scoring/scorer/scorer').then((module) => module.Scorer),
   },
   {
     path: 'score/:id',

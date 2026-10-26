@@ -5,6 +5,28 @@ import ja from './ja.json';
 import { readFileSync, readdirSync } from 'node:fs';
 
 describe('zh-TW catalog', () => {
+  it('translates live-call and ledger action names in every supported catalog', () => {
+    for (const key of [
+      'chi',
+      'pon',
+      'daiminkan',
+      'ankan',
+      'kakan',
+      'kita',
+      'win',
+      'multipleRon',
+      'exhaustiveDraw',
+      'abortiveDraw',
+      'nagashi',
+      'riichiDeposit',
+      'matchEnd',
+      'scoreAdjustment',
+    ]) {
+      for (const catalog of [zhTW, zhCN, ja]) {
+        expect(catalog, key).toHaveProperty(key);
+      }
+    }
+  });
   it('has complete Japanese keys and preserves all interpolation fields', () => {
     expect(Object.keys(ja).sort()).toEqual(Object.keys(zhTW).sort());
     for (const [key, value] of Object.entries(ja)) {

@@ -592,6 +592,11 @@
   color: #715014;
   font-weight: 700;
 }
+.seat-label small {
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 1px 4px;
+}
 .player-status {
   display: flex;
   flex-wrap: wrap;
@@ -635,4 +640,7 @@
 :host(.compact) .seat-label .yakitori-label {
   min-width: 18px;
   margin-inline-start: 3px;
+  border: 1px solid var(--muted);
+  border-radius: 4px;
+  padding: 1px 3px;
 }

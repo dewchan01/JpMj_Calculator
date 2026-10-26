@@ -138,11 +138,12 @@
   inset: -6px;
 }
 .settings-sticky .page-heading {
-  margin: 0 0 12px;
+  padding: 0;
+  margin: 0 0 8px;
 }
 .settings-sticky .page-heading h1 {
   font-size: 1.6rem;
-  margin-bottom: 6px;
+  margin: 0;
 }
 .settings-sticky .page-heading p {
   font-size: 0.8rem;

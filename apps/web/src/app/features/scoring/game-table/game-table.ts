@@ -1,4 +1,5 @@
 import { DialogBackdrop } from '../../../shared/dialog-backdrop';
+import { GameSounds } from '../../../core/sound/game-sounds';
 import { DiceSimulator } from '../../../shared/dice-simulator/dice-simulator';
 import {
   Component,
@@ -17,7 +18,7 @@ import { newId } from '../../../core/id/new-id';
 import { I18n, TranslatePipe } from '../../../core/i18n/i18n';
 import { Repository } from '../../matches/data-access/repository';
 import { TableSummary } from '../table-summary/table-summary';
-import { TileInput } from '../tiles/tile-input';
+import { TileInput } from '../tiles/tile-input/tile-input';
 import { MatchHistory } from '../match-history/match-history';
 import { FinalResults } from '../final-results/final-results';
 import { ErrorNotice } from '../../../shared/error-notice/error-notice';
@@ -130,6 +131,7 @@ export class GameTable {
   readonly indicatorKind = signal<'dora' | 'ura'>('dora');
   readonly i18n = inject(I18n);
   private readonly repo = inject(Repository);
+  private readonly sounds = inject(GameSounds);
   private readonly route = inject(ActivatedRoute);
   readonly match = signal<Match | null>(null);
   readonly error = signal('');
@@ -220,6 +222,7 @@ export class GameTable {
   firstTurn = false;
   method: 'ron' | 'tsumo' = 'ron';
   winners: Record<string, boolean> = {};
+  playerWinSelected = false;
   discarder = '';
   handText = '';
   winningIndex = -1;
@@ -293,7 +296,7 @@ export class GameTable {
       call: 'Record call',
       indicators: 'Dora / Ura',
       outcome: 'End this hand',
-      win: 'Who won this hand?',
+      win: this.playerWinSelected ? 'Win method' : 'Who won this hand?',
       hand: 'The winning hand',
       details: 'Winning conditions',
       review: 'Review settlement',
@@ -402,6 +405,7 @@ export class GameTable {
   }
   private async act(action: () => Promise<void>): Promise<void> {
     if (this.busy()) return;
+    this.sounds.unlock();
     this.busy.set(true);
     this.error.set('');
     try {
@@ -468,9 +472,12 @@ export class GameTable {
       if (this.doubleRiichi && !this.firstTurn)
         throw new Error('Confirm the uninterrupted first turn.');
       await this.persist(
-        declareRiichi(this.match()!, this.selected, this.doubleRiichi, newId()),
+        declareRiichi(this.match()!, this.selected, this.doubleRiichi, newId(), undefined, {
+          doubleBeforeRecordedCalls: this.doubleRiichi && this.firstTurn,
+        }),
         true,
       );
+      this.sounds.play(this.doubleRiichi ? 'doubleRiichi' : 'riichi');
       this.close();
     });
   }
@@ -487,6 +494,10 @@ export class GameTable {
         : (this.players.find((p) => p.id !== this.selected)?.id ?? '');
     this.called = 0;
     this.upgradeId = this.currentPlayer.melds.find((m) => m.type === 'pon')?.id ?? '';
+    if (type === 'kita') {
+      void this.saveCall(true);
+      return;
+    }
     this.navigatePanel('call');
   }
   async undoAction(): Promise<void> {
@@ -502,16 +513,52 @@ export class GameTable {
       this.close();
     });
   }
-  tableAction(action: { player: string; type: string }): void {
+  async tableAction(action: { player: string; type: string }): Promise<void> {
+    if (action.type === 'riichi') {
+      this.selected = action.player;
+      if (livePlayer(this.match()!, action.player).riichi === 'none')
+        await this.declarePlayerRiichi(false);
+      else await this.cancelDeclaration();
+      if (this.error()) {
+        const message = this.error();
+        this.open('player', action.player);
+        this.playerMode.set('riichi');
+        this.error.set(message);
+      }
+      return;
+    }
     this.open('player', action.player);
     this.playerMode.set(action.type);
     if (action.type === 'kita') this.startCall('kita');
+  }
+  async declarePlayerRiichi(double: boolean): Promise<void> {
+    this.doubleRiichi = double;
+    // Clicking the explicitly labelled double declaration attests to its stated condition.
+    this.firstTurn = double;
+    await this.riichi();
+  }
+  canDeclareDoubleRiichi(): boolean {
+    return (
+      this.currentPlayer.riichi === 'none' &&
+      !this.currentPlayer.melds.some((meld) => meld.type !== 'ankan')
+    );
+  }
+  startPlayerWin(method: 'ron' | 'tsumo'): void {
+    if (this.paused() || this.busy() || this.match()?.ended) return;
+    const player = this.selected;
+    this.startOutcome();
+    this.playerWinSelected = true;
+    this.winners = { [player]: true };
+    this.method = method;
+    this.discarder = this.players.find((other) => other.id !== player)?.id ?? '';
+    if (method === 'tsumo') this.nextWinners();
+    else this.navigatePanel('win');
   }
   showPlayerDifference(player: string): void {
     if (player) this.basis = player;
     this.comparisonPlayer.set(player);
   }
-  async saveCall(): Promise<void> {
+  async saveCall(keepOpen = false): Promise<void> {
     await this.act(async () => {
       const m = this.match()!;
       if (m.ended || this.paused()) throw new Error('Resume the game before recording actions.');
@@ -615,9 +662,13 @@ export class GameTable {
       if (kans > 4) throw new Error('At most four Kans can be recorded in a hand.');
       await this.persist({ ...m, live }, true);
       if (!['chi', 'pon', 'kita'].includes(this.callType)) {
+        this.sounds.play(this.callType);
         this.indicatorKind.set('dora');
         this.open('indicators');
-      } else this.close();
+      } else {
+        this.sounds.play(this.callType);
+        if (!keepOpen) this.close();
+      }
     });
   }
   upgradeTileKind(): number | undefined {
@@ -644,6 +695,7 @@ export class GameTable {
     });
   }
   startOutcome(): void {
+    this.playerWinSelected = false;
     this.inputs = [];
     this.round = null;
     this.drawInput = undefined;
@@ -868,6 +920,8 @@ export class GameTable {
       const clock = clockAt(m.clock!, !updated.ended);
       clock.handStartMs = clock.elapsedMs;
       await this.persist({ ...updated, live: emptyLive(), clock });
+      const method = this.inputs[0]?.win.method;
+      if (method) this.sounds.play(method);
       this.inputs = [];
       this.round = null;
       this.drawInput = undefined;

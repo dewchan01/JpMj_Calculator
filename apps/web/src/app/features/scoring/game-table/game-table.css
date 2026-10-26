@@ -76,9 +76,9 @@ h1 {
   border-top: 1px solid var(--border);
   padding-top: 8px;
 }
-.saved-rule-group summary {
-  min-height: 44px;
-  cursor: pointer;
+.saved-rule-group h3 {
+  margin: 0 0 6px;
+  font-size: 0.85rem;
   font-weight: 650;
 }
 .saved-rule-group dl {
@@ -87,8 +87,9 @@ h1 {
 .saved-rule-group dl > div {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
-  padding: 8px 0;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 0.8rem;
   border-top: 1px solid var(--border);
 }
 .saved-rule-group dd {
@@ -175,6 +176,19 @@ h1 {
 .game-prompt::backdrop {
   background: #0008;
 }
+.results-prompt[open] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.results-prompt .prompt-heading {
+  flex-shrink: 0;
+}
+.results-prompt .prompt-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 .prompt-heading {
   display: flex;
   align-items: center;
@@ -210,7 +224,7 @@ h1 {
 .menu-list button {
   text-align: left;
 }
-.prompt-body button:not(.quiet):not(.primary):not(.tile) {
+.game-prompt:not(.results-prompt) .prompt-body button:not(.quiet):not(.primary):not(.tile) {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--subtle-surface);
@@ -248,6 +262,33 @@ h1 {
   align-items: center;
   justify-content: space-between;
   padding-block: 8px;
+}
+.recorded-call > span:first-child {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text);
+}
+.north-count {
+  min-width: 2ch;
+  text-align: center;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+.north-call {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+}
+.north-call .mini-tiles {
+  min-height: 48px;
+}
+.north-controls {
+  grid-column: 1 / -1;
+  justify-self: end;
+  display: grid;
+  grid-template-columns: 44px 3ch 44px;
+  align-items: center;
+  gap: 8px;
 }
 .mini-tiles {
   display: flex;
@@ -338,4 +379,15 @@ h1 {
   fill: none;
   stroke: currentColor;
   stroke-width: 1.8;
+}
+.player-win-actions {
+  border-block: 1px solid var(--border);
+  margin-block: 16px;
+  padding-block: 12px;
+}
+.player-win-actions h4 {
+  margin: 0;
+}
+.player-win-actions .button-grid {
+  margin-bottom: 0;
 }

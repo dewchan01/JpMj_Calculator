@@ -1,17 +1,17 @@
-import { DialogBackdrop } from '../../shared/dialog-backdrop';
-import { newId } from '../../core/id/new-id';
-import { FinalResults } from './final-results/final-results';
-import { QuickScoreSession } from './quick-score-session';
-import { handChips } from '../../../../../../packages/mahjong-scoring/chips';
-import { RuleLibrary } from '../settings/rule-library';
-import { TileDropZones, type TileDropTarget } from './tiles/tile-drop-zones/tile-drop-zones';
-import { ErrorNotice } from '../../shared/error-notice/error-notice';
-import { TileReorder } from './tiles/tile-reorder';
-import { TableSummary } from './table-summary/table-summary';
-import { TileEntryDialog } from './tiles/tile-entry-dialog';
-import { TileInput } from './tiles/tile-input';
-import { TilePicker } from './tiles/tile-picker';
-import { TileArt } from '../../shared/tile-art/tile-art';
+import { DialogBackdrop } from '../../../shared/dialog-backdrop';
+import { newId } from '../../../core/id/new-id';
+import { FinalResults } from '../final-results/final-results';
+import { QuickScoreSession } from '../quick-score-session';
+import { handChips } from '../../../../../../../packages/mahjong-scoring/chips';
+import { RuleLibrary } from '../../settings/rule-library';
+import { TileDropZones, type TileDropTarget } from '../tiles/tile-drop-zones/tile-drop-zones';
+import { ErrorNotice } from '../../../shared/error-notice/error-notice';
+import { TileReorder } from '../tiles/tile-reorder';
+import { TableSummary } from '../table-summary/table-summary';
+import { TileEntryDialog } from '../tiles/tile-entry-dialog/tile-entry-dialog';
+import { TileInput } from '../tiles/tile-input/tile-input';
+import { TilePicker } from '../tiles/tile-picker/tile-picker';
+import { TileArt } from '../../../shared/tile-art/tile-art';
 import { Component, DestroyRef, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
@@ -25,7 +25,7 @@ import {
   type Meld,
   type ScoreResult,
   type Wind,
-} from '../../../../../../packages/mahjong-core/index';
+} from '../../../../../../../packages/mahjong-core/index';
 import {
   appendEvent,
   balances,
@@ -33,28 +33,28 @@ import {
   undoLastEvent,
   type Match,
   type LedgerEvent,
-} from '../../../../../../packages/mahjong-core/ledger';
+} from '../../../../../../../packages/mahjong-core/ledger';
 import {
   tableRules,
   ruleName,
   ruleSettings,
   type RuleProfile,
-} from '../../../../../../packages/mahjong-rules/index';
-import { score, type ScoringInput } from '../../../../../../packages/mahjong-scoring/index';
-import { Repository } from '../matches/data-access/repository';
-import { PhotoCapture } from './capture/photo-capture';
-import { I18n, TranslatePipe } from '../../core/i18n/i18n';
-import { RulePicker } from '../../shared/rules/rule-picker';
-import { ScoreResultView } from './score-result/score-result';
-import { MatchHistory } from './match-history/match-history';
-import { RoundReview } from './round-review/round-review';
+} from '../../../../../../../packages/mahjong-rules/index';
+import { score, type ScoringInput } from '../../../../../../../packages/mahjong-scoring/index';
+import { Repository } from '../../matches/data-access/repository';
+import { PhotoCapture } from '../capture/photo-capture/photo-capture';
+import { I18n, TranslatePipe } from '../../../core/i18n/i18n';
+import { RulePicker } from '../../../shared/rules/rule-picker/rule-picker';
+import { ScoreResultView } from '../score-result/score-result';
+import { MatchHistory } from '../match-history/match-history';
+import { RoundReview } from '../round-review/round-review';
 import {
   drawSettlement,
   multipleRon,
   type AbortiveReason,
   type DrawInput,
   type RoundSettlement,
-} from '../../../../../../packages/mahjong-scoring/rounds';
+} from '../../../../../../../packages/mahjong-scoring/rounds';
 export interface Draft {
   waremePlayerId?: string;
   tiles: Tile[];

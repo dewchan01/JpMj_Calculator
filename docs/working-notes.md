@@ -1,4 +1,20 @@
-# Implementation plan
+# Working notes and historical milestones
+
+## Current implementation snapshot - 2026-10-26
+
+The app now includes final table Uma/Oka/chip/money settlement, completed-game records, player
+analytics, JSON import/export under Others > Data, correction prompts, responsive sheets,
+scrollable player selection and session diagnostics. Component HTML/CSS/TS are colocated;
+18 Vitest spec files contain 222 passing tests. Playwright remains a separate browser suite.
+Recent interface updates include compact history rows with right-side chevrons, horizontal player
+selectors and shared details, recorded call/Riichi markers below points, and permanent saved-rule
+sections. Settings omits the introductory paragraph and keeps its heading close to the player-count
+selector. Others > Sound effects provides device-voice playback, tone fallback, previews and mute.
+See [feature coverage](feature-coverage.md), [records](records.md), [JSON transfer](data-transfer.md)
+and [maintenance](maintenance.md) for current behavior. Counts and missing features below describe
+older milestones, not current validation totals.
+
+## Historical plan and milestones
 
 1. Create a strict TypeScript workspace with independent tile, rule, scoring and fixture packages.
 2. Test complete-hand validation, interpretation enumeration, yaku/fu, integer payments and settlement conservation.

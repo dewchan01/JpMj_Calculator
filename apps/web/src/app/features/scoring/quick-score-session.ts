@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import type { Draft } from './scorer';
+import type { Draft } from './scorer/scorer';
 
 /** Keeps the current scratch hand while visiting Settings; never shares a match draft. */
 @Injectable({ providedIn: 'root' })

@@ -6,6 +6,7 @@ export interface FinalStanding {
   name: string;
   rank: number;
   points: number;
+  pointScore: number;
   uma: number;
   oka: number;
   finalScore: number;
@@ -108,6 +109,7 @@ export function finalStandings(match: Match): FinalStanding[] {
       ...player,
       rank: (share ? firstTie : index) + 1,
       points: book.players[player.id],
+      pointScore: (book.players[player.id] - table.returnPoints) / 1000,
       uma,
       oka: playerOka,
       finalScore,

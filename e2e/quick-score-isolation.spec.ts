@@ -1,4 +1,4 @@
-import { playerAction, gameMenu, prompt } from './helpers/game';
+import { gameMenu } from './helpers/game';
 import { openQuickScore } from './helpers/navigation';
 import { test, expect } from '@playwright/test';
 import { applyPreset, expectApplied } from './helpers/settings';
@@ -9,12 +9,14 @@ test('Quick score stays independent of an ongoing match and its saved draft', as
   await applyPreset(page, 'tenhou');
   await page.getByRole('button', { name: /Start match/ }).click();
   const nav = page.getByRole('navigation', { name: 'Main navigation' });
-  await expect(nav.getByRole('link', { name: 'My table', exact: true })).toHaveClass('active');
-  await playerAction(page, 'Player 2');
-  await prompt(page)
-    .getByRole('button', { name: /^Declare Riichi/, exact: true })
+  await expect(page.locator('.game-shell')).toBeVisible();
+  await expect(page.locator('.app-navigation')).toHaveClass(/in-game/);
+  await page
+    .locator('.player-seat')
+    .filter({ hasText: 'Player 2' })
+    .getByRole('button', { name: 'Riichi', exact: true })
     .click();
-  await expect(page.locator('app-table-summary .table-pot strong')).toHaveText('1,000');
+  await expect(page.locator('.round-status .table-pot strong')).toHaveText('1,000');
   const balances = await page.locator('app-table-summary .player-points').allTextContents();
   await openQuickScore(page);
   await expect(nav.getByRole('link', { name: 'My table', exact: true })).toHaveClass('active');
@@ -29,12 +31,14 @@ test('Quick score stays independent of an ongoing match and its saved draft', as
   await expect(page.locator('.score-total > span')).toBeVisible();
   await expect(page.getByRole('button', { name: /Confirm & save settlement/ })).toHaveCount(0);
   await nav.getByRole('link', { name: 'Records', exact: true }).click();
-  await expect(page.locator('.game-card')).toHaveCount(1);
-  await page.getByRole('link', { name: 'Isolation table', exact: true }).click();
+  await expect(page.locator('.game-card')).toHaveCount(0);
+  await nav.getByRole('link', { name: 'My table', exact: true }).click();
+  await page.getByRole('button', { name: /Ongoing games/ }).click();
+  await page.getByRole('link', { name: /Isolation table/ }).click();
   await expect(page.locator('.game-shell')).toBeVisible();
   await expectApplied(page, 'tenhou');
   await expect(page.locator('app-table-summary .player-seat')).toHaveCount(4);
-  await expect(page.locator('app-table-summary .table-pot strong')).toHaveText('1,000');
+  await expect(page.locator('.round-status .table-pot strong')).toHaveText('1,000');
   expect(await page.locator('app-table-summary .player-points').allTextContents()).toEqual(
     balances,
   );

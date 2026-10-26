@@ -135,12 +135,15 @@
 @if (loading()) {
   <p role="status">{{ 'Loading records…' | t }}</p>
 } @else if (view() === 'games') {
-  <p class="hint" role="status">{{ games().length }} {{ 'games found' | t }}</p>
-  <p class="hint">
-    {{
-      'Duration is estimated from table creation to the last recorded event, including breaks.' | t
-    }}
-  </p>
+  <div class="records-summary hint">
+    <span role="status">{{ games().length }} {{ 'games found' | t }}</span>
+    <span>
+      {{
+        'Duration is estimated from table creation to the last recorded event, including breaks.'
+          | t
+      }}
+    </span>
+  </div>
   @for (game of games(); track game.match.id) {
     <article class="card game-card">
       <a
@@ -178,7 +181,7 @@
               <th>{{ 'Rank' | t }}</th>
               <th>{{ 'Player' | t }}</th>
               <th>{{ 'Points' | t }}</th>
-              <th>{{ 'Final score' | t }}</th>
+              <th>{{ 'Total score' | t }}</th>
               <th>{{ 'Total money' | t }}</th>
             </tr>
           </thead>
@@ -188,14 +191,37 @@
                 <td>{{ row.rank }}</td>
                 <th scope="row" class="player-name" [title]="row.name">{{ row.name }}</th>
                 <td>{{ row.points | number }}</td>
-                <td>{{ game.match.ended ? (row.finalScore | number: '1.0-2') : '—' }}</td>
                 <td>
-                  {{ game.match.ended ? (row.totalMoney | number: '1.2-2') : '—' }}
+                  <strong><app-signed-value [value]="row.finalScore" /></strong>
+                  <small class="score-breakdown">
+                    {{ 'Point score' | t }}
+                    <app-signed-value [value]="row.pointScore" />
+                    <br />
+                    {{ 'Uma' | t }}
+                    <app-signed-value [value]="row.uma" />
+                    <br />
+                    {{ 'Oka' | t }}
+                    <app-signed-value [value]="row.oka" />
+                  </small>
+                </td>
+                <td>
+                  <app-signed-value [value]="row.totalMoney" digits="1.2-2" />
                   {{ game.match.ended ? game.currency : '' }}
                 </td>
               </tr>
             }
           </tbody>
+          <tfoot>
+            <tr>
+              <th scope="row" colspan="2">{{ 'Total' | t }}</th>
+              <td>{{ game.totals.points | number }}</td>
+              <td><app-signed-value [value]="game.totals.score" /></td>
+              <td>
+                <app-signed-value [value]="game.totals.money" digits="1.2-2" />
+                {{ game.currency }}
+              </td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     </article>

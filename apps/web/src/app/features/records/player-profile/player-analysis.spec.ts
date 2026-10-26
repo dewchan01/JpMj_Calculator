@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { analyzePlayer, analysisGroups } from './player-analysis';
 import { leagueResemblance, mLeagueReference } from './m-league-reference';
-import { presetRules, tableRules } from '../../../../../../packages/mahjong-rules/index';
+import { presetRules, tableRules } from '../../../../../../../packages/mahjong-rules/index';
 import {
   adjustFinalPoints,
   finalStandings,
-} from '../../../../../../packages/mahjong-core/final-results';
-import { emptyLive } from '../../../../../../packages/mahjong-core/live';
-import { parseTiles, type WinEvent } from '../../../../../../packages/mahjong-core/index';
-import type { Match, LedgerEvent } from '../../../../../../packages/mahjong-core/ledger';
+} from '../../../../../../../packages/mahjong-core/final-results';
+import { emptyLive } from '../../../../../../../packages/mahjong-core/live';
+import { parseTiles, type WinEvent } from '../../../../../../../packages/mahjong-core/index';
+import type { Match, LedgerEvent } from '../../../../../../../packages/mahjong-core/ledger';
 
 const ids = ['a', 'b', 'c', 'd'];
 function game(events: LedgerEvent[] = []): Match {

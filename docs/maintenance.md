@@ -29,17 +29,20 @@ The separate Add meld form is removed; use collection assignments instead.
 The hand toolbar's Delete a tile mode removes individual tiles and supports Undo.
 Undo and Redo appear inside Enter tiles, keeping the main hand toolbar focused on Delete and Clear.
 Enter tiles sits inside the green hand tray. Winning-tile, Delete and Clear controls appear in an
-attached footer only when hand tiles exist. Melds/North use a separate step-02 card, with a compact
-verification checkbox after the summary. Edits clear verification, and settlement still requires it.
-Indicator fields use compact entry controls. Storage usage appears only on the Rule coverage page;
-home and scoring pages omit the panel.
+attached footer only when hand tiles exist. Assigned groups remain in the hand workspace. There is
+no separate verification checkbox: edits invalidate results, and structure/claim validation runs
+before settlement. Indicator fields use compact entry controls. Storage usage appears on Others
+below the grouped options; home and scoring pages omit the panel.
 
 `tiles/tile-picker` renders the image palette shared by the hand and `tiles/tile-input` fields.
 Meld/Dora/Ura inputs show selected tile images with removal controls; notation is an optional
 advanced editor. Keep new tile-valued fields on these components instead of adding raw-text-only
 entry. Provider settings are read exclusively from `config.json`.
 
-Organize files by feature, keeping each component's template beside its TypeScript file:
+Organize files by feature, giving each component its own folder. Keep its TypeScript, HTML,
+CSS and any component specs together. Name unit tests `*.spec.ts`; Vitest runs the application
+and domain specs, while Playwright runs the separate `e2e/*.spec.ts` suite. Do not add empty
+component specs just to fill out a folder; test meaningful behavior.
 
 ```text
 apps/web/src/app/
@@ -47,14 +50,25 @@ apps/web/src/app/
   core/i18n/                             App-wide locale service, catalog and tests
   features/
     matches/                             Match setup and saved tables
+      home/                              home.ts, home.html, home.css
       data-access/                       Match and draft repository
+    records/
+      player-profile/                    Component files, analysis helpers and specs
+      record-result/                     Saved-game results component
+      data-transfer/                     Component files, archive helpers and specs
     scoring/                             Hand editor and settlement orchestration
+      scorer/                            scorer.ts, scorer.html, scorer.css
       capture/                           Recognition contract and mock adapter
+        photo-capture/                   Photo component files
+      tiles/
+        tile-input/                      Tile input component files
+        tile-picker/                     Tile picker component files
+        tile-entry-dialog/               Tile editor dialog component files
       score-result/                      Single-hand explanation
       round-review/                      Multi-winner and draw review
       match-history/                     Settlement audit view
     about/                               Coverage and limitations
-  shared/rules/                          Rule picker used by setup and scoring
+  shared/rules/rule-picker/              Rule picker used by setup and scoring
 ```
 
 Keep feature-specific helpers within their owning feature. Put code in `shared` only when multiple
@@ -88,6 +102,21 @@ load. Include new editor fields in both snapshot creation and restoration, inclu
 
 Shared visual styles live in `apps/web/src/styles.css`. Put feature-specific styles in a component
 CSS file when introducing a new component; avoid inline styles and unexplained global selectors.
+
+## Shared interaction and diagnostics
+
+Keep mobile prompt animation and centered desktop behavior in `shared/responsive-sheet.ts`, and
+backdrop rules in `shared/dialog-backdrop.ts`. Nested prompts retain their parent. Player search
+and filter controls sit outside the independently scrolling results list. There is no pagination.
+
+`shared/tab-scroll.ts` resets the appropriate scroll container for new tabs/filter chips. Sticky
+controls share the top-gutter treatment in `styles.css`. Use `action-cancel` for neutral outlined
+cancellation and `action-delete` for destructive controls; cancellation precedes confirmation.
+The global ripple service respects `data-no-ripple`, used only on the developer-brand hidden trigger.
+
+`core/diagnostic-log.ts` holds up to 200 session navigation/error entries. ErrorNotice reports UI
+errors to it. Triple-clicking the developer brand opens the log sheet. Logs are not uploaded or
+persisted; detailed recognition Console messages remain separate.
 
 ## Verification
 

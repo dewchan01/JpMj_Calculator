@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Match } from '../../../../../../packages/mahjong-core/ledger';
-import { presetRules } from '../../../../../../packages/mahjong-rules/index';
+import type { Match } from '../../../../../../../packages/mahjong-core/ledger';
+import { presetRules } from '../../../../../../../packages/mahjong-rules/index';
 import { gameArchive, parseArchive } from './data-archive';
 
 function sample(): Match {

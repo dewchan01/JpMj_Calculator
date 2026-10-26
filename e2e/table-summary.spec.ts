@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { toggleTheme } from './helpers/navigation';
-import { playerAction, prompt, recordDraw } from './helpers/game';
+import { recordDraw } from './helpers/game';
 for (const count of [3, 4])
   for (const width of [390, 1280]) {
     test(`${count}P interactive table at ${width}px stays compact in both themes`, async ({
@@ -15,9 +15,10 @@ for (const count of [3, 4])
       await expect(table.locator('.player-seat')).toHaveCount(count);
       await expect(table.locator('.player-seat.dealer')).toHaveCount(1);
       await expect(table.locator('.selected')).toHaveCount(0);
-      await playerAction(page, 'Player 2');
-      await prompt(page)
-        .getByRole('button', { name: /Declare Riichi/ })
+      await page
+        .locator('.player-seat')
+        .filter({ hasText: 'Player 2' })
+        .getByRole('button', { name: 'Riichi', exact: true })
         .click();
       await expect(page.locator('.round-status .table-pot strong')).toHaveText('1,000');
       await expect(table.locator('.player-seat').nth(1).locator('.player-points')).toHaveText(

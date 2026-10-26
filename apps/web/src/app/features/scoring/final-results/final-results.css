@@ -17,6 +17,7 @@
 :host-context(dialog) .result-controls {
   --page-sticky-gap: 0px;
   top: 0;
+  background: var(--surface);
 }
 .comparison-table th,
 .comparison-table td {

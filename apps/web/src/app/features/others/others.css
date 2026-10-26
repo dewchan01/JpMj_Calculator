@@ -227,3 +227,8 @@ dd {
   margin-left: auto;
   flex-shrink: 0;
 }
+:host .sound-previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

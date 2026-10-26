@@ -311,7 +311,9 @@
             <section class="assignment-panel" [attr.aria-label]="'Assign selected tiles' | t">
               <header class="assignment-heading">
                 <h3>{{ 'Assign selected tiles' | t }}</h3>
-                <button class="action-cancel quiet" (click)="closeAssignment()">{{ 'Cancel' | t }}</button>
+                <button class="action-cancel quiet" (click)="closeAssignment()">
+                  {{ 'Cancel' | t }}
+                </button>
               </header>
               <div class="mini-tiles">
                 @for (tile of selectedTiles; track tile.id) {

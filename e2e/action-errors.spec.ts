@@ -75,7 +75,7 @@ test('notation errors remain inside the dialog and deposit errors below the depo
   await editor.getByRole('button', { name: 'Replace tile collection', exact: true }).click();
   await expect(editor.getByRole('alert')).toBeFocused();
   await editor.getByRole('button', { name: 'Done', exact: true }).click();
-  await page.getByRole('link', { name: 'My table', exact: true }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'My table', exact: true }).click();
   await page.getByRole('button', { name: /Start match/ }).click();
   await page.getByRole('button', { name: 'End this hand', exact: true }).click();
   await prompt(page).getByRole('button', { name: 'Win', exact: true }).click();

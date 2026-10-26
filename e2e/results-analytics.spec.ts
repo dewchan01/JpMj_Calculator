@@ -23,7 +23,10 @@ test('final results offer table, list, history, statistics, PNG export, keep and
     await results.locator('table').evaluate((table) => table.scrollWidth <= table.clientWidth),
   ).toBe(true);
   await results.getByRole('button', { name: 'List', exact: true }).click();
-  await expect(results.locator('.comparison-table tbody tr')).toHaveCount(5);
+  await expect(results.locator('.comparison-table tbody tr')).toHaveCount(7);
+  await expect(results.locator('.comparison-table tbody tr').last()).toContainText('Total score');
+  await expect(results.locator('.comparison-table tbody tr').first()).toContainText('Rank');
+  await expect(results.locator('.comparison-table thead')).not.toContainText('#1');
   await expect(results.locator('.comparison-table thead th')).toHaveCount(5);
   await page.setViewportSize({ width: 320, height: 740 });
   expect(
@@ -40,6 +43,28 @@ test('final results offer table, list, history, statistics, PNG export, keep and
   ).toBe(true);
   await expect(results.getByRole('button', { name: 'All players', exact: true })).toHaveCount(0);
   await results.getByRole('button', { name: 'Details', exact: true }).first().click();
+  const resultDialog = page.locator('dialog.results-prompt');
+  await expect(resultDialog).toBeVisible();
+  const selectedTab = results.locator('.result-tabs button.selected');
+  await expect(selectedTab).toHaveText('Details');
+  const selectedBackground = await selectedTab.evaluate(
+    (button) => getComputedStyle(button).backgroundColor,
+  );
+  expect(selectedBackground).not.toBe(
+    await results
+      .locator('.result-tabs button')
+      .first()
+      .evaluate((button) => getComputedStyle(button).backgroundColor),
+  );
+  await resultDialog.locator('.prompt-body').evaluate((body) => {
+    body.scrollTop = 400;
+  });
+  const headingBounds = await resultDialog.locator('.prompt-heading').boundingBox();
+  const tabsBounds = await results.locator('.result-controls').boundingBox();
+  expect(tabsBounds!.y).toBeGreaterThanOrEqual(headingBounds!.y + headingBounds!.height - 1);
+  await resultDialog.locator('.prompt-body').evaluate((body) => {
+    body.scrollTop = 0;
+  });
   await expect(results.locator('.score-graph')).toBeVisible();
   await expect(results.locator('.metric-card')).toHaveCount(12);
   await expect(results).toContainText('Win rate');
@@ -74,10 +99,23 @@ test('final results offer table, list, history, statistics, PNG export, keep and
   await page.screenshot({ path: 'artifacts/results-statistics.png' });
   await results.getByRole('button', { name: 'History', exact: true }).click();
   await expect(results.locator('.history-event')).toHaveCount(2);
-  await results.locator('.history-event summary').last().click();
+  await expect(results.locator('.history-event > summary .outcome-mark')).toContainText(['Ron']);
+  await expect(results.locator('app-match-history > .card')).toHaveCount(0);
+  await results.locator('.history-event > summary').last().click();
   await expect(results.locator('.history-event[open]')).toContainText('Player 2');
   await expect(results.locator('.history-event[open] .hand-player')).toHaveCount(4);
-  await expect(results.locator('.history-event[open]')).toContainText('Winning method');
+  await expect(
+    results.locator('.history-event[open] .hand-player[aria-expanded="true"]'),
+  ).toHaveCount(0);
+  await results.locator('.history-event[open] .hand-player').first().click();
+  await expect(results.locator('.history-event[open] .player-detail')).toContainText(
+    'Winning method',
+  );
+  const playerPositions = await results
+    .locator('.history-event[open] .hand-player')
+    .evaluateAll((players) => players.map((player) => player.getBoundingClientRect().y));
+  expect(new Set(playerPositions).size).toBe(1);
+  await page.screenshot({ path: 'artifacts/history-compact-390.png' });
   await results.getByRole('button', { name: 'Save game', exact: true }).click();
   await expect(page).toHaveURL(/\/records$/);
   await page.locator('.game-card-link').click();
@@ -177,7 +215,7 @@ test('record results without playing, correct points, persist ranks, and audit t
     .click();
   await results.getByRole('button', { name: 'History', exact: true }).click();
   await expect(results.locator('.history-event')).toHaveCount(2);
-  await results.locator('.history-event summary').first().click();
+  await results.locator('.history-event > summary').first().click();
   await expect(results.locator('.history-event[open]')).toContainText('40,000');
   await results.getByRole('button', { name: 'Details', exact: true }).click();
   await expect(results.locator('.metric-card')).toHaveCount(12);

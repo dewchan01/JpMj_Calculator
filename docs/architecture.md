@@ -1,18 +1,18 @@
 # Architecture
 
-Layout adapts to viewport width using the same URLs: screens up to 700px hide the desktop header/footer and use fixed bottom navigation; wider screens use a permanently expanded sidebar. The four tabs are My table, Settings, Records and Others. Quick score is reached from My table. Resizing preserves the active form and match ID. Header offsets, footer clearance, safe-area padding, error scrolling and drag auto-scroll account for the fixed navigation.
+Layout adapts to viewport width using the same URLs: screens up to 700px hide the desktop header and use fixed bottom navigation; wider screens use a permanently expanded sidebar. The four tabs are My table, Settings, Records and Others. Quick score is reached from My table. Resizing preserves the active form and match ID. Header offsets, bottom-navigation clearance, safe-area padding, error scrolling and drag auto-scroll account for the fixed navigation.
 
-The Angular shell lazy-loads home, scorer and coverage screens. Angular Signals hold asynchronous match/results state; plain form fields hold local editor state. No state library or backend is needed for this slice. Tailwind is available through PostCSS; most visual styling uses scoped-purpose global CSS classes. No runtime font, image or analytics services are used.
+The Angular shell lazy-loads home, live table, Quick score, records, player analysis, settings and Others. Signals hold reactive state, with Signal Forms, reactive forms and existing template-driven editors used as appropriate. Components keep TypeScript, HTML and CSS together in a component folder; pure helpers and `*.spec.ts` tests stay with their owning feature. Vitest runs application/domain specs; Playwright runs `e2e/` separately. Tailwind is available through PostCSS, with component CSS and shared global controls. No backend or runtime font/analytics service is required.
 
 The domain packages import no Angular/browser APIs. `score` validates physical tiles and context, enumerates normal/special interpretations and concealed winning-tile placements, evaluates Yaku/Fu, counts bonus tiles, applies integer limits and profile-specific liability, then selects the highest payment. Standard special waits and first-turn Yakuman are implemented rather than blocked. Tenhou considers every possible initial-deal winning tile when the Tenhou claim is declared.
 
 Player arrays represent turn order. Dealer-relative seat winds are derived for each score. 3P uses East/South/West. The preceding array player is the legal Chi source. Physical tile IDs distinguish copies and maintain Kakan provenance. Original Pon snapshots reference the same physical tiles and are not counted a second time.
 
-The pure ledger replays nonnegative integer transfers between players and named table escrow. Deposits remove player money once; awards spend existing escrow. All accounts reconcile to initial balances. Duplicate event IDs and unfunded pot awards are rejected. Match writes use an IndexedDB transaction and an expected `updatedAt` value to detect concurrent-tab changes. Failed writes leave the previously stored match intact. Each win stores its full scoring input, profile snapshot and result for audit. Historical edits are blocked; latest-event undo replays remaining transfers.
+The pure ledger replays nonnegative integer transfers between players and named table escrow. Deposits remove player money once; awards spend existing escrow. All accounts reconcile to initial balances. Duplicate event IDs and unfunded pot awards are rejected. Match writes use an IndexedDB transaction and an expected `updatedAt` value to detect concurrent-tab changes. Failed writes leave the previously stored match intact. Each win stores its full scoring input, profile snapshot and result for audit. Historical hand editing is blocked; latest-event undo replays remaining transfers. Final-point/date correction is separate: it preserves total points and appends a `scoreAdjustment` event without rewriting earlier hands.
 
 `rounds.ts` combines multiple Ron without double-awarding honba/escrow, checks cross-hand physical inventory, and settles exhaustive/abortive/Nagashi draws from declared circumstances. `settleRound` stores the before/after round state in the same event as payments and any final escrow award. Undo restores both balances and progression. Bankruptcy, extension rounds and first-place dealer finish use integer raw balances before final escrow allocation.
 
-Settings at `/settings` owns preset selection and the named 3P/4P rule library. The library persists separate applied profiles in localStorage; setup and Quick score show a read-only summary with a link to Settings. New custom snapshots include table progression, payment, final result and chip settings. Editing the library never mutates existing matches. Table names and scratch hands survive a visit to Settings through separate in-memory services. Older snapshots retain their identity and historical results; new scores resolve missing settings to the original Soul-inspired defaults. Rule, review, setup and shell templates live in separate HTML files in accordance with the repository guidance.
+Settings at `/settings` owns preset selection and the named 3P/4P rule library. The library persists separate applied profiles in localStorage; setup and Quick score use the shared rule-picker prompt. Active matches keep their saved snapshots. New custom snapshots include table progression, payment, final result and chip settings. Editing the library never mutates existing matches. Table names and scratch hands survive a visit to Settings through separate in-memory services. Older snapshots retain their identity and historical results; new scores resolve missing settings to the original Soul-inspired defaults.
 
 Dexie schema version 1 stores matches and manual drafts. Future indexed-store changes must add explicit Dexie migrations. The live table adds optional clock, current-hand actions and display-position fields to the existing match records without changing indexes. `/score/:id` owns the compact live table and condition prompts; `/score` retains the independent manual scorer. The shared timer helpers and final-payment path are pure core functions. Saved player names use a separate localStorage library. See [Live table flow](live-table.md).
 
@@ -20,7 +20,9 @@ Quick-score tile edits retain in-memory undo/redo snapshots; those edit stacks d
 
 The production Angular service worker prefetches the app shell and lazy routes. Scoring and IndexedDB require no network. HTTPS hosting with SPA fallback is required for deployment. The local preview serves the service-worker shell; the Angular development server disables it.
 
-The recognizer interface returns normalized boxes and candidate arrays. The capture feature owns API
+The recognizer interface returns normalized boxes and candidate arrays. API, Roboflow browser-worker
+and offline mock adapters implement the same interface; the factory selects only the configured provider.
+The capture feature owns API
 requests and independent editable previews; the scorer only receives an explicitly confirmed tile
 list for a named target. A singleton configuration loader validates public `config.json` once per
 app load. API endpoints are not user-editable or read from browser preferences.
@@ -35,18 +37,18 @@ translate pipe updates text without reloading or resetting the editor. Domain st
 canonical English in saved results and are translated at display time, including history. User
 names are never run through the catalog. English is the initial default regardless of browser
 language; a saved selection takes precedence. The locale service updates document language/title
-and continues in memory if localStorage is unavailable. Angular Chinese locale and extra day-period
-data localize dates, including the `B` time-format token.
+and continues in memory if localStorage is unavailable. The shared Intl date formatter selects
+en-SG, zh-TW, zh-CN or ja-JP. Local date inputs are converted without shifting the entered local time.
 
 ## Installation, support, and build details
 
 The home page offers installation in a popup that follows the light or dark theme and hides it when running in standalone PWA mode. Next time (or Escape) dismisses it for this visit; it returns on reload or the next home-page visit. Close stores a permanent dismissal in this browser’s local storage. Clearing site data restores the reminder. On iOS, use Share → Add to Home Screen. The Install button appears when the browser provides an installation prompt.
 
-Set the top-level `supportEmail` field in `apps/web/public/config.json` to your support address, and `developerName` to your display name. The Others tab links to Rules, Version, Developer, Send email, Terms and conditions, License, Language and Theme. Each item has a separate short page; Send email opens the configured mail composer. An empty email hides the link and shows an unavailable message in Others. This file is public; do not put private credentials in it.
+Set top-level `supportEmail` and `developerName` in `apps/web/public/config.json`. Others groups Rules, Version, Developer, Terms and conditions, License, Language and Theme. The email link is inside Developer and is hidden when empty. Data provides separate Import JSON and Export JSON prompts. Triple-clicking the developer brand opens session diagnostics; logs stay in memory and the trigger alone suppresses ripple. This configuration file is public; do not put private credentials in it.
 
-Rules moved from `/about` to `/others/rules`; the old URL redirects. Language and theme preferences are shared with the desktop header. Version uses the same build metadata as the desktop footer. Formal terms and the application's own license are not supplied in this repository, so their pages explicitly say so. Tile artwork attribution and CC0 text remain available; the postbuild step copies generated dependency license notices into the deployed browser directory.
+Rules moved from `/about` to `/others/rules`; the old URL redirects. Language and theme preferences are shared with the desktop header. Version reads generated build metadata. Formal terms and the application's own license are not supplied in this repository, so their pages explicitly say so. Tile artwork attribution and CC0 text remain available; the postbuild step copies generated dependency license notices into the deployed browser directory.
 
-`npm start` and `npm run build` generate `version.json` from the package version and Git commit. A footer asterisk means the build included local changes. Source archives without Git metadata show an unknown commit.
+`npm start` and `npm run build` generate `version.json` from the package version and Git commit. A commit asterisk means the build included local changes. Source archives without Git metadata show an unknown commit.
 
 Photo recognition requires internet access. Manual tile entry and scoring work offline after the app has cached successfully. Drag collected tiles to reorder them; keyboard users can focus a tile and press Alt + Left/Right. Tap a collected tile to remove it, and use Undo to recover it.
 
@@ -60,7 +62,7 @@ The shared `ErrorNotice` component in `shared/error-notice` announces the transl
 
 All error panels use `ErrorNotice`, including home, installation, recognition, manual input, scoring and round validation. The component accepts a single message or a list, with the same padding, border, typography and light/dark colors. Action feedback focuses and scrolls into view; background configuration notices use the same presentation with automatic focus disabled.
 
-Quick score (`/score`) is independent of saved matches (`/score/:id`). It has its own rules and temporary hand state and cannot save settlements into an ongoing match. Match drafts remain keyed by match ID in IndexedDB. Navigation highlights My table while a saved match is open and Quick score only for the standalone calculator. An end-to-end test switches between a 4P Tenhou game and a 3P quick calculation and checks the original draft, balances, escrow and ledger afterward.
+Quick score (`/score`) is independent of saved matches (`/score/:id`). It has its own rules and temporary hand state and cannot save settlements into an ongoing match. Match drafts remain keyed by match ID in IndexedDB. Navigation highlights My table for the live table and standalone Quick score; Quick score has a dedicated entry link. An end-to-end test switches between a 4P Tenhou game and a 3P quick calculation and checks the original draft, balances, escrow and ledger afterward.
 
 ## Direct tile assignment and automatic game context
 

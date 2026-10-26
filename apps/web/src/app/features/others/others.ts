@@ -1,4 +1,5 @@
-import { DataTransfer } from '../records/data-transfer';
+import { DataTransfer } from '../records/data-transfer/data-transfer';
+import { GameSounds } from '../../core/sound/game-sounds';
 import { Component, computed, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -14,6 +15,19 @@ import { CaptureConfiguration } from '../scoring/capture/capture-config';
   styleUrl: './others.css',
 })
 export class Others {
+  readonly sounds = inject(GameSounds);
+  readonly soundLabels = {
+    pon: 'Pon',
+    kita: 'North extraction',
+    chi: 'Chi',
+    daiminkan: 'Open Kan',
+    kakan: 'Added Kan',
+    ankan: 'Concealed Kan',
+    riichi: 'Riichi',
+    doubleRiichi: 'Double Riichi',
+    ron: 'Ron · discard',
+    tsumo: 'Tsumo · self draw',
+  };
   readonly logs = inject(DiagnosticLog);
   private logTapCount = 0;
   private lastLogTap = 0;
@@ -33,6 +47,12 @@ export class Others {
   private readonly params = toSignal(inject(ActivatedRoute).paramMap);
   readonly section = computed(() => this.params()?.get('section') ?? '');
   readonly entries = [
+    {
+      path: '/others/sound',
+      title: 'Sound effects',
+      group: 'Preferences',
+      icon: 'M11 4 6 8H3v8h3l5 4Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14',
+    },
     {
       path: '/others/language',
       title: 'Language',

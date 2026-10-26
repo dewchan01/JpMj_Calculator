@@ -82,6 +82,10 @@ for (const width of [320, 390, 1280]) {
     const nav = page.getByRole('navigation');
     await nav.getByRole('link', { name: 'Records', exact: true }).click();
     await expect(page.locator('.game-card')).toHaveCount(2);
+    await expect(page.locator('.game-card tfoot').first()).toContainText('Total');
+    await expect(page.locator('.game-card tfoot td').first()).toHaveText('105,000');
+    await expect(page.locator('.game-card thead th').nth(1)).toHaveCSS('text-align', 'left');
+    await expect(page.locator('.game-card .player-name').first()).toHaveCSS('text-align', 'left');
     const controls = await page.locator('.records-controls').boundingBox();
     expect(controls!.height).toBeLessThan(240);
     await page.evaluate(() => window.scrollTo(0, 200));

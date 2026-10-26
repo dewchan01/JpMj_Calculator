@@ -1,4 +1,6 @@
 {
+  "Confirm Double Riichi was declared on your uninterrupted first turn. Turn order is not tracked.": "請確認當時是在未被鳴牌中斷的第一巡宣告雙立直；系統不追蹤摸捨巡次，可手動補登。",
+  "Point score": "持點換算",
   "Logs": "日誌",
   "Clear logs": "清除日誌",
   "No logs.": "沒有日誌。",
@@ -1162,5 +1164,13 @@
   "Three-player Mahjong reference": "日本三人麻將參考資料",
   "Mahjong Soul — Moegirl": "萌娘百科——雀魂麻將",
   "Pao — Huiji Wiki": "灰機百科——包牌",
-  "M.League official rules": "M.LEAGUE 常規賽規則"
+  "M.League official rules": "M.LEAGUE 常規賽規則",
+  "Total": "總計",
+  "kita": "拔北",
+  "Add one North": "新增一張北風牌",
+  "Import data": "匯入資料",
+  "Export data": "匯出資料",
+  "JSON format": "檔案格式：JSON",
+  "Sound effects": "音效",
+  "Japanese device voice when available; otherwise a short tone.": "使用裝置的日文語音；若無可用語音，則播放短提示音。"
 }

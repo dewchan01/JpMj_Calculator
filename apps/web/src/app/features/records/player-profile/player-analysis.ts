@@ -1,6 +1,6 @@
-import { finalStandings } from '../../../../../../packages/mahjong-core/final-results';
-import type { Match, LedgerEvent } from '../../../../../../packages/mahjong-core/ledger';
-import { tableRules } from '../../../../../../packages/mahjong-rules/index';
+import { finalStandings } from '../../../../../../../packages/mahjong-core/final-results';
+import type { Match, LedgerEvent } from '../../../../../../../packages/mahjong-core/ledger';
+import { tableRules } from '../../../../../../../packages/mahjong-rules/index';
 
 export type HandState = 'dama' | 'riichi' | 'open';
 export interface HandSample {

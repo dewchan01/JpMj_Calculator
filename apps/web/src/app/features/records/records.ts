@@ -1,3 +1,4 @@
+import { SignedValue } from '../../shared/signed-value/signed-value';
 import { ResponsiveSheet } from '../../shared/responsive-sheet';
 import { DialogBackdrop } from '../../shared/dialog-backdrop';
 import { Component, computed, inject, signal, viewChild, ElementRef } from '@angular/core';
@@ -16,6 +17,7 @@ import { durationMinutes, filterMatches, playerRecords } from './record-stats';
 
 @Component({
   imports: [
+    SignedValue,
     ResponsiveSheet,
     DialogBackdrop,
     LocalDatePipe,
@@ -107,12 +109,23 @@ export class Records {
   });
   readonly games = computed(() =>
     this.filtered()
-      .map((match) => ({
-        match,
-        rows: finalStandings(match),
-        minutes: durationMinutes(match),
-        currency: tableRules(match.rules).currency,
-      }))
+      .map((match) => {
+        const rows = finalStandings(match);
+        return {
+          match,
+          rows,
+          totals: rows.reduce(
+            (total, row) => ({
+              points: total.points + row.points,
+              score: total.score + row.finalScore,
+              money: total.money + row.totalMoney,
+            }),
+            { points: 0, score: 0, money: 0 },
+          ),
+          minutes: durationMinutes(match),
+          currency: tableRules(match.rules).currency,
+        };
+      })
       .sort(
         (a, b) =>
           (Date.parse(a.match.createdAt) - Date.parse(b.match.createdAt)) *

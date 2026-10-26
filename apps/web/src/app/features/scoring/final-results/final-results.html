@@ -79,7 +79,7 @@
               <th>{{ 'Rank' | t }}</th>
               <th>{{ 'Player' | t }}</th>
               <th>{{ 'Points' | t }}</th>
-              <th>{{ 'Final score' | t }}</th>
+              <th>{{ 'Total score' | t }}</th>
             </tr>
           </thead>
           <tbody>
@@ -93,12 +93,23 @@
                 </th>
                 <td>{{ row.points | number }}</td>
                 <td>
-                  {{ row.finalScore | number: '1.0-3' }}
+                  <strong><app-signed-value [value]="row.finalScore" /></strong>
+                  <small class="score-breakdown">
+                    {{ 'Point score' | t }}
+                    <app-signed-value [value]="row.pointScore" />
+                    <br />
+                    {{ 'Uma' | t }}
+                    <app-signed-value [value]="row.uma" />
+                    · {{ 'Oka' | t }}
+                    <app-signed-value [value]="row.oka" />
+                  </small>
                   @if (settings().bettingRate || settings().chipValue) {
                     <small>
-                      {{ row.totalMoney | number: '1.2-2' }} {{ settings().currency }}
+                      <app-signed-value [value]="row.totalMoney" digits="1.2-2" />
+                      {{ settings().currency }}
                       <br />
-                      {{ 'Chip money' | t }} {{ row.chipMoney | number: '1.2-2' }}
+                      {{ 'Chip money' | t }}
+                      <app-signed-value [value]="row.chipMoney" digits="1.2-2" />
                     </small>
                   }
                 </td>
@@ -116,11 +127,17 @@
             <tr>
               <th scope="col">{{ 'Player' | t }}</th>
               @for (row of rows(); track row.id) {
-                <th scope="col">#{{ row.rank }} {{ row.name }}</th>
+                <th scope="col">{{ row.name }}</th>
               }
             </tr>
           </thead>
           <tbody>
+            <tr>
+              <th scope="row">{{ 'Rank' | t }}</th>
+              @for (row of rows(); track row.id) {
+                <td>{{ row.rank }}</td>
+              }
+            </tr>
             <tr>
               <th scope="row">{{ 'Points' | t }}</th>
               @for (row of rows(); track row.id) {
@@ -128,49 +145,55 @@
               }
             </tr>
             <tr>
-              <th scope="row">{{ 'Final score' | t }}</th>
+              <th scope="row">{{ 'Point score' | t }}</th>
               @for (row of rows(); track row.id) {
-                <td>{{ row.finalScore | number: '1.0-3' }}</td>
+                <td><app-signed-value [value]="row.pointScore" /></td>
               }
             </tr>
             <tr>
               <th scope="row">{{ 'Uma' | t }}</th>
               @for (row of rows(); track row.id) {
-                <td>{{ row.uma | number }}</td>
+                <td><app-signed-value [value]="row.uma" /></td>
               }
             </tr>
             <tr>
               <th scope="row">{{ 'Oka' | t }}</th>
               @for (row of rows(); track row.id) {
-                <td>{{ row.oka | number }}</td>
+                <td><app-signed-value [value]="row.oka" /></td>
               }
             </tr>
             <tr>
               <th scope="row">{{ 'Net chips' | t }}</th>
               @for (row of rows(); track row.id) {
-                <td>{{ row.chips | number }}</td>
+                <td><app-signed-value [value]="row.chips" /></td>
               }
             </tr>
             @if (settings().bettingRate || settings().chipValue) {
               <tr>
                 <th scope="row">{{ 'Score money' | t }}</th>
                 @for (row of rows(); track row.id) {
-                  <td>{{ row.scoreMoney | number: '1.2-2' }}</td>
+                  <td><app-signed-value [value]="row.scoreMoney" digits="1.2-2" /></td>
                 }
               </tr>
               <tr>
                 <th scope="row">{{ 'Chip money' | t }}</th>
                 @for (row of rows(); track row.id) {
-                  <td>{{ row.chipMoney | number: '1.2-2' }}</td>
+                  <td><app-signed-value [value]="row.chipMoney" digits="1.2-2" /></td>
                 }
               </tr>
               <tr>
                 <th scope="row">{{ 'Total money' | t }}</th>
                 @for (row of rows(); track row.id) {
-                  <td>{{ row.totalMoney | number: '1.2-2' }}</td>
+                  <td><app-signed-value [value]="row.totalMoney" digits="1.2-2" /></td>
                 }
               </tr>
             }
+            <tr>
+              <th scope="row">{{ 'Total score' | t }}</th>
+              @for (row of rows(); track row.id) {
+                <td><app-signed-value [value]="row.finalScore" /></td>
+              }
+            </tr>
           </tbody>
         </table>
       </div>

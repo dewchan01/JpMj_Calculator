@@ -4,14 +4,14 @@ An offline-first Angular PWA for scoring Japanese Riichi Mahjong, with Mahjong S
 
 ## Run
 
-Requires Node **22.22.3+** on the Node 22 line (or an Angular-22-compatible Node 24/26 version). Tested here with Node 22.23.2.
+The installed Angular CLI accepts Node **^22.22.3**, **^24.15.0** or **>=26.0.0**. CI pins Node 22.23.2; the current local checks use Node 26.12.1.
 
 ```powershell
 npm.cmd ci
 npm.cmd start
 ```
 
-Open **http://localhost:4200**. On Windows, use `npm.cmd` if execution policy blocks `npm.ps1`. Dependencies are already installed in this working directory. If an npm 10 dependency-resolution crash occurs during a fresh install, use `npx.cmd --yes npm@11 install` (the workaround used for initial installation).
+Open **http://localhost:4200**. On Windows, use `npm.cmd` if execution policy blocks `npm.ps1`. If an npm 10 dependency-resolution crash occurs during a fresh install, use `npx.cmd --yes npm@11 install` (the workaround used for initial installation).
 
 For the production PWA, including service-worker offline caching:
 
@@ -28,14 +28,16 @@ Save reusable player names on My table, choose them for seats, then start a 3P/4
 
 ## Try a hand in Quick score
 
-1. Open Quick score from My table. Choose Mahjong Soul, Tenhou, M.League or a saved custom profile on Settings.
+1. Open Quick score from My table. Choose Mahjong Soul, Tenhou, M.League or a saved custom profile through the Rules prompt; Settings manages the named rule library.
 2. Use **Try an example hand**, the palette, or compact notation (`123m456m789p234s55p`). The concealed hand includes the winning tile.
 3. Mark the actual winning tile. Drag a matching tile (or a selected group) into Open melds, Concealed Kan, or, in 3P, Extracted North. Open melds ask for the call details in a popup; concealed Kan and North are assigned immediately. Use the move buttons as a keyboard alternative. Assigned groups remain in the same hand card with return, upgrade and remove actions.
 4. Choose Ron/Tsumo, the discarder, indicators and claims. Ongoing games use their saved dealer, round wind, hand number and honba automatically; Quick score keeps these fields editable.
 5. Review the tiles and calculate. Read Yaku, bonus Han, Fu and individual payments. There is no separate verification checkbox; scoring and settlement still validate the hand and declarations.
-6. In a match, record Riichi deposits before settlement. Confirm and save; reopen History to audit or undo the latest event.
+6. Quick score never saves into a live match. Use the live-table flow for declarations and settlement; its History supports auditing and latest-event undo.
 
-Data and drafts stay in IndexedDB on this browser. JSON export provides a backup; import is not yet implemented. Site-data deletion removes local matches. Dealer rotation, honba, round wind, extension rounds, bankruptcy and first-place dealer finish are automatic after settlement. Undo restores points and the preceding round state.
+Data and drafts stay in IndexedDB on this browser. Others > Data provides separate Import data / Export data actions using JSON files, filtered by game, player and inclusive local dates; existing game IDs are skipped on import. See [data transfer](docs/data-transfer.md). Site-data deletion removes local matches. Dealer rotation, honba, round wind, extension rounds, bankruptcy and first-place dealer finish are automatic after settlement. Undo restores points and the preceding round state.
+
+Others > Sound effects offers previews and a saved mute preference for call announcements. Available local Japanese device voices are used, with generated tones as fallback; no game voice recordings are bundled. See [live-table behavior](docs/live-table.md).
 
 ## Rule presets and advanced conditions
 
@@ -55,7 +57,7 @@ For **first-turn Yakuman**, select Tenhou/Chiihou and attest that the first draw
 
 ## Languages
 
-Choose **English**, **繁體中文 (zh-TW)**, **简体中文 (zh-CN)** or **日本語 (ja)** in the header. English is the default;
+Choose **English**, **繁體中文 (zh-TW)**, **简体中文 (zh-CN)** or **日本語 (ja)** in Others > Language or the desktop header. English is the default;
 the selected language is saved locally and works offline. Navigation, setup, scoring inputs,
 validation, Yaku/Fu explanations, history, accessibility labels and dates are localized.
 Player-entered names and saved scoring data are preserved. Translation strings live in
@@ -65,6 +67,10 @@ from `zh-tw.json`, so Traditional Chinese does not need a generation script. Eng
 message keys. Japanese uses the standard language code `ja`.
 
 ## Checks
+
+Unit tests use Vitest and are named `*.spec.ts`, beside the code they test. Component HTML,
+CSS and TypeScript live together in a component folder. Run `npm.cmd test` once or
+`npm.cmd run test:watch` while developing. Browser specs under `e2e/` use Playwright separately.
 
 ```powershell
 npm.cmd run lint
@@ -78,12 +84,12 @@ npx.cmd playwright install chromium
 npm.cmd run e2e
 ```
 
-Playwright serves the production build on port 4300, separate from the development server on 4200. Mobile tests use a 375px Chromium viewport; they do not establish real iPhone Safari compatibility. See [feature coverage](docs/feature-coverage.md) for actual checks and gaps.
+Playwright serves the production build on port 4300, separate from the development server on 4200. Tests use Chromium at several phone and desktop sizes; they do not establish real iPhone Safari compatibility. See [feature coverage](docs/feature-coverage.md) for actual checks and gaps.
 
 ## Structure
 
 Tile displays use locally bundled [FluffyStuff artwork](https://github.com/FluffyStuff/riichi-mahjong-tiles)
-(CC0), including regular and dark variants. The header offers a persistent dark-mode toggle and
+(CC0), including regular and dark variants. Others and the desktop header offer persistent language/theme controls for
 English, Traditional Chinese, Simplified Chinese, and Japanese. The initial theme follows the system setting.
 After changing the Traditional Chinese catalog, run `npm.cmd run i18n:generate` to update the
 Simplified Chinese catalog, then `npm.cmd run format`. Conversion uses OpenCC at development time;
@@ -107,19 +113,37 @@ parser preserves binding expressions and translation strings. See
 
 ## Boundaries / next work
 
-- **M.League** is available for four-player games, including its scoring and round progression
-  differences. Final league points and penalties are excluded; see [rule verification](docs/rule-verification.md).
+- **M.League** is available for four-player games, including scoring, round progression and final table points. League/team standings and referee penalties are excluded; see [rule verification](docs/rule-verification.md).
 - Free recognition candidates and IndexedDB retention are covered in
   [recognition and storage notes](docs/recognition-and-storage.md), including API configuration.
 
 - The previous unsupported-case gates for standard Yakuman, special waits, first-turn wins, Pao and Kita timing have been replaced with profile-aware scoring and explicit circumstance inputs.
 - The app does not simulate the full wall/discard sequence. You declare legal Riichi/Furiten timing, Tenpai, Nagashi eligibility, original call chronology and revealed indicators. Consistency checks reject contradictory declarations.
-- Local/nonstandard Yaku, chombo penalties, final Uma/Oka/return-point scoring and platform rank progression are outside the implemented presets.
+- Local/nonstandard Yaku, chombo penalties, platform account rank progression and league/team standings are outside the implemented presets. Final table Uma/Oka/return-point scoring is implemented.
 - Photo recognition uses a configurable third-party API, with an optional local mock. Crop/rotate,
   image persistence, multiple-photo merging and an app-owned inference backend are not implemented.
 - Initial seat/player names can be entered; editing an existing match’s players/seating and historical events is not supported. Undo the latest ledger event or start a new match.
 - Reference provenance and remaining verification limits are documented in [rule verification](docs/rule-verification.md).
 
 Angular compatibility reference: https://angular.dev/reference/versions
+
+## Records, analysis and diagnostics
+
+Records lists completed games only. Open a whole card for final results; unfinished games resume
+from My table > Ongoing games. Record results only saves final points and a local game date without
+inventing hand history. Saved results provide Result, History and Details tabs, compact comparison
+tables, auditable point/date correction, and graph/statistics PNG sharing. Player rows open Overview,
+Statistics and Explore, including rank trends, state-based rates, comparisons, shared opponents and
+seat analysis. Missing legacy metadata is unavailable rather than zero. See [records](docs/records.md).
+
+The saved-player picker has search, sorting, filters, an independently scrolling growing list and a
+floating add button. Mobile home/filter dialogs slide as bottom sheets; desktop uses centered prompts.
+New-player entry stacks over the picker. New tabs/filter chips reset their scroll container to the top.
+Result, player-analysis, settings and Others controls preserve the page gutter while sticky.
+
+Others > Developer includes the support email. Click the brand name three times consecutively to
+open session logs: the latest 200 navigation/error entries, with Clear logs beside Close and an
+explanation below the title. This hidden trigger alone has no ripple. Detailed recognition Console
+logs are separate; see [diagnostics](docs/recognition-and-storage.md).
 
 Final results show raw points, Oka, Uma, net chips and money when a table ends. Money is `(final score × rate) + (net chips × chip value)`, rounded to two decimals with any residual assigned to first place. Chip transfers for valid Ippatsu, actual red/ura tiles and configured Yakuman awards are recorded separately from points. Chip value 0 disables chips. Undo removes the latest event’s point transfers, chip changes and final penalties together. The app calculates balances and never sends payments. Custom rules and matches are local to this browser origin.

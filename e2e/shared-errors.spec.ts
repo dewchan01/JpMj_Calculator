@@ -58,7 +58,7 @@ for (const dark of [false, true]) {
       .analyze();
     expect(axe.violations).toEqual([]);
     await dialog.getByRole('button', { name: 'Done', exact: true }).click();
-    await page.getByRole('link', { name: 'My table', exact: true }).click();
+    await page.getByRole('navigation').getByRole('link', { name: 'My table', exact: true }).click();
     await page.getByRole('button', { name: /Start match/ }).click();
     await page.getByRole('button', { name: 'End this hand', exact: true }).click();
     const game = page.locator('.game-prompt');

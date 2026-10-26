@@ -135,19 +135,6 @@
                     <span>{{ callCounts()[player.id] }}</span>
                   }
                 </button>
-                @if (players().length === 3) {
-                  <button
-                    [class.action-active]="northCounts()[player.id] > 0"
-                    [attr.aria-pressed]="northCounts()[player.id] > 0"
-                    [disabled]="actionsDisabled()"
-                    (click)="quickAction.emit({ player: player.id, type: 'kita' })"
-                  >
-                    {{ 'Kita' | t }}
-                    @if (northCounts()[player.id]) {
-                      <span>{{ northCounts()[player.id] }}</span>
-                    }
-                  </button>
-                }
               </div>
             }
           </article>

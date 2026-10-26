@@ -183,6 +183,7 @@ describe('game progress and final results', () => {
     m.events = [{ ...event(), chipDeltas: { a: 2, b: -1, c: -1, d: 0 } }];
     const rows = finalStandings(m);
     expect(rows.map((row) => row.rank)).toEqual([1, 1, 3, 4]);
+    expect(rows.map((row) => row.pointScore)).toEqual([5, 5, -10, -20]);
     expect(rows[0]).toMatchObject({ uma: 15, oka: 10, finalScore: 30, chips: 2, totalMoney: 70 });
     expect(rows[1]).toMatchObject({ uma: 15, oka: 10, finalScore: 30, chips: -1, totalMoney: 55 });
     expect(rows.reduce((sum, row) => sum + row.totalMoney, 0)).toBe(0);

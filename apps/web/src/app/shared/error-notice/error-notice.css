@@ -4,20 +4,22 @@
 .error-notice {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  margin-block: 12px 0;
-  padding: 15px 20px;
+  gap: 8px;
+  margin-block: 8px 0;
+  padding: 8px 10px;
   border: 1px solid #e9c8b8;
-  border-radius: 9px;
+  border-radius: 6px;
   background: #fff0e9;
   color: #893e2b;
-  font-size: 0.8rem;
-  line-height: 1.6;
+  font-size: 0.75rem;
+  line-height: 1.45;
   overflow-wrap: anywhere;
   scroll-margin-block: calc(var(--app-header-height, 0px) + 80px) 24px;
 }
 .error-icon {
-  flex: 0 0 20px;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
   margin-top: 1px;
 }
 .error-content {

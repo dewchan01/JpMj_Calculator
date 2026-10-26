@@ -1,5 +1,5 @@
-import { newId } from '../../../core/id/new-id';
-import { ErrorNotice } from '../../../shared/error-notice/error-notice';
+import { newId } from '../../../../core/id/new-id';
+import { ErrorNotice } from '../../../../shared/error-notice/error-notice';
 import { Component, computed, inject, input, linkedSignal, model, signal } from '@angular/core';
 import { form, FormField } from '@angular/forms/signals';
 import {
@@ -7,13 +7,13 @@ import {
   kindIndex,
   parseTiles,
   type Tile,
-} from '../../../../../../../packages/mahjong-core/index';
-import { TileReorder } from './tile-reorder';
-import { I18n, TranslatePipe } from '../../../core/i18n/i18n';
-import { TileArt } from '../../../shared/tile-art/tile-art';
-import { TilePicker } from './tile-picker';
-import { TileEntryDialog } from './tile-entry-dialog';
-import { PhotoCapture } from '../capture/photo-capture';
+} from '../../../../../../../../packages/mahjong-core/index';
+import { TileReorder } from '../tile-reorder';
+import { I18n, TranslatePipe } from '../../../../core/i18n/i18n';
+import { TileArt } from '../../../../shared/tile-art/tile-art';
+import { TilePicker } from '../tile-picker/tile-picker';
+import { TileEntryDialog } from '../tile-entry-dialog/tile-entry-dialog';
+import { PhotoCapture } from '../../capture/photo-capture/photo-capture';
 
 @Component({
   selector: 'app-tile-input',
@@ -100,4 +100,4 @@ export class TileInput {
     }
   }
 }
-import { meldTileError, type MeldEntryType } from './meld-tile-validation';
+import { meldTileError, type MeldEntryType } from '../meld-tile-validation';

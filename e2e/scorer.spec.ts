@@ -1,4 +1,4 @@
-import { beginWin, finishWin, playerAction, gameMenu, prompt } from './helpers/game';
+import { beginWin, finishWin, gameMenu, prompt } from './helpers/game';
 import { openQuickScore } from './helpers/navigation';
 import { expect, test } from '@playwright/test';
 test('mobile match, draft, verified settlement, escrow, history, reload and offline', async ({
@@ -11,9 +11,10 @@ test('mobile match, draft, verified settlement, escrow, history, reload and offl
   await page.goto('/');
   await page.getByLabel('Match name').fill('Test table');
   await page.getByRole('button', { name: /Start match/ }).click();
-  await playerAction(page, 'Player 2');
-  await prompt(page)
-    .getByRole('button', { name: /Declare Riichi/ })
+  await page
+    .locator('.player-seat')
+    .filter({ hasText: 'Player 2' })
+    .getByRole('button', { name: 'Riichi', exact: true })
     .click();
   await expect(page.locator('.table-pot strong')).toHaveText('1,000');
   await page.reload();

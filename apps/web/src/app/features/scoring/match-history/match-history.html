@@ -1,8 +1,8 @@
-<section class="card">
+<section class="history-list">
   <div class="section-heading spread">
     <h2>{{ 'Auditable hand history' | t }}</h2>
     @if (!readOnly()) {
-      <button class="secondary" (click)="exportRequested.emit()">{{ 'Export JSON' | t }}</button>
+      <button class="secondary" (click)="exportRequested.emit()">{{ 'Export data' | t }}</button>
     }
   </div>
   @if (!readOnly()) {
@@ -19,25 +19,55 @@
   @for (event of events(); track event.id) {
     <details class="history-event">
       <summary>
-        {{ eventLabel(event) }}
+        <strong class="event-title">{{ eventLabel(event) }}</strong>
+        @for (mark of outcomeMarks(event); track $index) {
+          <span class="outcome-mark">{{ mark }}</span>
+        }
         <small>{{ event.timestamp | localDate }}</small>
+        @if (event.before; as before) {
+          <small>
+            {{ before.roundWind | t }} {{ before.handNumber }} · {{ 'Honba' | t }}
+            {{ before.honba }}
+          </small>
+        }
+        <span class="event-changes">
+          @for (player of handPlayers().get(event.id); track player.id) {
+            @if (player.before !== player.after) {
+              <span>
+                {{ player.name }}
+                <app-signed-value [value]="player.after - player.before" />
+              </span>
+            }
+          }
+        </span>
       </summary>
-      @if (event.before; as before) {
-        <p class="hint">
-          {{ before.roundWind | t }} {{ before.handNumber }} · {{ 'Honba' | t }} {{ before.honba }}
-        </p>
-      }
-      <div class="hand-players">
+      <div class="hand-players" role="group" [attr.aria-label]="'Player balances' | t">
         @for (player of handPlayers().get(event.id); track player.id) {
-          <article class="hand-player">
-            <h3>
-              {{ player.name }}
-              <small>{{ player.seat + ' seat' | t }}</small>
-            </h3>
+          <button
+            class="hand-player"
+            [attr.aria-expanded]="selectedPlayers()[event.id] === player.id"
+            [attr.aria-controls]="'player-detail-' + event.id"
+            (click)="selectPlayer(event.id, player.id)"
+          >
+            <strong>{{ player.name }}</strong>
+            <small>{{ player.seat + ' seat' | t }}</small>
+            <span>{{ player.after | number }}</span>
+            @if (player.marks.length) {
+              <small class="player-marks">{{ player.marks.join(' · ') }}</small>
+            }
+            @if (player.after !== player.before) {
+              <app-signed-value [value]="player.after - player.before" />
+            }
+          </button>
+        }
+      </div>
+      <div class="player-detail" [id]="'player-detail-' + event.id">
+        @for (player of handPlayers().get(event.id); track player.id) {
+          @if (selectedPlayers()[event.id] === player.id) {
             <dl>
               <div>
                 <dt>{{ 'Points' | t }}</dt>
-                <dd>{{ player.before | number }} → {{ player.after | number }}</dd>
+                <dd>{{ player.before | number }} &rarr; {{ player.after | number }}</dd>
               </div>
               <div>
                 <dt>{{ 'Riichi' | t }}</dt>
@@ -52,7 +82,7 @@
                 <dd>{{ player.win | t }}</dd>
               </div>
             </dl>
-          </article>
+          }
         }
       </div>
       @if (event.durationMs !== undefined) {

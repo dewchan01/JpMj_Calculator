@@ -1,6 +1,8 @@
-﻿# Pre-deployment verification — 23 October 2026
+﻿# Historical pre-deployment verification — 23 October 2026
 
-No blocking issues were found in the checks below. This is local verification; nothing was committed, pushed, or deployed.
+This is the 2026-10-23 report, not the current release state. Subsequent changes include records/analysis, JSON transfer, dialogs, diagnostics and component/spec reorganization. See [current feature coverage](feature-coverage.md) and rerun [maintenance checks](maintenance.md#verification) for a new deployment.
+
+No blocking issues were found in the checks below at that time. This is local verification; nothing was committed, pushed, or deployed.
 
 | Check                                      | Result                                        |
 | ------------------------------------------ | --------------------------------------------- |
@@ -22,7 +24,7 @@ The Pages-path test served the artifact under the repository directory and check
 
 ## Quick score and ongoing games
 
-Quick score has separate rules and temporary input, without a saved match attached. The new isolation test created a 4P Tenhou match with a saved hand and Riichi deposit, switched to a 3P standalone calculation, and then verified that the original match's rules, hand draft, balances, escrow and ledger were unchanged. The navigation now highlights My table for an ongoing game and Quick score only for the standalone calculator.
+Quick score has separate rules and temporary input, without a saved match attached. The new isolation test created a 4P Tenhou match with a saved hand and Riichi deposit, switched to a 3P standalone calculation, and then verified that the original match's rules, hand draft, balances, escrow and ledger were unchanged. My table is highlighted for ongoing games; Quick score has a separate entry link.
 
 ## Configuration and remaining limits
 
@@ -32,6 +34,6 @@ Quick score has separate rules and temporary input, without a saved match attach
 - Browser tests use Chromium, including mobile viewport/touch emulation. Native installation on a real iPhone/Android device and other browser engines were not tested here.
 - Physical-photo accuracy and red-five recognition remain for future evaluation, as agreed.
 
-Deploy the complete committed changes, including the new `shared/error-notice` component and navigation changes. GitHub Actions publishes committed repository content, not uncommitted local files. The deployment workflow was reviewed but not triggered.
+For a later release, include all component moves, route/spec changes and configuration updates as well as the `shared/error-notice` component and navigation changes. GitHub Actions publishes committed repository content, not uncommitted local files. The deployment workflow was reviewed but not triggered.
 
 Temporary Pages smoke-test setup and screenshots are under the ignored `artifacts/` directory. Regular browser regression tests, including Quick score isolation, remain under `e2e/`.

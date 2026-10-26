@@ -1,6 +1,6 @@
-import { balances, type Match } from '../../../../../../packages/mahjong-core/ledger';
-import { finalStandings } from '../../../../../../packages/mahjong-core/final-results';
-import { validateProfile } from '../../../../../../packages/mahjong-rules/index';
+import { balances, type Match } from '../../../../../../../packages/mahjong-core/ledger';
+import { finalStandings } from '../../../../../../../packages/mahjong-core/final-results';
+import { validateProfile } from '../../../../../../../packages/mahjong-rules/index';
 
 export interface GameArchive {
   format: 'riichi-table';

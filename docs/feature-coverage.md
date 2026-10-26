@@ -1,46 +1,67 @@
 # Feature coverage
 
-## Rules and conditions
+Implementation inventory checked against the repository on 2026-10-26. Source-review dates in
+[rule verification](rule-verification.md) are historical; this inventory is not a new platform audit.
 
-| Area                                                                  | Status                                                                                                                                                         |
-| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Mahjong Soul / Tenhou / Custom descriptions and selection             | Implemented in setup and Quick score; existing matches keep immutable snapshots                                                                                |
-| 3P/4P setup, East-only/East-South games, initial seats/names/points   | Implemented                                                                                                                                                    |
-| Custom configuration                                                  | Starting points, red fives, open Tanyao, Kiriage, double/stacked Yakuman, counted limit, multi-Ron/head-bump, Pao, Ankan robbery, Kita Rinshan, Sanma payments |
-| Standard Yaku, Fu, Dora/Ura/Aka/Kita, limits and highest-payment form | Implemented with deterministic fixtures                                                                                                                        |
-| All standard Yakuman and special waits                                | Implemented; preset controls double forms and stacking                                                                                                         |
-| Tenhou / Chiihou                                                      | Implemented with uninterrupted-first-draw attestation; Tenhou maximizes the initial deal                                                                       |
-| Four Kans                                                             | Implemented as Yakuman for one completed hand; multiple-player abort handled by draw entry                                                                     |
-| Pao for Daisangen/Daisuushii                                          | Implemented from declared original call order/provider; component-only vs whole-hand differs by preset                                                         |
-| Double/triple Ron and head-bump                                       | Implemented; same context/discard required, combined physical inventory checked, pot/honba awarded once                                                        |
-| Exhaustive draw                                                       | Implemented: 3P 2,000 / 4P 3,000 Noten pool, no transfers for all/none Tenpai                                                                                  |
-| Abortive draws                                                        | Nine terminals, four winds, four Riichi, multiple-player four Kans, profile-dependent triple Ron; user declares circumstances                                  |
-| Nagashi Mangan                                                        | Implemented with simultaneous qualifiers, Tsumo shares/honba, replaces Noten transfers; continuation follows Tenpai                                            |
-| Kita replacement/robbery and earlier Kita with later timing claims    | Implemented; no blanket timing rejection; user declares current circumstances                                                                                  |
-| Other-player Kans                                                     | Count supports additional revealed indicators; app does not infer reveal timing                                                                                |
-| Dealer/honba/round progression, bankruptcy, extension, dealer finish  | Implemented; state changes and final escrow award are one undoable event                                                                                       |
-| Final Uma/Oka and rank progression                                    | Not implemented; raw balances and placement remain distinct                                                                                                    |
-| Local Yaku / chombo                                                   | Outside the presets; not implemented                                                                                                                           |
+## Rules and settlement
+
+| Area                | Current implementation                                                                                                                  |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Presets             | Mahjong Soul, Tenhou and Custom in 3P/4P; M.League in 4P                                                                                |
+| Standard scoring    | Yaku, Fu, Dora/Ura/Aka/Kita, limits, highest-payment interpretation, standard Yakuman and special waits                                 |
+| First-turn wins     | Tenhou/Chiihou declarations; uninterrupted-first-draw circumstances remain user supplied                                                |
+| Riichi and outcomes | Direct ordinary Riichi from the player box; separate Double Riichi and Ron/Tsumo actions in the player prompt, with existing validation |
+| Calls               | Chi/Pon/Kan, source/called tile, original order and Kakan provenance; physical-copy validation                                          |
+| Pao                 | Profile-specific original-call liability; composite and rare-edge replay certification remains incomplete                               |
+| Multiple Ron        | Same context/discard, combined inventory, head-bump/triple-abort policy and single pot/honba allocation                                 |
+| Draws               | Exhaustive, declared abortive and Nagashi settlement subject to the saved preset                                                        |
+| Progression         | Dealer/Honba/winds, extension, bankruptcy, first-place dealer finish and final escrow policy                                            |
+| Final table results | Raw/converted points, Uma/Oka, signed total score, rounding, chips and optional money conversion                                        |
+| Corrections         | Final point/date editor conserves total points and appends an auditable scoreAdjustment event                                           |
+| Not implemented     | Local/nonstandard Yaku, chombo/referee penalties, account ranks and league/team standings                                               |
 
 ## Application
 
-| Area                                                                 | Status                                                                                                                       |
-| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| English / zh-TW                                                      | Implemented including new controls, results and errors                                                                       |
-| Tile palette/notation/winning tile, undo/redo                        | Implemented; direct tile reorder controls still absent                                                                       |
-| Chi/Pon/Kan, provider/called tile, Kakan provenance/call order       | Implemented; individual meld changes use remove/recreate                                                                     |
-| IndexedDB matches/drafts/history                                     | Implemented; win profiles/inputs/results, draw declarations and round before/after stored                                    |
-| Duplicate prevention, funded escrow, audit/replay, latest-event undo | Implemented                                                                                                                  |
-| Historical editing                                                   | Older edits blocked; latest event can be undone                                                                              |
-| JSON export / match deletion                                         | Implemented; import and post-creation seat/name editor absent                                                                |
-| Production offline PWA                                               | Implemented; Chromium offline regression passes                                                                              |
-| Real iPhone Safari / Android device validation                       | Not performed                                                                                                                |
-| Photo capture/file fallback                                          | Configurable detection API with validated suggestions; optional offline mock. Live provider accuracy/CORS remain unverified. |
-| Crop/rotate, persistent captures, multiple-photo merge               | Not implemented                                                                                                              |
-| Backend/sync/auth                                                    | Deferred; unnecessary for local scoring                                                                                      |
+| Area                 | Current implementation                                                                                                             |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Languages            | English, zh-TW, zh-CN and ja; dates follow the selected locale; player names remain unchanged                                      |
+| Manual tiles         | Palette/notation/photo preview, winning-tile selection, reorder, keyboard alternatives, undo/redo and direct meld/North assignment |
+| Live tables          | Timer, pause/resume, calls/Riichi/Kita, indicators, dice, display-only seat swaps and point differences                            |
+| Player library       | Search, sort/filter, independently scrolling incremental list, floating + and stacked creation prompt                              |
+| Responsive controls  | Mobile home/filter sheets animate; desktop uses centered prompts; reduced motion is respected                                      |
+| Navigation           | Shared sticky gutters; new tabs/filter chips reset scrolling; cancel/delete controls use shared styles                             |
+| Records              | Completed games only; whole cards open results. Ongoing games resume from My table                                                 |
+| Result-only entry    | Final points and local game date without fabricated hands                                                                          |
+| Results              | Result/History/Details, compact comparison tables, expandable event details, metric/player filtering and PNG sharing               |
+| Player analysis      | Rank trend/histogram, basic and conditional rates, win/deal-in scores, stability, chemistry, comparison and seat analysis          |
+| M.League resemblance | Offline versioned eight-player reference; descriptive similarity, not live data or a skill rating                                  |
+| Storage              | IndexedDB matches/drafts, optimistic timestamp checks, ledger reconciliation and storage estimates                                 |
+| JSON transfer        | Separate Others > Data import/export, game/player/date selection, validated atomic insertion, duplicate IDs skipped                |
+| Diagnostics          | Developer-brand triple-click opens up to 200 session navigation/error entries; no log persistence/upload                           |
+| Recognition          | Configured Roboflow browser worker, JSON API or offline mock; editable independent target previews                                 |
+| Offline              | Production service worker caches application/artwork; recognition network/model requirements remain separate                       |
 
-## Validation
+Hand history cannot be freely rewritten; latest-event undo and final-score corrections are distinct.
+Existing table names/seating are not editable as a general post-creation editor. Missing historical
+hand metadata is unavailable rather than assumed false. Rates are based on recorded hands, not a
+full wall/discard simulator. M.League resemblance has minimum sample/metadata requirements.
 
-125 unit tests and 10 browser tests pass, including the prior advanced-rule todos now replaced by executable fixtures. Browser checks cover English/zh-TW, offline storage, preset differences, custom configuration, fixed match snapshots, draws/undo, multiple Ron, Pao and last-hand match-end/undo. Automated axe WCAG AA scans pass on setup/custom rules, scoring and English/zh-TW draw controls. Lint, typecheck and production build pass.
+## Validation and remaining work
 
-This is a manually declared scorer, not a complete wall/discard legality simulator or a certified replica of either platform. Reference verification and numerical fixture provenance are listed in `rule-verification.md`.
+The latest completed unit run has **222 passing tests in 18 Vitest spec files**. Lint, TypeScript
+and the production build passed. Focused Chromium checks cover live games, player actions, record lists,
+results, quick-score isolation and table controls. They cover direct Riichi, manually recorded late Double Riichi,
+persisted declarations and recorded-call handling, player Ron/Tsumo
+entry, signed result breakdowns and existing settlement/undo behavior. Earlier focused runs covered
+routes, recognition previews, JSON transfer, player analysis, sticky spacing, complete list scrolling,
+mobile animations and accessibility. Result comparison checks include a separate rank row and narrow-screen fit;
+record-list checks verify Player heading/name alignment at 320, 390 and 1280 pixels. These are named subsets,
+not a fresh full-suite certification.
+
+The 2026-10-26 documentation refresh does not certify a new deployment. Use the commands in
+[maintenance](maintenance.md#verification) for a current release check. The 2026-10-23
+[pre-deployment report](pre-deployment-verification.md) is a historical snapshot.
+
+Real-device Safari/Android validation, representative physical-photo accuracy/red-five evaluation,
+photo crop/rotation/persistence/merging, image-based meld assignment, backend/auth/sync and user-ID QR
+lookup remain unfinished. Numerical fixtures are hand-authored, not certified platform replays.

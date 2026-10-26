@@ -1,5 +1,4 @@
 import { type Page } from '@playwright/test';
-import { gameMenu } from './game';
 
 export async function leaveGame(page: Page): Promise<boolean> {
   if (!(await page.locator('.game-shell').isVisible())) return false;
@@ -28,9 +27,6 @@ export async function setLanguage(page: Page, language: string): Promise<void> {
     await header.selectOption(language);
     return;
   }
-  const wasRunning =
-    (await page.locator('.game-shell').isVisible()) &&
-    !(await page.locator('.clock small').isVisible());
   const wasGame = await leaveGame(page);
   await page.locator('.app-navigation a[href$="/others"]').click();
   await page.locator('.other-list a[href$="/others/language"]').click();
@@ -39,7 +35,6 @@ export async function setLanguage(page: Page, language: string): Promise<void> {
   await page.goBack();
   if (wasGame) {
     await page.goBack();
-    if (wasRunning) await gameMenu(page, 'Resume game');
   }
 }
 
@@ -57,9 +52,6 @@ export async function toggleTheme(page: Page): Promise<void> {
     });
     return;
   }
-  const wasRunning =
-    (await page.locator('.game-shell').isVisible()) &&
-    !(await page.locator('.clock small').isVisible());
   const wasGame = await leaveGame(page);
   await page.locator('.app-navigation a[href$="/others"]').click();
   await page.locator('.other-list a[href$="/others/theme"]').click();
@@ -68,6 +60,5 @@ export async function toggleTheme(page: Page): Promise<void> {
   await page.goBack();
   if (wasGame) {
     await page.goBack();
-    if (wasRunning) await gameMenu(page, 'Resume game');
   }
 }

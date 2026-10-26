@@ -33,8 +33,8 @@ test('JSON archive filters whole games, round trips and skips duplicate IDs', as
   await page.locator('.app-navigation a[href$="/records"]').click();
   await expect(page.locator('app-data-transfer')).toHaveCount(0);
   await page.locator('.app-navigation a[href$="/others"]').click();
-  await page.getByRole('button', { name: 'Import JSON', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Import JSON', exact: true });
+  await page.getByRole('button', { name: 'Import data', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Import data', exact: true });
   const matches = [
     game('first', '2026-10-01'),
     game('second', '2026-10-02', 'Dana'),
@@ -67,8 +67,8 @@ test('JSON archive filters whole games, round trips and skips duplicate IDs', as
   ).toEqual([]);
   await page.screenshot({ path: 'artifacts/json-transfer-390.png' });
   await dialog.getByRole('button', { name: 'Close', exact: true }).click();
-  await page.getByRole('button', { name: 'Export JSON', exact: true }).click();
-  const exportDialog = page.getByRole('dialog', { name: 'Export JSON', exact: true });
+  await page.getByRole('button', { name: 'Export data', exact: true }).click();
+  const exportDialog = page.getByRole('dialog', { name: 'Export data', exact: true });
   await expect(exportDialog.getByLabel('Import JSON file', { exact: true })).toHaveCount(0);
   const downloadEvent = page.waitForEvent('download');
   await exportDialog.getByRole('button', { name: 'Export selected games', exact: true }).click();
@@ -80,7 +80,7 @@ test('JSON archive filters whole games, round trips and skips duplicate IDs', as
   expect(exported.version).toBe(1);
   expect(exported.matches.map((match: Match) => match.id)).toEqual(['third']);
   await exportDialog.getByRole('button', { name: 'Cancel', exact: true }).click();
-  await page.getByRole('button', { name: 'Import JSON', exact: true }).click();
+  await page.getByRole('button', { name: 'Import data', exact: true }).click();
   await dialog.getByLabel('Import JSON file', { exact: true }).setInputFiles({
     name: 'invalid.json',
     mimeType: 'application/json',

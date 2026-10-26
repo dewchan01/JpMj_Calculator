@@ -17,7 +17,7 @@ test('zh-TW table history persists offline and preserves user names', async ({ p
   await setLanguage(page, 'zh-TW');
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-TW');
   await gameMenu(page, 'History');
-  await expect(page.locator('.history-event summary')).toContainText('East');
+  await expect(page.locator('.history-event > summary')).toContainText('East');
   await prompt(page).locator('.close-prompt').click();
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;

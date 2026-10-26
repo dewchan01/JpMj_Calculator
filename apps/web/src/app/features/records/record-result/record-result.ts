@@ -1,11 +1,11 @@
 import { Component, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { DialogBackdrop } from '../../shared/dialog-backdrop';
-import { Repository } from '../matches/data-access/repository';
-import { FinalResults } from '../scoring/final-results/final-results';
-import { TranslatePipe } from '../../core/i18n/i18n';
-import { ErrorNotice } from '../../shared/error-notice/error-notice';
-import type { Match } from '../../../../../../packages/mahjong-core/ledger';
+import { DialogBackdrop } from '../../../shared/dialog-backdrop';
+import { Repository } from '../../matches/data-access/repository';
+import { FinalResults } from '../../scoring/final-results/final-results';
+import { TranslatePipe } from '../../../core/i18n/i18n';
+import { ErrorNotice } from '../../../shared/error-notice/error-notice';
+import type { Match } from '../../../../../../../packages/mahjong-core/ledger';
 
 @Component({
   imports: [RouterLink, FinalResults, TranslatePipe, ErrorNotice, DialogBackdrop],

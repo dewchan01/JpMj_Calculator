@@ -50,7 +50,8 @@ test('match settings show the saved rules and returning to My table pauses the c
   const score = prompt(page)
     .locator('.saved-rule-group')
     .filter({ has: page.getByText('Score settings', { exact: true }) });
-  await score.locator('summary').click();
+  await expect(prompt(page).locator('.saved-rule-group summary')).toHaveCount(0);
+  await expect(score.locator('dl')).toBeVisible();
   await expect(
     score.locator('dl > div').filter({ hasText: 'Starting points' }).locator('dd'),
   ).toHaveText('25,000');
@@ -74,14 +75,17 @@ test('Riichi and indicator dialogs contain only their selected operation and pre
     .filter({ hasText: 'Player 2' })
     .getByRole('button', { name: 'Riichi', exact: true })
     .click();
-  await expect(prompt(page).getByRole('heading', { name: 'Riichi', exact: true })).toBeVisible();
+  await expect(prompt(page)).not.toBeVisible();
+  await page
+    .locator('.player-seat')
+    .filter({ hasText: 'Player 2' })
+    .getByRole('button', { name: 'Riichi', exact: true })
+    .click();
+  await expect(prompt(page)).not.toBeVisible();
+  await expect(page.locator('.table-pot strong')).toHaveText('0');
   await expect(
-    prompt(page).getByRole('button', {
-      name: /^(Chi|Pon|Open Kan|Concealed Kan|Added Kan|North extraction)$/,
-    }),
-  ).toHaveCount(0);
-  await expect(prompt(page).locator('.recorded-call')).toHaveCount(0);
-  await prompt(page).getByRole('button', { name: 'Close', exact: true }).click();
+    page.locator('.player-seat').filter({ hasText: 'Player 2' }).locator('.player-points'),
+  ).toHaveText('25,000');
   for (const [label, other, notation] of [
     ['Dora indicators', 'Ura indicators', '1z'],
     ['Ura indicators', 'Dora indicators', '2z'],

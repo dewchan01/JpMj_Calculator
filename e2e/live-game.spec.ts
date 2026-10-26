@@ -44,9 +44,10 @@ for (const width of [390, 1280])
       expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight)).toBe(
         true,
       );
-      await playerAction(page, 'Player 2');
-      await prompt(page)
-        .getByRole('button', { name: 'Declare Riichi · 1,000 points', exact: true })
+      await page
+        .locator('.player-seat')
+        .filter({ hasText: 'Player 2' })
+        .getByRole('button', { name: 'Riichi', exact: true })
         .click();
       await expect(page.locator('.table-pot strong')).toHaveText('1,000');
       await expect(page.locator('.riichi-stick')).toHaveCount(1);
@@ -64,18 +65,40 @@ for (const width of [390, 1280])
       await playerAction(page, 'Player 3');
       if (count === 3) {
         await prompt(page).getByRole('button', { name: 'North extraction', exact: true }).click();
-        await prompt(page).getByRole('button', { name: 'Record action', exact: true }).click();
+        await expect(
+          prompt(page).getByRole('button', { name: 'Record action', exact: true }),
+        ).toHaveCount(0);
+        await expect(prompt(page).locator('.mini-tiles app-tile-art')).toHaveCount(1);
+        await expect(prompt(page).locator('.north-count')).toHaveText('1');
+        const northControls = await prompt(page).locator('.north-controls').boundingBox();
+        await expect(prompt(page).locator('.north-controls button').first()).toHaveAttribute(
+          'aria-label',
+          'Remove one North',
+        );
+        await prompt(page).getByRole('button', { name: 'Add one North', exact: true }).click();
+        await expect(prompt(page).locator('.mini-tiles app-tile-art')).toHaveCount(2);
+        await expect(prompt(page).locator('.north-count')).toHaveText('2');
+        const addedControls = await prompt(page).locator('.north-controls').boundingBox();
+        expect(addedControls!.x).toBe(northControls!.x);
+        expect(addedControls!.y).toBe(northControls!.y);
+        await prompt(page).getByRole('button', { name: 'Remove one North', exact: true }).click();
+        await expect(prompt(page).locator('.mini-tiles app-tile-art')).toHaveCount(1);
+        await prompt(page).getByRole('button', { name: 'Close', exact: true }).click();
+        await expect(
+          page.locator('.seat-actions').getByRole('button', { name: /Kita/ }),
+        ).toHaveCount(0);
       } else {
         await prompt(page).getByRole('button', { name: 'Pon', exact: true }).click();
         await enterLiveTiles(page, 'Meld tiles', '111z');
         await prompt(page).getByRole('button', { name: 'Record action', exact: true }).click();
       }
-      await expect(
-        page
-          .locator('.player-seat')
-          .filter({ hasText: 'Player 3' })
-          .getByRole('button', { name: count === 3 ? 'Kita 1' : 'Call 1', exact: true }),
-      ).toHaveAttribute('aria-pressed', 'true');
+      if (count === 4)
+        await expect(
+          page
+            .locator('.player-seat')
+            .filter({ hasText: 'Player 3' })
+            .getByRole('button', { name: 'Call 1', exact: true }),
+        ).toHaveAttribute('aria-pressed', 'true');
       await expect(page.locator('.call-status')).toHaveCount(0);
       await page.getByRole('button', { name: 'Point differences Player 2', exact: true }).hover();
       await page.mouse.down();
@@ -171,9 +194,10 @@ test('Chi infers the previous seat and a selected Riichi can be cancelled after 
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
   for (const name of ['Player 2', 'Player 3']) {
-    await playerAction(page, name);
-    await prompt(page)
-      .getByRole('button', { name: 'Declare Riichi · 1,000 points', exact: true })
+    await page
+      .locator('.player-seat')
+      .filter({ hasText: name })
+      .getByRole('button', { name: 'Riichi', exact: true })
       .click();
   }
   await playerAction(page, 'Player 1');
@@ -184,9 +208,10 @@ test('Chi infers the previous seat and a selected Riichi can be cancelled after 
   await enterLiveTiles(page, 'Meld tiles', '123m');
   await prompt(page).getByRole('button', { name: 'Record action', exact: true }).click();
   await expect(prompt(page)).not.toBeVisible();
-  await playerAction(page, 'Player 2');
-  await prompt(page)
-    .getByRole('button', { name: 'Cancel Riichi · refund 1,000 points', exact: true })
+  await page
+    .locator('.player-seat')
+    .filter({ hasText: 'Player 2' })
+    .getByRole('button', { name: 'Riichi', exact: true })
     .click();
   await expect(page.locator('.table-pot strong')).toHaveText('1,000');
   await expect(
@@ -201,7 +226,7 @@ test('Chi infers the previous seat and a selected Riichi can be cancelled after 
   await prompt(page).getByRole('button', { name: 'Close', exact: true }).click();
   await playerAction(page, 'Player 2');
   await expect(
-    prompt(page).getByRole('button', { name: 'Declare Riichi · 1,000 points', exact: true }),
+    prompt(page).getByRole('button', { name: 'Double Riichi', exact: true }),
   ).toBeEnabled();
 });
 
@@ -213,9 +238,7 @@ test('table buttons offer visible actions and undo restores declarations and one
   await page.getByRole('button', { name: /Start match/ }).click();
   const seat = page.locator('.player-seat').filter({ hasText: 'Player 2' });
   await seat.getByRole('button', { name: 'Riichi', exact: true }).click();
-  await prompt(page)
-    .getByRole('button', { name: 'Declare Riichi · 1,000 points', exact: true })
-    .click();
+  await expect(prompt(page)).not.toBeVisible();
   await expect(page.locator('.table-pot strong')).toHaveText('1,000');
   await page.reload();
   await gameMenu(page, 'Undo previous action');
@@ -344,6 +367,6 @@ test('Pon upgrades retain the called tile and Kan actions reveal additional indi
   await beginWin(page);
   await finishWin(page);
   await gameMenu(page, 'History');
-  await page.locator('.history-event summary').click();
+  await page.locator('.history-event > summary').click();
   await expect(prompt(page)).toContainText('Actions during this hand');
 });

@@ -1,7 +1,7 @@
 # GitHub Pages deployment
 
 The `Deploy GitHub Pages` workflow builds and publishes `dist/web/browser` on pushes to `main`.
-It checks lint, types and unit tests before building. No database server or secrets are required.
+The workflow is .github/workflows/pages.yml. It checks lint, types and Vitest unit specs before building; it does not run Playwright or formatting checks. No database server or secrets are required.
 
 In the GitHub repository, open **Settings → Pages**, then choose **GitHub Actions** as the source.
 Run the workflow from **Actions → Deploy GitHub Pages → Run workflow**, or push to `main`.
@@ -21,7 +21,7 @@ npm.cmd run build -- --configuration production,pages --base-href /JpMj_Calculat
 
 GitHub serves only the build artifact, including public assets. Test photos, source files and local
 IndexedDB data are not bundled. The hosted origin has its own database; local matches are not
-automatically transferred. API photo recognition requires the configured provider to allow CORS
+automatically transferred. Use Others > Data JSON export/import to move selected games manually. API photo recognition requires the configured provider to allow CORS
 from this Pages origin. API URLs are public client-side settings; never put secret keys in them.
 
 See [GitHub's custom workflow documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).

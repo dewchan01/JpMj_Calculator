@@ -1,5 +1,13 @@
 # Tile recognition and local storage
 
+## In-app diagnostics
+
+Open Others > Developer and click the brand name three times consecutively, within 900 ms between
+clicks. The sheet shows up to 200 session entries, newest first: startup, route names, UI errors,
+navigation failures and unhandled browser errors/rejections. Clear logs is beside Close; the
+explanation is below Logs. The hidden trigger has no ripple. Entries are not uploaded or persisted.
+Detailed recognition logging is a separate browser Console stream described below.
+
 ## Recognition logs
 
 Open the browser developer tools (`F12` or `Ctrl+Shift+J` in Chrome/Edge), select **Console**,
@@ -55,7 +63,7 @@ The browser adapter uses the official `inferencejs` SDK with a downloaded model,
 sending images to the hosted inference endpoint. Model initialization needs network access and
 permission to load the selected model. A publishable key does not grant access to every model.
 The SDK is a separate ~5 MB raw build chunk; the PWA currently prefetches JavaScript, including
-this chunk. Actual model downloads and browser/GPU compatibility remain unverified without a key.
+this chunk. A 2026-10-23 smoke test recorded worker startup, two inferences and reuse for the restored model. It did not establish physical-photo accuracy or compatibility on real target devices.
 
 See the [SDK API](https://www.npmjs.com/package/inferencejs). Hosted private-key inference and
 publishable-key browser inference use different authentication and request interfaces.
@@ -95,7 +103,7 @@ and choose **Update preview**, then **Apply reviewed tiles**. Select tiles from 
 and assign them to Chi/Pon/Kan or extracted North afterward. Remaining tiles stay concealed.
 Assignments can be undone or returned to the collection without recapturing. Replacing the full
 collection resets its assignments and supports Undo. Dora/Ura have separate review trays.
-North assignments reject non-North tiles and more than four tiles. Verification is required before settling.
+North assignments reject non-North tiles and more than four tiles. Structural and claim validation still run before settling; there is no separate verification checkbox.
 Multi-row grouping and automatic meld inference are not implemented.
 
 Changing the URL supports another provider with the same contract. For another contract, add a
@@ -118,8 +126,7 @@ Roboflow's [API example](https://universe.roboflow.com/mahjongmasterai/mahjong-b
 posts base64 using `application/x-www-form-urlencoded`. The provider warns against exposing a
 private API key in a public frontend. Use a backend with the key stored as a secret for a public
 deployment; GitHub Pages alone cannot keep it private. Hosted CORS and account access still need
-verification for the chosen deployment. The [pricing page](https://roboflow.com/pricing) lists a
-free tier with credits, not unlimited free inference. No key or provider change is included here.
+verification for the chosen deployment. The [pricing page](https://roboflow.com/pricing) is an external source whose current quotas and terms were not rechecked in this documentation refresh. This hosted alternative is separate from the implemented publishable-key browser adapter. Recheck provider access, quotas and terms before adopting it.
 
 No free, anonymous hosted replacement with verified Japanese red-five support and Pages-origin
 CORS has been established. A self-hosted detector gives control of the endpoint and CORS policy.
@@ -163,7 +170,7 @@ Unavailable estimates are shown explicitly rather than reported as zero usage.
 
 The app does not currently request `navigator.storage.persist()`. Permission and quotas depend on
 the browser. Even persistent storage can be deleted by the user. Export match JSON for backups.
-There is currently no JSON import UI or cloud sync.
+Others > Data offers separate JSON import/export prompts with game, player and date selection. New game IDs are inserted transactionally; existing IDs are skipped. Cloud sync remains unimplemented. See [JSON transfer](data-transfer.md).
 
 Source: [MDN storage quotas and eviction](https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria).
 
@@ -171,7 +178,7 @@ Source: [MDN storage quotas and eviction](https://developer.mozilla.org/en-US/do
 
 `TileRecognizer` is the polymorphic interface. `ApiTileRecognizer`, `RoboflowRecognizer`, and `MockTileRecognizer` implement it; `createRecognizer` selects an implementation from configuration. The photo UI consumes the shared `RecognitionResult`, with normalized boxes, tile kinds, red-five flags, confidence and model identity. A new provider implements this interface and is registered in the factory. Another model using the same Roboflow protocol needs only model configuration, class mappings and explicit ignored labels, rather than another subclass. Polymorphism handles interchangeability; it does not improve model accuracy.
 
-The previously tried [candidate model page](https://universe.roboflow.com/riichimahjongdetection/riichi-mahjong-detection) lists `riichi-mahjong-detection/3`, red-five labels, and 99% mAP@50 on its own data. This is not a measured improvement on this app's physical-tile photos. Browser model access and inference still need live verification with the configured publishable key.
+The previously tried [candidate model page](https://universe.roboflow.com/riichimahjongdetection/riichi-mahjong-detection) lists `riichi-mahjong-detection/3`, red-five labels, and 99% mAP@50 on its own data. This is not a measured improvement on this app's physical-tile photos. Those candidate-model claims were not reproduced on this app's physical photos; the restored-model smoke test is described above.
 
 For a comparison, use the same original physical-tile photos for both models. Include straight and angled views, bright and dim lighting, red fives, honors and repeated tiles. Write the expected tile counts before recognition. Record the raw preview before correcting it; changing lighting or manually correcting predictions invalidates a direct comparison.
 

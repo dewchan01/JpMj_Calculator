@@ -94,6 +94,7 @@
   [dialogCanDismiss]="canDismissPrompt"
   #prompt
   class="game-prompt"
+  [class.results-prompt]="panel() === 'results'"
   aria-labelledby="game-prompt-title"
   (close)="error.set('')"
 >
@@ -195,29 +196,18 @@
           @if (paused()) {
             <p>{{ 'Resume the game before recording actions.' | t }}</p>
           }
-          @if (playerMode() !== 'calls') {
-            @if (currentPlayer.riichi === 'none') {
-              <label class="check">
-                <input type="checkbox" [(ngModel)]="doubleRiichi" />
-                {{ 'Double Riichi' | t }}
-              </label>
-              @if (doubleRiichi) {
-                <label class="check">
-                  <input type="checkbox" [(ngModel)]="firstTurn" />
-                  {{ 'Uninterrupted first turn' | t }}
-                </label>
-              }
-              <button (click)="riichi()" [disabled]="busy() || paused()">
-                {{ 'Declare Riichi · 1,000 points' | t }}
-              </button>
-            } @else if (currentPlayer.riichi !== 'none') {
-              <p>{{ (currentPlayer.riichi === 'double' ? 'Double Riichi' : 'Riichi') | t }}</p>
-              <button (click)="cancelDeclaration()" [disabled]="busy() || paused()">
-                {{ 'Cancel Riichi · refund 1,000 points' | t }}
-              </button>
-            }
-          }
           @if (playerMode() !== 'riichi') {
+            <section class="player-win-actions" [attr.aria-label]="'Win' | t">
+              <h4>{{ 'Win' | t }}</h4>
+              <div class="button-grid">
+                <button (click)="startPlayerWin('ron')" [disabled]="paused() || busy()">
+                  {{ 'Ron · discard' | t }}
+                </button>
+                <button (click)="startPlayerWin('tsumo')" [disabled]="paused() || busy()">
+                  {{ 'Tsumo · self draw' | t }}
+                </button>
+              </div>
+            </section>
             <div class="button-grid">
               @if (m.playerCount === 4) {
                 <button (click)="startCall('chi')" [disabled]="paused()">{{ 'Chi' | t }}</button>
@@ -228,6 +218,12 @@
               </button>
               <button (click)="startCall('ankan')" [disabled]="paused()">
                 {{ 'Concealed Kan' | t }}
+              </button>
+              <button
+                (click)="declarePlayerRiichi(true)"
+                [disabled]="paused() || busy() || !canDeclareDoubleRiichi()"
+              >
+                {{ 'Double Riichi' | t }}
               </button>
               <button (click)="startCall('kakan')" [disabled]="paused() || !hasPon()">
                 {{ 'Added Kan' | t }}
@@ -240,6 +236,12 @@
             </div>
           }
           @if (playerMode() !== 'riichi') {
+            <p class="hint">
+              {{
+                'Confirm Double Riichi was declared on your uninterrupted first turn. Turn order is not tracked.'
+                  | t
+              }}
+            </p>
             @for (meld of currentPlayer.melds; track meld.id; let i = $index) {
               <div class="recorded-call">
                 <span>{{ meld.type | t }}</span>
@@ -248,17 +250,47 @@
                     <app-tile-art [tile]="tile" />
                   }
                 </div>
-                <button class="quiet danger" (click)="removeCall(i)" [disabled]="paused()">
-                  {{ 'Remove' | t }}
+                <button
+                  class="icon-button action-delete"
+                  (click)="removeCall(i)"
+                  [disabled]="paused()"
+                  [attr.aria-label]="('Remove' | t) + ' ' + (meld.type | t)"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7" />
+                  </svg>
                 </button>
               </div>
             }
             @if (currentPlayer.kita.length) {
-              <div class="explain-row">
-                <span>{{ 'North' | t }} × {{ currentPlayer.kita.length }}</span>
-                <button class="quiet" (click)="removeNorth()" [disabled]="paused()">
-                  {{ 'Remove one North' | t }}
-                </button>
+              <div class="recorded-call north-call">
+                <span>{{ 'North' | t }}</span>
+                <div class="mini-tiles">
+                  @for (tile of currentPlayer.kita; track tile.id) {
+                    <app-tile-art [tile]="tile" />
+                  }
+                </div>
+                <div class="north-controls">
+                  <button
+                    class="icon-button"
+                    (click)="removeNorth()"
+                    [disabled]="paused()"
+                    [attr.aria-label]="'Remove one North' | t"
+                  >
+                    <span aria-hidden="true">−</span>
+                  </button>
+                  <output class="north-count" aria-live="polite" [attr.aria-label]="'North' | t">
+                    {{ currentPlayer.kita.length }}
+                  </output>
+                  <button
+                    class="icon-button"
+                    (click)="startCall('kita')"
+                    [disabled]="paused() || busy()"
+                    [attr.aria-label]="'Add one North' | t"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
             }
           }
@@ -362,15 +394,17 @@
               <option value="tsumo">{{ 'Tsumo · self draw' | t }}</option>
             </select>
           </label>
-          <p>{{ 'Who won this hand?' | t }}</p>
-          <div class="button-grid">
-            @for (p of players; track p.id) {
-              <label class="check">
-                <input type="checkbox" [(ngModel)]="winners[p.id]" />
-                {{ p.name }}
-              </label>
-            }
-          </div>
+          @if (!playerWinSelected) {
+            <p>{{ 'Who won this hand?' | t }}</p>
+            <div class="button-grid">
+              @for (p of players; track p.id) {
+                <label class="check">
+                  <input type="checkbox" [(ngModel)]="winners[p.id]" />
+                  {{ p.name }}
+                </label>
+              }
+            </div>
+          }
           @if (method === 'ron') {
             <label>
               {{ 'Discarder' | t }}
@@ -598,8 +632,8 @@
             {{ m.playerCount }}P · v{{ m.rules.version }}
           </p>
           @for (group of settingGroups; track group.title) {
-            <details class="saved-rule-group">
-              <summary>{{ group.title | t }}</summary>
+            <section class="saved-rule-group">
+              <h3>{{ group.title | t }}</h3>
               <dl>
                 @for (field of group.fields; track field.key) {
                   @if (
@@ -613,7 +647,7 @@
                   }
                 }
               </dl>
-            </details>
+            </section>
           }
         }
         @case ('seats') {

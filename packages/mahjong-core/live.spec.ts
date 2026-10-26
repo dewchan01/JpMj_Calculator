@@ -135,6 +135,15 @@ describe('live match recording', () => {
     };
     expect(() => declareRiichi(m, 'a', false, 'e')).toThrow('closed hand');
     expect(() => declareRiichi(m, 'b', true, 'e')).toThrow('uninterrupted');
+    const late = declareRiichi(m, 'b', true, 'late', undefined, {
+      doubleBeforeRecordedCalls: true,
+    });
+    expect(late.live?.players.b.riichi).toBe('double');
+    expect(late.live?.players.b.riichiCalls).toBe(0);
+    expect(late.live?.calls).toBe(1);
+    expect(() =>
+      declareRiichi(m, 'a', true, 'late', undefined, { doubleBeforeRecordedCalls: true }),
+    ).toThrow('closed hand');
     m.initialBalances['b'] = 500;
     expect(() => declareRiichi(m, 'b', false, 'e')).toThrow('Not enough');
   });

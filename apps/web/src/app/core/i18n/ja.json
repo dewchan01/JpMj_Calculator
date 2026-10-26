@@ -1,4 +1,6 @@
 {
+  "Confirm Double Riichi was declared on your uninterrupted first turn. Turn order is not tracked.": "鳴きのない第一巡でダブル立直を宣言したことを確認してください。巡目は追跡しないため後から記録できます。",
+  "Point score": "素点換算",
   "Logs": "ログ",
   "Clear logs": "ログを消去",
   "No logs.": "ログはありません。",
@@ -1162,5 +1164,13 @@
   "Three-player Mahjong reference": "三人麻雀の参考資料",
   "Mahjong Soul — Moegirl": "萌娘百科：雀魂",
   "Pao — Huiji Wiki": "灰機Wiki：責任払い",
-  "M.League official rules": "Mリーグ公式ルール"
+  "M.League official rules": "Mリーグ公式ルール",
+  "Total": "合計",
+  "kita": "抜きドラ",
+  "Add one North": "北を1枚追加",
+  "Import data": "データをインポート",
+  "Export data": "データをエクスポート",
+  "JSON format": "ファイル形式：JSON",
+  "Sound effects": "効果音",
+  "Japanese device voice when available; otherwise a short tone.": "端末の日本語音声を使用し、利用できない場合は短い通知音を再生します。"
 }
