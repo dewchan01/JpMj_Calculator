@@ -166,7 +166,8 @@
       <a [routerLink]="['/score', game.id]" (click)="ongoingDialog.close()">
         <strong>{{ game.name }}</strong>
         <span>
-          {{ game.players[0].name }} · {{ game.players[1].name }} · {{ game.playerCount }}P ·
+          {{ game.players[0].name }} · {{ game.players[1].name }} · {{ gameRuleName(game) }} ·
+          {{ game.playerCount }}P ·
           {{ (game.gameLength === 'east' ? 'East-only game' : 'East and South game') | t }}
         </span>
         <span>{{ 'Resume game' | t }} →</span>

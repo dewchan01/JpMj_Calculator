@@ -1,4 +1,5 @@
 import { DialogBackdrop } from '../../../shared/dialog-backdrop';
+import { ruleName } from '../../../../../../../packages/mahjong-rules/index';
 import { TileArt } from '../../../shared/tile-art/tile-art';
 import { parseTiles } from '../../../../../../../packages/mahjong-core/index';
 import { newId } from '../../../core/id/new-id';
@@ -40,6 +41,11 @@ import { localDateTimeInput } from '../../../core/i18n/date-format';
   styleUrl: './home.css',
 })
 export class Home {
+  gameRuleName(game: Match): string {
+    return game.rules.preset === 'custom' && game.rules.name
+      ? game.rules.name
+      : this.i18n.t(ruleName(game.rules));
+  }
   readonly introTiles = parseTiles('1m6z9s', 'intro');
   readonly ongoing = signal<Match[]>([]);
   resultPoints: number[] = [];
