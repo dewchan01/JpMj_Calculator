@@ -2,25 +2,8 @@
   @for (row of rows(); track row.label) {
     <div>
       <small>{{ row.label | t }}</small>
-      <div class="palette-row">
+      <div class="palette-row" [style.--tile-columns]="row.tiles.length">
         @for (tile of row.tiles; track tile.id) {
-          <button
-            class="tile palette-tile"
-            [attr.data-tile-index]="dragIndex(tile)"
-            (click)="tilePicked.emit(tile)"
-            [attr.aria-label]="label(tile)"
-          >
-            <app-tile-art [tile]="tile" [decorative]="true" />
-          </button>
-        }
-      </div>
-    </div>
-  }
-  @if (reds().length) {
-    <div>
-      <small>{{ 'Red fives' | t }}</small>
-      <div class="palette-row">
-        @for (tile of reds(); track tile.id) {
           <button
             class="tile palette-tile"
             [attr.data-tile-index]="dragIndex(tile)"

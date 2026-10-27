@@ -86,7 +86,7 @@ for (const width of [390, 1280]) {
     await expect(page.locator('.hand-tray > .hand-tiles > button.tile')).toHaveCount(0);
     await expect(page.locator('.hand-controls')).toHaveCount(0);
     await page.getByRole('button', { name: 'Enter tiles', exact: true }).click();
-    await page.getByRole('button', { name: 'Undo tile edit' }).click();
+    await page.getByRole('dialog', { name: 'Enter tiles', exact: true }).press('Control+z');
     await page.getByRole('button', { name: 'Done', exact: true }).click();
     await expect(page.locator('.hand-tray > .hand-tiles > button.tile')).toHaveCount(1);
     await trigger.click();

@@ -58,8 +58,8 @@ export async function beginWin(
   await prompt(page).getByRole('checkbox', { name: winner, exact: true }).check();
   if (method === 'ron')
     await prompt(page)
-      .getByRole('combobox', { name: 'Discarder', exact: true })
-      .selectOption(discarder);
+      .locator(`input[type="radio"][name="discarder"][value="${discarder}"]`)
+      .check();
   await prompt(page).getByRole('button', { name: 'Next', exact: true }).click();
 }
 export async function finishWin(
@@ -74,6 +74,21 @@ export async function finishWin(
     .selectOption({ index: index + 1 });
   await prompt(page).getByRole('button', { name: 'Next', exact: true }).click();
   await prompt(page).getByRole('button', { name: 'Review settlement', exact: true }).click();
+  await expect(
+    prompt(page)
+      .getByRole('button', { name: 'Save indicators', exact: true })
+      .or(prompt(page).getByRole('button', { name: 'Confirm & save settlement', exact: true })),
+  ).toBeVisible();
+  if (
+    await prompt(page).getByRole('button', { name: 'Save indicators', exact: true }).isVisible()
+  ) {
+    await enterLiveTiles(page, 'Dora indicators', '7z');
+    await prompt(page).getByRole('button', { name: 'Save indicators', exact: true }).click();
+  }
+  await expect(prompt(page).locator('.prompt-body > details').first()).toHaveJSProperty(
+    'open',
+    true,
+  );
   await expect(
     prompt(page).getByRole('button', { name: 'Confirm & save settlement', exact: true }),
   ).toBeVisible();

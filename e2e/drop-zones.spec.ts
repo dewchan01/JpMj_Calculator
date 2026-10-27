@@ -80,7 +80,7 @@ async function drag(page: Page, source: Locator, target: Locator, touch: boolean
   await expect(target).toHaveClass(/tile-drop-active/);
   const preview = page.locator('.tile-drag-preview');
   await expect(preview).toBeVisible();
-  await expect(preview.locator('app-tile-art img')).toBeVisible();
+  await expect(preview.locator('img')).toBeVisible();
   await expect(preview).toHaveCSS('opacity', '1');
   const previewBox = (await preview.boundingBox())!;
   expect(Math.abs(previewBox.x + previewBox.width / 2 - position.x)).toBeLessThan(2);
@@ -112,6 +112,18 @@ for (const width of [390, 1280]) {
     await expect(tiles).toHaveCount(5);
     await drag(page, tiles.nth(0), page.locator('[data-tile-drop-target="ankan"]'), width === 390);
     await expect(page.locator('.meld-row')).toHaveCount(2);
+    await expect(
+      page
+        .locator('.meld-section')
+        .filter({ has: page.getByRole('heading', { name: 'Open melds', exact: true }) })
+        .locator('.meld-row'),
+    ).toHaveCount(1);
+    await expect(
+      page
+        .locator('.meld-section')
+        .filter({ has: page.getByRole('heading', { name: 'Concealed Kan', exact: true }) })
+        .locator('.meld-row'),
+    ).toHaveCount(1);
     await expect(tiles).toHaveCount(1);
     await drag(page, tiles.nth(0), page.locator('[data-tile-drop-target="kita"]'), width === 390);
     await expect(tiles).toHaveCount(0);
@@ -126,7 +138,7 @@ for (const width of [390, 1280]) {
       .locator('app-tile-drop-zones')
       .screenshot({ path: `artifacts/drop-zones-${width}.png` });
     await page.getByRole('button', { name: 'Enter tiles', exact: true }).click();
-    await page.getByRole('button', { name: 'Undo tile edit', exact: true }).click();
+    await page.getByRole('dialog', { name: 'Enter tiles', exact: true }).press('Control+z');
     await page.getByRole('button', { name: 'Done', exact: true }).click();
     await expect(tiles).toHaveCount(1);
     await expect(page.locator('.kita-row')).toHaveCount(0);
@@ -164,7 +176,7 @@ test('ongoing matches use saved round context while Quick score retains manual f
   await setSavedRound(page, { dealerId: 'p2', roundWind: 'south', handNumber: 3, honba: 2 });
   await page.reload();
   await expect(page.locator('.round-status .table-round')).toHaveText('south 3');
-  await expect(page.locator('app-table-summary .table-honba')).toHaveText('Honba 2');
+  await expect(page.locator('.round-status .table-honba')).toHaveText('Honba 2');
   await expect(page.getByRole('combobox', { name: 'Dealer', exact: true })).toHaveCount(0);
   await expect(page.getByRole('combobox', { name: 'Round wind', exact: true })).toHaveCount(0);
   await expect(page.getByRole('spinbutton', { name: 'Honba', exact: true })).toHaveCount(0);

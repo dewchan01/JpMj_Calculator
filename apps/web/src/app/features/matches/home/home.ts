@@ -1,4 +1,6 @@
 import { DialogBackdrop } from '../../../shared/dialog-backdrop';
+import { TileArt } from '../../../shared/tile-art/tile-art';
+import { parseTiles } from '../../../../../../../packages/mahjong-core/index';
 import { newId } from '../../../core/id/new-id';
 import { TableSetup } from '../table-setup';
 import { RuleLibrary } from '../../settings/rule-library';
@@ -20,6 +22,7 @@ import { adjustFinalPoints } from '../../../../../../../packages/mahjong-core/fi
 import { localDateTimeInput } from '../../../core/i18n/date-format';
 @Component({
   imports: [
+    TileArt,
     ResponsiveSheet,
     DialogBackdrop,
     ErrorNotice,
@@ -37,6 +40,7 @@ import { localDateTimeInput } from '../../../core/i18n/date-format';
   styleUrl: './home.css',
 })
 export class Home {
+  readonly introTiles = parseTiles('1m6z9s', 'intro');
   readonly ongoing = signal<Match[]>([]);
   resultPoints: number[] = [];
   resultDate = '';

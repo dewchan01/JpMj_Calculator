@@ -129,15 +129,9 @@
   </div>
   <aside class="table-intro">
     <div class="tile-still-life" aria-hidden="true">
-      <span>
-        一
-        <small>萬</small>
-      </span>
-      <span class="raised">發</span>
-      <span>
-        九
-        <small>索</small>
-      </span>
+      @for (tile of introTiles; track tile.id; let i = $index) {
+        <span [class.raised]="i === 1"><app-tile-art [tile]="tile" [decorative]="true" /></span>
+      }
     </div>
     <p class="eyebrow">{{ 'Made for the table' | t }}</p>
     <h2>

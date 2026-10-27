@@ -1,5 +1,5 @@
 import { beginWin, finishWin, gameMenu, prompt, recordDraw, enterLiveTiles } from './helpers/game';
-import { openQuickScore } from './helpers/navigation';
+import { openQuickScore, leaveGame } from './helpers/navigation';
 import { setSavedRound } from './helpers/match-state';
 import { applyPreset, expectApplied } from './helpers/settings';
 import { expect, test, type Page } from '@playwright/test';
@@ -24,7 +24,7 @@ test('M.League is four-player only and persists its match profile', async ({ pag
   await expectApplied(page, 'm-league');
   await page.reload();
   await expectApplied(page, 'm-league');
-  await page.getByRole('link', { name: 'My table', exact: true }).click();
+  await leaveGame(page);
   await page.getByRole('button', { name: /3 players/ }).click();
   await page.getByRole('navigation').getByRole('link', { name: 'Settings', exact: true }).click();
   await page.getByRole('button', { name: '3 players', exact: true }).click();
@@ -87,7 +87,7 @@ test('double Ron queue settles both hands and stores the explanations', async ({
   await prompt(page).getByRole('button', { name: 'Win', exact: true }).click();
   await prompt(page).getByRole('checkbox', { name: 'Player 1', exact: true }).check();
   await prompt(page).getByRole('checkbox', { name: 'Player 2', exact: true }).check();
-  await prompt(page).getByRole('combobox', { name: 'Discarder', exact: true }).selectOption('p3');
+  await prompt(page).locator('input[type="radio"][name="discarder"][value="p3"]').check();
   await prompt(page).getByRole('button', { name: 'Next', exact: true }).click();
   for (const notation of ['123456789m123p44z', '123456789p123s44z']) {
     await enterLiveTiles(page, 'The winning hand', notation);

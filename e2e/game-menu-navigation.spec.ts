@@ -6,7 +6,7 @@ test('game menu has icons and subdialogs return directly to the menu', async ({ 
   await page.goto('/');
   await expect(page.locator('.segmented small')).toHaveCount(0);
   await page.getByRole('button', { name: /Start match/ }).click();
-  for (const label of ['Dora indicators', 'Ura indicators']) {
+  for (const label of ['Dora indicators']) {
     await page.locator('.indicator-bar').getByRole('button', { name: label, exact: true }).click();
     await expect(page.locator('.game-prompt .menu-back')).toHaveCount(0);
     await page

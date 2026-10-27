@@ -1,0 +1,9 @@
+.palette-row {
+  display: grid;
+  grid-template-columns: repeat(var(--tile-columns), minmax(0, 43px));
+  gap: 4px;
+}
+.palette-row .palette-tile {
+  width: 100%;
+  min-width: 0;
+}

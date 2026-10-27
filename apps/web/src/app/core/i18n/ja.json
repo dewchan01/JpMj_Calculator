@@ -1180,5 +1180,9 @@
   "Edited hand ends the match before a later recorded hand.": "編集後は後続の記録より前に対局が終了するため保存できません。",
   "A later hand is missing scoring data and cannot be recalculated.": "後続の局の点数計算データが不足しています。",
   "Only a settled hand can replace a record.": "精算済みの局のみ保存できます。",
-  "Recorded hands can be edited; later hands are recalculated when saved.": "記録済みの局を編集できます。保存時に後続の局を再計算します。"
+  "Recorded hands can be edited; later hands are recalculated when saved.": "記録済みの局を編集できます。保存時に後続の局を再計算します。",
+  "Select Tenpai players": "テンパイ者を選択",
+  "Select eligible Nagashi players": "流し満貫の条件を満たすプレイヤーを選択",
+  "Latest hand": "最新の局",
+  "Enter at least one Dora indicator.": "表ドラ表示牌を1枚以上入力してください。"
 }

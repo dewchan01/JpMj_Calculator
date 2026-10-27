@@ -49,12 +49,7 @@ details {
 }
 
 .tile-input-tray {
-  min-height: 80px;
-  padding: 8px;
-  margin-bottom: 12px;
-  border: 1px dashed var(--border);
-  border-radius: 10px;
-  background: var(--subtle-surface);
+  align-items: center;
 }
 .tile-input-tray.tile-drop-active {
   border-color: var(--green);

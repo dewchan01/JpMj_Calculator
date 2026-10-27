@@ -1,4 +1,64 @@
 @import 'tailwindcss';
+html {
+  touch-action: manipulation;
+  background: var(--page);
+}
+dialog,
+dialog * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted) transparent;
+}
+dialog::-webkit-scrollbar,
+dialog *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background: transparent;
+}
+dialog::-webkit-scrollbar-thumb,
+dialog *::-webkit-scrollbar-thumb {
+  background: var(--muted);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 8px;
+}
+dialog::-webkit-scrollbar-button,
+dialog *::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+@supports selector(::-webkit-scrollbar) {
+  dialog,
+  dialog * {
+    /* Native scrollbar properties override the custom scrollbar buttons in Chromium. */
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+}
+dialog::-webkit-scrollbar-track,
+dialog *::-webkit-scrollbar-track,
+dialog::-webkit-scrollbar-corner,
+dialog *::-webkit-scrollbar-corner {
+  background: transparent;
+}
+@media (min-width: 701px) {
+  html {
+    scrollbar-gutter: stable;
+  }
+  html:has(dialog[open]) {
+    overflow: hidden;
+  }
+  dialog,
+  dialog .prompt-body,
+  dialog .dialog-body,
+  dialog .sheet-content {
+    scrollbar-gutter: stable;
+  }
+  dialog {
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+  }
+}
 .rule-picker {
   margin: 0 0 22px;
   padding: 16px;
@@ -1445,9 +1505,30 @@ footer {
   touch-action: none;
   cursor: grab;
 }
+.tile-entry-tray {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 80px;
+  padding: 8px;
+  margin-bottom: 12px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  background: var(--subtle-surface);
+}
 [appTileReorder] .tile-dragging {
-  opacity: 0.5;
+  opacity: 0;
   cursor: grabbing;
+}
+[appTileReorder] .tile-reorder-shift {
+  translate: var(--tile-shift-x, 0px) var(--tile-shift-y, 0px);
+  transition: translate 140ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  [appTileReorder] .tile-reorder-shift {
+    transition: none;
+  }
 }
 [appTileReorder] .tile-drop-target {
   outline: 3px solid var(--green);

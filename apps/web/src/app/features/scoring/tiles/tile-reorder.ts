@@ -1,4 +1,4 @@
-import { DestroyRef, Directive, ElementRef, inject, output } from '@angular/core';
+import { DestroyRef, Directive, ElementRef, inject, input, output } from '@angular/core';
 
 /** Pointer-based reordering works with touch, pen and mouse; Alt+arrows is the keyboard alternative. */
 @Directive({
@@ -15,11 +15,15 @@ import { DestroyRef, Directive, ElementRef, inject, output } from '@angular/core
 export class TileReorder {
   readonly tileReordered = output<{ from: number; to: number }>();
   readonly tileDropped = output<{ index: number; target: string }>();
+  readonly removeOutside = input(false);
+  readonly tileRemoved = output<number>();
   private readonly element = inject<ElementRef<HTMLElement>>(ElementRef);
   private scrollFrame?: number;
   private point?: { x: number; y: number };
   private preview?: HTMLElement;
   private previewOffset?: { x: number; y: number };
+  private slots: { element: HTMLElement; index: number; bounds: DOMRect }[] = [];
+  private slotOrigin?: DOMRect;
   constructor() {
     inject(DestroyRef).onDestroy(() => this.cancel());
   }
@@ -31,6 +35,7 @@ export class TileReorder {
     y: number;
     dragging: boolean;
     dropTarget?: string;
+    collection?: HTMLElement;
   };
   private index(target: EventTarget | null): number {
     if (!(target instanceof Element)) return -1;
@@ -53,6 +58,9 @@ export class TileReorder {
       x: event.clientX,
       y: event.clientY,
       dragging: false,
+      collection: this.removeOutside()
+        ? (tile.closest<HTMLElement>('[data-tile-collection]') ?? this.element.nativeElement)
+        : undefined,
     };
   }
   move(event: PointerEvent): void {
@@ -61,7 +69,19 @@ export class TileReorder {
     if (Math.hypot(event.clientX - pointer.x, event.clientY - pointer.y) > 8)
       pointer.dragging = true;
     if (!pointer.dragging) return;
-    if (!this.preview) this.createPreview(pointer.from);
+    if (!this.preview) {
+      this.createPreview(pointer.from);
+      this.slotOrigin = this.element.nativeElement.getBoundingClientRect();
+      this.slots = Array.from(
+        this.element.nativeElement.querySelectorAll<HTMLElement>('[data-tile-index]'),
+      )
+        .filter((tile) => tile.closest('[appTileReorder]') === this.element.nativeElement)
+        .map((element) => ({
+          element,
+          index: Number(element.dataset['tileIndex']),
+          bounds: element.getBoundingClientRect(),
+        }));
+    }
     if (this.preview && this.previewOffset) {
       this.preview.style.left = `${event.clientX - this.previewOffset.x}px`;
       this.preview.style.top = `${event.clientY - this.previewOffset.y}px`;
@@ -78,8 +98,66 @@ export class TileReorder {
     this.element.nativeElement
       .querySelectorAll<HTMLElement>('[data-tile-drop-target]')
       .forEach((element) => element.classList.toggle('tile-drop-active', element === zone));
-    const to = this.index(hit);
-    if (to >= 0) pointer.to = to;
+    // Measure the original slots, independently of the animated tiles under the pointer.
+    const host = this.element.nativeElement.getBoundingClientRect();
+    const dx = host.left - this.slotOrigin!.left,
+      dy = host.top - this.slotOrigin!.top;
+    const positions = this.slots.map((slot) => ({
+      ...slot,
+      bounds: new DOMRect(
+        slot.bounds.left + dx,
+        slot.bounds.top + dy,
+        slot.bounds.width,
+        slot.bounds.height,
+      ),
+    }));
+    const source = positions.find((slot) => slot.index === pointer.from);
+    const collection = source?.element.parentElement;
+    const bounds = collection?.getBoundingClientRect();
+    const inside =
+      bounds &&
+      event.clientX >= bounds.left &&
+      event.clientX <= bounds.right &&
+      event.clientY >= bounds.top &&
+      event.clientY <= bounds.bottom;
+    if (!pointer.dropTarget && inside && source) {
+      const nearest = positions.reduce((best, slot) => {
+        const distance = (item: typeof slot) =>
+          Math.hypot(
+            event.clientX - item.bounds.left - item.bounds.width / 2,
+            event.clientY - item.bounds.top - item.bounds.height / 2,
+          );
+        return distance(slot) < distance(best) ? slot : best;
+      }, source);
+      pointer.to = nearest.index;
+      const order = positions.filter((slot) => slot.index !== pointer.from);
+      order.splice(
+        positions.findIndex((slot) => slot.index === pointer.to),
+        0,
+        source,
+      );
+      order.forEach((slot, index) => {
+        if (slot.index === pointer.from) return;
+        const target = positions[index].bounds;
+        slot.element.style.setProperty('--tile-shift-x', `${target.left - slot.bounds.left}px`);
+        slot.element.style.setProperty('--tile-shift-y', `${target.top - slot.bounds.top}px`);
+        slot.element.classList.add('tile-reorder-shift');
+      });
+      source.element.style.setProperty(
+        '--tile-shift-x',
+        `${nearest.bounds.left - source.bounds.left}px`,
+      );
+      source.element.style.setProperty(
+        '--tile-shift-y',
+        `${nearest.bounds.top - source.bounds.top}px`,
+      );
+      source.element.classList.add('tile-reorder-shift');
+    } else {
+      this.slots.forEach(({ element }) => {
+        element.style.setProperty('--tile-shift-x', '0px');
+        element.style.setProperty('--tile-shift-y', '0px');
+      });
+    }
     this.element.nativeElement
       .querySelectorAll<HTMLElement>('[data-tile-index]')
       .forEach((tile) => {
@@ -108,12 +186,32 @@ export class TileReorder {
       setTimeout(() => this.element.nativeElement.removeEventListener('click', suppress, true), 0);
       if (pointer.dropTarget)
         this.tileDropped.emit({ index: pointer.from, target: pointer.dropTarget });
+      else if (
+        pointer.collection &&
+        (() => {
+          const rect = pointer.collection.getBoundingClientRect();
+          return (
+            event.clientX < rect.left ||
+            event.clientX > rect.right ||
+            event.clientY < rect.top ||
+            event.clientY > rect.bottom
+          );
+        })()
+      )
+        this.tileRemoved.emit(pointer.from);
       else if (pointer.from !== pointer.to)
         this.tileReordered.emit({ from: pointer.from, to: pointer.to });
     }
     this.cancel();
   }
   cancel(): void {
+    this.slots.forEach(({ element }) => {
+      element.classList.remove('tile-reorder-shift');
+      element.style.removeProperty('--tile-shift-x');
+      element.style.removeProperty('--tile-shift-y');
+    });
+    this.slots = [];
+    this.slotOrigin = undefined;
     this.preview?.remove();
     this.preview = undefined;
     this.previewOffset = undefined;
@@ -146,6 +244,24 @@ export class TileReorder {
     preview.popover = 'manual';
     preview.style.width = `${bounds.width}px`;
     preview.style.height = `${bounds.height}px`;
+    const sourceImage = source.querySelector('img');
+    if (sourceImage) {
+      // A top-layer preview must not depend on cloned Angular hosts or percentage-sized wrappers.
+      const image = document.createElement('img');
+      image.src = sourceImage.currentSrc || sourceImage.src;
+      image.alt = '';
+      image.draggable = false;
+      Object.assign(image.style, {
+        display: 'block',
+        width: '100%',
+        height: '100%',
+        maxWidth: 'none',
+        maxHeight: 'none',
+        objectFit: 'contain',
+      });
+      preview.replaceChildren(image);
+      preview.style.padding = '0';
+    }
     source.parentElement!.append(preview);
     // The top layer keeps the complete tile above dialogs and clipped hand trays.
     preview.showPopover();

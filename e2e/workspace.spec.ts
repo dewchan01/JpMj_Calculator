@@ -29,7 +29,7 @@ test('one manual collection assigns Pon and Kan afterward and returns groups', a
   await expect(page.locator('.meld-row')).toHaveCount(2);
   await expect(tiles).toHaveCount(0);
   await page.getByRole('button', { name: 'Enter tiles', exact: true }).click();
-  await page.getByRole('button', { name: 'Undo tile edit' }).click();
+  await page.getByRole('dialog', { name: 'Enter tiles', exact: true }).press('Control+z');
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(page.locator('.meld-row')).toHaveCount(1);
   await expect(tiles).toHaveCount(4);
@@ -75,7 +75,7 @@ test('tiles from one entered hand can be grouped into Pon with undo', async ({ p
   await expect(page.locator('.meld-row')).toHaveCount(1);
   await expect(tiles).toHaveCount(3);
   await page.getByRole('button', { name: 'Enter tiles', exact: true }).click();
-  await page.getByRole('button', { name: 'Undo tile edit' }).click();
+  await page.getByRole('dialog', { name: 'Enter tiles', exact: true }).press('Control+z');
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(page.locator('.meld-row')).toHaveCount(0);
   await expect(tiles).toHaveCount(6);
@@ -84,6 +84,7 @@ test('tiles from one entered hand can be grouped into Pon with undo', async ({ p
 test('meld, Dora and Ura fields use image pickers and removable previews', async ({ page }) => {
   await page.goto('/');
   await openQuickScore(page);
+  await page.getByRole('checkbox', { name: 'Riichi', exact: true }).check();
   for (const label of ['Dora indicators', 'Ura indicators']) {
     const input = page.locator(`app-tile-input[data-label="${label}"]`);
     const entry = input.getByRole('button', { name: 'Enter ' + label, exact: true });

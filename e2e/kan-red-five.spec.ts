@@ -51,4 +51,27 @@ test('five Kans automatically include one red tile for open, concealed and added
     { type: 'daiminkan', red: 1, size: 4, originalRed: undefined },
     { type: 'ankan', red: 1, size: 4, originalRed: undefined },
   ]);
+  const seat = page.locator('.player-seat').filter({ hasText: 'Player 3' });
+  await seat.getByRole('button', { name: 'Concealed Kan', exact: true }).click();
+  await expect(prompt(page).locator('.recorded-call')).toHaveCount(1);
+  await expect(prompt(page).getByRole('button', { name: 'Pon', exact: true })).toHaveCount(0);
+  await prompt(page).getByRole('button', { name: 'Close', exact: true }).click();
+  await seat.getByRole('button', { name: /Call/ }).click();
+  await expect(prompt(page).locator('.recorded-call')).toHaveCount(2);
+  await expect(
+    prompt(page).getByRole('button', { name: 'Concealed Kan', exact: true }),
+  ).toHaveCount(0);
+  await prompt(page).getByRole('button', { name: 'Close', exact: true }).click();
+  await playerAction(page, 'Player 3');
+  const open = prompt(page)
+    .locator('.meld-section')
+    .filter({ has: page.getByRole('heading', { name: 'Open melds', exact: true }) });
+  const concealed = prompt(page)
+    .locator('.meld-section')
+    .filter({ has: page.getByRole('heading', { name: 'Concealed Kan', exact: true }) });
+  await expect(open.locator('.recorded-call')).toHaveCount(2);
+  await expect(concealed.locator('.recorded-call')).toHaveCount(1);
+  await concealed.getByRole('button', { name: 'Remove ankan', exact: true }).click();
+  await expect(concealed).toHaveCount(0);
+  await expect(open.locator('.recorded-call')).toHaveCount(2);
 });

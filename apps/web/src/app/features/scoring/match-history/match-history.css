@@ -7,6 +7,37 @@
   background: transparent;
   font-size: 0.8rem;
 }
+.history-row {
+  position: relative;
+}
+.history-list .history-row.editable .history-event > summary {
+  grid-template-columns: minmax(0, 1fr) 44px 12px;
+}
+.history-row.editable .history-event > summary::after {
+  grid-column: 3;
+}
+.edit-hand {
+  position: absolute;
+  top: 0;
+  right: 20px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 12px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+}
+.edit-hand svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .history-list .history-event {
   padding: 6px 0;
   margin: 0;

@@ -24,7 +24,7 @@ The development server intentionally does not enable the service worker. Load th
 
 ## Play at a table
 
-Save reusable player names on My table, choose them for seats, then start a 3P/4P match. The game opens a compact live table. Tap a player to record Riichi, Chi/Pon/Kan or 3P North extraction; tap Dora/Ura below the table to open the tile sheet directly; Done saves the indicators. End this hand guides you through winner(s), method, concealed tiles, winning tile and conditional claims before settlement. The floating menu contains pause/resume, full-match ending, history/export/undo, game information, display settings, display seat swaps and help. The timer survives reloads and excludes pauses. Dice and point differences are available beside the table. See [Live table flow](docs/live-table.md).
+Save reusable player names on My table, choose them for seats, then start a 3P/4P match. The game opens a compact live table. Tap a player to record Riichi, Chi/Pon/Kan or 3P North extraction; tap Dora below the table to open its tile sheet directly; Done saves the indicators. Ura entry appears only in winning conditions for the Riichi/Double Riichi winner, for either Ron or Tsumo. End this hand guides you through winner(s), method, concealed tiles, winning tile and conditional claims before settlement. The floating menu contains pause/resume, full-match ending, history/export/undo, game information, display settings, display seat swaps and help. The timer survives reloads and excludes pauses. Dice and point differences are available beside the table. See [Live table flow](docs/live-table.md).
 
 ## Try a hand in Quick score
 

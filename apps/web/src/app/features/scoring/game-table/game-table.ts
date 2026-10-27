@@ -104,6 +104,18 @@ type Panel =
   styleUrl: './game-table.css',
 })
 export class GameTable {
+  get playerMeldGroups() {
+    const entries = this.currentPlayer.melds.map((meld, index) => ({ meld, index }));
+    return [
+      { label: 'Open melds', entries: entries.filter(({ meld }) => meld.type !== 'ankan') },
+      { label: 'Concealed Kan', entries: entries.filter(({ meld }) => meld.type === 'ankan') },
+    ].filter(
+      (group) =>
+        group.entries.length &&
+        (this.playerMode() !== 'calls' || group.label !== 'Concealed Kan') &&
+        (this.playerMode() !== 'ankan' || group.label === 'Concealed Kan'),
+    );
+  }
   private readonly router = inject(Router);
   readonly settingGroups = settingGroups;
   readonly savedSettings = computed<Record<string, string | number | boolean>>(() => {
@@ -128,7 +140,7 @@ export class GameTable {
       ? new Intl.NumberFormat(this.i18n.locale()).format(value)
       : value || '—';
   }
-  readonly indicatorKinds = ['dora', 'ura'] as const;
+  readonly indicatorKinds = ['dora'] as const;
   readonly indicatorKind = signal<'dora' | 'ura'>('dora');
   readonly i18n = inject(I18n);
   private readonly repo = inject(Repository);
@@ -141,6 +153,7 @@ export class GameTable {
   readonly editingHand = signal<string | null>(null);
   private originalMatch?: Match;
   readonly directIndicator = signal<'dora' | 'ura' | null>(null);
+  resumeRonAfterDora = false;
   editHand(eventId: string): void {
     if (this.busy() || this.editingHand()) return;
     try {
@@ -163,6 +176,7 @@ export class GameTable {
     this.editingHand.set(null);
   }
   onPromptClosed(): void {
+    this.resumeRonAfterDora = false;
     if (this.editingHand()) this.cancelHandEdit();
     this.error.set('');
   }
@@ -245,13 +259,24 @@ export class GameTable {
   readonly callCounts = computed(() =>
     Object.fromEntries(
       (this.match()?.players ?? []).map((p) => {
-        return [p.id, livePlayer(this.match()!, p.id).melds.length];
+        return [
+          p.id,
+          livePlayer(this.match()!, p.id).melds.filter((meld) => meld.type !== 'ankan').length,
+        ];
       }),
     ),
   );
   readonly northCounts = computed(() =>
     Object.fromEntries(
       (this.match()?.players ?? []).map((p) => [p.id, livePlayer(this.match()!, p.id).kita.length]),
+    ),
+  );
+  readonly concealedKanCounts = computed(() =>
+    Object.fromEntries(
+      (this.match()?.players ?? []).map((p) => [
+        p.id,
+        livePlayer(this.match()!, p.id).melds.filter((meld) => meld.type === 'ankan').length,
+      ]),
     ),
   );
   selected = '';
@@ -335,6 +360,7 @@ export class GameTable {
     return this.players.find((p) => p.id === id)?.name ?? id;
   }
   panelTitle(): string {
+    if (this.panel() === 'player' && this.playerMode() === 'ankan') return 'Concealed Kan';
     if (this.panel() === 'indicators')
       return this.indicatorKind() === 'dora' ? 'Dora indicators' : 'Ura indicators';
     if (this.panel() === 'player' && this.playerMode() === 'riichi') return 'Riichi';
@@ -773,7 +799,15 @@ export class GameTable {
       if (parseTiles(this.dora).length > 1 + kans || parseTiles(this.ura).length > 1 + kans)
         throw new Error('Indicators cannot exceed one plus the recorded Kan count.');
       validateRevealed(m, live);
+      if (this.resumeRonAfterDora && !parseTiles(this.dora).length)
+        throw new Error('Enter at least one Dora indicator.');
       await this.persist({ ...m, live }, true);
+      if (this.resumeRonAfterDora) {
+        this.resumeRonAfterDora = false;
+        this.panel.set('details');
+        this.reviewWinner();
+        return;
+      }
       this.close(true);
     });
   }
@@ -857,6 +891,14 @@ export class GameTable {
   }
   reviewWinner(): void {
     this.error.set('');
+    if (this.method === 'ron' && !this.indicatorTiles('dora').length) {
+      const ura = this.ura;
+      this.indicatorKind.set('dora');
+      this.open('indicators');
+      this.ura = ura;
+      this.resumeRonAfterDora = true;
+      return;
+    }
     try {
       const m = this.match()!,
         state = this.winnerState;

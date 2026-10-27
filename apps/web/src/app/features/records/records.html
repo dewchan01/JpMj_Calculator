@@ -116,18 +116,25 @@
         {{ 'Players' | t }}
       </button>
     </div>
-    <div class="mode-chips" role="group" [attr.aria-label]="'Game mode' | t">
-      @for (mode of modes; track mode.value) {
-        <button
-          class="filter-chip"
-          [attr.aria-pressed]="filters.controls.mode.value === mode.value"
-          (click)="filters.controls.mode.setValue(mode.value)"
-        >
-          {{ mode.label | t }}
-        </button>
-      }
-      @if (activeFilterCount()) {
-        <button class="filter-chip" (click)="reset()">{{ 'Reset filters' | t }}</button>
+    <div class="mode-filter-row">
+      <div class="mode-chips" role="group" [attr.aria-label]="'Game mode' | t">
+        @for (mode of modes; track mode.value) {
+          <button
+            class="filter-chip"
+            [attr.aria-pressed]="filters.controls.mode.value === mode.value"
+            (click)="filters.controls.mode.setValue(mode.value)"
+          >
+            {{ mode.label | t }}
+          </button>
+        }
+        @if (activeFilterCount()) {
+          <button class="filter-chip" (click)="reset()">{{ 'Reset filters' | t }}</button>
+        }
+      </div>
+      @if (view() === 'games') {
+        <span class="game-count hint" role="status">
+          {{ games().length }} {{ 'games found' | t }}
+        </span>
       }
     </div>
   </div>
@@ -135,15 +142,6 @@
 @if (loading()) {
   <p role="status">{{ 'Loading records…' | t }}</p>
 } @else if (view() === 'games') {
-  <div class="records-summary hint">
-    <span role="status">{{ games().length }} {{ 'games found' | t }}</span>
-    <span>
-      {{
-        'Duration is estimated from table creation to the last recorded event, including breaks.'
-          | t
-      }}
-    </span>
-  </div>
   @for (game of games(); track game.match.id) {
     <article class="card game-card">
       <a
@@ -154,7 +152,7 @@
       <header>
         <div class="game-description">
           <span class="eyebrow">
-            {{ game.match.playerCount }}P ·
+            {{ game.ruleLabel }} · {{ game.match.playerCount }}P ·
             {{ (game.match.gameLength === 'east' ? 'East-only game' : 'East and South game') | t }}
           </span>
           <h2>
@@ -165,6 +163,10 @@
               {{ game.match.createdAt | localDate }} · {{ game.minutes }} {{ 'minutes' | t }} ·
               {{ game.match.events.length }}
               {{ 'events' | t }}
+              @if (game.latestRound; as round) {
+                · {{ 'Latest hand' | t }}: {{ round.roundWind | t }} {{ round.handNumber }} ·
+                {{ 'Honba' | t }} {{ round.honba }}
+              }
             </p>
           </div>
         </div>

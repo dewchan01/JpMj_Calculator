@@ -78,8 +78,14 @@
       @for (entry of queued; track entry.win.winnerId) {
         <div class="explain-row">
           <strong>{{ name(entry.win.winnerId) }}</strong>
-          <button class="quiet danger" (click)="removeQueued(entry.win.winnerId)">
-            {{ 'Remove' | t }}
+          <button
+            class="icon-button action-delete"
+            (click)="removeQueued(entry.win.winnerId)"
+            [attr.aria-label]="('Remove' | t) + ' ' + name(entry.win.winnerId)"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7" />
+            </svg>
           </button>
         </div>
       }
@@ -106,6 +112,8 @@
         <section
           class="card"
           appTileReorder
+          [removeOutside]="true"
+          (tileRemoved)="removeTileAt($event)"
           (tileReordered)="reorderTiles($event)"
           (tileDropped)="dropHandTile($event)"
         >
@@ -148,36 +156,15 @@
               [class.empty]="!tiles.length"
               [attr.aria-label]="'Concealed tiles including winning tile' | t"
             >
-              <app-tile-entry-dialog>
+              <app-tile-entry-dialog (keydown)="tileEditKeydown($event)">
                 <ng-template>
-                  <div class="action-row">
-                    <button
-                      class="quiet"
-                      (click)="undo()"
-                      [disabled]="!canUndo"
-                      [attr.aria-label]="'Undo tile edit' | t"
-                    >
-                      ↶
-                    </button>
-                    <button
-                      class="quiet"
-                      (click)="redo()"
-                      [disabled]="!canRedo"
-                      [attr.aria-label]="'Redo tile edit' | t"
-                    >
-                      ↷
-                    </button>
-                  </div>
-                  <p class="hint">
-                    {{
-                      'Drag tiles to reorder, or use Alt + Left/Right on a focused tile. Tap a tile to remove it.'
-                        | t
-                    }}
-                  </p>
                   <div
                     appTileReorder
+                    data-tile-collection
+                    [removeOutside]="true"
+                    (tileRemoved)="removeTileAt($event)"
                     (tileReordered)="reorderTiles($event)"
-                    class="entry-preview"
+                    class="entry-preview tile-entry-tray"
                     role="group"
                     [attr.aria-label]="'Tile preview' | t"
                   >
@@ -192,6 +179,14 @@
                       </button>
                     }
                   </div>
+                  <details class="picker" open>
+                    <summary>{{ 'Choose tiles' | t }}</summary>
+                    <app-tile-picker
+                      [playerCount]="rules.playerCount"
+                      [redFives]="settings.redFives"
+                      (tilePicked)="addTile($event)"
+                    />
+                  </details>
                   <details class="notation">
                     <summary>{{ 'Type compact tile notation' | t }}</summary>
                     <label>
@@ -209,18 +204,13 @@
                     </button>
                     <app-error-notice [message]="errorAt('tiles')" />
                   </details>
-                  <app-tile-picker
-                    [playerCount]="rules.playerCount"
-                    [redFives]="settings.redFives"
-                    (tilePicked)="addTile($event)"
-                  />
                   <app-photo-capture
                     [playerCount]="rules.playerCount"
                     (tilesConfirmed)="applyWorkspacePhoto($event)"
                   />
                 </ng-template>
               </app-tile-entry-dialog>
-              <div class="hand-tiles">
+              <div class="hand-tiles" data-tile-collection>
                 @for (tile of tiles; track tile.id; let index = $index) {
                   <button
                     [attr.data-tile-index]="index"
@@ -270,7 +260,9 @@
                 </label>
                 <div class="tile-actions">
                   <button
-                    class="quiet danger"
+                    class="quiet danger delete-mode-button"
+                    [attr.aria-label]="'Delete a tile' | t"
+                    [class.active]="deleteMode"
                     (click)="toggleDeleteMode()"
                     [attr.aria-pressed]="deleteMode"
                   >
@@ -355,69 +347,75 @@
                 }
               </div>
               <div class="action-row">
-                <button class="primary" (click)="groupHandTiles()">
-                  {{ 'Assign selected tiles' | t }}
-                </button>
                 <button class="secondary" (click)="keepConcealed(); closeAssignment()">
                   {{ 'Keep concealed' | t }}
                 </button>
                 <button class="quiet danger" (click)="removeSelectedTiles(); closeAssignment()">
                   {{ 'Remove selected tiles' | t }}
                 </button>
+                <button class="primary" (click)="groupHandTiles()">
+                  {{ 'Assign selected tiles' | t }}
+                </button>
               </div>
               <app-error-notice [message]="errorAt('assignment')" />
             </section>
           </dialog>
-          @if (deleteMode) {
-            <p class="hint" role="status">
-              {{ 'Tap a tile to delete it. Tap Delete a tile again to finish.' | t }}
-            </p>
-          }
-          @for (meld of melds; track meld.id) {
-            <div class="meld-row">
-              <div>
-                <strong>{{ meld.type | t }}</strong>
-                <small>
-                  {{ (meld.fromPlayerId ? 'from ' + name(meld.fromPlayerId) : 'concealed') | t }}
-                </small>
-                <div class="mini-tiles">
-                  @for (t of meld.tiles; track t.id) {
-                    <span [class.called]="t.id === meld.calledTileId" [class.red-ink]="t.isRed">
-                      <app-tile-art [tile]="t" />
-                    </span>
-                  }
+          @for (group of meldGroups; track group.label) {
+            <section class="meld-section" [attr.aria-label]="group.label | t">
+              <h3>{{ group.label | t }}</h3>
+              @for (meld of group.melds; track meld.id) {
+                <div class="meld-row">
+                  <div>
+                    <strong>{{ meld.type | t }}</strong>
+                    <small>
+                      {{
+                        (meld.fromPlayerId ? 'from ' + name(meld.fromPlayerId) : 'concealed') | t
+                      }}
+                    </small>
+                    <div class="mini-tiles">
+                      @for (t of meld.tiles; track t.id) {
+                        <span [class.called]="t.id === meld.calledTileId" [class.red-ink]="t.isRed">
+                          <app-tile-art [tile]="t" />
+                        </span>
+                      }
+                    </div>
+                    <details class="meld-order">
+                      <summary>{{ 'Original call order' | t }}: {{ meld.callOrder }}</summary>
+                      <label>
+                        {{ 'Original call order' | t }}
+                        <input
+                          type="number"
+                          min="1"
+                          max="20"
+                          [(ngModel)]="meld.callOrder"
+                          (ngModelChange)="changed()"
+                        />
+                      </label>
+                    </details>
+                  </div>
+                  <div>
+                    <button class="quiet" (click)="returnMeld(meld.id)">
+                      {{ 'Return to tile collection' | t }}
+                    </button>
+                    @if (meld.type === 'pon') {
+                      <button class="quiet" (click)="upgrade(meld)">
+                        {{ 'Upgrade to Kan' | t }}
+                      </button>
+                    }
+                    <button
+                      class="icon-button action-delete"
+                      (click)="removeMeld(meld.id)"
+                      [attr.aria-label]="'Remove meld' | t"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
-                <details class="meld-order">
-                  <summary>{{ 'Original call order' | t }}: {{ meld.callOrder }}</summary>
-                  <label>
-                    {{ 'Original call order' | t }}
-                    <input
-                      type="number"
-                      min="1"
-                      max="20"
-                      [(ngModel)]="meld.callOrder"
-                      (ngModelChange)="changed()"
-                    />
-                  </label>
-                </details>
-              </div>
-              <div>
-                <button class="quiet" (click)="returnMeld(meld.id)">
-                  {{ 'Return to tile collection' | t }}
-                </button>
-                @if (meld.type === 'pon') {
-                  <button class="quiet" (click)="upgrade(meld)">{{ 'Upgrade to Kan' | t }}</button>
-                }
-                <button
-                  class="quiet danger"
-                  (click)="removeMeld(meld.id)"
-                  [attr.aria-label]="'Remove meld' | t"
-                >
-                  {{ 'Remove' | t }}
-                </button>
-              </div>
-            </div>
-            <app-error-notice [message]="errorAt('meld:' + meld.id)" />
+                <app-error-notice [message]="errorAt('meld:' + meld.id)" />
+              }
+            </section>
           }
           @if (rules.playerCount === 3) {
             @if (kita.length) {
@@ -544,15 +542,17 @@
                 [redFives]="settings.redFives"
               />
             </div>
-            <div>
-              <app-tile-input
-                label="Ura indicators"
-                [value]="uraText"
-                (valueChange)="uraText = $event; editStatus()"
-                [playerCount]="rules.playerCount"
-                [redFives]="settings.redFives"
-              />
-            </div>
+            @if (closedHand && (flags.riichi || flags.doubleRiichi)) {
+              <div>
+                <app-tile-input
+                  label="Ura indicators"
+                  [value]="uraText"
+                  (valueChange)="uraText = $event; editStatus()"
+                  [playerCount]="rules.playerCount"
+                  [redFives]="settings.redFives"
+                />
+              </div>
+            }
           </div>
           <p class="hint">
             {{
@@ -561,14 +561,18 @@
             }}
           </p>
           <div class="claims">
-            @for (flag of flagOptions; track flag.key) {
+            @for (flag of visibleFlags; track flag.key) {
               <label class="check">
-                <input type="checkbox" [(ngModel)]="flags[flag.key]" (ngModelChange)="changed()" />
+                <input
+                  type="checkbox"
+                  [(ngModel)]="flags[flag.key]"
+                  (ngModelChange)="changeFlag(flag.key)"
+                />
                 {{ flag.label | t }}
               </label>
             }
           </div>
-          @if (flags.rinshan) {
+          @if (flags.rinshan && canChooseReplacement) {
             <label>
               {{ 'Replacement draw' | t }}
               <select [(ngModel)]="replacement" (ngModelChange)="changed()">

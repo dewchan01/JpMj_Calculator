@@ -176,15 +176,15 @@ h1 {
 .game-prompt::backdrop {
   background: #0008;
 }
-.results-prompt[open] {
+.game-prompt[open] {
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
-.results-prompt .prompt-heading {
+.game-prompt .prompt-heading {
   flex-shrink: 0;
 }
-.results-prompt .prompt-body {
+.game-prompt .prompt-body {
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -390,4 +390,18 @@ h1 {
 }
 .player-win-actions .button-grid {
   margin-bottom: 0;
+}
+.discarder-options {
+  margin: 0 0 12px;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.discarder-options legend {
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.meld-section > h4 {
+  margin: 8px 0 4px;
+  font-size: 0.85rem;
 }

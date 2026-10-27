@@ -44,6 +44,7 @@ export class MatchHistory {
         after: number;
         riichi: string;
         calls: string;
+        concealedKans: string;
         win: string;
         marks: string[];
       }[]
@@ -105,7 +106,13 @@ export class MatchHistory {
                       ? 'No'
                       : '\u2014',
             calls: melds
-              ? melds.map((meld) => this.i18n.t(meld.type)).join(', ') || this.i18n.t('None')
+              ? melds
+                  .filter((meld) => meld.type !== 'ankan')
+                  .map((meld) => this.i18n.t(meld.type))
+                  .join(', ') || this.i18n.t('None')
+              : '\u2014',
+            concealedKans: melds
+              ? String(melds.filter((meld) => meld.type === 'ankan').length)
               : '\u2014',
             win: win ? win.method : event.winnerIds?.includes(player.id) ? 'Win' : '\u2014',
           };
@@ -135,12 +142,29 @@ export class MatchHistory {
     );
   }
   eventRules(event: LedgerEvent): RuleProfile {
+    const index = this.match()?.events.findIndex((entry) => entry.id === event.id) ?? -1;
+    const preceding =
+      index >= 0
+        ? this.match()!
+            .events.slice(0, index + 1)
+            .reverse()
+            .find((entry) => entry.scoringInput || entry.scoringInputs?.length || entry.drawInput)
+        : undefined;
     return (
       event.scoringInput?.rules ??
       event.scoringInputs?.[0]?.rules ??
       event.drawInput?.rules ??
+      preceding?.scoringInput?.rules ??
+      preceding?.scoringInputs?.[0]?.rules ??
+      preceding?.drawInput?.rules ??
       this.rules()
     );
+  }
+  eventRuleLabel(event: LedgerEvent): string {
+    const profile = this.eventRules(event);
+    return profile.preset === 'custom' && profile.name
+      ? profile.name
+      : this.i18n.t(ruleName(profile));
   }
   outcomeMarks(event: LedgerEvent): string[] {
     const inputs = event.scoringInputs ?? (event.scoringInput ? [event.scoringInput] : []);

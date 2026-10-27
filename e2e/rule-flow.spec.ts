@@ -79,7 +79,7 @@ test('Chi caller is restricted and Pon upgrade consumes the existing red tile', 
   await expect(page.locator('.meld-row').nth(1).locator('.mini-tiles app-tile-art')).toHaveCount(4);
   await expect(page.locator('.meld-row').nth(1).locator('.mini-tiles .red-ink')).toHaveCount(1);
   await page.getByRole('button', { name: 'Enter tiles', exact: true }).click();
-  await page.getByRole('button', { name: 'Undo tile edit', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Enter tiles', exact: true }).press('Control+z');
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(tiles).toHaveCount(1);
   await expect(page.getByRole('button', { name: 'Upgrade to Kan', exact: true })).toBeVisible();
@@ -103,6 +103,6 @@ test('custom settings persist through player-count changes and old tile undo is 
     .selectOption({ label: '3P · Sanma' });
   await expectApplied(page, 'mahjong-soul');
   await page.getByRole('button', { name: 'Enter tiles', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Undo tile edit', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Undo tile edit', exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: '2m: Add 2 man', exact: true })).toHaveCount(0);
 });

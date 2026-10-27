@@ -43,6 +43,7 @@
       [ruleName]="ruleName(m.rules)"
       [yakitoriPenalty]="tableRules(m.rules).yakitoriPenalty"
       [callCounts]="callCounts()"
+      [concealedKanCounts]="concealedKanCounts()"
       [northCounts]="northCounts()"
       [riichiPlayers]="riichiPlayers()"
       [differenceFrom]="comparisonPlayer()"
@@ -224,7 +225,12 @@
           @if (paused()) {
             <p>{{ 'Resume the game before recording actions.' | t }}</p>
           }
-          @if (playerMode() !== 'riichi') {
+          @if (playerMode() === 'ankan') {
+            <button (click)="startCall('ankan')" [disabled]="paused()">
+              {{ 'Concealed Kan' | t }}
+            </button>
+          }
+          @if (playerMode() !== 'riichi' && playerMode() !== 'ankan') {
             <section class="player-win-actions" [attr.aria-label]="'Win' | t">
               <h4>{{ 'Win' | t }}</h4>
               <div class="button-grid">
@@ -244,9 +250,11 @@
               <button (click)="startCall('daiminkan')" [disabled]="paused()">
                 {{ 'Open Kan' | t }}
               </button>
-              <button (click)="startCall('ankan')" [disabled]="paused()">
-                {{ 'Concealed Kan' | t }}
-              </button>
+              @if (playerMode() !== 'calls') {
+                <button (click)="startCall('ankan')" [disabled]="paused()">
+                  {{ 'Concealed Kan' | t }}
+                </button>
+              }
               <button
                 (click)="declarePlayerRiichi(true)"
                 [disabled]="paused() || busy() || !canDeclareDoubleRiichi()"
@@ -264,33 +272,42 @@
             </div>
           }
           @if (playerMode() !== 'riichi') {
-            <p class="hint">
-              {{
-                'Confirm Double Riichi was declared on your uninterrupted first turn. Turn order is not tracked.'
-                  | t
-              }}
-            </p>
-            @for (meld of currentPlayer.melds; track meld.id; let i = $index) {
-              <div class="recorded-call">
-                <span>{{ meld.type | t }}</span>
-                <div class="mini-tiles">
-                  @for (tile of meld.tiles; track tile.id) {
-                    <app-tile-art [tile]="tile" />
-                  }
-                </div>
-                <button
-                  class="icon-button action-delete"
-                  (click)="removeCall(i)"
-                  [disabled]="paused()"
-                  [attr.aria-label]="('Remove' | t) + ' ' + (meld.type | t)"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7" />
-                  </svg>
-                </button>
-              </div>
+            @if (playerMode() !== 'ankan') {
+              <p class="hint">
+                {{
+                  'Confirm Double Riichi was declared on your uninterrupted first turn. Turn order is not tracked.'
+                    | t
+                }}
+              </p>
             }
-            @if (currentPlayer.kita.length) {
+            @for (group of playerMeldGroups; track group.label) {
+              <section class="meld-section" [attr.aria-label]="group.label | t">
+                <h4>{{ group.label | t }}</h4>
+                @for (entry of group.entries; track entry.meld.id) {
+                  @let meld = entry.meld;
+                  @let i = entry.index;
+                  <div class="recorded-call">
+                    <span>{{ meld.type | t }}</span>
+                    <div class="mini-tiles">
+                      @for (tile of meld.tiles; track tile.id) {
+                        <app-tile-art [tile]="tile" />
+                      }
+                    </div>
+                    <button
+                      class="icon-button action-delete"
+                      (click)="removeCall(i)"
+                      [disabled]="paused()"
+                      [attr.aria-label]="('Remove' | t) + ' ' + (meld.type | t)"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7" />
+                      </svg>
+                    </button>
+                  </div>
+                }
+              </section>
+            }
+            @if (playerMode() !== 'ankan' && currentPlayer.kita.length) {
               <div class="recorded-call north-call">
                 <span>{{ 'North' | t }}</span>
                 <div class="mini-tiles">
@@ -384,20 +401,27 @@
           </button>
         }
         @case ('indicators') {
-          <p class="hint">{{ 'After a Kan, add the newly revealed indicator here.' | t }}</p>
+          <p class="hint">
+            {{
+              (resumeRonAfterDora
+                ? 'Enter at least one Dora indicator.'
+                : 'After a Kan, add the newly revealed indicator here.'
+              ) | t
+            }}
+          </p>
           @if (indicatorKind() === 'dora') {
             <app-tile-input
               label="Dora indicators"
               [(value)]="dora"
               [playerCount]="m.playerCount"
-              [redFives]="false"
+              [redFives]="settings?.redFives ?? true"
             />
           } @else {
             <app-tile-input
               label="Ura indicators"
               [(value)]="ura"
               [playerCount]="m.playerCount"
-              [redFives]="false"
+              [redFives]="settings?.redFives ?? true"
             />
           }
           <button class="primary" (click)="saveIndicators()" [disabled]="busy() || m.ended">
@@ -413,7 +437,6 @@
                 </button>
               }
               <button (click)="openIndicators('dora')">{{ 'Dora indicators' | t }}</button>
-              <button (click)="openIndicators('ura')">{{ 'Ura indicators' | t }}</button>
             </div>
           }
           <div class="menu-list">
@@ -445,14 +468,23 @@
             </div>
           }
           @if (method === 'ron') {
-            <label>
-              {{ 'Discarder' | t }}
-              <select [(ngModel)]="discarder">
+            <fieldset class="discarder-options">
+              <legend>{{ 'Discarder' | t }}</legend>
+              <div class="button-grid">
                 @for (p of players; track p.id) {
-                  <option [value]="p.id">{{ p.name }}</option>
+                  <label class="check">
+                    <input
+                      type="radio"
+                      name="discarder"
+                      [value]="p.id"
+                      [attr.value]="p.id"
+                      [(ngModel)]="discarder"
+                    />
+                    {{ p.name }}
+                  </label>
                 }
-              </select>
-            </label>
+              </div>
+            </fieldset>
           }
           <button class="primary" (click)="nextWinners()">{{ 'Next' | t }}</button>
         }
@@ -521,7 +553,7 @@
               label="Ura indicators"
               [(value)]="ura"
               [playerCount]="m.playerCount"
-              [redFives]="false"
+              [redFives]="settings?.redFives ?? true"
             />
           }
           @if (waremeEnabled()) {
@@ -588,7 +620,7 @@
         @case ('review') {
           @if (round; as result) {
             @for (entry of result.results; track $index) {
-              <details>
+              <details open>
                 <summary>
                   {{ name(result.winnerIds[$index]) }} · {{ entry.han }} {{ 'Han' | t }} ·
                   {{ entry.fu }} {{ 'Fu' | t }}
@@ -670,7 +702,7 @@
           <p>
             {{ 'Game length' | t }}:
             {{ (m.gameLength === 'east' ? 'East-only game' : 'East and South game') | t }} ·
-            {{ m.playerCount }}P · v{{ m.rules.version }}
+            {{ m.playerCount }}P
           </p>
           @for (group of settingGroups; track group.title) {
             <section class="saved-rule-group">
@@ -759,7 +791,7 @@
     [value]="kind === 'dora' ? dora : ura"
     (valueChange)="kind === 'dora' ? (dora = $event) : (ura = $event)"
     [playerCount]="match()!.playerCount"
-    [redFives]="false"
+    [redFives]="settings?.redFives ?? true"
     (entryClosed)="finishDirectIndicator($event)"
   />
 }

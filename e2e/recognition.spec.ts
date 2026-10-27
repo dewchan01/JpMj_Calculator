@@ -56,9 +56,10 @@ test('file configuration, editable capture preview, and independent tile targets
   await expect(page.locator('.hand-tray > .hand-tiles > button.tile app-tile-art')).toHaveCount(3);
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await page.getByRole('button', { name: 'Enter tiles', exact: true }).click();
-  await page.getByRole('button', { name: 'Undo tile edit' }).click();
+  await page.getByRole('dialog', { name: 'Enter tiles', exact: true }).press('Control+z');
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(page.locator('.hand-tray > .hand-tiles > button.tile app-tile-art')).toHaveCount(0);
+  await page.getByRole('checkbox', { name: 'Riichi', exact: true }).check();
   for (const [target, notation] of [
     ['Dora indicators', '4p'],
     ['Ura indicators', '6s'],

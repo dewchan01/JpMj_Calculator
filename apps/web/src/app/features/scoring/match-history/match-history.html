@@ -19,180 +19,188 @@
     <p class="empty">{{ 'No settlements yet.' | t }}</p>
   }
   @for (event of events(); track event.id) {
-    <details class="history-event">
-      <summary>
-        <strong class="event-title">{{ eventLabel(event) }}</strong>
-        @for (mark of outcomeMarks(event); track $index) {
-          <span class="outcome-mark">{{ mark }}</span>
-        }
-        <small>{{ event.timestamp | localDate }}</small>
-        @if (event.before; as before) {
-          <small>
-            {{ before.roundWind | t }} {{ before.handNumber }} · {{ 'Honba' | t }}
-            {{ before.honba }}
+    <div class="history-row" [class.editable]="allowHandEditing() && editableHand(event)">
+      <details class="history-event">
+        <summary>
+          <strong class="event-title">{{ eventLabel(event) }}</strong>
+          @for (mark of outcomeMarks(event); track $index) {
+            <span class="outcome-mark">{{ mark }}</span>
+          }
+          <small>{{ event.timestamp | localDate }}</small>
+          <small class="event-mode">
+            {{ eventRuleLabel(event) }} · {{ match()?.playerCount }}P ·
+            {{ (match()?.gameLength === 'east' ? 'East-only game' : 'East and South game') | t }}
+            @if (event.before; as before) {
+              ·
+              {{ before.roundWind | t }} {{ before.handNumber }} · {{ 'Honba' | t }}
+              {{ before.honba }}
+            }
           </small>
-        }
-        <span class="event-changes">
+          <span class="event-changes">
+            @for (player of handPlayers().get(event.id); track player.id) {
+              @if (player.before !== player.after) {
+                <span>
+                  {{ player.name }}
+                  <app-signed-value [value]="player.after - player.before" />
+                </span>
+              }
+            }
+          </span>
+        </summary>
+        <div class="hand-players" role="group" [attr.aria-label]="'Player balances' | t">
           @for (player of handPlayers().get(event.id); track player.id) {
-            @if (player.before !== player.after) {
-              <span>
-                {{ player.name }}
+            <button
+              class="hand-player"
+              [attr.aria-expanded]="selectedPlayers()[event.id] === player.id"
+              [attr.aria-controls]="'player-detail-' + event.id"
+              (click)="selectPlayer(event.id, player.id)"
+            >
+              <strong>{{ player.name }}</strong>
+              <small>{{ player.seat + ' seat' | t }}</small>
+              <span>{{ player.after | number }}</span>
+              @if (player.marks.length) {
+                <small class="player-marks">{{ player.marks.join(' · ') }}</small>
+              }
+              @if (player.after !== player.before) {
                 <app-signed-value [value]="player.after - player.before" />
-              </span>
+              }
+            </button>
+          }
+        </div>
+        <div class="player-detail" [id]="'player-detail-' + event.id">
+          @for (player of handPlayers().get(event.id); track player.id) {
+            @if (selectedPlayers()[event.id] === player.id) {
+              <dl>
+                <div>
+                  <dt>{{ 'Points' | t }}</dt>
+                  <dd>{{ player.before | number }} &rarr; {{ player.after | number }}</dd>
+                </div>
+                <div>
+                  <dt>{{ 'Riichi' | t }}</dt>
+                  <dd>{{ player.riichi | t }}</dd>
+                </div>
+                <div>
+                  <dt>{{ 'Open melds' | t }}</dt>
+                  <dd>{{ player.calls }}</dd>
+                </div>
+                <div>
+                  <dt>{{ 'Concealed Kan' | t }}</dt>
+                  <dd>{{ player.concealedKans }}</dd>
+                </div>
+                <div>
+                  <dt>{{ 'Winning method' | t }}</dt>
+                  <dd>{{ player.win | t }}</dd>
+                </div>
+              </dl>
             }
           }
-        </span>
-      </summary>
-      @if (allowHandEditing() && editableHand(event)) {
-        <button
-          class="secondary edit-hand"
-          [disabled]="busy()"
-          (click)="editRequested.emit(event.id)"
-        >
-          {{ 'Edit hand' | t }}
-        </button>
-      }
-      <div class="hand-players" role="group" [attr.aria-label]="'Player balances' | t">
-        @for (player of handPlayers().get(event.id); track player.id) {
-          <button
-            class="hand-player"
-            [attr.aria-expanded]="selectedPlayers()[event.id] === player.id"
-            [attr.aria-controls]="'player-detail-' + event.id"
-            (click)="selectPlayer(event.id, player.id)"
-          >
-            <strong>{{ player.name }}</strong>
-            <small>{{ player.seat + ' seat' | t }}</small>
-            <span>{{ player.after | number }}</span>
-            @if (player.marks.length) {
-              <small class="player-marks">{{ player.marks.join(' · ') }}</small>
-            }
-            @if (player.after !== player.before) {
-              <app-signed-value [value]="player.after - player.before" />
-            }
-          </button>
-        }
-      </div>
-      <div class="player-detail" [id]="'player-detail-' + event.id">
-        @for (player of handPlayers().get(event.id); track player.id) {
-          @if (selectedPlayers()[event.id] === player.id) {
-            <dl>
-              <div>
-                <dt>{{ 'Points' | t }}</dt>
-                <dd>{{ player.before | number }} &rarr; {{ player.after | number }}</dd>
-              </div>
-              <div>
-                <dt>{{ 'Riichi' | t }}</dt>
-                <dd>{{ player.riichi | t }}</dd>
-              </div>
-              <div>
-                <dt>{{ 'Calls / Kans' | t }}</dt>
-                <dd>{{ player.calls }}</dd>
-              </div>
-              <div>
-                <dt>{{ 'Winning method' | t }}</dt>
-                <dd>{{ player.win | t }}</dd>
-              </div>
-            </dl>
-          }
-        }
-      </div>
-      @if (event.durationMs !== undefined) {
-        <p class="hint">
-          {{ 'Recorded play time' | t }}: {{ event.durationMs / 60000 | number: '1.1-1' }}
-          {{ 'minutes' | t }}
-        </p>
-      }
-      @if (event.liveBefore?.actions?.length) {
-        <h3>{{ 'Actions during this hand' | t }}</h3>
-        @for (action of event.liveBefore.actions; track $index) {
+        </div>
+        @if (event.durationMs !== undefined) {
           <p class="hint">
-            {{ action.timestamp | localDate: 'time' }} ·
-            {{ action.playerId ? name(action.playerId) : '' }} {{ action.type | t }}
+            {{ 'Recorded play time' | t }}: {{ event.durationMs / 60000 | number: '1.1-1' }}
+            {{ 'minutes' | t }}
           </p>
         }
-      }
-      @for (p of event.payments; track $index) {
-        <div class="explain-row">
-          <span>{{ name(p.from) }} → {{ name(p.to) }}</span>
-          <strong>{{ p.amount | number }}</strong>
-        </div>
-      }
-      @if (chips(event).length) {
-        <h3>{{ 'Net chips' | t }}</h3>
-        @for (chip of chips(event); track chip.id) {
+        @if (event.liveBefore?.actions?.length) {
+          <h3>{{ 'Actions during this hand' | t }}</h3>
+          @for (action of event.liveBefore.actions; track $index) {
+            <p class="hint">
+              {{ action.timestamp | localDate: 'time' }} ·
+              {{ action.playerId ? name(action.playerId) : '' }} {{ action.type | t }}
+            </p>
+          }
+        }
+        @for (p of event.payments; track $index) {
           <div class="explain-row">
-            <span>{{ name(chip.id) }}</span>
-            <strong>{{ chip.value | number }}</strong>
+            <span>{{ name(p.from) }} → {{ name(p.to) }}</span>
+            <strong>{{ p.amount | number }}</strong>
           </div>
         }
-      }
-      @if (event.hand) {
-        <p class="hint">
-          {{ event.win?.method | t }} · {{ (event.roundWind ?? '') + ' round' | t }}
-        </p>
-        <div class="mini-tiles">
-          @for (t of event.hand.concealedTiles; track t.id) {
-            <span><app-tile-art [tile]="t" /></span>
+        @if (chips(event).length) {
+          <h3>{{ 'Net chips' | t }}</h3>
+          @for (chip of chips(event); track chip.id) {
+            <div class="explain-row">
+              <span>{{ name(chip.id) }}</span>
+              <strong>{{ chip.value | number }}</strong>
+            </div>
           }
-        </div>
-        @for (m of event.hand.melds; track m.id) {
+        }
+        @if (event.hand) {
           <p class="hint">
-            {{ m.type | t }} · {{ m.fromPlayerId ? name(m.fromPlayerId) : i18n.t('concealed') }}
+            {{ event.win?.method | t }} · {{ (event.roundWind ?? '') + ' round' | t }}
           </p>
           <div class="mini-tiles">
-            @for (t of m.tiles; track t.id) {
+            @for (t of event.hand.concealedTiles; track t.id) {
               <span><app-tile-art [tile]="t" /></span>
             }
           </div>
-        }
-      }
-      @if (event.result; as r) {
-        <p>{{ r.han + ' Han · ' + r.fu + ' Fu' | t }} · {{ r.limitName ?? 'standard' | t }}</p>
-        @for (y of r.yaku; track y.id) {
-          <div class="explain-row">
-            <span>{{ y.name | t }}</span>
-            <strong>
-              {{ (y.yakumanMultiplier ? y.yakumanMultiplier + '× Yakuman' : y.han + ' Han') | t }}
-            </strong>
-          </div>
-        }
-      }
-      <p class="history-context">
-        {{ eventRules(event).name ?? (ruleName(eventRules(event)) | t) }} · v{{
-          eventRules(event).version
-        }}
-      </p>
-      @if (event.drawInput; as draw) {
-        <p>{{ draw.type | t }} · {{ draw.reason ?? '' | t }}</p>
-        <p>{{ 'Tenpai players' | t }}: {{ playerList(draw.tenpaiIds) }}</p>
-      }
-      @for (input of event.scoringInputs; track input.win.winnerId) {
-        <p>{{ name(input.win.winnerId) }}</p>
-        <div class="mini-tiles">
-          @for (tile of input.hand.concealedTiles; track tile.id) {
-            <span><app-tile-art [tile]="tile" /></span>
+          @for (m of event.hand.melds; track m.id) {
+            <p class="hint">
+              {{ m.type | t }} · {{ m.fromPlayerId ? name(m.fromPlayerId) : i18n.t('concealed') }}
+            </p>
+            <div class="mini-tiles">
+              @for (t of m.tiles; track t.id) {
+                <span><app-tile-art [tile]="t" /></span>
+              }
+            </div>
           }
-        </div>
-      }
-      @for (r of event.results; track $index) {
-        <h3>{{ name(event.winnerIds?.[$index] ?? '') }}</h3>
-        <p>{{ r.han + ' Han · ' + r.fu + ' Fu' | t }} · {{ r.limitName ?? 'standard' | t }}</p>
-        @for (y of r.yaku; track y.id) {
-          <div class="explain-row">
-            <span>{{ y.name | t }}</span>
-            <strong>
-              {{ (y.yakumanMultiplier ? y.yakumanMultiplier + '× Yakuman' : y.han + ' Han') | t }}
-            </strong>
+        }
+        @if (event.result; as r) {
+          <p>{{ r.han + ' Han · ' + r.fu + ' Fu' | t }} · {{ r.limitName ?? 'standard' | t }}</p>
+          @for (y of r.yaku; track y.id) {
+            <div class="explain-row">
+              <span>{{ y.name | t }}</span>
+              <strong>
+                {{ (y.yakumanMultiplier ? y.yakumanMultiplier + '× Yakuman' : y.han + ' Han') | t }}
+              </strong>
+            </div>
+          }
+        }
+        @if (event.drawInput; as draw) {
+          <p>{{ draw.type | t }} · {{ draw.reason ?? '' | t }}</p>
+          <p>{{ 'Tenpai players' | t }}: {{ playerList(draw.tenpaiIds) }}</p>
+        }
+        @for (input of event.scoringInputs; track input.win.winnerId) {
+          <p>{{ name(input.win.winnerId) }}</p>
+          <div class="mini-tiles">
+            @for (tile of input.hand.concealedTiles; track tile.id) {
+              <span><app-tile-art [tile]="tile" /></span>
+            }
           </div>
         }
+        @for (r of event.results; track $index) {
+          <h3>{{ name(event.winnerIds?.[$index] ?? '') }}</h3>
+          <p>{{ r.han + ' Han · ' + r.fu + ' Fu' | t }} · {{ r.limitName ?? 'standard' | t }}</p>
+          @for (y of r.yaku; track y.id) {
+            <div class="explain-row">
+              <span>{{ y.name | t }}</span>
+              <strong>
+                {{ (y.yakumanMultiplier ? y.yakumanMultiplier + '× Yakuman' : y.han + ' Han') | t }}
+              </strong>
+            </div>
+          }
+        }
+        @if (event.after; as after) {
+          <p class="hint">
+            {{ 'Next round' | t }}: {{ after.roundWind | t }} {{ after.handNumber }} ·
+            {{ name(after.dealerId) }} · {{ 'Honba' | t }} {{ after.honba }}
+          </p>
+        }
+      </details>
+      @if (allowHandEditing() && editableHand(event)) {
+        <button
+          class="edit-hand"
+          [disabled]="busy()"
+          (click)="editRequested.emit(event.id)"
+          [attr.aria-label]="'Edit hand' | t"
+          [title]="'Edit hand' | t"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m16 3 5 5-13 13H3v-5ZM14 5l5 5" />
+          </svg>
+        </button>
       }
-      @if (event.after; as after) {
-        <p class="hint">
-          {{ 'Next round' | t }}: {{ after.roundWind | t }} {{ after.handNumber }} ·
-          {{ name(after.dealerId) }} · {{ 'Honba' | t }} {{ after.honba }}
-        </p>
-      }
-    </details>
+    </div>
   }
   @if (!readOnly()) {
     <button

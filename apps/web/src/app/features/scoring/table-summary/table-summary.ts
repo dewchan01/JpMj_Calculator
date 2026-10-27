@@ -26,6 +26,7 @@ export class TableSummary {
   readonly quickAction = output<{ player: string; type: string }>();
   readonly actionsDisabled = input(false);
   readonly callCounts = input<Record<string, number>>({});
+  readonly concealedKanCounts = input<Record<string, number>>({});
   readonly northCounts = input<Record<string, number>>({});
   readonly riichiPlayers = input<Record<string, string>>({});
   readonly pointDifference = output<string>();

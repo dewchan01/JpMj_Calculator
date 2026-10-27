@@ -99,6 +99,10 @@ test('final results offer table, list, history, statistics, PNG export, keep and
   await page.screenshot({ path: 'artifacts/results-statistics.png' });
   await results.getByRole('button', { name: 'History', exact: true }).click();
   await expect(results.locator('.history-event')).toHaveCount(2);
+  await expect(results.locator('.history-event > summary .event-mode')).toContainText([
+    'Mahjong Soul',
+    'Mahjong Soul',
+  ]);
   await expect(results.locator('.history-event > summary .outcome-mark')).toContainText(['Ron']);
   await expect(results.locator('app-match-history > .card')).toHaveCount(0);
   await results.locator('.history-event > summary').last().click();

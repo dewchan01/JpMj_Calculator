@@ -13,7 +13,8 @@ player statistics. Removing a saved player name does not delete that person's hi
 ## Filters and sorting
 
 Filters use inclusive local creation dates, player count/game length and an exact participant name.
-Game mode chips form one horizontally scrollable row. Sort is beside Filter records. Filter prompts
+Game mode chips form one horizontally scrollable row with the filtered game count fixed on its right.
+The long duration-estimation description is omitted. Sort is beside Filter records. Filter prompts
 use draft values: Apply commits them, Close/Escape discards unapplied changes, Reset in the prompt
 clears its draft, and Reset on the page clears applied filters. Invalid ranges disable Apply.
 Mobile filter prompts are animated sheets; desktop prompts are centered. Shared sticky controls
@@ -76,3 +77,17 @@ JSON import/export is **only under Others > Data**, with separate entries and ga
 selection; see [archive behavior](data-transfer.md). Imported games do not automatically populate
 the independent saved-player name library. No account, cloud synchronization or user-ID QR lookup
 is implemented. Historical hand editing and a general existing-table name/seat editor remain absent.
+
+Game-list metadata includes the latest completed hand's recorded round and Honba, using its before
+snapshot rather than the next unplayed round. Result-only games and legacy records without that
+snapshot omit the label instead of inventing a hand number. Live history uses a pencil beside the
+chevron to edit a hand without first expanding it.
+
+Each collapsed history summary includes its saved rule preset (Mahjong Soul, Tenhou, M.League or
+the custom rule name) alongside player count, game length and round context. The game-list card
+heading also shows the rule name beside player count and game length. It uses the latest completed hand's scoring/draw rule snapshot,
+falling back to the saved game rules when metadata is absent. This is separate from the latest-hand
+round/Honba metadata and never uses the currently applied global rules.
+
+For non-scoring entries such as Match end, the history summary uses the latest preceding hand's
+rule snapshot, falling back to the game rules when no scoring metadata is available.

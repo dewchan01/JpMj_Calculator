@@ -1,6 +1,34 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { playerAction, prompt, enterLiveTiles } from './helpers/game';
+import { playerAction, prompt, enterLiveTiles, beginWin } from './helpers/game';
+
+test('Ron with missing Dora requests an indicator and resumes the same winning hand', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: /Start match/ }).click();
+  await beginWin(page);
+  await enterLiveTiles(page, 'The winning hand', '123m456m789p234s55p');
+  await prompt(page)
+    .getByRole('combobox', { name: 'Winning tile', exact: true })
+    .selectOption({ index: 12 });
+  await prompt(page).getByRole('button', { name: 'Next', exact: true }).click();
+  await prompt(page).getByRole('button', { name: 'Review settlement', exact: true }).click();
+  await expect(
+    prompt(page).getByRole('heading', { name: 'Dora indicators', level: 2, exact: true }),
+  ).toBeVisible();
+  await prompt(page).getByRole('button', { name: 'Save indicators', exact: true }).click();
+  await expect(prompt(page).getByRole('alert')).toContainText('Enter at least one Dora indicator.');
+  await enterLiveTiles(page, 'Dora indicators', '7z');
+  await prompt(page).getByRole('button', { name: 'Save indicators', exact: true }).click();
+  await expect(
+    prompt(page).getByRole('button', { name: 'Confirm & save settlement', exact: true }),
+  ).toBeVisible();
+  await prompt(page)
+    .getByRole('button', { name: 'Confirm & save settlement', exact: true })
+    .click();
+  await expect(prompt(page)).not.toBeVisible();
+});
 
 test('quick Riichi deposits directly, double declaration is explicit, and calls have trash actions', async ({
   page,
@@ -84,6 +112,11 @@ test('player Ron and Tsumo actions preselect the winner and keep hand validation
     0,
   );
   await expect(prompt(page).getByText('Who won this hand?', { exact: true })).toHaveCount(0);
+  const discarders = prompt(page).getByRole('group', { name: 'Discarder', exact: true });
+  await discarders.getByRole('radio', { name: 'Player 3', exact: true }).check();
+  await discarders.getByRole('radio', { name: 'Player 1', exact: true }).check();
+  await expect(discarders.locator('input:checked')).toHaveCount(1);
+  await expect(discarders.getByRole('radio', { name: 'Player 1', exact: true })).toBeChecked();
   await prompt(page).getByRole('button', { name: 'Next', exact: true }).click();
   await expect(
     prompt(page).getByRole('heading', { name: 'The winning hand', exact: true, level: 2 }),

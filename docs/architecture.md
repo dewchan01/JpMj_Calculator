@@ -1,5 +1,21 @@
 # Architecture
 
+Quick score and shared tile inputs use the same selected-tile tray styling, shared picker and
+responsive entry dialog. Quick score retains undo/redo, photo review and physical tile IDs while
+using an initially open tile chooser. Undo/redo buttons are omitted; Ctrl/Cmd+Z and
+Ctrl/Cmd+Shift+Z remain available outside text fields. Delete mode uses only a subtle active
+background and `aria-pressed`, without a heavy border, checkmark or extra instruction paragraph.
+The quick-score entry omits the drag-instruction paragraph and places compact notation below the
+tile chooser, matching the shared tile inputs. Dialogs retain their scrollbars and hide only the
+scrollbar arrow buttons; touch, wheel and keyboard scrolling remain available.
+
+Quick-score win conditions are filtered by win method, closed/open hand, dealer and recorded
+Kan/Kita. Double Riichi includes Riichi; turning Riichi off clears Double Riichi and Ippatsu.
+Opening a meld clears closed-hand declarations and Ura. Ura input is available only with Riichi.
+Changing win method clears incompatible claims, and conflicting last-tile/replacement/robbed-Kan
+claims are mutually exclusive. These controls do not infer event timing or legal Riichi waits.
+While building a hand, the winning marker follows the latest tile until a different tile is chosen.
+
 Layout adapts to viewport width using the same URLs: screens up to 700px hide the desktop header and use fixed bottom navigation; wider screens use a permanently expanded sidebar. The four tabs are My table, Settings, Records and Others. Quick score is reached from My table. Resizing preserves the active form and match ID. Header offsets, bottom-navigation clearance, safe-area padding, error scrolling and drag auto-scroll account for the fixed navigation.
 
 The Angular shell lazy-loads home, live table, Quick score, records, player analysis, settings and Others. Signals hold reactive state, with Signal Forms, reactive forms and existing template-driven editors used as appropriate. Components keep TypeScript, HTML and CSS together in a component folder; pure helpers and `*.spec.ts` tests stay with their owning feature. Vitest runs application/domain specs; Playwright runs `e2e/` separately. Tailwind is available through PostCSS, with component CSS and shared global controls. No backend or runtime font/analytics service is required.
@@ -75,3 +91,29 @@ later ledger suffix. UI draft mutations bypass repository writes. Only a success
 saved against the original updatedAt; revisions retain the replaced hand while undo remains a
 separate latest-event operation. TileInput directEntry opens TileEntryDialog on render and receives
 its confirmed/dismissed close result, enabling one-step indicator editing.
+
+The shared TilePicker keeps red fives in their own row after the four ordinary suit/honor rows.
+Four-player entry offers three red fives, three-player entry only red Pin/Sou. Disabled-red profiles omit the red row. Dora/Ura indicator entry uses the same allowed red-five row. Quick score and live call/winning-hand sheets share
+this component so the placement is consistent.
+
+Phone double-tap zoom is suppressed through root touch-action: manipulation; pinch zoom remains
+available. Desktop dialogs retain thin themed scrollbars and stable gutters with contained overscroll;
+only scrollbar arrow buttons are hidden.
+The page behind an open desktop dialog is locked; game prompts retain their heading while their
+body is the vertical scroll container.
+
+During tile reordering, nearby tiles animate into their prospective slots and leave a gap at the
+nearest pointer position, including wrapped rows. Only release commits the order; cancellation restores
+the original layout. Reduced-motion preferences disable the movement transition.
+The home illustration uses the shared themed tile art for 1m, green dragon and 9s.
+
+Drag previews use the original image's resolved currentSrc in an explicitly sized top-layer image,
+rather than relying on cloned Angular tile-art hosts. This preserves the actual light/dark tile face
+while dragging above dialogs and clipped trays. Open melds and concealed Kans are displayed in
+separate groups in Quick score, live player actions and historical hand details; scoring still uses
+the unchanged meld types and call chronology.
+
+Selected-tile collections opt into TileReorder removeOutside. A drop outside the source collection
+removes the selected tile; valid meld/Kan/North drop targets take priority. Palette tiles do not opt
+into removal. Quick score routes drag removal through the existing undo-aware remove action, and
+pointer cancellation leaves the collection unchanged.

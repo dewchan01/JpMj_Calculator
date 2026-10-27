@@ -86,10 +86,7 @@ test('Riichi and indicator dialogs contain only their selected operation and pre
   await expect(
     page.locator('.player-seat').filter({ hasText: 'Player 2' }).locator('.player-points'),
   ).toHaveText('25,000');
-  for (const [label, other, notation] of [
-    ['Dora indicators', 'Ura indicators', '1z'],
-    ['Ura indicators', 'Dora indicators', '2z'],
-  ] as const) {
+  for (const [label, other, notation] of [['Dora indicators', 'Ura indicators', '1z']] as const) {
     await page.locator('.indicator-bar').getByRole('button', { name: label, exact: true }).click();
     await expect(page.getByRole('dialog', { name: 'Enter ' + label, exact: true })).toBeVisible();
     await expect(prompt(page)).not.toBeVisible();
@@ -98,13 +95,16 @@ test('Riichi and indicator dialogs contain only their selected operation and pre
     await expect(prompt(page)).not.toBeVisible();
   }
   await page.reload();
-  for (const label of ['Dora indicators', 'Ura indicators'])
+  for (const label of ['Dora indicators'])
     await expect(
       page
         .locator('.indicator-bar')
         .getByRole('button', { name: label, exact: true })
         .locator('app-tile-art'),
     ).toHaveCount(1);
+  await expect(
+    page.locator('.indicator-bar').getByRole('button', { name: 'Ura indicators', exact: true }),
+  ).toHaveCount(0);
   const header = (await page.locator('.game-heading').boundingBox())!;
   const tools = (await page.locator('.game-tools').boundingBox())!;
   expect(tools.y).toBeGreaterThan(header.y + header.height);

@@ -43,12 +43,19 @@
         }
         <div appTileReorder (tileDropped)="dropTile($event)">
           <div
-            class="selected-tiles tile-input-tray"
+            class="selected-tiles tile-input-tray tile-entry-tray"
             data-tile-drop-target="preview"
             role="group"
             [attr.aria-label]="'Tile preview' | t"
           >
-            <div class="selected-tiles" appTileReorder (tileReordered)="reorderTiles($event)">
+            <div
+              class="selected-tiles"
+              data-tile-collection
+              appTileReorder
+              [removeOutside]="true"
+              (tileRemoved)="remove($event)"
+              (tileReordered)="reorderTiles($event)"
+            >
               @for (tile of tiles(); track tile.id; let index = $index) {
                 <button
                   class="tile"

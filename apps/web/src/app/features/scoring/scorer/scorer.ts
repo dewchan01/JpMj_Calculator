@@ -127,6 +127,12 @@ const emptyFlags = (): Flags => ({
   styleUrl: './scorer.css',
 })
 export class Scorer {
+  get meldGroups() {
+    return [
+      { label: 'Open melds', melds: this.melds.filter((meld) => meld.type !== 'ankan') },
+      { label: 'Concealed Kan', melds: this.melds.filter((meld) => meld.type === 'ankan') },
+    ].filter((group) => group.melds.length);
+  }
   readonly library = inject(RuleLibrary);
   private readonly quickSession = inject(QuickScoreSession);
   waremePlayerId = '';
@@ -182,6 +188,53 @@ export class Scorer {
     { key: 'chiihou', label: 'Chiihou (first non-dealer draw)' },
   ];
   readonly suits = ['Characters · Man', 'Circles · Pin', 'Bamboo · Sou', 'Honors'];
+  get closedHand(): boolean {
+    return this.melds.every((meld) => meld.type === 'ankan');
+  }
+  get canChooseReplacement(): boolean {
+    return (
+      this.kita.length > 0 &&
+      this.settings.kitaRinshan &&
+      this.melds.some((meld) => ['ankan', 'kakan', 'daiminkan'].includes(meld.type))
+    );
+  }
+  get visibleFlags(): typeof this.flagOptions {
+    return this.flagOptions.filter(({ key }) => {
+      if (
+        ['riichi', 'doubleRiichi', 'ippatsu', 'tenhou', 'chiihou'].includes(key) &&
+        !this.closedHand
+      )
+        return false;
+      if (key === 'ippatsu') return this.flags.riichi || this.flags.doubleRiichi;
+      if (['rinshan', 'haitei', 'tenhou', 'chiihou'].includes(key) && this.method !== 'tsumo')
+        return false;
+      if (['chankan', 'houtei'].includes(key) && this.method !== 'ron') return false;
+      if (key === 'tenhou')
+        return this.winner === this.dealer && !this.melds.length && !this.kita.length;
+      if (key === 'chiihou')
+        return this.winner !== this.dealer && !this.melds.length && !this.kita.length;
+      if (key === 'rinshan')
+        return (
+          this.melds.some((meld) => ['ankan', 'kakan', 'daiminkan'].includes(meld.type)) ||
+          (this.kita.length > 0 && this.settings.kitaRinshan)
+        );
+      return true;
+    });
+  }
+  changeFlag(key: keyof Flags): void {
+    if (this.flags[key]) {
+      if (key === 'rinshan') this.flags.haitei = false;
+      if (key === 'haitei') this.flags.rinshan = false;
+      if (key === 'chankan') this.flags.houtei = false;
+      if (key === 'houtei') this.flags.chankan = false;
+    }
+    if (key === 'doubleRiichi' && this.flags.doubleRiichi) this.flags.riichi = true;
+    if (key === 'riichi' && !this.flags.riichi) {
+      this.flags.doubleRiichi = false;
+      this.flags.ippatsu = false;
+    }
+    this.changed();
+  }
   count: 3 | 4 =
     this.quickSession.value?.preferredCount === this.library.preferredCount
       ? this.quickSession.value.count
@@ -424,6 +477,20 @@ export class Scorer {
     this.future.length = 0;
   }
   changed(): void {
+    if (!this.closedHand) {
+      this.flags.riichi = false;
+      this.flags.doubleRiichi = false;
+    }
+    if (!this.flags.riichi && !this.flags.doubleRiichi) {
+      this.flags.ippatsu = false;
+      this.uraText = '';
+    }
+    const available = new Set(this.visibleFlags.map((flag) => flag.key));
+    for (const flag of this.flagOptions) if (!available.has(flag.key)) this.flags[flag.key] = false;
+    if (this.flags.rinshan && !this.canChooseReplacement) {
+      this.replacement = this.kita.length && this.settings.kitaRinshan ? 'kita' : 'kan';
+    }
+    if (!this.flags.tenhou && !this.flags.chiihou) this.firstTurn = false;
     this.result.set(null);
     this.roundResult.set(null);
     this.error.set('');
@@ -451,6 +518,19 @@ export class Scorer {
       this.changed();
     }
   }
+  tileEditKeydown(event: KeyboardEvent): void {
+    if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'z' || event.altKey)
+      return;
+    const target = event.target;
+    if (
+      target instanceof HTMLElement &&
+      (target.closest('input, textarea, select') || target.isContentEditable)
+    )
+      return;
+    event.preventDefault();
+    if (event.shiftKey) this.redo();
+    else this.undo();
+  }
   redo(): void {
     const next = this.future.pop();
     if (next) {
@@ -467,10 +547,15 @@ export class Scorer {
     this.tiles = tiles;
     this.editStatus();
   }
+  removeTileAt(index: number): void {
+    const tile = this.tiles[index];
+    if (tile) this.removeTile(tile);
+  }
   addTile(tile: Tile): void {
     this.remember();
+    const followLastTile = !this.winningId || this.winningId === this.tiles.at(-1)?.id;
     this.tiles.push({ ...structuredClone(tile), id: newId() });
-    if (!this.winningId) this.winningId = this.tiles.at(-1)!.id;
+    if (followLastTile) this.winningId = this.tiles.at(-1)!.id;
     this.editStatus();
   }
   clickTile(tile: Tile): void {

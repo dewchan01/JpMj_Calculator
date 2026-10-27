@@ -68,7 +68,7 @@ test('quick score rejects incomplete hands, supports Sanma and manual camera fal
   await expect(page.getByText('3 concealed · expected 14')).toBeVisible();
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await page.getByRole('button', { name: 'Enter tiles', exact: true }).click();
-  await page.getByRole('button', { name: 'Undo tile edit' }).click();
+  await page.getByRole('dialog', { name: 'Enter tiles', exact: true }).press('Control+z');
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(page.getByText('14 concealed · expected 14')).toBeVisible();
   await page.screenshot({ path: 'artifacts/scorer-desktop.png', fullPage: true });

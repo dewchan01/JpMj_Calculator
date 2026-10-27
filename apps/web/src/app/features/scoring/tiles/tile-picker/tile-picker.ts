@@ -12,6 +12,7 @@ import { TileArt } from '../../../../shared/tile-art/tile-art';
   selector: 'app-tile-picker',
   imports: [TileArt, TranslatePipe],
   templateUrl: './tile-picker.html',
+  styleUrl: './tile-picker.css',
 })
 export class TilePicker {
   readonly playerCount = input.required<3 | 4>();
@@ -33,23 +34,29 @@ export class TilePicker {
       { label: 'Circles · Pin', indices: [9, 10, 11, 12, 13, 14, 15, 16, 17] },
       { label: 'Bamboo · Sou', indices: [18, 19, 20, 21, 22, 23, 24, 25, 26] },
       { label: 'Honors', indices: [27, 28, 29, 30, 31, 32, 33] },
-    ].map((row) => ({
-      label: row.label,
-      tiles: row.indices.map((index) => ({
-        id: `picker-${index}`,
-        kind: kindAt(index),
-        isRed: false,
-      })),
-    })),
-  );
-  readonly reds = computed(() =>
-    this.redFives()
-      ? (this.playerCount() === 3 ? [13, 22] : [4, 13, 22]).map((index) => ({
-          id: `red-${index}`,
+    ]
+      .map((row) => ({
+        label: row.label,
+        tiles: row.indices.map((index) => ({
+          id: `picker-${index}`,
           kind: kindAt(index),
-          isRed: true,
-        }))
-      : [],
+          isRed: false,
+        })),
+      }))
+      .concat(
+        this.redFives()
+          ? [
+              {
+                label: 'Red fives',
+                tiles: (this.playerCount() === 3 ? [13, 22] : [4, 13, 22]).map((index) => ({
+                  id: `red-${index}`,
+                  kind: kindAt(index),
+                  isRed: true,
+                })),
+              },
+            ]
+          : [],
+      ),
   );
   label(tile: Tile): string {
     return `${tileLabel(tile)}: ${this.i18n.t('Add ' + this.i18n.tile(tile))}`;

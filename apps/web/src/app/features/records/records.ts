@@ -12,7 +12,7 @@ import { I18n, TranslatePipe } from '../../core/i18n/i18n';
 import { ErrorNotice } from '../../shared/error-notice/error-notice';
 import { finalStandings } from '../../../../../../packages/mahjong-core/final-results';
 import type { Match } from '../../../../../../packages/mahjong-core/ledger';
-import { tableRules } from '../../../../../../packages/mahjong-rules/index';
+import { ruleName, tableRules } from '../../../../../../packages/mahjong-rules/index';
 import { durationMinutes, filterMatches, playerRecords } from './record-stats';
 
 @Component({
@@ -111,9 +111,26 @@ export class Records {
     this.filtered()
       .map((match) => {
         const rows = finalStandings(match);
+        const latestHand = [...match.events]
+          .reverse()
+          .find((event) =>
+            ['win', 'multipleRon', 'exhaustiveDraw', 'abortiveDraw', 'nagashi'].includes(
+              event.type,
+            ),
+          );
+        const profile =
+          latestHand?.scoringInput?.rules ??
+          latestHand?.scoringInputs?.[0]?.rules ??
+          latestHand?.drawInput?.rules ??
+          match.rules;
         return {
           match,
+          ruleLabel:
+            profile.preset === 'custom' && profile.name
+              ? profile.name
+              : this.i18n.t(ruleName(profile)),
           rows,
+          latestRound: latestHand?.before ?? null,
           totals: rows.reduce(
             (total, row) => ({
               points: total.points + row.points,

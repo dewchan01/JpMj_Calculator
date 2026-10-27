@@ -32,10 +32,10 @@ for (const width of [320, 390, 1280]) {
       ],
       initialBalances: { a: 35000, b: 35000, c: 35000 },
       initialDealerId: 'a',
-      dealerId: 'a',
+      dealerId: 'c',
       roundWind: 'east',
-      handNumber: 1,
-      honba: 0,
+      handNumber: 3,
+      honba: 2,
       gameLength: 'east',
       ended: true,
       events: [
@@ -43,9 +43,21 @@ for (const width of [320, 390, 1280]) {
           id: 'e',
           timestamp: '2026-10-01T13:30:00',
           type: 'exhaustiveDraw',
+          before: { dealerId: 'b', roundWind: 'east', handNumber: 2, honba: 1 },
+          after: { dealerId: 'c', roundWind: 'east', handNumber: 3, honba: 2, ended: true },
           payments: [{ from: 'b', to: 'a', amount: 6000, reason: 'test' }],
         },
       ],
+    };
+    game.events[0].drawInput = {
+      rules: presetRules('tenhou', 3),
+      players: game.players,
+      dealerId: 'b',
+      honba: 1,
+      type: 'exhaustive',
+      tenpaiIds: ['a'],
+      nagashiIds: [],
+      circumstancesConfirmed: true,
     };
     await page.evaluate(async (game) => {
       const db = await new Promise<IDBDatabase>((resolve, reject) => {
@@ -82,6 +94,12 @@ for (const width of [320, 390, 1280]) {
     const nav = page.getByRole('navigation');
     await nav.getByRole('link', { name: 'Records', exact: true }).click();
     await expect(page.locator('.game-card')).toHaveCount(2);
+    await expect(page.locator('.game-card .eyebrow').first()).toContainText('Tenhou');
+    await expect(page.locator('.mode-filter-row .game-count')).toContainText('games found');
+    await expect(page.locator('.records-summary')).toHaveCount(0);
+    await expect(page.locator('.game-card .game-meta').first()).toContainText(
+      'Latest hand: east 2 · Honba 1',
+    );
     await expect(page.locator('.game-card tfoot').first()).toContainText('Total');
     await expect(page.locator('.game-card tfoot td').first()).toHaveText('105,000');
     await expect(page.locator('.game-card thead th').nth(1)).toHaveCSS('text-align', 'left');
@@ -206,6 +224,11 @@ for (const width of [320, 390, 1280]) {
     await page.getByRole('link', { name: 'Final results: October friends', exact: true }).click();
     await expect(page).toHaveURL(/\/records\/october$/);
     await expect(page.locator('app-final-results')).toBeVisible();
+    await page
+      .locator('app-final-results')
+      .getByRole('button', { name: 'History', exact: true })
+      .click();
+    await expect(page.locator('.history-event > summary .event-mode')).toContainText(['Tenhou']);
     await expect(page.locator('app-game-table')).toHaveCount(0);
     await page
       .locator('.record-management')

@@ -64,6 +64,8 @@ describe('zh-TW catalog', () => {
     }
   });
   it.each([
+    ['Select Tenpai players', '選擇聽牌玩家'],
+    ['Select eligible Nagashi players', '選擇符合流局滿貫的玩家'],
     ['Expected 11 concealed tiles, including the winning tile.', '暗手應有 11 張牌（含和牌張）。'],
     ['3 Han · 40 Fu', '3 番・40 符'],
     ['4P · 2 events', '4 人・2 筆紀錄'],

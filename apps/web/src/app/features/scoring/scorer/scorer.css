@@ -47,11 +47,19 @@
   padding-top: 20px;
   border-top: 1px solid var(--border);
 }
+.indicator-grid > :only-child {
+  grid-column: 1 / -1;
+}
 .entry-preview {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 1rem;
+  min-width: 0;
+}
+.delete-mode-button {
+  border: 1px solid transparent;
+  background: transparent;
+  box-shadow: none;
+}
+.delete-mode-button.active {
+  background: var(--active-surface);
 }
 .hand-toolbar {
   flex-wrap: wrap;
@@ -182,4 +190,8 @@
 
 .quick-score-back {
   margin-bottom: 12px;
+}
+.meld-section > h3 {
+  margin: 8px 0 4px;
+  font-size: 0.85rem;
 }

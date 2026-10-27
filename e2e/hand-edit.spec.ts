@@ -18,8 +18,11 @@ async function stored(page: Page): Promise<Match> {
 }
 async function editFirst(page: Page) {
   await gameMenu(page, 'History');
-  const row = page.locator('.history-event').last();
-  await row.locator(':scope > summary').click();
+  const row = page.locator('.history-row').last();
+  await expect(row.locator('.history-event')).toHaveJSProperty('open', false);
+  await expect(
+    row.getByRole('button', { name: 'Edit hand', exact: true }).locator('svg'),
+  ).toHaveCount(1);
   await row.getByRole('button', { name: 'Edit hand', exact: true }).click();
   await expect(prompt(page).locator('.hand-edit-banner')).toBeVisible();
 }
@@ -109,9 +112,9 @@ test('indicator buttons open the tile sheet directly; Done saves, Escape discard
   await prompt(page).getByRole('button', { name: 'Close', exact: true }).click();
   await page
     .locator('.indicator-bar')
-    .getByRole('button', { name: 'Ura indicators', exact: true })
+    .getByRole('button', { name: 'Dora indicators', exact: true })
     .click();
-  const ura = page.getByRole('dialog', { name: 'Enter Ura indicators', exact: true });
+  const ura = page.getByRole('dialog', { name: 'Enter Dora indicators', exact: true });
   await ura.getByRole('button', { name: '2p: Add 2 pin', exact: true }).click();
   await page.keyboard.press('Escape');
   await expect(ura).not.toBeVisible();

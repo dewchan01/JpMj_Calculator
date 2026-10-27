@@ -135,6 +135,18 @@
                     <span>{{ callCounts()[player.id] }}</span>
                   }
                 </button>
+                <button
+                  [class.action-active]="concealedKanCounts()[player.id] > 0"
+                  [attr.aria-pressed]="concealedKanCounts()[player.id] > 0"
+                  [disabled]="actionsDisabled()"
+                  (click)="quickAction.emit({ player: player.id, type: 'ankan' })"
+                  [attr.aria-label]="'Concealed Kan' | t"
+                >
+                  {{ 'ankan' | t }}
+                  @if (concealedKanCounts()[player.id]) {
+                    <span>{{ concealedKanCounts()[player.id] }}</span>
+                  }
+                </button>
               </div>
             }
           </article>
