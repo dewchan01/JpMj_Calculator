@@ -138,9 +138,6 @@ h1 {
 }
 .indicator-preview app-tile-art {
   width: 32px;
-  border: 1px solid var(--muted);
-  border-radius: 4px;
-  background: var(--surface);
 }
 .indicator-bar small {
   display: block;

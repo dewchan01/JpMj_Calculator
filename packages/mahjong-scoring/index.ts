@@ -2,7 +2,7 @@ import { isOutside, isTerminal, kindAt, kindIndex, tileLabel, WINDS } from '../m
 import type { ScoreResult } from '../mahjong-core/index';
 import { nextDora, ruleSettings } from '../mahjong-rules/index';
 import { enumerateForms } from './forms';
-import { basePoints, paymentsFor, responsibilityPayments } from './payments';
+import { basePoints, paymentsFor, responsibilityPayments, responsibilityFor } from './payments';
 import type { Form, ScoringInput } from './types';
 import { validate } from './validation';
 export type { ScoringInput } from './types';
@@ -24,6 +24,77 @@ export function invalid(errors: string[]): ScoreResult {
 export function score(input: ScoringInput): ScoreResult {
   const errors = validate(input);
   if (errors.length) return invalid(errors);
+  if (input.manualScore) {
+    const { han, fu, yakuman = 0, chips = 0 } = input.manualScore;
+    if (
+      !Number.isInteger(han) ||
+      han < 1 ||
+      han > 26 ||
+      ![20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 110].includes(fu) ||
+      !Number.isInteger(yakuman) ||
+      yakuman < 0 ||
+      yakuman > 6 ||
+      !Number.isInteger(chips) ||
+      chips < 0 ||
+      chips > 1000
+    )
+      return invalid(['Enter valid total Han, Fu, Yakuman and chips.']);
+    if (
+      !yakuman &&
+      han < 5 &&
+      ((fu === 20 &&
+        (input.win.method !== 'tsumo' ||
+          han < 2 ||
+          input.hand.melds.some((meld) => meld.type !== 'ankan'))) ||
+        (fu === 25 &&
+          (input.hand.melds.length > 0 || han < (input.win.method === 'tsumo' ? 3 : 2))))
+    )
+      return invalid(['This Han/Fu combination is not valid for the win method.']);
+    const limit =
+      !yakuman && han >= 13 && ruleSettings(input.rules).kazoe === 'sanbaiman'
+        ? { base: 6000, limitName: 'Sanbaiman' }
+        : basePoints(han, fu, yakuman, input.rules.kiriage);
+    const pao = input.manualScore.pao;
+    if (
+      pao &&
+      (!yakuman ||
+        ruleSettings(input.rules).pao === 'off' ||
+        !input.players.some(
+          (player) => player.id === pao.payerId && player.id !== input.win.winnerId,
+        ) ||
+        !Number.isInteger(pao.yakuman) ||
+        pao.yakuman < 1 ||
+        pao.yakuman > yakuman)
+    )
+      return invalid(['Enter a valid responsibility player and Yakuman share.']);
+    const payments = pao
+      ? responsibilityFor(
+          limit.base,
+          ruleSettings(input.rules).pao === 'whole-hand' ? limit.base : pao.yakuman * 8000,
+          pao.payerId,
+          input,
+        )
+      : paymentsFor(limit.base, input);
+    const playerDeltas = Object.fromEntries(input.players.map((player) => [player.id, 0]));
+    for (const payment of payments) {
+      if (payment.from !== 'table') playerDeltas[payment.from] -= payment.amount;
+      playerDeltas[payment.to] += payment.amount;
+    }
+    return {
+      isValid: true,
+      errors: [],
+      han: yakuman ? 0 : han,
+      fu: yakuman ? 0 : fu,
+      yaku: yakuman ? [{ id: 'manual-yakuman', name: 'Yakuman', yakumanMultiplier: yakuman }] : [],
+      bonusHan: [],
+      fuBreakdown: [],
+      limitName: limit.limitName,
+      payments,
+      playerDeltas,
+      winnerReceives: payments.reduce((sum, payment) => sum + payment.amount, 0),
+      interpretation: 'Manual Han/Fu',
+    };
+  }
   const forms = enumerateForms(input.hand);
   if (!forms.length)
     return invalid([

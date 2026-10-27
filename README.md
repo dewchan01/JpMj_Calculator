@@ -2,6 +2,12 @@
 
 An offline-first Angular PWA for scoring Japanese Riichi Mahjong, with Mahjong Soul, Tenhou, M.League and Custom presets. Includes manual scoring, draw/multiple-winner settlement, match progression and configurable photo recognition. Manual scoring works offline; API recognition uploads selected photos. This independent application is not affiliated with the rule platforms or detection provider.
 
+Others > Advanced scoring switches between complete-hand verification (default) and direct total
+Han/Fu entry for the live table and quick score. The device remembers the preference. Advanced mode
+keeps Riichi and calls, calculates Ron/Tsumo payments with the saved rules, and supports multiple Ron,
+explicit Yakuman/Pao/chips, saved history and later-hand replay. Total Han already includes Riichi
+and bonuses; the app does not add them again or infer undisclosed Yaku from an incomplete hand.
+
 ## Run
 
 The installed Angular CLI accepts Node **^22.22.3**, **^24.15.0** or **>=26.0.0**. CI pins Node 22.23.2; the current local checks use Node 26.12.1.

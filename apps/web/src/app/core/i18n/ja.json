@@ -1184,5 +1184,18 @@
   "Select Tenpai players": "テンパイ者を選択",
   "Select eligible Nagashi players": "流し満貫の条件を満たすプレイヤーを選択",
   "Latest hand": "最新の局",
-  "Enter at least one Dora indicator.": "表ドラ表示牌を1枚以上入力してください。"
+  "Enter at least one Dora indicator.": "表ドラ表示牌を1枚以上入力してください。",
+  "Advanced scoring": "上級者モード",
+  "Enter total Han and Fu instead of a complete hand. Calls and Riichi remain available.": "手牌全体の代わりに合計翻数と符数を入力します。副露とリーチは引き続き記録できます。",
+  "Enter the final total Han, including Riichi and bonuses. These are not added again.": "リーチとドラを含む最終的な合計翻数を入力してください。自動で加算されません。",
+  "Scoring type": "計算方法",
+  "Han / Fu": "翻数／符数",
+  "Chips per payer": "支払者1人あたりのチップ枚数",
+  "Manual Han/Fu": "翻符の手動入力",
+  "Enter valid total Han, Fu, Yakuman and chips.": "有効な翻数・符数・役満倍数・チップ枚数を入力してください。",
+  "This Han/Fu combination is not valid for the win method.": "この翻符の組み合わせは選択した和了方法では使えません。",
+  "All Ron winners must use the same scoring mode.": "すべてのロン和了者は同じ計算モードを使用してください。",
+  "Responsibility player": "責任払いの対象者",
+  "Responsible Yakuman share": "責任払いの役満倍数",
+  "Enter a valid responsibility player and Yakuman share.": "有効な責任払い対象者と役満倍数を指定してください。"
 }

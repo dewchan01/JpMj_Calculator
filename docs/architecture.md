@@ -1,5 +1,12 @@
 # Architecture
 
+`ScoringMode` stores the device's Advanced scoring preference. Live-table wins snapshot the entry
+mode when the flow starts; historical edits use their recorded mode. `ScoringInput.manualScore`
+stores player-confirmed Han/Fu, optional Yakuman, chip totals and responsibility shares. The scoring
+engine retains context/physical-call validation but skips complete-hand decomposition for these
+entries, then uses the shared payment and responsibility helpers. Multiple Ron, ledger settlement,
+JSON archives and historical replay retain the optional input without inventing a concealed hand.
+
 Quick score and shared tile inputs use the same selected-tile tray styling, shared picker and
 responsive entry dialog. Quick score retains undo/redo, photo review and physical tile IDs while
 using an initially open tile chooser. Undo/redo buttons are omitted; Ctrl/Cmd+Z and

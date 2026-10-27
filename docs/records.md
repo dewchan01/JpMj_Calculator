@@ -27,6 +27,12 @@ combines those records. A participant filter restricts the aggregate view to tha
 
 ## Saved results
 
+Advanced-mode wins retain their player-confirmed total Han/Fu, explicit Yakuman/Pao/chips and
+the usual rule/round snapshot in `scoringInput.manualScore`. No complete concealed hand or inferred
+Yaku/Dora breakdown is invented. History editing uses the stored mode and replays later payments;
+the current device preference does not reinterpret older records. JSON transfer retains these
+optional fields without changing existing complete-hand records.
+
 - **Result:** compact standings or a metric-by-player comparison table that fits narrow screens. The comparison table shows names in its header and rank in a separate row; standings align the Player heading with player names.
   Raw points, converted point score, Uma, Oka and total score are shown; positive adjustments have a green + and deductions a red minus. There is no All players chip or per-player Details button in the comparison table.
   Each game in the records list also has a Total footer for points, final scores and money.

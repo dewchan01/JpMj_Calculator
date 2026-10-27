@@ -1,5 +1,6 @@
 import { DialogBackdrop } from '../../../shared/dialog-backdrop';
 import { GameSounds } from '../../../core/sound/game-sounds';
+import { ScoringMode } from '../../../core/scoring-mode';
 import { handEditDraft, finishHandEdit } from './hand-edit';
 import { DiceSimulator } from '../../../shared/dice-simulator/dice-simulator';
 import {
@@ -104,6 +105,16 @@ type Panel =
   styleUrl: './game-table.css',
 })
 export class GameTable {
+  readonly scoringMode = inject(ScoringMode);
+  readonly manualEntry = signal(false);
+  manualHan = 3;
+  manualFu = 40;
+  manualYakuman = 0;
+  manualChips = 0;
+  manualPayer = '';
+  manualResponsibleYakuman = 1;
+  readonly fuOptions = [20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 110];
+  readonly yakumanOptions = [1, 2, 3, 4, 5, 6];
   get concealedKanEntries() {
     return this.currentPlayer.melds
       .map((meld, index) => ({ meld, index }))
@@ -374,7 +385,7 @@ export class GameTable {
       indicators: 'Dora / Ura',
       outcome: 'End this hand',
       win: this.playerWinSelected ? 'Win method' : 'Who won this hand?',
-      hand: 'The winning hand',
+      hand: this.manualEntry() ? 'Advanced scoring' : 'The winning hand',
       details: 'Winning conditions',
       review: 'Review settlement',
       draw: 'Record draw',
@@ -780,7 +791,10 @@ export class GameTable {
         .filter((meld) => !['chi', 'pon'].includes(meld.type)).length;
       if (kans > 4) throw new Error('At most four Kans can be recorded in a hand.');
       await this.persist({ ...m, live }, true);
-      if (!['chi', 'pon', 'kita'].includes(this.callType)) {
+      if (
+        !['chi', 'pon', 'kita'].includes(this.callType) &&
+        !(this.editingHand() ? this.manualEntry() : this.scoringMode.advanced())
+      ) {
         this.indicatorKind.set('dora');
         this.open('indicators');
       } else {
@@ -820,6 +834,15 @@ export class GameTable {
     });
   }
   startOutcome(): void {
+    const edited = this.originalMatch?.events.find((event) => event.id === this.editingHand());
+    this.manualEntry.set(
+      this.editingHand()
+        ? !!(
+            edited?.scoringInput?.manualScore ||
+            edited?.scoringInputs?.some((input) => input.manualScore)
+          )
+        : this.scoringMode.advanced(),
+    );
     this.winSoundPlayed = false;
     this.playerWinSelected = false;
     this.inputs = [];
@@ -850,6 +873,16 @@ export class GameTable {
     this.beginHand();
   }
   beginHand(): void {
+    const edited = this.originalMatch?.events.find((event) => event.id === this.editingHand());
+    const stored = (
+      edited?.scoringInputs ?? (edited?.scoringInput ? [edited.scoringInput] : [])
+    ).find((input) => input.win.winnerId === this.activeWinner)?.manualScore;
+    this.manualHan = stored?.han ?? 3;
+    this.manualFu = stored?.fu ?? 40;
+    this.manualYakuman = stored?.yakuman ?? 0;
+    this.manualChips = stored?.chips ?? 0;
+    this.manualPayer = stored?.pao?.payerId ?? '';
+    this.manualResponsibleYakuman = stored?.pao?.yakuman ?? 1;
     this.handText = '';
     this.winningIndex = -1;
     this.claims = {};
@@ -859,6 +892,10 @@ export class GameTable {
   }
   nextHand(): void {
     this.error.set('');
+    if (this.manualEntry()) {
+      this.reviewWinner();
+      return;
+    }
     if (
       this.tiles.length !== 14 - this.winnerState.melds.length * 3 ||
       !this.tiles[this.winningIndex]
@@ -899,7 +936,7 @@ export class GameTable {
   }
   reviewWinner(): void {
     this.error.set('');
-    if (this.method === 'ron' && !this.indicatorTiles('dora').length) {
+    if (!this.manualEntry() && this.method === 'ron' && !this.indicatorTiles('dora').length) {
       const ura = this.ura;
       this.indicatorKind.set('dora');
       this.open('indicators');
@@ -945,6 +982,18 @@ export class GameTable {
             : undefined,
       };
       const input: ScoringInput = {
+        manualScore: this.manualEntry()
+          ? {
+              han: this.manualHan,
+              fu: this.manualFu,
+              yakuman: this.manualYakuman,
+              chips: this.manualChips,
+              pao:
+                this.manualYakuman && this.manualPayer
+                  ? { payerId: this.manualPayer, yakuman: this.manualResponsibleYakuman }
+                  : undefined,
+            }
+          : undefined,
         rules: m.rules,
         players: m.players,
         dealerId: m.dealerId,
@@ -968,7 +1017,7 @@ export class GameTable {
       };
       const result = score(input);
       if (!result.isValid) throw new Error(result.errors.join('\n'));
-      const candidate = [...this.inputs, structuredClone(input)];
+      const candidate = [...this.inputs.slice(0, this.winnerIndex), structuredClone(input)];
       const next = this.winnerIndex + 1;
       if (next < this.players.filter((p) => this.winners[p.id]).length) {
         this.inputs = candidate;

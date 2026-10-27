@@ -91,6 +91,38 @@ function win(match: Match, id: string): Match {
   );
 }
 describe('editing historical hands', () => {
+  it('replays saved manual Han/Fu after an earlier correction changes the dealer', () => {
+    const first = draw(game(), 'first', ['a']);
+    const input = fixture();
+    input.manualScore = { han: 3, fu: 40 };
+    input.hand.concealedTiles = [];
+    input.win.winningTileId = '';
+    input.honba = first.honba;
+    const outcome = multipleRon([input]);
+    const original = settleRound(
+      first,
+      {
+        id: 'manual',
+        type: 'win',
+        timestamp: 'manual',
+        payments: outcome.payments,
+        scoringInput: input,
+        hand: input.hand,
+        win: input.win,
+        result: outcome.results[0],
+        winnerIds: outcome.winnerIds,
+        liveBefore: first.live,
+      },
+      outcome,
+    );
+    const draft = handEditDraft(original, 'first');
+    const changed = draw(draft, 'replacement', []);
+    const replayed = finishHandEdit(original, 'first', changed);
+    const later = replayed.events.find((event) => event.id === 'manual')!;
+    expect(later.scoringInput?.manualScore).toEqual({ han: 3, fu: 40 });
+    expect(later.scoringInput?.dealerId).toBe('b');
+    expect(later.result?.winnerReceives).toBe(8000);
+  });
   it('replays later Tsumo payments using the changed dealer and preserves unique physical tile IDs for multiple Ron', () => {
     const first = draw(game(), 'first', ['a']);
     const input = fixture();

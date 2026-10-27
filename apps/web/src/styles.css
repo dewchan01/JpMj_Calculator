@@ -953,9 +953,24 @@ summary {
   min-width: 31px;
   height: 43px;
   padding: 3px;
-  border: 1px solid #d4dac7;
+  border: 0;
   border-radius: 4px;
-  background: var(--subtle-surface);
+  background: #fffdf1;
+  box-shadow: 0 3px #a8baa0;
+}
+.mini-tiles > app-tile-art,
+.indicator-preview > app-tile-art {
+  height: 44px;
+  border: 0;
+  border-radius: 4px;
+  background: #fffdf1;
+  box-shadow: 0 3px #a8baa0;
+}
+:root[data-theme='dark'] .mini-tiles > span,
+:root[data-theme='dark'] .mini-tiles > app-tile-art,
+:root[data-theme='dark'] .indicator-preview > app-tile-art {
+  background: #111;
+  box-shadow: 0 3px #5c7254;
 }
 .mini-tiles .called {
   outline: 2px solid #a88e40;

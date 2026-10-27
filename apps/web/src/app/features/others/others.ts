@@ -1,5 +1,6 @@
 import { DataTransfer } from '../records/data-transfer/data-transfer';
 import { GameSounds } from '../../core/sound/game-sounds';
+import { ScoringMode } from '../../core/scoring-mode';
 import { Component, computed, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -15,6 +16,7 @@ import { CaptureConfiguration } from '../scoring/capture/capture-config';
   styleUrl: './others.css',
 })
 export class Others {
+  readonly scoringMode = inject(ScoringMode);
   readonly sounds = inject(GameSounds);
   readonly soundLabels = {
     pon: 'Pon',
@@ -64,6 +66,12 @@ export class Others {
       title: 'Sound effects',
       group: 'Preferences',
       icon: 'M11 4 6 8H3v8h3l5 4Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14',
+    },
+    {
+      path: '/others/advanced',
+      title: 'Advanced scoring',
+      group: 'Preferences',
+      icon: 'M5 3h14v18H5ZM8 6h8v4H8Zm0 8h2m4 0h2m-8 4h2m4 0h2',
     },
     {
       path: '/others/rules',

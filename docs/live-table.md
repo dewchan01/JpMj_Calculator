@@ -1,5 +1,21 @@
 # Table-first match flow
 
+## Advanced scoring
+
+Others has an Advanced scoring switch, disabled by default and persisted per device. It applies to
+new live-table win entries and quick score. Advanced winners enter final total Han/Fu rather than
+concealed tiles; Han already includes Riichi, Dora and other bonuses. Existing Riichi, calls,
+concealed Kan and North actions remain. Manual mode does not require Dora/Ura entry after a Kan or
+before Ron; complete-hand mode retains those prompts. Each winner in multiple Ron has independent
+Han/Fu. Payments still use the saved dealer, Honba, pot, Sanma Tsumo policy, limits, Wareme and rounding.
+
+Explicit Yakuman multiples, a responsibility player/share (when enabled by the rules), and total
+chips per payer can be entered separately. Chip totals are not inferred from undisclosed tiles.
+Yaku, legal waits and event timing remain player-confirmed. Manual entries are labelled in preview
+and stored as optional `scoringInput.manualScore`; editing preserves the original entry mode even
+if the preference changes. Later hands are replayed with the same Han/Fu against corrected context.
+Complete-hand records retain their original verification path.
+
 Each seat has separate Riichi, open-call and Concealed Kan buttons. Open-call counts and lists exclude
 concealed Kans; the Concealed Kan button shows its own count and opens Record call directly.
 Recorded concealed Kans remain available in the general player-box action prompt. The redundant

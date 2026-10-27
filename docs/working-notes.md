@@ -5,7 +5,10 @@
 The app now includes final table Uma/Oka/chip/money settlement, completed-game records, player
 analytics, JSON import/export under Others > Data, correction prompts, responsive sheets,
 scrollable player selection and session diagnostics. Component HTML/CSS/TS are colocated;
-19 Vitest spec files contain 232 passing tests. Playwright remains a separate browser suite.
+20 Vitest spec files contain 246 passing tests. Playwright remains a separate browser suite.
+Others includes a persisted Advanced scoring switch for direct total Han/Fu entry on the live table
+and quick score. Manual inputs preserve saved payment rules, Riichi/calls, multiple Ron and history
+replay, with explicit Yakuman/Pao/chips and no inferred concealed hand or Yaku breakdown.
 Live-table History supports full per-hand editing with transactional later-hand replay and revision snapshots. The Dora table button opens its tile sheet directly and saves on Done. Ura appears only when the winner declared Riichi/Double Riichi.
 All Kan variants offer Dora editing. Ron settlement with no Dora indicator requests one and resumes the same hand after saving. Concealed Kan has its own seat button beside open calls, with separate counts and recorded tiles. Record cards retain the latest hand's rule name as well as the history summary; filtered game counts sit beside the mode chips.
 Recent interface updates include compact history rows with right-side chevrons, horizontal player

@@ -1,6 +1,14 @@
 import type { Hand, Player, Tile, Wind, WinEvent } from '../mahjong-core/index';
 import type { RuleProfile } from '../mahjong-rules/index';
 export interface ScoringInput {
+  /** Player-confirmed total Han/Fu; never inferred from an incomplete hand. */
+  manualScore?: {
+    han: number;
+    fu: number;
+    yakuman?: number;
+    chips?: number;
+    pao?: { payerId: string; yakuman: number };
+  };
   rules: RuleProfile;
   players: Player[];
   dealerId: string;

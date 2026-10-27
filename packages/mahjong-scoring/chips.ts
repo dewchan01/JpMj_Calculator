@@ -25,12 +25,13 @@ export function handChips(input: ScoringInput, result: ScoreResult): Record<stri
           0,
         )
       : 0;
-  const count =
-    yakuman * table.chipYakuman +
-    (input.win.ippatsu && closed && (input.win.riichi || input.win.doubleRiichi)
-      ? table.chipIppatsu
-      : 0) +
-    (tileBonus ? reds * table.chipRed + ura * table.chipUra : 0);
+  const count = input.manualScore
+    ? (input.manualScore.chips ?? 0)
+    : yakuman * table.chipYakuman +
+      (input.win.ippatsu && closed && (input.win.riichi || input.win.doubleRiichi)
+        ? table.chipIppatsu
+        : 0) +
+      (tileBonus ? reds * table.chipRed + ura * table.chipUra : 0);
   const payers =
     input.win.method === 'ron'
       ? [input.win.discarderId!]

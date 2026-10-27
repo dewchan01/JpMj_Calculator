@@ -79,6 +79,9 @@ test('five Kans automatically include one red tile for open, concealed and added
   await prompt(page).getByRole('button', { name: 'Close', exact: true }).click();
   await seat.getByRole('button', { name: 'Concealed Kan', exact: true }).click();
   await expect(prompt(page).locator('.concealed-call')).toHaveCount(1);
+  const tileArt = prompt(page).locator('.concealed-call app-tile-art').first();
+  await expect(tileArt).toHaveCSS('border-top-width', '0px');
+  await expect(tileArt).not.toHaveCSS('box-shadow', 'none');
   await expect(prompt(page).locator('.concealed-call > span')).toHaveCount(0);
   await prompt(page).getByRole('button', { name: 'Remove ankan', exact: true }).click();
   await expect(prompt(page).locator('.concealed-call')).toHaveCount(0);

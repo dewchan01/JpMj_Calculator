@@ -1,4 +1,5 @@
 import { DialogBackdrop } from '../../../shared/dialog-backdrop';
+import { ScoringMode } from '../../../core/scoring-mode';
 import { newId } from '../../../core/id/new-id';
 import { FinalResults } from '../final-results/final-results';
 import { QuickScoreSession } from '../quick-score-session';
@@ -56,6 +57,7 @@ import {
   type RoundSettlement,
 } from '../../../../../../../packages/mahjong-scoring/rounds';
 export interface Draft {
+  manualScore?: ScoringInput['manualScore'];
   waremePlayerId?: string;
   tiles: Tile[];
   melds: Meld[];
@@ -127,6 +129,15 @@ const emptyFlags = (): Flags => ({
   styleUrl: './scorer.css',
 })
 export class Scorer {
+  readonly scoringMode = inject(ScoringMode);
+  manualHan = 3;
+  manualFu = 40;
+  manualYakuman = 0;
+  manualChips = 0;
+  manualPayer = '';
+  manualResponsibleYakuman = 1;
+  readonly manualFuOptions = [20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 110];
+  readonly manualYakumanOptions = [1, 2, 3, 4, 5, 6];
   get meldGroups() {
     return [
       { label: 'Open melds', melds: this.melds.filter((meld) => meld.type !== 'ankan') },
@@ -416,6 +427,15 @@ export class Scorer {
   }
   private draft(): Draft {
     return structuredClone({
+      manualScore: {
+        han: this.manualHan,
+        fu: this.manualFu,
+        yakuman: this.manualYakuman,
+        chips: this.manualChips,
+        pao: this.manualPayer
+          ? { payerId: this.manualPayer, yakuman: this.manualResponsibleYakuman }
+          : undefined,
+      },
       waremePlayerId: this.waremePlayerId,
       tiles: this.tiles,
       melds: this.melds,
@@ -440,6 +460,12 @@ export class Scorer {
     });
   }
   private restore(d: Draft): void {
+    this.manualHan = d.manualScore?.han ?? 3;
+    this.manualFu = d.manualScore?.fu ?? 40;
+    this.manualYakuman = d.manualScore?.yakuman ?? 0;
+    this.manualChips = d.manualScore?.chips ?? 0;
+    this.manualPayer = d.manualScore?.pao?.payerId ?? '';
+    this.manualResponsibleYakuman = d.manualScore?.pao?.yakuman ?? 1;
     this.waremePlayerId = d.waremePlayerId ?? '';
     this.selectedHandTiles.set([]);
     // Restore only editor fields: persisted data must never replace services or signals.
@@ -755,18 +781,31 @@ export class Scorer {
   }
   private input(): ScoringInput {
     return {
+      manualScore: this.scoringMode.advanced()
+        ? {
+            han: this.manualHan,
+            fu: this.manualFu,
+            yakuman: this.manualYakuman,
+            chips: this.manualChips,
+            pao:
+              this.manualYakuman && this.manualPayer
+                ? { payerId: this.manualPayer, yakuman: this.manualResponsibleYakuman }
+                : undefined,
+          }
+        : undefined,
       rules: this.rules,
       players: this.players,
       dealerId: this.dealer,
       roundWind: this.roundWind,
       hand: {
         playerId: this.winner,
-        concealedTiles: this.tiles,
+        concealedTiles: this.scoringMode.advanced() ? [] : this.tiles,
         melds: this.melds,
         extractedNorthTiles: this.kita,
       },
       win: {
         ...this.flags,
+        riichi: this.flags.riichi && !this.flags.doubleRiichi,
         winnerId: this.winner,
         method: this.method,
         discarderId: this.method === 'ron' ? this.discarder : undefined,
@@ -780,8 +819,8 @@ export class Scorer {
       },
       honba: this.honba,
       riichiSticks: (this.book?.table ?? 0) / 1000,
-      doraIndicators: parseTiles(this.doraText, 'dora'),
-      uraIndicators: parseTiles(this.uraText, 'ura'),
+      doraIndicators: this.scoringMode.advanced() ? [] : parseTiles(this.doraText, 'dora'),
+      uraIndicators: this.scoringMode.advanced() ? [] : parseTiles(this.uraText, 'ura'),
       otherPlayerKans: this.otherKans,
       waremePlayerId: this.waremePlayerId || undefined,
     };

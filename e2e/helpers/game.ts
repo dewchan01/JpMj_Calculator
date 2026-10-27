@@ -33,6 +33,8 @@ export async function playerAction(page: Page, name: string): Promise<void> {
 export async function enterLiveTiles(page: Page, label: string, notation: string): Promise<void> {
   const input = page.locator(`app-tile-input[data-label="${label}"]`);
   const editor = page.getByRole('dialog', { name: 'Enter ' + label, exact: true });
+  const enter = input.getByRole('button', { name: 'Enter ' + label, exact: true });
+  await expect(editor.or(enter).first()).toBeVisible();
   if (
     !(await editor.isVisible()) &&
     (await input.getByRole('button', { name: 'Enter ' + label, exact: true }).count())

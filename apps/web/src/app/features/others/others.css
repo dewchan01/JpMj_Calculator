@@ -262,3 +262,54 @@ dd {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+.advanced-mode-toggle {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 18px;
+  min-height: 64px;
+  border: 0;
+  border-radius: 0;
+  background: var(--surface);
+  margin: 0;
+}
+.advanced-mode-toggle > .preference-copy {
+  flex: 1;
+  min-width: 0;
+}
+.advanced-mode-toggle small {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.advanced-mode-toggle input {
+  appearance: none;
+  position: relative;
+  width: 44px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--control-surface);
+  flex-shrink: 0;
+}
+.advanced-mode-toggle input::before {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 3px;
+  top: 3px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 1px 3px #0003;
+}
+.advanced-mode-toggle input:checked {
+  background: var(--green);
+}
+.advanced-mode-toggle input:checked::before {
+  transform: translateX(18px);
+}

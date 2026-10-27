@@ -504,26 +504,108 @@
           <button class="primary" (click)="nextWinners()">{{ 'Next' | t }}</button>
         }
         @case ('hand') {
-          <p>
-            <strong>{{ name(activeWinner) }}</strong>
-            · {{ 'Concealed tiles only; recorded melds and North are already included.' | t }}
-          </p>
-          <app-tile-input
-            label="The winning hand"
-            [(value)]="handText"
-            [playerCount]="m.playerCount"
-            [redFives]="settings?.redFives ?? true"
-          />
-          <label>
-            {{ 'Winning tile' | t }}
-            <select [(ngModel)]="winningIndex">
-              <option [ngValue]="-1">{{ 'Choose winning tile' | t }}</option>
-              @for (tile of tiles; track tile.id; let index = $index) {
-                <option [ngValue]="index">{{ i18n.tile(tile) }} · {{ index + 1 }}</option>
+          @if (manualEntry()) {
+            <p>
+              <strong>{{ name(activeWinner) }}</strong>
+              · {{ 'Advanced scoring' | t }}
+            </p>
+            <p class="hint">
+              {{
+                'Enter the final total Han, including Riichi and bonuses. These are not added again.'
+                  | t
+              }}
+            </p>
+            <div class="form-grid">
+              <label>
+                {{ 'Scoring type' | t }}
+                <select [(ngModel)]="manualYakuman">
+                  <option [ngValue]="0">{{ 'Han / Fu' | t }}</option>
+                  @for (count of yakumanOptions; track count) {
+                    <option [ngValue]="count">{{ count }} × {{ 'Yakuman' | t }}</option>
+                  }
+                </select>
+              </label>
+              @if (!manualYakuman) {
+                <label>
+                  {{ 'Han' | t }}
+                  <input type="number" min="1" max="26" step="1" [(ngModel)]="manualHan" />
+                </label>
+                @if (manualHan < 5) {
+                  <label>
+                    {{ 'Fu' | t }}
+                    <select [(ngModel)]="manualFu">
+                      @for (fu of fuOptions; track fu) {
+                        <option [ngValue]="fu">{{ fu }}</option>
+                      }
+                    </select>
+                  </label>
+                }
               }
-            </select>
-          </label>
-          <button class="primary" (click)="nextHand()">{{ 'Next' | t }}</button>
+              @if (tableRules(m.rules).chipValue) {
+                <label>
+                  {{ 'Chips per payer' | t }}
+                  <input type="number" min="0" max="1000" step="1" [(ngModel)]="manualChips" />
+                </label>
+              }
+              @if (manualYakuman && settings?.pao !== 'off') {
+                <label>
+                  {{ 'Responsibility player' | t }}
+                  <select [(ngModel)]="manualPayer">
+                    <option value="">{{ 'None' | t }}</option>
+                    @for (player of players; track player.id) {
+                      @if (player.id !== activeWinner) {
+                        <option [value]="player.id">{{ player.name }}</option>
+                      }
+                    }
+                  </select>
+                </label>
+                @if (manualPayer && settings?.pao !== 'whole-hand') {
+                  <label>
+                    {{ 'Responsible Yakuman share' | t }}
+                    <input
+                      type="number"
+                      min="1"
+                      [max]="manualYakuman"
+                      [(ngModel)]="manualResponsibleYakuman"
+                    />
+                  </label>
+                }
+              }
+              @if (waremeEnabled()) {
+                <label>
+                  {{ 'Wareme player' | t }}
+                  <select [(ngModel)]="wareme">
+                    <option value="">{{ 'Choose a player' | t }}</option>
+                    @for (player of players; track player.id) {
+                      <option [value]="player.id">{{ player.name }}</option>
+                    }
+                  </select>
+                </label>
+              }
+            </div>
+            <button class="primary" (click)="nextHand()">{{ 'Review settlement' | t }}</button>
+          } @else {
+            <p>
+              <strong>{{ name(activeWinner) }}</strong>
+              · {{ 'Concealed tiles only; recorded melds and North are already included.' | t }}
+            </p>
+            <app-tile-input
+              label="The winning hand"
+              [(value)]="handText"
+              [playerCount]="m.playerCount"
+              [redFives]="settings?.redFives ?? true"
+            />
+            <label>
+              {{ 'Winning tile' | t }}
+              <select [(ngModel)]="winningIndex">
+                <option [ngValue]="-1">{{ 'Choose winning tile' | t }}</option>
+                @for (tile of tiles; track tile.id; let index = $index) {
+                  <option [ngValue]="index">{{ i18n.tile(tile) }} · {{ index + 1 }}</option>
+                }
+              </select>
+            </label>
+            <button class="primary" (click)="nextHand()">{{ 'Next' | t }}</button>
+          }
         }
         @case ('details') {
           <p>
@@ -637,9 +719,17 @@
             @for (entry of result.results; track $index) {
               <details open>
                 <summary>
-                  {{ name(result.winnerIds[$index]) }} · {{ entry.han }} {{ 'Han' | t }} ·
-                  {{ entry.fu }} {{ 'Fu' | t }}
+                  {{ name(result.winnerIds[$index]) }} ·
+                  @if (entry.limitName) {
+                    {{ entry.limitName | t }}
+                  }
+                  @if (entry.han || entry.fu) {
+                    {{ entry.han }} {{ 'Han' | t }} · {{ entry.fu }} {{ 'Fu' | t }}
+                  }
                 </summary>
+                @if (inputs[$index]?.manualScore) {
+                  <p class="hint">{{ 'Manual Han/Fu' | t }}</p>
+                }
                 @for (yaku of entry.yaku; track yaku.name) {
                   <p>{{ yaku.name | t }} · {{ yaku.han }}</p>
                 }

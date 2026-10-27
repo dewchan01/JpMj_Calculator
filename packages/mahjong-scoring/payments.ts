@@ -115,34 +115,43 @@ export function responsibilityPayments(
     const payer = last.fromPlayerId!;
     const responsibleBase =
       settings.pao === 'whole-hand' ? base : Math.min(base, (item.yakumanMultiplier ?? 1) * 8000);
-    // Apply Wareme/rounding once, after splitting responsibility and adding Honba.
-    const clean = {
-      ...input,
-      rules: {
-        ...input.rules,
-        table: { ...tableRules(input.rules), waremeMultiplier: 1, paymentUnit: 100 as const },
-      },
-      honba: 0,
-      riichiSticks: 0,
-    };
-    const payments = base > responsibleBase ? paymentsFor(base - responsibleBase, clean) : [];
-    const amount = paymentsFor(responsibleBase, clean).reduce((sum, p) => sum + p.amount, 0);
-    const add = (from: string, amount: number, reason: string): void => {
-      if (amount) payments.push({ from, to: input.win.winnerId, amount, reason });
-    };
-    if (input.win.method === 'ron' && input.win.discarderId !== payer) {
-      add(input.win.discarderId!, amount / 2, 'Ron: half of responsibility share');
-      add(payer, amount / 2, 'Responsibility: half of Ron');
-    } else add(payer, amount, 'Responsibility payment');
-    add(payer, input.honba * tableRules(input.rules).honbaRon, 'Responsibility: honba');
-    if (input.riichiSticks)
-      payments.push({
-        from: 'table',
-        to: input.win.winnerId,
-        amount: input.riichiSticks * 1000,
-        reason: 'Riichi escrow award',
-      });
-    return adjustHandPayments(payments, input);
+    return responsibilityFor(base, responsibleBase, payer, input);
   }
   return null;
+}
+
+export function responsibilityFor(
+  base: number,
+  responsibleBase: number,
+  payer: string,
+  input: ScoringInput,
+): Payment[] {
+  // Apply Wareme/rounding once, after splitting responsibility and adding Honba.
+  const clean = {
+    ...input,
+    rules: {
+      ...input.rules,
+      table: { ...tableRules(input.rules), waremeMultiplier: 1, paymentUnit: 100 as const },
+    },
+    honba: 0,
+    riichiSticks: 0,
+  };
+  const payments = base > responsibleBase ? paymentsFor(base - responsibleBase, clean) : [];
+  const amount = paymentsFor(responsibleBase, clean).reduce((sum, p) => sum + p.amount, 0);
+  const add = (from: string, amount: number, reason: string): void => {
+    if (amount) payments.push({ from, to: input.win.winnerId, amount, reason });
+  };
+  if (input.win.method === 'ron' && input.win.discarderId !== payer) {
+    add(input.win.discarderId!, amount / 2, 'Ron: half of responsibility share');
+    add(payer, amount / 2, 'Responsibility: half of Ron');
+  } else add(payer, amount, 'Responsibility payment');
+  add(payer, input.honba * tableRules(input.rules).honbaRon, 'Responsibility: honba');
+  if (input.riichiSticks)
+    payments.push({
+      from: 'table',
+      to: input.win.winnerId,
+      amount: input.riichiSticks * 1000,
+      reason: 'Riichi escrow award',
+    });
+  return adjustHandPayments(payments, input);
 }

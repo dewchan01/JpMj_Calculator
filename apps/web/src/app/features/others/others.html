@@ -39,6 +39,25 @@
   <h1>{{ title() | t }}</h1>
   <section class="card other-detail">
     @switch (section()) {
+      @case ('advanced') {
+        <label class="advanced-mode-toggle">
+          <span class="preference-copy">
+            {{ 'Advanced scoring' | t }}
+            <small>
+              {{
+                'Enter total Han and Fu instead of a complete hand. Calls and Riichi remain available.'
+                  | t
+              }}
+            </small>
+          </span>
+          <input
+            type="checkbox"
+            role="switch"
+            [checked]="scoringMode.advanced()"
+            (change)="scoringMode.setAdvanced($any($event.target).checked)"
+          />
+        </label>
+      }
       @case ('sound') {
         <label class="check">
           <input

@@ -15,7 +15,12 @@
           <strong>{{ r.han + ' Han · ' + r.fu + ' Fu' | t }}</strong>
         }
       </div>
-      <h3>{{ 'Yaku' | t }}</h3>
+      @if (r.interpretation === 'Manual Han/Fu') {
+        <p class="hint">{{ 'Manual Han/Fu' | t }}</p>
+      }
+      @if (r.yaku.length) {
+        <h3>{{ 'Yaku' | t }}</h3>
+      }
       @for (y of r.yaku; track y.id) {
         <div class="explain-row">
           <span>{{ y.name | t }}</span>
@@ -43,16 +48,18 @@
           <strong>{{ p.amount | number }}</strong>
         </div>
       }
-      <details>
-        <summary>{{ 'Fu & winning interpretation' | t }}</summary>
-        @for (f of r.fuBreakdown; track $index) {
-          <div class="explain-row">
-            <span>{{ f.reason | t }}</span>
-            <strong>{{ f.value }}</strong>
-          </div>
-        }
-        <p class="hint">{{ r.interpretation | t }}</p>
-      </details>
+      @if (r.interpretation !== 'Manual Han/Fu') {
+        <details>
+          <summary>{{ 'Fu & winning interpretation' | t }}</summary>
+          @for (f of r.fuBreakdown; track $index) {
+            <div class="explain-row">
+              <span>{{ f.reason | t }}</span>
+              <strong>{{ f.value }}</strong>
+            </div>
+          }
+          <p class="hint">{{ r.interpretation | t }}</p>
+        </details>
+      }
       @if (match()) {
         <h3>{{ 'Balances after settlement' | t }}</h3>
         @for (p of players(); track p.id) {

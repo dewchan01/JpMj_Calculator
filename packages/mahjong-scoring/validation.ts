@@ -31,11 +31,14 @@ export function validate(input: ScoringInput): string[] {
   )
     errors.push('Ron requires another seated player as discarder.');
   if (win.method === 'tsumo' && win.discarderId) errors.push('Tsumo has no discarder.');
-  if (hand.melds.length > 4 || hand.concealedTiles.length !== 14 - 3 * hand.melds.length)
+  if (
+    hand.melds.length > 4 ||
+    (!input.manualScore && hand.concealedTiles.length !== 14 - 3 * hand.melds.length)
+  )
     errors.push(
       `Expected ${14 - 3 * hand.melds.length} concealed tiles, including the winning tile.`,
     );
-  if (!hand.concealedTiles.some((t) => t.id === win.winningTileId))
+  if (!input.manualScore && !hand.concealedTiles.some((t) => t.id === win.winningTileId))
     errors.push('Designate a concealed tile as the winning tile.');
   for (const [label, value] of [
     ['Honba', input.honba],

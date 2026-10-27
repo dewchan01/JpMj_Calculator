@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Match } from '../../../../../../../packages/mahjong-core/ledger';
 import { presetRules } from '../../../../../../../packages/mahjong-rules/index';
 import { gameArchive, parseArchive } from './data-archive';
+import { fixture } from '../../../../../../../packages/mahjong-fixtures/index';
 
 function sample(): Match {
   return {
@@ -36,6 +37,22 @@ function sample(): Match {
 }
 
 describe('game archives', () => {
+  it('preserves manual Han/Fu and responsibility metadata without fabricating tiles', () => {
+    const match = sample();
+    const input = fixture('', 3);
+    input.manualScore = { han: 3, fu: 40, yakuman: 2, chips: 3, pao: { payerId: 'c', yakuman: 1 } };
+    match.events[0] = {
+      id: 'manual',
+      type: 'win',
+      timestamp: '2026-10-01T13:00:00Z',
+      payments: [],
+      scoringInput: input,
+    };
+    const restored = parseArchive(JSON.stringify(gameArchive([match]))).matches[0].events[0]
+      .scoringInput!;
+    expect(restored.manualScore).toEqual(input.manualScore);
+    expect(restored.hand.concealedTiles).toEqual([]);
+  });
   it('round trips complete rules, players and ledger history', () => {
     const match = sample();
     expect(parseArchive(JSON.stringify(gameArchive([match]))).matches).toEqual([match]);

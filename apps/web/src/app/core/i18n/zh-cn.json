@@ -1184,5 +1184,18 @@
   "Select Tenpai players": "选择听牌玩家",
   "Select eligible Nagashi players": "选择符合流局满贯的玩家",
   "Latest hand": "最新一局",
-  "Enter at least one Dora indicator.": "请至少输入一张表宝牌指示牌。"
+  "Enter at least one Dora indicator.": "请至少输入一张表宝牌指示牌。",
+  "Advanced scoring": "进阶模式",
+  "Enter total Han and Fu instead of a complete hand. Calls and Riichi remain available.": "直接输入总番数与符数，不必填入完整手牌；保留副露与立直操作。",
+  "Enter the final total Han, including Riichi and bonuses. These are not added again.": "请输入包含立直与宝牌的最终总番数，系统不会重复加番。",
+  "Scoring type": "计分方式",
+  "Han / Fu": "番数／符数",
+  "Chips per payer": "每位支付者的筹码枚数",
+  "Manual Han/Fu": "手动番符计分",
+  "Enter valid total Han, Fu, Yakuman and chips.": "请输入有效的总番数、符数、役满倍数与筹码枚数。",
+  "This Han/Fu combination is not valid for the win method.": "此番符组合不适用于目前的和牌方式。",
+  "All Ron winners must use the same scoring mode.": "所有荣和玩家须使用相同计分模式。",
+  "Responsibility player": "包牌者",
+  "Responsible Yakuman share": "包牌负担的役满倍数",
+  "Enter a valid responsibility player and Yakuman share.": "请选择有效的包牌者与负担的役满倍数。"
 }

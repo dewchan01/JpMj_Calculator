@@ -80,13 +80,21 @@ export function multipleRon(inputs: ScoringInput[]): RoundSettlement {
       scored,
       scored.flatMap((r) => r.errors),
     );
+  if (inputs.some((input) => !!input.manualScore !== !!first.manualScore))
+    return fail('All Ron winners must use the same scoring mode.');
   const winningKinds = inputs.map((i) =>
-    kindIndex(i.hand.concealedTiles.find((t) => t.id === i.win.winningTileId)!.kind),
+    i.manualScore
+      ? -1
+      : kindIndex(i.hand.concealedTiles.find((t) => t.id === i.win.winningTileId)!.kind),
   );
   if (
     new Set(winningKinds).size !== 1 ||
     new Set(
-      inputs.map((i) => i.hand.concealedTiles.find((t) => t.id === i.win.winningTileId)!.isRed),
+      inputs.map((i) =>
+        i.manualScore
+          ? false
+          : i.hand.concealedTiles.find((t) => t.id === i.win.winningTileId)!.isRed,
+      ),
     ).size !== 1
   )
     return fail('All Ron winners must win on the same discarded tile.');
@@ -96,7 +104,9 @@ export function multipleRon(inputs: ScoringInput[]): RoundSettlement {
     ...i.hand.extractedNorthTiles,
   ]);
   physical.push(
-    first.hand.concealedTiles.find((t) => t.id === first.win.winningTileId)!,
+    ...(first.manualScore
+      ? []
+      : [first.hand.concealedTiles.find((t) => t.id === first.win.winningTileId)!]),
     ...first.doraIndicators,
     ...(inputs.find((i) => i.uraIndicators.length)?.uraIndicators ?? []),
   );
