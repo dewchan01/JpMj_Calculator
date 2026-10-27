@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+﻿import { test, expect } from '@playwright/test';
 import { playerAction, enterLiveTiles, prompt } from './helpers/game';
 
 test('five Kans automatically include one red tile for open, concealed and added Kan', async ({
@@ -53,7 +53,12 @@ test('five Kans automatically include one red tile for open, concealed and added
   ]);
   const seat = page.locator('.player-seat').filter({ hasText: 'Player 3' });
   await seat.getByRole('button', { name: 'Concealed Kan', exact: true }).click();
-  await expect(prompt(page).locator('.recorded-call')).toHaveCount(1);
+  await expect(
+    prompt(page).getByRole('heading', { name: 'Record call', level: 2, exact: true }),
+  ).toBeVisible();
+  await expect(
+    prompt(page).getByRole('button', { name: 'Record action', exact: true }),
+  ).toBeVisible();
   await expect(prompt(page).getByRole('button', { name: 'Pon', exact: true })).toHaveCount(0);
   await prompt(page).getByRole('button', { name: 'Close', exact: true }).click();
   await seat.getByRole('button', { name: /Call/ }).click();
@@ -70,8 +75,14 @@ test('five Kans automatically include one red tile for open, concealed and added
     .locator('.meld-section')
     .filter({ has: page.getByRole('heading', { name: 'Concealed Kan', exact: true }) });
   await expect(open.locator('.recorded-call')).toHaveCount(2);
-  await expect(concealed.locator('.recorded-call')).toHaveCount(1);
-  await concealed.getByRole('button', { name: 'Remove ankan', exact: true }).click();
   await expect(concealed).toHaveCount(0);
+  await prompt(page).getByRole('button', { name: 'Close', exact: true }).click();
+  await seat.getByRole('button', { name: 'Concealed Kan', exact: true }).click();
+  await expect(prompt(page).locator('.concealed-call')).toHaveCount(1);
+  await expect(prompt(page).locator('.concealed-call > span')).toHaveCount(0);
+  await prompt(page).getByRole('button', { name: 'Remove ankan', exact: true }).click();
+  await expect(prompt(page).locator('.concealed-call')).toHaveCount(0);
+  await prompt(page).getByRole('button', { name: 'Close', exact: true }).click();
+  await playerAction(page, 'Player 3');
   await expect(open.locator('.recorded-call')).toHaveCount(2);
 });

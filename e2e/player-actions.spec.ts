@@ -113,6 +113,11 @@ test('player Ron and Tsumo actions preselect the winner and keep hand validation
   );
   await expect(prompt(page).getByText('Who won this hand?', { exact: true })).toHaveCount(0);
   const discarders = prompt(page).getByRole('group', { name: 'Discarder', exact: true });
+  await prompt(page).getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(
+    prompt(page).getByRole('heading', { name: 'Player actions', level: 2, exact: true }),
+  ).toBeVisible();
+  await prompt(page).getByRole('button', { name: 'Ron · discard', exact: true }).click();
   await discarders.getByRole('radio', { name: 'Player 3', exact: true }).check();
   await discarders.getByRole('radio', { name: 'Player 1', exact: true }).check();
   await expect(discarders.locator('input:checked')).toHaveCount(1);
@@ -128,6 +133,12 @@ test('player Ron and Tsumo actions preselect the winner and keep hand validation
     prompt(page).getByRole('heading', { name: 'The winning hand', exact: true, level: 2 }),
   ).toBeVisible();
   await expect(prompt(page)).toContainText('Player 3');
+  await prompt(page).getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(
+    prompt(page).getByRole('heading', { name: 'Player actions', exact: true, level: 2 }),
+  ).toBeVisible();
+  await expect(prompt(page)).toContainText('Player 3');
+  await prompt(page).getByRole('button', { name: 'Tsumo · self draw', exact: true }).click();
   await prompt(page).getByRole('button', { name: 'Next', exact: true }).click();
   await expect(prompt(page).getByRole('alert')).toContainText('Enter the concealed hand');
 });

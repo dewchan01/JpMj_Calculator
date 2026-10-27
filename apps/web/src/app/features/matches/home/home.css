@@ -373,3 +373,9 @@
   box-shadow: 0 4px 12px rgb(0 0 0 / 24%);
   z-index: 2;
 }
+.players-dialog.dice-prompt {
+  margin: auto;
+  width: min(480px, calc(100vw - 32px));
+  max-height: 85dvh;
+  border-radius: 18px;
+}

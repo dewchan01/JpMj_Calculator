@@ -1,10 +1,4 @@
 <section class="history-list">
-  <div class="section-heading spread">
-    <h2>{{ 'Auditable hand history' | t }}</h2>
-    @if (!readOnly()) {
-      <button class="secondary" (click)="exportRequested.emit()">{{ 'Export data' | t }}</button>
-    }
-  </div>
   @if (!readOnly()) {
     <p class="hint">
       {{
@@ -208,7 +202,7 @@
   }
   @if (!readOnly()) {
     <button
-      class="secondary danger"
+      class="secondary danger undo-last-event"
       (click)="undoRequested.emit()"
       [disabled]="busy() || !match()?.events?.length"
     >

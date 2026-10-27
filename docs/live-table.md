@@ -1,8 +1,13 @@
 # Table-first match flow
 
 Each seat has separate Riichi, open-call and Concealed Kan buttons. Open-call counts and lists exclude
-concealed Kans; the Concealed Kan button shows its own count and opens only concealed-Kan actions
-and recorded tiles. The general player-box action prompt remains available.
+concealed Kans; the Concealed Kan button shows its own count and opens Record call directly.
+Recorded concealed Kans remain available in the general player-box action prompt. The redundant
+wait-unchanged confirmation is omitted; the app does not validate waits before/after Kan.
+Ron/Tsumo navigation returns to the player prompt when entered from a player, or the hand-ending
+flow when entered there. History omits its duplicate heading and export control; data transfer
+remains under Others. The history undo control has extra space above it. Home dice use a centered
+dialog on phones and desktops. Mobile data-transfer date fields stack vertically.
 
 Open, added and concealed Kan all open the Dora editor after recording the Kan. Ron with no Dora
 indicator requests at least one before previewing settlement, then resumes the same winning hand

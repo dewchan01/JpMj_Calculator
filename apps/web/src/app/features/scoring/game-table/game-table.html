@@ -390,15 +390,30 @@
               </label>
             }
           }
-          @if (currentPlayer.riichi !== 'none' && callType === 'ankan') {
-            <label class="check">
-              <input type="checkbox" [(ngModel)]="legalKan" />
-              {{ 'The wait is unchanged and this Kan is legal.' | t }}
-            </label>
-          }
           <button class="primary" (click)="saveCall()" [disabled]="busy()">
             {{ 'Record action' | t }}
           </button>
+          @if (callType === 'ankan') {
+            @for (entry of concealedKanEntries; track entry.meld.id) {
+              <div class="recorded-call concealed-call">
+                <div class="mini-tiles">
+                  @for (tile of entry.meld.tiles; track tile.id) {
+                    <app-tile-art [tile]="tile" />
+                  }
+                </div>
+                <button
+                  class="icon-button action-delete"
+                  (click)="removeCall(entry.index)"
+                  [disabled]="paused()"
+                  [attr.aria-label]="('Remove' | t) + ' ' + ('ankan' | t)"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7" />
+                  </svg>
+                </button>
+              </div>
+            }
+          }
         }
         @case ('indicators') {
           <p class="hint">

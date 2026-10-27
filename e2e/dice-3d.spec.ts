@@ -6,6 +6,7 @@ test('dice show six real faces and rotate through 3D transforms before settling'
   await page.goto('/');
   await page.getByRole('button', { name: 'Dice', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Dice', exact: true });
+  await expect(dialog).not.toHaveClass(/responsive-sheet/);
   await expect(dialog.locator('.die-face')).toHaveCount(12);
   const die = dialog.locator('.die').first();
   await expect(die).toHaveCSS('transform-style', 'preserve-3d');

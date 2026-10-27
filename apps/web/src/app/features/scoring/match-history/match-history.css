@@ -159,3 +159,6 @@
 .player-marks {
   color: var(--text);
 }
+:host .undo-last-event {
+  margin-top: 20px;
+}

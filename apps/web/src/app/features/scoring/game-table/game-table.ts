@@ -104,11 +104,15 @@ type Panel =
   styleUrl: './game-table.css',
 })
 export class GameTable {
+  get concealedKanEntries() {
+    return this.currentPlayer.melds
+      .map((meld, index) => ({ meld, index }))
+      .filter(({ meld }) => meld.type === 'ankan');
+  }
   get playerMeldGroups() {
     const entries = this.currentPlayer.melds.map((meld, index) => ({ meld, index }));
     return [
       { label: 'Open melds', entries: entries.filter(({ meld }) => meld.type !== 'ankan') },
-      { label: 'Concealed Kan', entries: entries.filter(({ meld }) => meld.type === 'ankan') },
     ].filter(
       (group) =>
         group.entries.length &&
@@ -290,7 +294,6 @@ export class GameTable {
   dora = '';
   ura = '';
   doubleRiichi = false;
-  legalKan = false;
   firstTurn = false;
   method: 'ron' | 'tsumo' = 'ron';
   winners: Record<string, boolean> = {};
@@ -574,7 +577,6 @@ export class GameTable {
   startCall(type: Meld['type'] | 'kita'): void {
     if (this.paused() || this.busy() || this.match()?.ended) return;
     this.sounds.play(type);
-    this.legalKan = false;
     this.callType = type;
     this.callText = type === 'kita' ? '4z' : '';
     this.callSource =
@@ -621,6 +623,10 @@ export class GameTable {
     }
     this.open('player', action.player);
     this.playerMode.set(action.type);
+    if (action.type === 'ankan') {
+      this.startCall('ankan');
+      this.panelParents.set([]);
+    }
     if (action.type === 'kita') this.startCall('kita');
   }
   async declarePlayerRiichi(double: boolean): Promise<void> {
@@ -645,8 +651,12 @@ export class GameTable {
     this.winners = { [player]: true };
     this.method = method;
     this.discarder = this.players.find((other) => other.id !== player)?.id ?? '';
-    if (method === 'tsumo') this.nextWinners();
-    else this.navigatePanel('win');
+    this.panel.set('win');
+    if (method === 'tsumo') {
+      this.nextWinners();
+      // The player already chose Tsumo; Back skips the unused winner/method step.
+      this.panelParents.update((parents) => parents.slice(0, -1));
+    }
   }
   showPlayerDifference(player: string): void {
     if (player) this.basis = player;
@@ -656,8 +666,6 @@ export class GameTable {
     await this.act(async () => {
       const m = this.match()!;
       if (m.ended || this.paused()) throw new Error('Resume the game before recording actions.');
-      if (this.callType === 'ankan' && this.currentPlayer.riichi !== 'none' && !this.legalKan)
-        throw new Error('Confirm the Kan is legal and preserves the wait.');
       const live = structuredClone(m.live ?? emptyLive()),
         state = structuredClone(livePlayer(m, this.selected));
       if (state.riichi !== 'none' && !['ankan', 'kita'].includes(this.callType))
