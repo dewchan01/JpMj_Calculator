@@ -126,8 +126,12 @@
           }
         }
         @if (event.hand) {
+          @let wind = event.roundWind ?? event.before?.roundWind ?? event.scoringInput?.roundWind;
           <p class="hint">
-            {{ event.win?.method | t }} · {{ (event.roundWind ?? '') + ' round' | t }}
+            {{ event.win?.method | t }}
+            @if (wind) {
+              · {{ 'Round wind' | t }}: {{ wind | t }}
+            }
           </p>
           <div class="mini-tiles">
             @for (t of event.hand.concealedTiles; track t.id) {

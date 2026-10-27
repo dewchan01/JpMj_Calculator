@@ -48,12 +48,6 @@ export class Others {
   readonly section = computed(() => this.params()?.get('section') ?? '');
   readonly entries = [
     {
-      path: '/others/sound',
-      title: 'Sound effects',
-      group: 'Preferences',
-      icon: 'M11 4 6 8H3v8h3l5 4Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14',
-    },
-    {
       path: '/others/language',
       title: 'Language',
       group: 'Preferences',
@@ -64,6 +58,12 @@ export class Others {
       title: 'Theme',
       group: 'Preferences',
       icon: 'M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11Z',
+    },
+    {
+      path: '/others/sound',
+      title: 'Sound effects',
+      group: 'Preferences',
+      icon: 'M11 4 6 8H3v8h3l5 4Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14',
     },
     {
       path: '/others/rules',
