@@ -169,8 +169,8 @@ including offline caches; they are not an exact database size or a guarantee tha
 Unavailable estimates are shown explicitly rather than reported as zero usage.
 
 The app does not currently request `navigator.storage.persist()`. Permission and quotas depend on
-the browser. Even persistent storage can be deleted by the user. Export match JSON for backups.
-Others > Data offers separate JSON import/export prompts with game, player and date selection. New game IDs are inserted transactionally; existing IDs are skipped. Cloud sync remains unimplemented. See [JSON transfer](data-transfer.md).
+the browser. Even persistent storage can be deleted by the user. Export match CSV for backups.
+Others > Data offers separate CSV and QR/ID import/export prompts with game, player and date selection. New game IDs are inserted transactionally; existing IDs are skipped. Cloud sync remains unimplemented. See [data transfer](data-transfer.md).
 
 Source: [MDN storage quotas and eviction](https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria).
 

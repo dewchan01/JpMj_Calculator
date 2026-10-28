@@ -56,16 +56,6 @@ form > button.primary {
 .room-credentials p {
   margin: 12px 0;
 }
-.room-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 16px;
-}
-.room-actions button {
-  margin: 0;
-  min-height: 44px;
-}
 .connection-row {
   display: flex;
   align-items: center;
@@ -114,6 +104,7 @@ form > button.primary {
   display: grid;
   gap: 4px;
   font-size: 1rem;
+  margin-block: 12px;
 }
 .credential-row > span {
   font-size: 0.8rem;
@@ -123,7 +114,23 @@ form > button.primary {
 .credential-row strong {
   font-weight: 600;
 }
-.room-actions svg {
+.credential-input {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+.credential-input input {
+  flex: 1;
+  width: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.credential-input button {
+  flex: 0 0 44px;
+  padding: 10px;
+  margin: 0;
+}
+.credential-input svg {
   width: 21px;
   height: 21px;
   stroke: currentColor;

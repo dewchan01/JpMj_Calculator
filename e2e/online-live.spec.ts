@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { playerAction, prompt, enterLiveTiles } from './helpers/game';
+import AxeBuilder from '@axe-core/playwright';
 
 test.skip(
   !process.env['RIICHI_API_TEST_URL'],
@@ -14,6 +15,15 @@ test('host and guest synchronize Riichi, Kan and a winning declaration through t
   async function prepare(page: Page) {
     await page.route('**/backend.json', (route) => route.fulfill({ json: { apiUrl: api } }));
     await page.addInitScript(() => {
+      const testWindow = window as typeof window & { roomSockets: WebSocket[] };
+      testWindow.roomSockets = [];
+      const NativeWebSocket = WebSocket;
+      testWindow.WebSocket = class extends NativeWebSocket {
+        constructor(url: string | URL, protocols?: string | string[]) {
+          super(url, protocols);
+          testWindow.roomSockets.push(this);
+        }
+      };
       localStorage.setItem('riichi-advanced-scoring', 'true');
       localStorage.setItem('riichi-install-reminder-hidden', 'true');
     });
@@ -22,22 +32,20 @@ test('host and guest synchronize Riichi, Kan and a winning declaration through t
   await host.goto('/');
   await host.getByRole('button', { name: /Start match/ }).click();
   await host.getByRole('button', { name: 'Start shared game', exact: true }).click();
+  let startupReads = 0;
+  const trackStartup = (request: import('@playwright/test').Request) => {
+    if (request.method() === 'GET' && request.url().includes('/api/rooms/')) startupReads++;
+  };
+  host.on('request', trackStartup);
   await host.getByRole('button', { name: 'Host game', exact: true }).click();
-  await expect(host.locator('.credential-row').first()).toBeVisible();
-  const code = (await host.locator('.credential-row').first().innerText())
-    .split('\n')
-    .at(-1)!
-    .trim();
-  const pin = (
-    await host
-      .locator('p')
-      .filter({ hasText: /Room PIN/ })
-      .locator('strong')
-      .innerText()
-  ).trim();
+  await expect(host.locator('.credential-row').first()).toBeVisible({ timeout: 20000 });
+  host.off('request', trackStartup);
+  expect(startupReads).toBe(0);
+  const code = await host.getByRole('textbox', { name: 'Room code', exact: true }).inputValue();
+  const pin = await host.getByRole('textbox', { name: 'Room PIN', exact: true }).inputValue();
   await expect(host.getByRole('img', { name: 'Room QR code', exact: true })).toBeVisible();
   await expect(host.getByLabel('Room link', { exact: true })).toHaveCount(0);
-  await expect(host.getByRole('button', { name: 'Copy room details' })).toBeVisible();
+  await expect(host.getByRole('button', { name: 'Copy room details', exact: true })).toBeVisible();
   await expect(host.getByRole('link', { name: 'Open room table', exact: true })).toBeVisible();
 
   await host.request.post(api + '/api/rooms/' + code + '/join', { data: { pin, seat: 0 } });
@@ -48,15 +56,65 @@ test('host and guest synchronize Riichi, Kan and a winning declaration through t
   await guest.getByRole('button', { name: /Start match/ }).click();
   await guest.getByRole('button', { name: 'Start shared game', exact: true }).click();
   await guest.getByRole('button', { name: 'Join game', exact: true }).click();
-  await guest.getByLabel('Room code', { exact: true }).fill(code);
-  await guest.getByLabel('Room PIN', { exact: true }).fill(pin);
-
-  await guest.getByRole('button', { name: 'Join room', exact: true }).click();
-  await guest.getByRole('link', { name: 'Open room table', exact: true }).click();
+  const roomQR = await host
+    .getByRole('img', { name: 'Room QR code', exact: true })
+    .getAttribute('src');
+  await guest.locator('input[type=file]').setInputFiles({
+    name: 'room-invitation.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(roomQR!.split(',')[1], 'base64'),
+  });
+  await expect(guest.locator('.game-shell')).toBeVisible();
   await host.getByRole('link', { name: 'Open room table', exact: true }).click();
   const guestSeat = guest.locator('.player-seat').filter({ hasText: 'Player 2' });
   const hostSeat = host.locator('.player-seat').filter({ hasText: 'Player 2' });
   await expect(guestSeat).toBeVisible();
+  await expect(guest.locator('.app-navigation')).toBeHidden();
+  await expect(host.locator('.app-navigation')).toBeHidden();
+  const local = await browser.newPage({
+    viewport: { width: 1920, height: 1080 },
+    serviceWorkers: 'block',
+  });
+  try {
+    await local.route('**/backend.json', (route) => route.fulfill({ json: { apiUrl: '' } }));
+    await local.goto('http://localhost:4300/');
+    await local.getByRole('button', { name: '4 players', exact: true }).click();
+    await local.getByRole('button', { name: /Start match/ }).click();
+    await local.getByRole('button', { name: 'Start game', exact: true }).click();
+    await expect(local.locator('.game-shell')).toBeVisible();
+    await guest.setViewportSize({ width: 1920, height: 1080 });
+    const localBoard = (await local.locator('.table-summary').boundingBox())!;
+    const sharedBoard = (await guest.locator('.table-summary').boundingBox())!;
+    expect(sharedBoard.height).toBeGreaterThanOrEqual(localBoard.height - 60);
+    const localSeat = (await local.locator('.player-seat').first().boundingBox())!;
+    const sharedSeat = (await guest.locator('.player-seat').first().boundingBox())!;
+    expect(Math.abs(localSeat.width - sharedSeat.width)).toBeLessThan(1);
+    await guest.screenshot({ path: 'artifacts/shared-table-desktop-size.png' });
+  } finally {
+    await local.close();
+  }
+  // After startup settles, a healthy hub must not issue periodic game requests.
+  await guest.waitForTimeout(1000);
+  let idleReads = 0;
+  const countRead = (request: import('@playwright/test').Request) => {
+    if (request.method() === 'GET' && /\/game(?:\?|$)/.test(request.url())) idleReads++;
+  };
+  guest.on('request', countRead);
+  await guest.waitForTimeout(3200);
+  guest.off('request', countRead);
+  expect(idleReads).toBe(0);
+  guest.on('request', countRead);
+  try {
+    await guest.context().setOffline(true);
+    await guest.evaluate(() => {
+      const testWindow = window as typeof window & { roomSockets: WebSocket[] };
+      testWindow.roomSockets.forEach((socket) => socket.close());
+    });
+    await expect.poll(() => idleReads, { timeout: 10000 }).toBeGreaterThan(0);
+  } finally {
+    await guest.context().setOffline(false);
+    guest.off('request', countRead);
+  }
   for (const width of [1280, 390]) {
     await guest.setViewportSize({ width, height: 844 });
     const clipped = await guest.locator('.table-summary').evaluate((table) => {
@@ -108,12 +166,12 @@ test('host and guest synchronize Riichi, Kan and a winning declaration through t
   // When the host leaves, declarations persist and are processed after it returns.
   await host.goto('/');
   await guestSeat.getByRole('button', { name: 'Riichi', exact: true }).click();
-  await expect(guest.getByRole('status')).toContainText('Waiting for the host');
+  await expect(guest.locator('.room-status p[role=status]')).toContainText('Waiting for the host');
   await expect(guest.locator('.table-pot strong')).toHaveText('0');
-  await host.getByRole('button', { name: /Start match/ }).click();
-  await host.getByRole('button', { name: 'Start shared game', exact: true }).click();
-  await host.getByRole('button', { name: 'Join game', exact: true }).click();
-  await host.getByRole('link', { name: 'Open room table', exact: true }).click();
+  await host.evaluate((code) => {
+    history.pushState(null, '', '/room/' + code);
+    dispatchEvent(new PopStateEvent('popstate'));
+  }, code);
   await expect(guest.locator('.table-pot strong')).toHaveText('1,000', { timeout: 15000 });
   for (const [page, name] of [
     [guest, 'Player 2'],
@@ -134,22 +192,63 @@ test('host and guest synchronize Riichi, Kan and a winning declaration through t
   await guest.screenshot({ path: 'artifacts/online-live-guest.png' });
   await host.goto('/');
   await host.locator('.app-navigation a[href$="/others"]').click();
-  await host.getByRole('button', { name: 'Export data', exact: true }).click();
-  const exportDialog = host.getByRole('dialog', { name: 'Export data', exact: true });
+  await host.getByRole('link', { name: 'Export data', exact: true }).click();
+  const exportDialog = host.getByRole('region', { name: 'Export data', exact: true });
+  await host.setViewportSize({ width: 390, height: 844 });
+  await exportDialog.locator('.transfer-actions').scrollIntoViewIfNeeded();
+  const actionTops = await exportDialog
+    .locator('.transfer-actions button')
+    .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().top));
+  expect(actionTops).toHaveLength(3);
+  expect(Math.max(...actionTops) - Math.min(...actionTops)).toBeLessThan(1);
+  await host.screenshot({ path: 'artifacts/export-page-390.png' });
   await exportDialog.getByRole('button', { name: 'Share selected games', exact: true }).click();
-  await expect(exportDialog.getByRole('img', { name: 'Share QR code', exact: true })).toBeVisible();
-  const shareLink = await exportDialog.getByLabel('Share link', { exact: true }).inputValue();
+  const shareDialog = host.getByRole('dialog', { name: 'Share selected games', exact: true });
+  await expect(shareDialog.getByRole('img', { name: 'Share QR code', exact: true })).toBeVisible();
+  await host.setViewportSize({ width: 390, height: 844 });
+  expect(
+    (await new AxeBuilder({ page: host }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze())
+      .violations,
+  ).toEqual([]);
+  await host.screenshot({ path: 'artifacts/share-transfer-390.png' });
+  await expect(shareDialog.getByLabel('Share link')).toHaveCount(0);
+  const qr = await shareDialog
+    .getByRole('img', { name: 'Share QR code', exact: true })
+    .getAttribute('src');
+  const shareId = await shareDialog.getByRole('textbox').inputValue();
+  await shareDialog.getByRole('button', { name: 'Back', exact: true }).click();
+  await exportDialog.getByRole('link', { name: 'Back', exact: true }).click();
+  // A full reload must retain this device's active share and regenerate its QR.
+  await host.goto('/');
+  await host.locator('.app-navigation a[href$="/others"]').click();
+  await host.getByRole('link', { name: 'Share history', exact: true }).click();
+  const historyPage = host.getByRole('region', { name: 'Share history', exact: true });
+  await expect(historyPage.locator('.history-entry')).toHaveCount(1);
+  await host.screenshot({ path: 'artifacts/share-history-390.png' });
+  await historyPage.locator('.history-entry').click();
+  await expect(shareDialog.getByRole('textbox')).toHaveValue(shareId);
+  await expect(shareDialog.getByRole('img', { name: 'Share QR code', exact: true })).toBeVisible();
   await guest.goto('http://localhost:4300/');
-  await guest.evaluate((url) => {
-    history.pushState(null, '', url);
-    dispatchEvent(new PopStateEvent('popstate'));
-  }, shareLink);
-  await guest.getByRole('button', { name: 'Import selected games', exact: true }).click();
-  await expect(guest.getByRole('status')).toHaveText('Games imported.');
-  await exportDialog.getByRole('button', { name: 'Revoke share', exact: true }).click();
-  await expect(exportDialog.getByRole('img', { name: 'Share QR code', exact: true })).toHaveCount(
-    0,
-  );
+  await guest.locator('.app-navigation a[href$="/others"]').click();
+  await guest.getByRole('link', { name: 'Import data', exact: true }).click();
+  const importDialog = guest.getByRole('region', { name: 'Import data', exact: true });
+  await importDialog.locator('input[type=file][accept="image/*"]').setInputFiles({
+    name: 'transfer.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(qr!.split(',')[1], 'base64'),
+  });
+  await expect(importDialog.locator('input[type=checkbox]')).toHaveCount(1);
+  await importDialog.getByRole('button', { name: 'Import selected games', exact: true }).click();
+  await expect(importDialog.getByRole('status')).toHaveText('Games imported.');
+  await importDialog.getByLabel('Transfer ID', { exact: true }).fill(shareId);
+  await importDialog.getByRole('button', { name: 'Load shared games', exact: true }).click();
+  await expect(importDialog.locator('input[type=checkbox]')).toHaveCount(1);
+  expect((await host.request.get(api + '/api/shares/' + shareId)).status()).toBe(200);
+  await shareDialog.getByRole('button', { name: 'Revoke share', exact: true }).click();
+  await expect(shareDialog.getByRole('img', { name: 'Share QR code', exact: true })).toHaveCount(0);
+  await shareDialog.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(historyPage).toBeVisible();
+  await expect(historyPage.locator('.history-entry')).toHaveCount(0);
   await guestContext.close();
   const credential = await host.evaluate(
     (apiUrl) => JSON.parse(localStorage.getItem(`riichi-room:${apiUrl}`)!),
@@ -174,6 +273,7 @@ test('host can select three players and room header stays visible', async ({ pag
   await expect(page.getByRole('link', { name: 'Open room table', exact: true })).toBeVisible();
   const dialog = page.getByRole('dialog', { name: 'Host game', exact: true });
   await expect(dialog.locator('li')).toHaveCount(0);
+  await expect(dialog.locator('.connection-chip')).toHaveAttribute('aria-label', 'Connected');
   await expect(dialog.locator('.connection-chip')).toHaveText('Connected');
   await page.evaluate(() => {
     Object.defineProperty(navigator, 'clipboard', {
@@ -186,10 +286,7 @@ test('host can select three players and room header stays visible', async ({ pag
   await expect(copy).toHaveAttribute('data-copied', 'true');
   await expect(dialog.getByText('Room details copied.', { exact: true })).toHaveCount(0);
   await expect(copy).toHaveAttribute('data-copied', 'false');
-  const code = (await dialog.locator('.credential-row').first().innerText())
-    .split('\n')
-    .at(-1)!
-    .trim();
+  const code = await dialog.getByRole('textbox', { name: 'Room code', exact: true }).inputValue();
   const access = await page.evaluate(
     (api) => JSON.parse(localStorage.getItem('riichi-room:' + api)!),
     api,

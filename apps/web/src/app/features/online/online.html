@@ -2,7 +2,11 @@
   <a routerLink="/">{{ 'My table' | t }}</a>
   <h1>{{ 'Online sharing and rooms' | t }}</h1>
 }
-@if (error()) {
+@if (error() === 'Could not connect to the online service.') {
+  @if (!access()) {
+    <app-connection-status state="Disconnected" />
+  }
+} @else if (error()) {
   <p role="alert">{{ error() | t }}</p>
 }
 @if (status()) {
@@ -28,68 +32,72 @@
       {{ 'Import selected games' | t }}
     </button>
   }
+} @else if (access() && !access()!.host) {
+  <p role="status">{{ 'The host has not attached a game yet.' | t }}</p>
+  <button class="secondary" (click)="forget()" [disabled]="busy()">{{ 'Leave room' | t }}</button>
 } @else if (access(); as credential) {
   @if (qr()) {
     <img class="room-qr" [src]="qr()" width="200" height="200" [alt]="'Room QR code' | t" />
   }
   <section class="room-credentials">
     <div class="connection-row">
-      <span
-        class="connection-chip"
-        role="status"
-        [class.connected]="connectionStatus() === 'Connected'"
-        [class.connecting]="
-          connectionStatus() === 'Connecting' || connectionStatus() === 'Reconnecting'
-        "
-      >
-        <span class="connection-pulse" aria-hidden="true"></span>
-        {{ connectionStatus() | t }}
-      </span>
+      <app-connection-status [state]="connectionStatus()" />
     </div>
-    <p class="credential-row">
+    <div class="credential-row">
       <span>{{ 'Room code' | t }}</span>
-      <strong>{{ credential.id }}</strong>
-    </p>
+      <div class="credential-input">
+        <input readonly [value]="credential.id" [attr.aria-label]="'Room code' | t" />
+        <button
+          class="secondary"
+          [appCopyButton]="credential.id"
+          #copyFeedback="copyButton"
+          (copyFailed)="error.set('Could not copy. Select the room details to copy manually.')"
+          [attr.aria-label]="'Copy room details' | t"
+          [title]="'Copy room details' | t"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            @if (copyFeedback.copied()) {
+              <path d="m5 12 4 4L19 6" />
+            } @else {
+              <rect x="8" y="8" width="12" height="13" rx="2" />
+              <path d="M16 8V3H3v13h5" />
+            }
+          </svg>
+        </button>
+      </div>
+    </div>
     @if (credential.pin) {
-      <p class="credential-row">
+      <div class="credential-row">
         <span>{{ 'Room PIN' | t }}</span>
-        <strong>{{ credential.pin }}</strong>
-      </p>
+        <div class="credential-input">
+          <input readonly [value]="credential.pin" [attr.aria-label]="'Room PIN' | t" />
+          <button
+            class="secondary"
+            [appCopyButton]="credential.pin"
+            #pinCopyFeedback="copyButton"
+            (copyFailed)="error.set('Could not copy. Select the room details to copy manually.')"
+            [attr.aria-label]="('Copy room details' | t) + ' - ' + ('Room PIN' | t)"
+            [title]="'Copy room details' | t"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              @if (pinCopyFeedback.copied()) {
+                <path d="m5 12 4 4L19 6" />
+              } @else {
+                <rect x="8" y="8" width="12" height="13" rx="2" />
+                <path d="M16 8V3H3v13h5" />
+              }
+            </svg>
+          </button>
+        </div>
+      </div>
     } @else if (credential.host) {
       <p class="hint">{{ 'Passcode is available on the device that created this room.' | t }}</p>
     }
-    <div class="room-actions">
-      <button
-        class="secondary"
-        [appCopyButton]="invitation()"
-        #copyFeedback="copyButton"
-        (copyFailed)="error.set('Could not copy. Select the room details to copy manually.')"
-        [attr.aria-label]="'Copy room details' | t"
-        [title]="'Copy room details' | t"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          @if (copyFeedback.copied()) {
-            <path d="m5 12 4 4L19 6" />
-          } @else {
-            <rect x="8" y="8" width="12" height="13" rx="2" />
-            <path d="M16 8V3H3v13h5" />
-          }
-        </svg>
-      </button>
-      <button
-        class="secondary"
-        (click)="shareRoom()"
-        [attr.aria-label]="'Share room details' | t"
-        [title]="'Share room details' | t"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 15V3m-4 4 4-4 4 4M5 11v10h14V11" />
-        </svg>
-      </button>
-    </div>
   </section>
 
-  <p>{{ 'Share the PIN separately. The QR code does not include it.' | t }}</p>
+  @if (credential.pin) {
+    <p>{{ 'Scan this QR code to join automatically. It includes the room passcode.' | t }}</p>
+  }
   @if (room(); as state) {
     <div class="room-expiry">
       <span>{{ 'Expires' | t }}</span>

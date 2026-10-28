@@ -1,0 +1,11 @@
+<span
+  class="connection-chip"
+  role="status"
+  [class.connected]="state() === 'Connected'"
+  [class.connecting]="state() === 'Connecting' || state() === 'Reconnecting'"
+  [attr.aria-label]="state() | t"
+  [title]="state() | t"
+>
+  <span class="connection-pulse" aria-hidden="true"></span>
+  <span aria-hidden="true">{{ state() | t }}</span>
+</span>

@@ -23,17 +23,28 @@
         </span>
       </div>
     </header>
-    <app-error-notice [message]="prompt.open ? '' : error()" />
+    <app-error-notice
+      [message]="
+        prompt.open || (roomCode && error() === 'Could not connect to the online service.')
+          ? ''
+          : error()
+      "
+    />
     @if (roomCode) {
       <section class="room-status" aria-live="polite">
-        <p>
-          {{ 'Room code' | t }}: {{ roomCode }} ·
-          {{ (room.access()?.host ? 'Host' : 'Player') | t }}
-        </p>
-        @if (room.status()) {
+        <div class="room-status-heading">
+          <p>
+            {{ 'Room code' | t }}: {{ roomCode }} ·
+            {{ (room.access()?.host ? 'Host' : 'Player') | t }}
+          </p>
+          <app-connection-status [state]="room.connectionStatus()" />
+        </div>
+        @if (
+          room.status() && room.status() !== 'Live connection unavailable. Refreshing periodically.'
+        ) {
           <p role="status">{{ room.status() | t }}</p>
         }
-        @if (room.error()) {
+        @if (room.error() && room.error() !== 'Could not connect to the online service.') {
           <p role="alert">{{ room.error() | t }}</p>
         }
         @if (room.access()?.host && room.wins().length) {
@@ -118,7 +129,11 @@
     </div>
   </div>
 } @else {
-  <app-error-notice [message]="error()" />
+  @if (roomCode && error() === 'Could not connect to the online service.') {
+    <app-connection-status state="Disconnected" />
+  } @else {
+    <app-error-notice [message]="error()" />
+  }
 }
 <dialog
   appDialogBackdrop
@@ -185,11 +200,17 @@
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
                 {{ 'End this hand' | t }}
               </button>
-              <button class="danger" (click)="navigatePanel('finish')">
+              <button class="danger end-match-menu" (click)="navigatePanel('finish')">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M6 4h12v16H6zM9 8h6m-6 4h6" />
                 </svg>
                 {{ 'End entire match' | t }}
+              </button>
+              <button (click)="undo()" [disabled]="busy() || !m.events.length">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M9 5 3 11l6 6M3 11h11a6 6 0 0 1 6 6v3" />
+                </svg>
+                {{ 'Undo last ledger event' | t }}
               </button>
             } @else {
               <button (click)="navigatePanel('results')">
@@ -261,17 +282,19 @@
             </button>
           }
           @if (playerMode() !== 'riichi' && playerMode() !== 'ankan') {
-            <section class="player-win-actions" [attr.aria-label]="'Win' | t">
-              <h4>{{ 'Win' | t }}</h4>
-              <div class="button-grid">
-                <button (click)="startPlayerWin('ron')" [disabled]="paused() || busy()">
-                  {{ 'Ron · discard' | t }}
-                </button>
-                <button (click)="startPlayerWin('tsumo')" [disabled]="paused() || busy()">
-                  {{ 'Tsumo · self draw' | t }}
-                </button>
-              </div>
-            </section>
+            @if (playerMode() !== 'calls') {
+              <section class="player-win-actions" [attr.aria-label]="'Win' | t">
+                <h4>{{ 'Win' | t }}</h4>
+                <div class="button-grid">
+                  <button (click)="startPlayerWin('ron')" [disabled]="paused() || busy()">
+                    {{ 'Ron · discard' | t }}
+                  </button>
+                  <button (click)="startPlayerWin('tsumo')" [disabled]="paused() || busy()">
+                    {{ 'Tsumo · self draw' | t }}
+                  </button>
+                </div>
+              </section>
+            }
             <div class="button-grid">
               @if (m.playerCount === 4) {
                 <button (click)="startCall('chi')" [disabled]="paused()">{{ 'Chi' | t }}</button>
@@ -787,9 +810,11 @@
                 | t
             }}
           </p>
-          <button class="primary" (click)="endMatch()" [disabled]="busy()">
-            {{ 'End entire match' | t }}
-          </button>
+          <div class="finish-actions">
+            <button class="primary" (click)="endMatch()" [disabled]="busy()">
+              {{ 'End entire match' | t }}
+            </button>
+          </div>
         }
         @case ('results') {
           <app-final-results

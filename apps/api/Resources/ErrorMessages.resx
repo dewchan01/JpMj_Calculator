@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="InvalidArchive" xml:space="preserve"><value>Invalid game archive.</value></data>
+  <data name="RoomCredentialsExpired" xml:space="preserve"><value>Room credentials are incorrect or expired.</value></data>
+  <data name="HandChanged" xml:space="preserve"><value>The hand has changed. Refresh before declaring.</value></data>
+  <data name="RoomChanged" xml:space="preserve"><value>The room changed. Refresh before saving.</value></data>
+  <data name="AlreadySubscribed" xml:space="preserve"><value>Already subscribed.</value></data>
+  <data name="RoomAccessDenied" xml:space="preserve"><value>Room access denied.</value></data>
+  <data name="DatabaseRequired" xml:space="preserve"><value>Configure ConnectionStrings:Database in appsettings.json or the ConnectionStrings__Database environment variable before starting production.</value></data>
+  <data name="InvalidSeqUrl" xml:space="preserve"><value>Seq:ServerUrl must be an absolute HTTP(S) URL without credentials, query or fragment.</value></data>
+</root>

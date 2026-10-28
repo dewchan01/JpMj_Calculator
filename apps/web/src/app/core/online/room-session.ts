@@ -27,6 +27,7 @@ export class RoomSession {
   readonly state = signal<RoomGame | null>(null);
   readonly status = signal('');
   readonly error = signal('');
+  readonly connectionStatus = signal('Disconnected');
   readonly wins = computed(
     () =>
       this.state()?.actions.filter(
@@ -36,6 +37,7 @@ export class RoomSession {
   private connection?: HubConnection;
   private timer?: ReturnType<typeof setInterval>;
   private syncing = false;
+  private syncQueued = false;
   private saving = false;
   private generation = 0;
   private backedUpRevision = -1;
@@ -57,50 +59,90 @@ export class RoomSession {
     if (!access || access.id !== code || typeof access.token !== 'string')
       throw new Error('Join the room before opening its table.');
     this.access.set(access);
+    this.connectionStatus.set('Connecting');
     await this.sync();
     if (generation !== this.generation) return;
-    this.timer = setInterval(() => {
-      void this.sync().catch((error) => this.error.set(error.message));
-    }, 2500);
     this.connection = new HubConnectionBuilder()
       .withUrl(`${this.api.url()}/hubs/rooms`, { withCredentials: false })
       .configureLogging(LogLevel.None)
       .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
       .build();
     this.connection.on('Changed', () => {
-      void this.sync().catch((error) => this.error.set(error.message));
+      if (generation === this.generation) this.requestSync();
+    });
+    this.connection.onreconnecting(() => {
+      if (generation === this.generation) {
+        this.connectionStatus.set('Reconnecting');
+        this.startPolling();
+      }
+    });
+    this.connection.onclose(() => {
+      if (generation === this.generation) {
+        this.connectionStatus.set('Disconnected');
+        this.startPolling();
+      }
     });
     this.connection.onreconnected(async () => {
+      if (generation !== this.generation) return;
       try {
         await this.connection?.invoke('Join', access.id, access.token);
+        if (generation !== this.generation) return;
+        this.stopPolling();
         await this.sync();
+        this.connectionStatus.set('Connected');
       } catch {
+        if (generation !== this.generation) return;
+        this.startPolling();
+        this.connectionStatus.set('Disconnected');
         this.error.set('Room credentials are incorrect or expired.');
       }
     });
     try {
       await this.connection.start();
+      if (generation !== this.generation) return;
       await this.connection.invoke('Join', access.id, access.token);
+      if (generation !== this.generation) return;
+      this.stopPolling();
+      await this.sync();
+      this.connectionStatus.set('Connected');
     } catch {
+      if (generation !== this.generation) return;
+      this.startPolling();
+      this.connectionStatus.set('Disconnected');
       this.status.set('Live connection unavailable. Refreshing periodically.');
     }
   }
   async stop(): Promise<void> {
     this.generation++;
-    clearInterval(this.timer);
-    this.timer = undefined;
+    this.stopPolling();
+    this.syncQueued = false;
     const connection = this.connection;
     this.connection = undefined;
     this.access.set(null);
     this.state.set(null);
     this.error.set('');
     this.status.set('');
+    this.connectionStatus.set('Disconnected');
     this.retries.clear();
     this.backedUpRevision = -1;
     await connection?.stop();
   }
   private path(): string {
     return `/api/rooms/${this.access()!.id}/game`;
+  }
+  private requestSync(): void {
+    const generation = this.generation;
+    void this.sync().catch((error) => {
+      if (generation === this.generation) this.error.set(error.message);
+    });
+  }
+  private startPolling(): void {
+    if (this.timer || !this.access()) return;
+    this.timer = setInterval(() => this.requestSync(), 2500);
+  }
+  private stopPolling(): void {
+    clearInterval(this.timer);
+    this.timer = undefined;
   }
   private async read(): Promise<RoomGame> {
     const previous = this.state();
@@ -117,7 +159,12 @@ export class RoomSession {
     return state;
   }
   async sync(): Promise<void> {
-    if (!this.access() || this.syncing || this.saving) return;
+    if (!this.access()) return;
+    if (this.syncing || this.saving) {
+      this.syncQueued = true;
+      return;
+    }
+    this.syncQueued = false;
     this.syncing = true;
     const generation = this.generation;
     try {
@@ -172,6 +219,7 @@ export class RoomSession {
       }
     } finally {
       this.syncing = false;
+      if (this.syncQueued && generation === this.generation) this.requestSync();
     }
   }
   private async write(

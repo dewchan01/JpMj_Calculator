@@ -18,7 +18,10 @@
     "preview": "http-server dist/web/browser -p 4200 -c-1",
     "prebuild": "node scripts/build-info.mjs",
     "postbuild": "node scripts/copy-licenses.mjs",
-    "prestart": "node scripts/build-info.mjs"
+    "prestart": "node scripts/build-info.mjs",
+    "prepare": "husky",
+    "check:staged": "lint-staged",
+    "check:push": "npm test && dotnet test apps/api.tests/Riichi.Api.Tests.csproj --configuration Release"
   },
   "dependencies": {
     "@angular/common": "^22.2.3",
@@ -49,6 +52,8 @@
     "@types/qrcode": "^1.5.6",
     "eslint": "^9.39.0",
     "http-server": "^14.1.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
     "opencc-js": "^1.4.2",
     "prettier": "^3.9.10",
     "tailwindcss": "^4.1.0",

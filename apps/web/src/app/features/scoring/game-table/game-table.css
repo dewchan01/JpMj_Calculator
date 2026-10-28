@@ -1,6 +1,13 @@
 :host {
   display: block;
 }
+.finish-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+.menu-list .end-match-menu {
+  grid-column: 1;
+}
 .game-shell {
   height: calc(100dvh - var(--app-header-height, 0px) - 16px);
   display: flex;
@@ -417,12 +424,22 @@ h1 {
 .room-status p {
   margin-block: 0.15rem;
 }
+.room-status-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
 .game-shell.room-game {
-  height: auto;
+  min-height: 480px;
 }
 .room-game .live-table {
-  flex: none;
-  height: auto;
+  min-height: 540px;
+}
+@media (max-width: 700px), (max-height: 800px) {
+  .room-game .live-table {
+    min-height: 420px;
+  }
 }
 .pending-win {
   display: flex;

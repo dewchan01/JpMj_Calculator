@@ -1,11 +1,12 @@
 import { Component, DestroyRef, inject, signal, input, output, type OnInit } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HubConnectionBuilder, LogLevel, type HubConnection } from '@microsoft/signalr';
 import { OnlineApi, type RoomAccess, type RoomState } from '../../core/online/online-api';
-import { TranslatePipe, I18n } from '../../core/i18n/i18n';
+import { TranslatePipe } from '../../core/i18n/i18n';
 import { LocalDatePipe } from '../../core/i18n/local-date';
 import { CopyButton } from '../../shared/copy-button/copy-button';
+import { ConnectionStatus } from '../../shared/connection-status/connection-status';
 import { Repository } from '../matches/data-access/repository';
 import { parseArchive, type GameArchive } from '../records/data-transfer/data-archive';
 import { roomHandKey } from '../../../../../../packages/mahjong-core/room-actions';
@@ -15,7 +16,14 @@ import type { RoomGame } from '../../core/online/room-session';
 
 @Component({
   selector: 'app-online',
-  imports: [CopyButton, ReactiveFormsModule, RouterLink, TranslatePipe, LocalDatePipe],
+  imports: [
+    ConnectionStatus,
+    CopyButton,
+    ReactiveFormsModule,
+    RouterLink,
+    TranslatePipe,
+    LocalDatePipe,
+  ],
   templateUrl: './online.html',
   styleUrl: './online.css',
 })
@@ -27,9 +35,9 @@ export class Online implements OnInit {
   readonly playerCount = input(4);
   readonly prepareGame = input<(() => Promise<string>) | undefined>();
   readonly api = inject(OnlineApi);
-  private readonly i18n = inject(I18n);
   private readonly repo = inject(Repository);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   readonly error = signal('');
   readonly status = signal('');
   readonly busy = signal(false);
@@ -81,6 +89,7 @@ export class Online implements OnInit {
         const access = this.entryMode() === 'host' ? null : this.savedAccess();
         if (
           access &&
+          !(this.entryMode() === 'join' && access.host) &&
           (!this.form.controls.code.value || this.form.controls.code.value === access.id)
         ) {
           this.access.set(access);
@@ -91,6 +100,7 @@ export class Online implements OnInit {
             /* Session storage may be unavailable. */
           }
           await this.connect();
+          await this.openJoinedGame();
         }
       }
     }).finally(() => this.initializing.set(false));
@@ -152,32 +162,58 @@ export class Online implements OnInit {
   private async createRoom(): Promise<void> {
     const gameId = this.prepareGame() ? await this.prepareGame()!() : this.attachGameId();
     if (this.prepareGame() && !gameId) return;
-    const access = await this.api.request<RoomAccess>('/api/rooms', 'POST', {
-      playerCount: this.form.controls.count.value,
-    });
+    const match = gameId ? await this.repo.get(gameId) : undefined;
+    if (gameId && !match) throw new Error('Could not load match.');
+    const updated = match
+      ? {
+          ...match,
+          live: initialLive(match),
+          clock: clockAt(match.clock ?? { elapsedMs: 0, runningSince: null, handStartMs: 0 }, true),
+        }
+      : undefined;
+    const access = await this.api.request<RoomAccess & { room?: RoomState; game?: RoomGame }>(
+      '/api/rooms',
+      'POST',
+      {
+        playerCount: this.form.controls.count.value,
+        match: updated,
+        handKey: updated ? roomHandKey(updated) : undefined,
+      },
+    );
     if (this.destroyed) {
       await this.api.request(`/api/rooms/${access.id}`, 'DELETE', undefined, access.token);
       return;
     }
     this.saveAccess(access);
-    await this.connect();
+    if (access.room && access.game) {
+      this.room.set(access.room);
+      this.game.set(access.game);
+    }
+    await this.connect(!!access.room && !!access.game);
     if (this.destroyed || this.closing) return;
-    if (gameId) {
+    if (gameId && !access.game?.match) {
       this.selectedGame.setValue(gameId);
       await this.attachSelected();
     }
   }
   join(): void {
-    void this.run(async () => {
-      if (this.form.invalid) return;
-      const code = this.form.controls.code.value.toUpperCase();
-      const access = await this.api.request<RoomAccess>(`/api/rooms/${code}/join`, 'POST', {
-        pin: this.form.controls.pin.value,
-      });
-      this.form.controls.pin.setValue('');
-      this.saveAccess(access);
-      await this.connect();
+    void this.run(() => this.joinRoom());
+  }
+  private async joinRoom(): Promise<void> {
+    if (this.form.invalid) return;
+    const code = this.form.controls.code.value.toUpperCase();
+    const access = await this.api.request<RoomAccess>(`/api/rooms/${code}/join`, 'POST', {
+      pin: this.form.controls.pin.value,
     });
+    this.form.controls.pin.setValue('');
+    this.saveAccess(access);
+    await this.connect();
+    await this.openJoinedGame();
+  }
+  private async openJoinedGame(): Promise<void> {
+    const access = this.access();
+    if (!this.destroyed && access && !access.host && this.game()?.match?.id)
+      await this.router.navigate(['/room', access.id]);
   }
   async refresh(): Promise<void> {
     const access = this.access();
@@ -236,11 +272,13 @@ export class Online implements OnInit {
     );
     await this.refresh();
   }
-  private async connect(): Promise<void> {
+  private async connect(initialState = false): Promise<void> {
     const access = this.access()!;
-    await this.refresh();
     const { default: qr } = await import('qrcode');
-    this.qr.set(await qr.toDataURL(access.id, { width: 200, margin: 2 }));
+    const invitation = access.pin
+      ? JSON.stringify({ format: 'riichi-room', version: 1, code: access.id, pin: access.pin })
+      : access.id;
+    this.qr.set(await qr.toDataURL(invitation, { width: 200, margin: 2 }));
     if (this.destroyed) return;
     await this.connection?.stop();
     this.connection = new HubConnectionBuilder()
@@ -249,11 +287,13 @@ export class Online implements OnInit {
       .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
       .build();
     this.connection.on('Changed', () => {
-      void this.refresh().catch((error) => {
-        if (this.destroyed || this.closing || !this.access()) return;
-        this.error.set(error.message);
-        this.room.set(null);
-      });
+      void this.refresh()
+        .then(() => this.openJoinedGame())
+        .catch((error) => {
+          if (this.destroyed || this.closing || !this.access()) return;
+          this.error.set(error.message);
+          this.room.set(null);
+        });
     });
     this.connection.onreconnecting(() => this.connectionStatus.set('Reconnecting'));
     this.connection.onclose(() => this.connectionStatus.set('Disconnected'));
@@ -276,7 +316,7 @@ export class Online implements OnInit {
         return;
       }
       await this.connection.invoke('Join', access.id, access.token);
-      await this.refresh();
+      if (!initialState) await this.refresh();
       this.connectionStatus.set('Connected');
     } catch {
       this.connectionStatus.set('Disconnected');
@@ -285,30 +325,6 @@ export class Online implements OnInit {
   }
   reconnect(): void {
     void this.run(() => this.connect());
-  }
-  invitation(): string {
-    const access = this.access();
-    if (!access) return '';
-    return (
-      `${this.i18n.t('Room code')}: ${access.id}` +
-      (access.pin ? `\n${this.i18n.t('Room PIN')}: ${access.pin}` : '')
-    );
-  }
-  async copyRoom(): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(this.invitation());
-    } catch {
-      this.error.set('Could not copy. Select the room details to copy manually.');
-    }
-  }
-  async shareRoom(): Promise<void> {
-    if (!navigator.share) return this.copyRoom();
-    try {
-      await navigator.share({ title: this.i18n.t('Join room'), text: this.invitation() });
-    } catch (error) {
-      if (!(error instanceof DOMException && error.name === 'AbortError'))
-        this.error.set('Could not share room details.');
-    }
   }
   async scanRoom(input: HTMLInputElement): Promise<void> {
     const file = input.files?.[0];
@@ -327,6 +343,28 @@ export class Online implements OnInit {
         const { default: jsQR } = await import('jsqr');
         const result = jsQR(pixels.data, pixels.width, pixels.height);
         let code = result?.data.trim() ?? '';
+        let pin = '';
+        try {
+          const invitation: unknown = JSON.parse(code);
+          if (
+            invitation &&
+            typeof invitation === 'object' &&
+            'format' in invitation &&
+            invitation.format === 'riichi-room' &&
+            'version' in invitation &&
+            invitation.version === 1 &&
+            'code' in invitation &&
+            typeof invitation.code === 'string' &&
+            'pin' in invitation &&
+            typeof invitation.pin === 'string' &&
+            /^\d{6}$/.test(invitation.pin)
+          ) {
+            code = invitation.code;
+            pin = invitation.pin;
+          }
+        } catch {
+          /* Older room QR codes contain only a room code or URL. */
+        }
         if (!/^[a-f0-9]{10}$/i.test(code)) {
           try {
             const url = new URL(code);
@@ -341,7 +379,13 @@ export class Online implements OnInit {
         if (!/^[a-f0-9]{10}$/i.test(code))
           throw new Error('No room QR code found. Try another image or enter the code.');
         this.form.controls.code.setValue(code.toUpperCase());
-        this.status.set('Room code scanned. Enter the passcode to join.');
+        if (pin) {
+          this.form.controls.pin.setValue(pin);
+          this.status.set('');
+          await this.joinRoom();
+        } else {
+          this.status.set('Room code scanned. Enter the passcode to join.');
+        }
       } finally {
         bitmap.close();
       }

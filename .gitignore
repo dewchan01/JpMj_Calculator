@@ -6,6 +6,8 @@ test-results/
 playwright-report/
 *.log
 .env
+.env.*
+!.env.example
 .playwright/
 artifacts/
 **/bin/
@@ -13,7 +15,9 @@ artifacts/
 **/App_Data/
 **/TestResults/
 **/appsettings.Local.json
+**/appsettings.Development.json
 
 # Generated at build/start with the current version and commit
 /apps/web/public/version.json
 todo.md
+best-practices.md

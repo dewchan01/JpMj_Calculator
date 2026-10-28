@@ -1,3 +1,5 @@
+import { gamesCsv } from '../../records/data-transfer/data-csv';
+import { ConnectionStatus } from '../../../shared/connection-status/connection-status';
 import { recordCall } from '../../../../../../../packages/mahjong-core/record-call';
 import { RoomSession } from '../../../core/online/room-session';
 import type { RoomAction } from '../../../../../../../packages/mahjong-core/room-actions';
@@ -92,6 +94,7 @@ type Panel =
   | 'results';
 @Component({
   imports: [
+    ConnectionStatus,
     DialogBackdrop,
     FormsModule,
     DecimalPipe,
@@ -1218,12 +1221,10 @@ export class GameTable {
   exportMatch(): void {
     const m = this.match();
     if (!m) return;
-    const url = URL.createObjectURL(
-      new Blob([JSON.stringify(m, null, 2)], { type: 'application/json' }),
-    );
+    const url = URL.createObjectURL(new Blob([gamesCsv([m])], { type: 'text/csv;charset=utf-8' }));
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'mahjong-match.json';
+    a.download = 'mahjong-match.csv';
     a.click();
     URL.revokeObjectURL(url);
   }

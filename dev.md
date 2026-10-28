@@ -1,17 +1,52 @@
 Deploy **only `apps/api`** to your MonsterASP website. Your Angular app stays where it is.
 
+The API now logs through Serilog to console, with optional Seq shipping. Set `Seq__ServerUrl` and `Seq__ApiKey` in backend hosting settings to enable Seq; otherwise it stays console-only. See [logging and cloud configuration](docs/logging.md).
+
+Use [apps/api/.env.example](apps/api/.env.example) as the version-controlled checklist of configuration names. It contains placeholders, not credentials. ASP.NET Core does **not** automatically read `.env` files: enter the values in hosting settings, inject secrets from your hosting secret manager, or set process environment variables. `.env` and `.env.*` files are ignored by Git, while `.env.example` stays tracked.
+
+For local secrets, enable .NET User Secrets once, then set values outside the repository:
+
+```powershell
+dotnet user-secrets init --project apps/api
+dotnet user-secrets set "Seq:ApiKey" "YOUR_LOCAL_SEQ_KEY" --project apps/api
+```
+
+`init` adds a non-secret `UserSecretsId` to the project file; commit that ID, not the secret values. Development loads these settings automatically. User Secrets is for development, not production, and its local file is not encrypted. Keep real production values in your hosting settings/secret manager or password manager, not in this checklist.
+
+Before deploying the backend:
+
+- [ ] Supply `ConnectionStrings__Database` with the correct hosted database connection string.
+- [ ] Confirm Production mode and the frontend origin in `Cors.AllowedOrigins`; override only when needed.
+- [ ] If using Seq, supply `Seq__ServerUrl` and the ingestion `Seq__ApiKey`; otherwise leave the URL blank.
+- [ ] Apply pending database migrations before using endpoints that need the schema.
+- [ ] Publish/upload the backend, then restart it so environment-variable changes take effect.
+- [ ] Check `/api/health`, create a room to verify database access, and check Seq with a non-health request when enabled.
+
+The settings checklist is a reminder; it does not configure MonsterASP or create cloud secrets automatically.
+
 1. **Configure the website**
 
    In MonsterASP, select your cloud website, choose **.NET 10**, and enable HTTPS.
 
-   Under **Scripting → Environment variables**, add:
+   The API now uses two standard configuration files:
 
-   | Name | Value |
-   |---|---|
-   | `ASPNETCORE_ENVIRONMENT` | `Production` |
-   | `ConnectionStrings__Database` | Your database’s **local access connection string** |
-   | `Cors__AllowedOrigins__0` | Your Angular website origin, e.g. `https://yourname.github.io` |
-   | `Cors__AllowedOrigins__1` | `http://localhost:4200` if you also want local Angular testing |
+   - `apps/api/appsettings.json`: shared/production settings, including the production frontend CORS origin.
+   - `apps/api/appsettings.Development.json`: local overrides. An empty database connection uses local SQLite; local Angular origins are allowed here.
+
+   `dotnet run --project apps/api` uses the Development launch profile at `http://localhost:5080`. Published applications normally use Production. Use the exact filename `appsettings.Development.json`, including capital `D`.
+
+   On MonsterASP, the non-secret defaults are already in `appsettings.json`. Under **Scripting → Environment variables**, configure the production database secret; the other entries are optional overrides:
+
+   | Name                          | Value                                                                                                                                                                                                                        |
+   | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | `ASPNETCORE_ENVIRONMENT`      | Selects the environment; `Production` is already the published default. This selects configuration files, so it is not a setting inside those files.                                                                         |
+   | `ConnectionStrings__Database` | Overrides `ConnectionStrings.Database` with your database's **local access connection string**. Recommended for the password. Alternatively set that value in the server-only `appsettings.json`; do not commit credentials. |
+   | `Cors__AllowedOrigins__0`     | Overrides `Cors.AllowedOrigins[0]`. The file currently allows `https://dewchan01.github.io`, based on this project's published frontend. Change it only when the frontend origin changes.                                    |
+   | `Cors__AllowedOrigins__1`     | Optional second origin: `http://localhost:4200` allows a locally running Angular app to call the hosted API. It is unnecessary when testing against the local API.                                                           |
+
+   Double underscores (`__`) separate nested configuration sections; `0` and `1` are array indexes. Values load from base JSON, then environment-specific JSON, then hosting environment variables, then command-line arguments; later values override earlier ones. These variables are optional if the server's JSON already contains the desired values. The custom `appsettings.Local.json` loader has been removed. [ASP.NET Core configuration](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-10.0)
+
+   `apps/web/public/backend.json` remains a separate public frontend setting: it contains only the API's HTTPS origin. It must never contain SQL credentials. Angular cannot read the backend's private `appsettings.json`.
 
    For GitHub Pages, the origin excludes the repository path. Restart the application after changing variables. [Environment-variable instructions](https://help.monsterasp.net/websites/configuration/environment-variables)
 
@@ -61,9 +96,11 @@ Deploy **only `apps/api`** to your MonsterASP website. Your Angular app stays wh
    Expected:
 
    ```json
-   {"status":"ok"}
+   { "status": "ok" }
    ```
 
    The `/` homepage may show 404 because this deployment serves an API. The health endpoint checks startup; creating a room also verifies database access.
 
 When you’re ready to connect Angular, set its `backend.json` to your HTTPS API address. **No Angular files need uploading to MonsterASP.**
+
+//"apiUrl": "https://jpmj.runasp.net"

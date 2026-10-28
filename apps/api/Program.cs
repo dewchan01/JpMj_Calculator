@@ -1,41 +1,13 @@
-using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Riichi.Api.Data;
-using Riichi.Api.Rooms;
-using Riichi.Api.Sharing;
+using Riichi.Api.Features;
+using Riichi.Api.Infrastructure;
+using Riichi.Api.Infrastructure.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
-builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true);
-builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = 6 * 1024 * 1024);
-builder.Services.AddDbContext<AppDb>(options =>
-{
-    var connection = builder.Configuration.GetConnectionString("Database");
-    if (!string.IsNullOrWhiteSpace(connection)) options.UseSqlServer(connection);
-    else if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing"))
-    {
-        var directory = Path.Combine(builder.Environment.ContentRootPath, "App_Data");
-        Directory.CreateDirectory(directory);
-        options.UseSqlite($"Data Source={Path.Combine(directory, "riichi.db")}");
-    }
-    else throw new InvalidOperationException("Configure ConnectionStrings__Database before starting production.");
-});
-builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
-    .WithOrigins(builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [])
-    .AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
-builder.Services.AddSignalR(options => { options.MaximumReceiveMessageSize = 4096; options.EnableDetailedErrors = false; });
-builder.Services.AddRateLimiter(options =>
-{
-    options.RejectionStatusCode = 429;
-    foreach (var (name, limit) in new[] { ("api", 120), ("join", 10) })
-        options.AddPolicy(name, context => RateLimitPartition.GetFixedWindowLimiter(
-            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-            _ => new FixedWindowRateLimiterOptions { PermitLimit = limit, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
-});
-builder.Services.AddProblemDetails();
+builder.AddApiServices();
 var app = builder.Build();
+app.UseApiRequestLogging();
 app.UseExceptionHandler();
 if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
 {
@@ -50,11 +22,7 @@ app.Use(async (context, next) =>
 });
 app.UseCors();
 app.UseRateLimiter();
-app.MapGet("/api/health", () => Results.Ok(new { status = "ok" }));
-app.MapShares();
-app.MapRooms();
-app.MapRoomGames();
-app.MapHub<RoomHub>("/hubs/rooms").RequireRateLimiting("api");
+app.MapFeatures();
 // Production migrations are an explicit deployment step, never automatic startup.
 if (args.Contains("--migrate"))
 {
@@ -69,4 +37,5 @@ if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
     await scope.ServiceProvider.GetRequiredService<AppDb>().Database.EnsureCreatedAsync();
 }
 app.Run();
+/// <summary>The API entry point, exposed for integration testing.</summary>
 public partial class Program { }

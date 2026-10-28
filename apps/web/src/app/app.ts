@@ -29,9 +29,11 @@ export class App {
   );
   readonly tableActive = computed(() => {
     const path = this.currentUrl().split(/[?#]/)[0];
-    return path === '/' || path === '/score' || path.startsWith('/score/');
+    return (
+      path === '/' || path === '/score' || path.startsWith('/score/') || path.startsWith('/room/')
+    );
   });
-  readonly liveTable = computed(() => this.currentUrl().split(/[?#]/)[0].startsWith('/score/'));
+  readonly liveTable = computed(() => /^\/(score|room)\//.test(this.currentUrl().split(/[?#]/)[0]));
   readonly i18n = inject(I18n);
   readonly theme = inject(Theme);
   changeLanguage(event: Event): void {

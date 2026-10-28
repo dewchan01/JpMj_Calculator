@@ -1,0 +1,43 @@
+:host {
+  display: inline-flex;
+  vertical-align: middle;
+}
+.connection-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding-inline: 4px;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  color: var(--muted);
+  height: 28px;
+  --connection-color: #b34d3e;
+}
+.connected {
+  --connection-color: var(--green);
+}
+.connecting {
+  --connection-color: #af7b20;
+}
+.connection-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--connection-color);
+  animation: pulse 1.8s ease-out infinite;
+}
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--connection-color) 45%, transparent);
+  }
+  75%,
+  100% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .connection-pulse {
+    animation: none;
+  }
+}

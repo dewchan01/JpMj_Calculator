@@ -30,7 +30,7 @@ combines those records. A participant filter restricts the aggregate view to tha
 Advanced-mode wins retain their player-confirmed total Han/Fu, explicit Yakuman/Pao/chips and
 the usual rule/round snapshot in `scoringInput.manualScore`. No complete concealed hand or inferred
 Yaku/Dora breakdown is invented. History editing uses the stored mode and replays later payments;
-the current device preference does not reinterpret older records. JSON transfer retains these
+the current device preference does not reinterpret older records. CSV and QR/ID transfer retain these
 optional fields without changing existing complete-hand records.
 
 - **Result:** compact standings or a metric-by-player comparison table that fits narrow screens. The comparison table shows names in its header and rank in a separate row; standings align the Player heading with player names.
@@ -79,7 +79,7 @@ draws. See [live-table metric definitions](live-table.md) for state, stability a
 
 ## Transfer and limitations
 
-JSON import/export is **only under Others > Data**, with separate entries and game/player/date
+CSV and QR/ID import/export is **under Others > Data**, with separate entries and game/player/date
 selection; see [archive behavior](data-transfer.md). Imported games do not automatically populate
 the independent saved-player name library. No account, cloud synchronization or user-ID QR lookup
 is implemented. Historical hand editing and a general existing-table name/seat editor remain absent.

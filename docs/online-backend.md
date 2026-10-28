@@ -4,16 +4,19 @@ The existing Angular app remains offline-first. `apps/api` is a separate ASP.NET
 service; production uses SQL Server, while development and integration tests use SQLite.
 No account registration is required. Frontend and backend deploy independently.
 
+Backend operations use [vertical slices](backend-architecture.md): each room, game or sharing operation owns its endpoint, request and handler. Shared persistence, configuration and logging live under `Infrastructure`. Backend tests use MSTest, FluentAssertions and Moq.
+
+Backend logs use Serilog with optional Seq shipping, configured by `Seq__ServerUrl` and `Seq__ApiKey`. Request events use route templates and correlation IDs rather than concrete share IDs or credentials. See [logging and cloud configuration](logging.md).
+
 ## Sharing and room access
 
-- Others > Export data can share the selected whole games using the existing JSON archive.
-- A 24-hour link and QR open an import preview. Import still validates the archive and skips existing IDs.
+- Others > Data links to Import, Export and Share history pages with Back navigation. Export downloads CSV or opens a separate sharing prompt with QR and transfer ID. JSON remains internal.
+- A QR or transfer ID opens the import preview. Archives remain in the database for 24 hours even after importing, then expire; no temporary browser cache is used. Import validates the archive and skips existing IDs.
 - Shares have random 256-bit identifiers and separate deletion secrets. Only the deletion-secret hash is saved.
-- The deletion secret stays in component memory. Keep the export dialog open to revoke early;
-  closing it loses early-revocation access, but the share still expires.
+- The deletion secret is retained in this device's Share history, scoped by API URL. Reopen an active transfer to view its QR or revoke it; expired entries are pruned locally.
 - Maximum archive size is 5 MiB, with a transactional 50 MiB global quota. Expired archives are denied immediately and reclaimed on uploads.
 - Start match > Start shared game opens Host game / Join game choices, followed by a stacked room prompt. Ordinary Start game stays offline.
-- The room panel displays the ID and passcode with copy/share actions, without a URL field. The QR contains only the room code; joining supports a camera photo/image scan or manual code entry, then the passcode. Host passcodes survive reloads in sessionStorage on the creating tab and are cleared when forgetting access.
+- The room panel displays the ID and passcode with per-field copy buttons, without a URL field. The QR encodes a versioned room invitation including its code and passcode; scanning automatically joins and opens the table. Manual code/passcode entry and older code-only QR images remain supported. Anyone with the invitation image can join. Host passcodes survive reloads in sessionStorage on the creating tab and are cleared when forgetting access.
 - Players enter the PIN and are assigned a free seat automatically. Duplicate seat claims are rejected.
 - Random host/seat tokens are stored in this browser's localStorage, scoped by API URL, to support reloads. Clearing site data loses them.
 - The server stores token hashes and a PBKDF2 hash of the PIN. The server cannot recover the PIN; the creating tab retains it in sessionStorage for reloads.
@@ -23,8 +26,8 @@ No account registration is required. Frontend and backend deploy independently.
 ## Live room tables
 
 1. Choose players and rules on My table, then Start match > Start shared game. Select 3 or 4 players, rule preset and game length before Host game. Joined games use the host settings.
-2. **Host game** immediately creates the room and automatically attaches this game, without a second Create room step. Seat numbers follow the player order.
-3. Other devices enter the room code and PIN, claim a seat, and choose **Open room table**.
+2. **Host game** creates the room and attaches its initial game atomically in one request; the response contains lobby and game state, avoiding initial room/game GETs and a separate attach PUT. Seat numbers follow the player order.
+3. Other devices enter the room code and PIN, receive a free seat automatically, and enter the table directly. Guests waiting for the host see a waiting message rather than host invitation controls.
 4. Keep the host's room table open. Players can declare their own Riichi/Double Riichi, cancel their
    own Riichi, record Chi/Pon/Kan/Kita, and submit Ron/Tsumo using the normal tile flow or advanced Han/Fu.
 5. The host automatically processes non-winning declarations with the existing TypeScript rules engine.
@@ -37,7 +40,7 @@ Commands are persisted before processing, bound to the authenticated seat and cu
 IDs so network retries cannot apply them twice. Table commits compare database revisions. If two host tabs
 process the same queue, only one revision commits. The loser refreshes instead of overwriting the winner.
 Changing hands rejects unfinished commands for the old hand; revoking a seat rejects its pending commands.
-Room updates use SignalR invalidation plus a 2.5-second polling fallback. Reconnects refetch authoritative state.
+Connected rooms refresh only on SignalR invalidation. A 2.5-second polling fallback runs while the hub is disconnected or reconnecting, and stops after the room group is rejoined. Initial connection and reconnects refetch authoritative state; notifications received during synchronization queue another refresh.
 
 **The host browser must remain open to process declarations and calculate scores.** If it sleeps or disconnects,
 requests remain pending in the database until it reconnects. This reuses the tested TypeScript scoring engine;
@@ -75,9 +78,11 @@ HTTPS, WSS, idle restart and production origin checks require deployment verific
 
 ## MonsterASP.NET deployment
 
+API defaults live in `apps/api/appsettings.json`; `appsettings.Development.json` overrides them for local runs. The development launch profile sets Development and port 5080. Published hosting defaults to Production. Environment variables override the JSON values: `ConnectionStrings__Database` maps to `ConnectionStrings.Database`, while `Cors__AllowedOrigins__0` maps to the first allowed frontend origin. Store the production database password in the hosting variable or server-only JSON, not Git. `appsettings.Local.json` is no longer loaded. Frontend `backend.json` remains public and contains only the API origin, not database/CORS secrets.
+
 1. Create a .NET 10 website and a dedicated SQL Server database. Enable HTTPS and WebSockets.
 2. Configure `ConnectionStrings__Database` securely in the hosting environment. Never commit credentials.
-3. Configure `Cors__AllowedOrigins__0` as the exact frontend origin, e.g. `https://YOUR_NAME.github.io`.
+3. The base JSON allows `https://dewchan01.github.io`; override `Cors__AllowedOrigins__0` only if your frontend origin differs.
    Origins do not include a repository path. The client does not send cookies; CORS permits credentials
    for SignalR-compatible hosting, but only explicitly listed origins.
 4. Generate/review an idempotent migration script, then apply it with database deployment credentials:
@@ -129,4 +134,6 @@ Rate limits are per server-process IP: 120 requests/minute generally and 10/minu
 They reset on process recycle and are not a distributed abuse-control system. Configure trusted proxy
 forwarding only for the actual host topology; never trust an arbitrary client-supplied forwarded IP.
 
-The room panel shows a connection chip at the upper right and omits the seat roster. Close room and Open room table share one row, with Close on the left. Copy/share use accessible icon buttons; the status chip has a color-coded pulse and expiry is highlighted. The join form only asks for room code and passcode; the server assigns a free seat.
+The room panel shows a connection chip at the upper right and omits the seat roster. Close room and Open room table share one row, with Close on the left. Copy uses an accessible icon beside each field. Room panels and shared tables use a reusable color-coded pulse with a translated tooltip for connection state; expiry is highlighted. Shared table routes hide navigation and use the full-width game workspace, like local table routes. The join form only asks for room code and passcode; the server assigns a free seat.
+
+Shared tables fill the game workspace like local tables, with only the additional room-status row consuming vertical space; minimum table height still prevents control clipping on short screens.

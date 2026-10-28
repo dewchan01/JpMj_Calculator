@@ -246,6 +246,9 @@ dd {
   background: var(--green);
   color: var(--surface);
 }
+.result-actions {
+  justify-content: flex-end;
+}
 .result-actions .danger {
   color: #a03b2f;
 }

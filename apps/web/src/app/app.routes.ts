@@ -1,6 +1,14 @@
 import { type Routes } from '@angular/router';
 
 export const routes: Routes = [
+  ...(['import', 'export', 'share-history'] as const).map((mode) => ({
+    path: `others/data/${mode}`,
+    data: { transferMode: mode },
+    loadComponent: () =>
+      import('./features/records/data-transfer/data-transfer').then(
+        (module) => module.DataTransfer,
+      ),
+  })),
   {
     path: 'room/:room',
     loadComponent: () =>

@@ -1,9 +1,9 @@
 # Riichi / table
 
 Optional online services now live in `apps/api` (ASP.NET Core 10). The first stage adds expiring
-JSON share links/QR and rooms with PINs, seat access and synchronized declarations. Players declare
+QR/ID data transfers and rooms with PINs, seat access and synchronized declarations. Players declare
 from their phones; the host's open browser validates actions and settles pending wins with the existing
-scoring engine. See [backend setup and scope](docs/online-backend.md).
+scoring engine. See [backend setup and scope](docs/online-backend.md) and [backend vertical slices](docs/backend-architecture.md).
 
 An offline-first Angular PWA for scoring Japanese Riichi Mahjong, with Mahjong Soul, Tenhou, M.League and Custom presets. Includes manual scoring, draw/multiple-winner settlement, match progression and configurable photo recognition. Manual scoring works offline; API recognition uploads selected photos. This independent application is not affiliated with the rule platforms or detection provider.
 
@@ -14,6 +14,8 @@ explicit Yakuman/Pao/chips, saved history and later-hand replay. Total Han alrea
 and bonuses; the app does not add them again or infer undisclosed Yaku from an incomplete hand.
 
 ## Run
+
+Git hooks are installed by `npm install` through Husky. Pre-commit runs lint-staged: ESLint and Prettier for staged frontend/script files, Prettier for supported markup/config/docs, and a C# whitespace check limited to staged files. Pre-push runs Vitest and the backend Release tests. Install the .NET 10 SDK for backend checks. Run `npm run prepare` to reactivate hooks in an existing checkout; CI remains authoritative because local hooks can be skipped.
 
 The installed Angular CLI accepts Node **^22.22.3**, **^24.15.0** or **>=26.0.0**. CI pins Node 22.23.2; the current local checks use Node 26.12.1.
 
@@ -46,7 +48,7 @@ Save reusable player names on My table, choose them for seats, then start a 3P/4
 5. Review the tiles and calculate. Read Yaku, bonus Han, Fu and individual payments. There is no separate verification checkbox; scoring and settlement still validate the hand and declarations.
 6. Quick score never saves into a live match. Use the live-table flow for declarations and settlement; its History supports auditing and latest-event undo.
 
-Data and drafts stay in IndexedDB on this browser. Others > Data provides separate Import data / Export data actions using JSON files, filtered by game, player and inclusive local dates; existing game IDs are skipped on import. See [data transfer](docs/data-transfer.md). Site-data deletion removes local matches. Dealer rotation, honba, round wind, extension rounds, bankruptcy and first-place dealer finish are automatic after settlement. Undo restores points and the preceding round state.
+Data and drafts stay in IndexedDB on this browser. Others > Data provides separate Import data / Export data actions using CSV files and QR/ID transfers, filtered by game, player and inclusive local dates; existing game IDs are skipped on import. See [data transfer](docs/data-transfer.md). Site-data deletion removes local matches. Dealer rotation, honba, round wind, extension rounds, bankruptcy and first-place dealer finish are automatic after settlement. Undo restores points and the preceding round state.
 
 Others > Sound effects offers previews and a saved mute preference for call announcements. Six Myinstants Ichihime MP3 recordings are bundled and cached offline; missing clips and playback failures fall back to local Japanese device voices or generated tones. Source pages and rights notes are recorded in [sound provenance](apps/web/public/sounds/ichihime/SOURCES.md). See [live-table behavior](docs/live-table.md).
 

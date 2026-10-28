@@ -1,3 +1,4 @@
+import { gamesCsv } from '../../records/data-transfer/data-csv';
 import { DialogBackdrop } from '../../../shared/dialog-backdrop';
 import { ScoringMode } from '../../../core/scoring-mode';
 import { newId } from '../../../core/id/new-id';
@@ -975,11 +976,11 @@ export class Scorer {
     const match = this.match();
     if (!match) return;
     const url = URL.createObjectURL(
-      new Blob([JSON.stringify(match, null, 2)], { type: 'application/json' }),
+      new Blob([gamesCsv([match])], { type: 'text/csv;charset=utf-8' }),
     );
     const a = document.createElement('a');
     a.href = url;
-    a.download = `riichi-${match.id}.json`;
+    a.download = `riichi-${match.id}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
