@@ -1,4 +1,7 @@
 {
+  "backend": {
+    "apiUrl": "https://jpmj.runasp.net"
+  },
   "recognition": {
     "provider": "roboflow",
     "endpoint": "https://www.example.com/api/detect-server",

@@ -19,6 +19,11 @@
               {
                 "glob": "**/*",
                 "input": "apps/web/public"
+              },
+              {
+                "glob": "config.json",
+                "input": "apps/web/config/production",
+                "output": "/"
               }
             ]
           },
@@ -43,6 +48,17 @@
               ]
             },
             "development": {
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "apps/web/public"
+                },
+                {
+                  "glob": "config.json",
+                  "input": "apps/web/config/development",
+                  "output": "/"
+                }
+              ],
               "optimization": false,
               "sourceMap": true
             }

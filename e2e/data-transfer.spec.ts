@@ -7,7 +7,9 @@ import AxeBuilder from '@axe-core/playwright';
 import { presetRules } from '../packages/mahjong-rules/index';
 import type { Match } from '../packages/mahjong-core/ledger';
 test.beforeEach(async ({ page }) => {
-  await page.route('**/backend.json', (route) => route.fulfill({ json: { apiUrl: '' } }));
+  await page.route('**/config.json', (route) =>
+    route.fulfill({ json: { backend: { apiUrl: '' } } }),
+  );
 });
 
 function game(id: string, day: string, player = 'Alice'): Match {

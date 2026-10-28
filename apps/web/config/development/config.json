@@ -1,0 +1,53 @@
+{
+  "backend": {
+    "apiUrl": "http://localhost:5080"
+  },
+  "recognition": {
+    "provider": "roboflow",
+    "endpoint": "https://www.example.com/api/detect-server",
+    "timeoutMs": 30000,
+    "roboflow": {
+      "model": "mahjong-baq4s-q6hto",
+      "version": 1,
+      "publishableApiKey": "rf_3noFR2cU5EOJ9sVIFYyHwhmUfX33",
+      "classMap": {
+        "1B": "1s",
+        "2B": "2s",
+        "3B": "3s",
+        "4B": "4s",
+        "5B": "5s",
+        "6B": "6s",
+        "7B": "7s",
+        "8B": "8s",
+        "9B": "9s",
+        "1C": "1m",
+        "2C": "2m",
+        "3C": "3m",
+        "4C": "4m",
+        "5C": "5m",
+        "6C": "6m",
+        "7C": "7m",
+        "8C": "8m",
+        "9C": "9m",
+        "1D": "1p",
+        "2D": "2p",
+        "3D": "3p",
+        "4D": "4p",
+        "5D": "5p",
+        "6D": "6p",
+        "7D": "7p",
+        "8D": "8p",
+        "9D": "9p",
+        "EW": "1z",
+        "SW": "2z",
+        "WW": "3z",
+        "NW": "4z",
+        "WD": "5z",
+        "GD": "6z",
+        "RD": "7z"
+      }
+    }
+  },
+  "supportEmail": "psbdwphotoshop@gmail.com",
+  "developerName": "Riichi / table"
+}

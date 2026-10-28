@@ -15,6 +15,8 @@ and bonuses; the app does not add them again or infer undisclosed Yaku from an i
 
 ## Run
 
+Public frontend settings are selected automatically: `npm start` uses `apps/web/config/development/config.json` (localhost:5080), while `npm run build` uses `apps/web/config/production/config.json`. Angular publishes the selected file as `config.json`. Each file contains `backend.apiUrl`, recognition settings, support email and developer name; one shared loader reads it for all consumers. An empty `backend.apiUrl` disables online features. Keep private credentials out of these public files.
+
 Git hooks are installed by `npm install` through Husky. Pre-commit runs lint-staged: ESLint and Prettier for staged frontend/script files, Prettier for supported markup/config/docs, and a C# whitespace check limited to staged files. Pre-push runs Vitest and the backend Release tests. Install the .NET 10 SDK for backend checks. Run `npm run prepare` to reactivate hooks in an existing checkout; CI remains authoritative because local hooks can be skipped.
 
 The installed Angular CLI accepts Node **^22.22.3**, **^24.15.0** or **>=26.0.0**. CI pins Node 22.23.2; the current local checks use Node 26.12.1.

@@ -13,7 +13,9 @@ test('host and guest synchronize Riichi, Kan and a winning declaration through t
 }) => {
   const api = process.env['RIICHI_API_TEST_URL']!;
   async function prepare(page: Page) {
-    await page.route('**/backend.json', (route) => route.fulfill({ json: { apiUrl: api } }));
+    await page.route('**/config.json', (route) =>
+      route.fulfill({ json: { backend: { apiUrl: api } } }),
+    );
     await page.addInitScript(() => {
       const testWindow = window as typeof window & { roomSockets: WebSocket[] };
       testWindow.roomSockets = [];
@@ -76,7 +78,9 @@ test('host and guest synchronize Riichi, Kan and a winning declaration through t
     serviceWorkers: 'block',
   });
   try {
-    await local.route('**/backend.json', (route) => route.fulfill({ json: { apiUrl: '' } }));
+    await local.route('**/config.json', (route) =>
+      route.fulfill({ json: { backend: { apiUrl: '' } } }),
+    );
     await local.goto('http://localhost:4300/');
     await local.getByRole('button', { name: '4 players', exact: true }).click();
     await local.getByRole('button', { name: /Start match/ }).click();
@@ -261,7 +265,9 @@ test('host and guest synchronize Riichi, Kan and a winning declaration through t
 
 test('host can select three players and room header stays visible', async ({ page }) => {
   const api = process.env['RIICHI_API_TEST_URL']!;
-  await page.route('**/backend.json', (route) => route.fulfill({ json: { apiUrl: api } }));
+  await page.route('**/config.json', (route) =>
+    route.fulfill({ json: { backend: { apiUrl: api } } }),
+  );
   await page.setViewportSize({ width: 390, height: 700 });
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();

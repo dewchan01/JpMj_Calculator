@@ -1,10 +1,10 @@
-import { DOCUMENT } from '@angular/common';
 import { inject, Service, signal } from '@angular/core';
+import { AppConfiguration } from '../../../core/config/app-config';
 import { parseCaptureConfig, type CaptureConfig } from './capture-settings';
 
 @Service()
 export class CaptureConfiguration {
-  private readonly document = inject(DOCUMENT);
+  private readonly configuration = inject(AppConfiguration);
   readonly value = signal<CaptureConfig | null>(null);
   readonly error = signal('');
   readonly supportEmail = signal('');
@@ -15,12 +15,8 @@ export class CaptureConfiguration {
   }
   private async read(): Promise<void> {
     try {
-      const response = await fetch(new URL('config.json', this.document.baseURI), {
-        signal: AbortSignal.timeout(10000),
-        credentials: 'same-origin',
-      });
-      if (!response.ok) throw new Error('Configuration unavailable');
-      const data: unknown = await response.json();
+      const data = await this.configuration.ready;
+      if (!data) throw new Error('Configuration unavailable');
       if (
         typeof data === 'object' &&
         data !== null &&

@@ -1,6 +1,6 @@
 # Backend logging
 
-The API uses Serilog through the existing `ILogger<T>` abstraction. Configuration stays in `apps/api/appsettings.json` and `appsettings.Development.json`. Console output is always enabled; Seq is enabled only when `Seq.ServerUrl` has a value. JSON/logging configuration is backend-only; do not put the Seq key in Angular's public `backend.json`.
+The API uses Serilog through the existing `ILogger<T>` abstraction. Configuration stays in `apps/api/appsettings.json` and `appsettings.Development.json`. Console output is always enabled; Seq is enabled only when `Seq.ServerUrl` has a value. JSON/logging configuration is backend-only; do not put the Seq key in Angular's public `config.json`.
 
 ## What is recorded
 

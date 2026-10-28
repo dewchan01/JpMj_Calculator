@@ -46,7 +46,7 @@ The settings checklist is a reminder; it does not configure MonsterASP or create
 
    Double underscores (`__`) separate nested configuration sections; `0` and `1` are array indexes. Values load from base JSON, then environment-specific JSON, then hosting environment variables, then command-line arguments; later values override earlier ones. These variables are optional if the server's JSON already contains the desired values. The custom `appsettings.Local.json` loader has been removed. [ASP.NET Core configuration](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-10.0)
 
-   `apps/web/public/backend.json` remains a separate public frontend setting: it contains only the API's HTTPS origin. It must never contain SQL credentials. Angular cannot read the backend's private `appsettings.json`.
+   `apps/web/config/production/config.json` remains a separate public frontend setting: its backend.apiUrl contains the API's HTTPS origin alongside public recognition and support settings. It must never contain SQL credentials. Angular cannot read the backend's private `appsettings.json`.
 
    For GitHub Pages, the origin excludes the repository path. Restart the application after changing variables. [Environment-variable instructions](https://help.monsterasp.net/websites/configuration/environment-variables)
 
@@ -101,6 +101,6 @@ The settings checklist is a reminder; it does not configure MonsterASP or create
 
    The `/` homepage may show 404 because this deployment serves an API. The health endpoint checks startup; creating a room also verifies database access.
 
-When you’re ready to connect Angular, set its `backend.json` to your HTTPS API address. **No Angular files need uploading to MonsterASP.**
+When you’re ready to connect Angular, set `apps/web/config/production/config.json` to your HTTPS API address before building. **No Angular files need uploading to MonsterASP.**
 
 //"apiUrl": "https://jpmj.runasp.net"

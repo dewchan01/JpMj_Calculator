@@ -24,7 +24,7 @@ server; browser inference logs appear in developer tools.
 
 ## Roboflow publishable browser key
 
-Recognition provider, model and key are configured only in `apps/web/public/config.json`.
+Recognition provider, model and key are configured only in `apps/web/config/{development,production}/config.json`.
 Switch `recognition.provider` between `"roboflow"` and `"api"`; both settings can stay in the
 file. Only the selected provider is validated and used. No automatic provider fallback occurs.
 After editing, reload the app; the running app reads configuration once per page load.
@@ -70,8 +70,9 @@ publishable-key browser inference use different authentication and request inter
 
 ## Existing JSON endpoint
 
-Configure recognition in `apps/web/public/config.json`, which is served as `config.json` beside
+Configure recognition in `apps/web/config/{development,production}/config.json`, which is served as `config.json` beside
 the app. API settings are not shown in the UI and old browser endpoint preferences are ignored.
+The same file contains `backend.apiUrl`, `supportEmail` and `developerName`. A shared loader reads it once; invalid recognition settings do not disable a valid backend configuration, and an empty backend URL does not disable recognition.
 
 ```json
 {

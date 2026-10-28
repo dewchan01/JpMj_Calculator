@@ -5,7 +5,9 @@ import QRCode from 'qrcode';
 
 test.use({ serviceWorkers: 'block' });
 test.beforeEach(async ({ page }) => {
-  await page.route('**/backend.json', (route) => route.fulfill({ json: { apiUrl: '' } }));
+  await page.route('**/config.json', (route) =>
+    route.fulfill({ json: { backend: { apiUrl: '' } } }),
+  );
 });
 
 test('start choices stack and close without creating a game', async ({ page }) => {
@@ -31,8 +33,8 @@ test('online service is optional and room form is accessible on phones', async (
   await page.getByRole('button', { name: 'Start shared game', exact: true }).click();
   await page.getByRole('button', { name: 'Join game', exact: true }).click();
   await expect(page.getByText('Online service is not configured.', { exact: true })).toBeVisible();
-  await page.route('**/backend.json', (route) =>
-    route.fulfill({ json: { apiUrl: 'https://api.example.test' } }),
+  await page.route('**/config.json', (route) =>
+    route.fulfill({ json: { backend: { apiUrl: 'https://api.example.test' } } }),
   );
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
@@ -63,8 +65,8 @@ test('online service is optional and room form is accessible on phones', async (
 
 test('shared data requires preview and imports without duplicating games', async ({ page }) => {
   const id = 'a'.repeat(64);
-  await page.route('**/backend.json', (route) =>
-    route.fulfill({ json: { apiUrl: 'https://api.example.test' } }),
+  await page.route('**/config.json', (route) =>
+    route.fulfill({ json: { backend: { apiUrl: 'https://api.example.test' } } }),
   );
   await page.route(`https://api.example.test/api/shares/${id}`, (route) =>
     route.fulfill({

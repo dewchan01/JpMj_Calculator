@@ -61,9 +61,12 @@ $env:ASPNETCORE_ENVIRONMENT = 'Development'
 dotnet run --project apps/api --urls http://localhost:5080
 ```
 
-Set `apps/web/public/backend.json` to `{ "apiUrl": "http://localhost:5080" }`, then run
-`npm.cmd start` in a second terminal. The checked-in URL is empty, so offline builds do not
-depend on a backend. Restore the empty value before committing machine-specific configuration.
+Run `npm.cmd start` in a second terminal. Angular automatically selects
+`apps/web/config/development/config.json`, pointing to `http://localhost:5080`.
+Production builds select `apps/web/config/production/config.json`, pointing to
+`https://jpmj.runasp.net`. Both are emitted as `config.json` at the frontend root.
+Set `backend.apiUrl` to an empty string to disable online features; offline scoring remains available.
+Recognition settings, support email and developer name live in the same environment files.
 Development data is in ignored `apps/api/App_Data/riichi.db`.
 
 ```powershell
@@ -78,7 +81,7 @@ HTTPS, WSS, idle restart and production origin checks require deployment verific
 
 ## MonsterASP.NET deployment
 
-API defaults live in `apps/api/appsettings.json`; `appsettings.Development.json` overrides them for local runs. The development launch profile sets Development and port 5080. Published hosting defaults to Production. Environment variables override the JSON values: `ConnectionStrings__Database` maps to `ConnectionStrings.Database`, while `Cors__AllowedOrigins__0` maps to the first allowed frontend origin. Store the production database password in the hosting variable or server-only JSON, not Git. `appsettings.Local.json` is no longer loaded. Frontend `backend.json` remains public and contains only the API origin, not database/CORS secrets.
+API defaults live in `apps/api/appsettings.json`; `appsettings.Development.json` overrides them for local runs. The development launch profile sets Development and port 5080. Published hosting defaults to Production. Environment variables override the JSON values: `ConnectionStrings__Database` maps to `ConnectionStrings.Database`, while `Cors__AllowedOrigins__0` maps to the first allowed frontend origin. Store the production database password in the hosting variable or server-only JSON, not Git. `appsettings.Local.json` is no longer loaded. Frontend settings remain public: backend.apiUrl, recognition and support settings belong in config.json, but database credentials and server-only secrets do not.
 
 1. Create a .NET 10 website and a dedicated SQL Server database. Enable HTTPS and WebSockets.
 2. Configure `ConnectionStrings__Database` securely in the hosting environment. Never commit credentials.
@@ -97,7 +100,7 @@ API defaults live in `apps/api/appsettings.json`; `appsettings.Development.json`
    startup never modifies the schema. SQLite development databases use `EnsureCreated`, not SQL Server migrations.
 
 5. Upload `artifacts/api` to the IIS website using the host's supported deployment method.
-6. Set the deployed Angular `backend.json` to the HTTPS API origin and deploy the existing frontend.
+6. Set `backend.apiUrl` in `apps/web/config/production/config.json` to the HTTPS API origin, build and deploy the frontend.
    GitHub Pages uses the existing hash-routing build and repository base href. Generated QR links
    use Angular's active location strategy, so they work with both hash and normal routes.
 7. Verify `/api/health`, upload/import/revoke, two-device seat joining, PIN throttling,

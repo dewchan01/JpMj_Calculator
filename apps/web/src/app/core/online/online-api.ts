@@ -1,6 +1,7 @@
 import { Service, signal, inject } from '@angular/core';
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
+import { AppConfiguration } from '../config/app-config';
 
 export interface ShareReceipt {
   id: string;
@@ -26,16 +27,15 @@ export interface RoomState {
 export class OnlineApi {
   private readonly location = inject(Location);
   private readonly router = inject(Router);
+  private readonly configuration = inject(AppConfiguration);
   readonly url = signal('');
   readonly ready = this.configure();
 
   private async configure(): Promise<void> {
     try {
-      const response = await fetch(new URL('backend.json', document.baseURI), {
-        cache: 'no-store',
-        headers: { 'ngsw-bypass': 'true' },
-      });
-      const config: unknown = await response.json();
+      const settings = await this.configuration.ready;
+      const config: unknown =
+        settings && typeof settings === 'object' && 'backend' in settings ? settings.backend : null;
       if (
         !config ||
         typeof config !== 'object' ||
