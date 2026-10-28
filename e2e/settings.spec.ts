@@ -117,6 +117,7 @@ for (const width of [390, 1280]) {
     await page.getByRole('button', { name: 'Use these rules', exact: true }).click();
     await nav.getByRole('link', { name: 'My table', exact: true }).click();
     await page.getByRole('button', { name: /Start match/ }).click();
+    await page.getByRole('button', { name: 'Start game', exact: true }).click();
     await expect(page).toHaveURL(/\/score\/[^/]+$/);
     const matchUrl = page.url();
     await expect(page.locator('.player-points')).toHaveText([
@@ -169,6 +170,7 @@ test('invalid settings stay beside Save, and money/chips appear at game end', as
   await page.getByRole('button', { name: 'Use these rules', exact: true }).click();
   await nav.getByRole('link', { name: 'My table', exact: true }).click();
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await beginWin(page);
   await finishWin(page, '123m456m789p234s50p');
   await expect(page.locator('app-final-results')).toBeVisible();

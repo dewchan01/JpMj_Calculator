@@ -1,5 +1,6 @@
 import { Component, DestroyRef, effect, inject, input, signal, untracked } from '@angular/core';
 import { TranslatePipe } from '../../core/i18n/i18n';
+import { GameSounds } from '../../core/sound/game-sounds';
 
 @Component({
   selector: 'app-dice-simulator',
@@ -8,6 +9,7 @@ import { TranslatePipe } from '../../core/i18n/i18n';
   styleUrl: './dice-simulator.css',
 })
 export class DiceSimulator {
+  private readonly sounds = inject(GameSounds);
   readonly request = input(0);
   readonly diceRolling = signal(false);
   dice = [1, 1];
@@ -38,6 +40,7 @@ export class DiceSimulator {
   }
   rollDice(): void {
     if (this.diceRolling()) return;
+    this.sounds.playDice();
     const bytes = new Uint8Array(2),
       result: number[] = [];
     while (result.length < 2) {

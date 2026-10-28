@@ -1,0 +1,20 @@
+name: Backend checks
+on:
+  push:
+    paths: ['apps/api/**', 'apps/api.tests/**', '.github/workflows/backend.yml']
+  pull_request:
+    paths: ['apps/api/**', 'apps/api.tests/**', '.github/workflows/backend.yml']
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet test apps/api.tests/Riichi.Api.Tests.csproj --configuration Release
+      - run: dotnet publish apps/api/Riichi.Api.csproj --configuration Release --output artifacts/api
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backend-iis
+          path: artifacts/api

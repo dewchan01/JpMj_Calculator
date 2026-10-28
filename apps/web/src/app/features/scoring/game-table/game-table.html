@@ -1,5 +1,5 @@
 @if (match(); as m) {
-  <div class="game-shell">
+  <div class="game-shell" [class.room-game]="!!roomCode">
     <header class="game-heading">
       <h1>{{ m.name }}</h1>
       <button class="quiet clock" (click)="open('menu')" [attr.aria-label]="'Game timer' | t">
@@ -24,8 +24,38 @@
       </div>
     </header>
     <app-error-notice [message]="prompt.open ? '' : error()" />
+    @if (roomCode) {
+      <section class="room-status" aria-live="polite">
+        <p>
+          {{ 'Room code' | t }}: {{ roomCode }} ·
+          {{ (room.access()?.host ? 'Host' : 'Player') | t }}
+        </p>
+        @if (room.status()) {
+          <p role="status">{{ room.status() | t }}</p>
+        }
+        @if (room.error()) {
+          <p role="alert">{{ room.error() | t }}</p>
+        }
+        @if (room.access()?.host && room.wins().length) {
+          <h2>{{ 'Pending winning declarations' | t }}</h2>
+          <p>{{ 'Wait for all Ron winners, then settle them together.' | t }}</p>
+          @for (action of room.wins(); track action.id) {
+            <div class="pending-win">
+              <span>{{ m.players[action.seat].name }} · {{ roomWinSummary(action) }}</span>
+              <button class="danger" (click)="rejectRoomDeclaration(action.id)" [disabled]="busy()">
+                {{ 'Reject' | t }}
+              </button>
+            </div>
+          }
+          <button class="primary" (click)="settleRoomDeclarations()" [disabled]="busy()">
+            {{ 'Settle pending wins' | t }}
+          </button>
+        }
+      </section>
+    }
     <app-table-summary
       class="live-table"
+      [class.room-table]="!!roomCode"
       [interactive]="!m.ended"
       [actionsDisabled]="paused() || busy()"
       [compact]="true"

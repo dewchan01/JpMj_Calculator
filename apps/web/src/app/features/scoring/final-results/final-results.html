@@ -299,7 +299,7 @@
       <button class="primary" (click)="keepGame()" [disabled]="busy()">
         {{ 'Save game' | t }}
       </button>
-      <button class="action-delete danger" (click)="confirmDiscard.set(true)" [disabled]="busy()">
+      <button class="action-delete danger" (click)="discardGame()" [disabled]="busy()">
         {{ 'Discard game' | t }}
       </button>
     </div>
@@ -309,17 +309,6 @@
           | t
       }}
     </p>
-    @if (confirmDiscard()) {
-      <div class="discard-confirm" role="group" [attr.aria-label]="'Discard game' | t">
-        <p>{{ 'Delete this game and all its history?' | t }}</p>
-        <button class="action-cancel" (click)="confirmDiscard.set(false)">
-          {{ 'Cancel' | t }}
-        </button>
-        <button class="action-delete danger" (click)="discardGame()" [disabled]="busy()">
-          {{ 'Delete' | t }}
-        </button>
-      </div>
-    }
   }
 </section>
 <dialog

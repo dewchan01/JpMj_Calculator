@@ -1,3 +1,6 @@
+import { recordCall } from '../../../../../../../packages/mahjong-core/record-call';
+import { RoomSession } from '../../../core/online/room-session';
+import type { RoomAction } from '../../../../../../../packages/mahjong-core/room-actions';
 import { DialogBackdrop } from '../../../shared/dialog-backdrop';
 import { GameSounds } from '../../../core/sound/game-sounds';
 import { ScoringMode } from '../../../core/scoring-mode';
@@ -161,6 +164,28 @@ export class GameTable {
   private readonly repo = inject(Repository);
   private readonly sounds = inject(GameSounds);
   private readonly route = inject(ActivatedRoute);
+  readonly room = inject(RoomSession);
+  readonly roomCode = this.route.snapshot.paramMap.get('room');
+  readonly remotePlayer = computed(() => !!this.roomCode && !this.room.access()?.host);
+  readonly roomPlayerId = computed(
+    () => this.match()?.players[this.room.access()?.seat ?? -1]?.id ?? '',
+  );
+  roomWinSummary(action: RoomAction): string {
+    const input = action.payload['input'] as ScoringInput | undefined;
+    if (!input) return '';
+    try {
+      const result = score(input);
+      return `${this.i18n.t(input.win.method === 'tsumo' ? 'Tsumo · self draw' : 'Ron · discard')} · ${result.han} ${this.i18n.t('Han')} · ${result.fu} ${this.i18n.t('Fu')}`;
+    } catch {
+      return this.i18n.t('Invalid online request.');
+    }
+  }
+  async settleRoomDeclarations(): Promise<void> {
+    await this.act(() => this.room.settleWins());
+  }
+  async rejectRoomDeclaration(id: string): Promise<void> {
+    await this.act(() => this.room.reject(id));
+  }
   readonly match = signal<Match | null>(null);
   readonly error = signal('');
   readonly busy = signal(false);
@@ -170,6 +195,10 @@ export class GameTable {
   readonly directIndicator = signal<'dora' | 'ura' | null>(null);
   resumeRonAfterDora = false;
   editHand(eventId: string): void {
+    if (this.remotePlayer()) {
+      this.error.set('Only the host can change shared table settings.');
+      return;
+    }
     if (this.busy() || this.editingHand()) return;
     try {
       const original = this.match()!;
@@ -343,7 +372,28 @@ export class GameTable {
     const interval = setInterval(() => this.now.set(Date.now()), 1000);
     inject(DestroyRef).onDestroy(() => {
       clearInterval(interval);
+      if (this.roomCode) void this.room.stop();
     });
+    this.room.canProcess = () => !this.busy() && !this.editingHand();
+    this.room.changed = (match) => {
+      if (!this.editingHand()) {
+        const kans = (value: Match | null) =>
+          Object.values(value?.live?.players ?? {})
+            .flatMap((player) => player.melds)
+            .filter((meld) => !['pon', 'chi'].includes(meld.type)).length;
+        const previous = this.match();
+        this.match.set(match);
+        if (
+          previous &&
+          this.room.access()?.host &&
+          !this.scoringMode.advanced() &&
+          kans(match) > kans(previous) &&
+          !this.busy() &&
+          !this.dialog().nativeElement.open
+        )
+          this.openIndicators('dora');
+      }
+    };
     void this.load();
   }
   get players() {
@@ -451,6 +501,14 @@ export class GameTable {
   }
   async load(): Promise<void> {
     try {
+      if (this.roomCode) {
+        await this.room.start(this.roomCode);
+        const match = this.room.state()?.match;
+        if (!match) throw new Error('The host has not attached a game yet.');
+        this.match.set(match);
+        this.basis = match.players[0].id;
+        return;
+      }
       const match = await this.repo.get(this.route.snapshot.paramMap.get('id') ?? '');
       if (!match) throw new Error('Match not found. Return to My table.');
       this.match.set(match);
@@ -487,7 +545,10 @@ export class GameTable {
     )
       updated = { ...updated, liveUndo: [] };
     updated.updatedAt = new Date().toISOString();
-    if (!this.editingHand()) await this.repo.save(updated, previous?.updatedAt);
+    if (!this.editingHand()) {
+      if (this.roomCode) await this.room.save(updated);
+      else await this.repo.save(updated, previous?.updatedAt);
+    }
     this.match.set(updated);
     this.now.set(Date.now());
   }
@@ -505,6 +566,17 @@ export class GameTable {
     }
   }
   open(panel: Panel, player?: string): void {
+    if (this.remotePlayer() && player && player !== this.roomPlayerId()) {
+      this.error.set('Declare only for your own seat.');
+      return;
+    }
+    if (
+      this.remotePlayer() &&
+      ['indicators', 'outcome', 'finish', 'info', 'settings', 'seats'].includes(panel)
+    ) {
+      this.error.set('Only the host can change shared table settings.');
+      return;
+    }
     this.playerMode.set('all');
     this.error.set('');
     this.panelParents.set([]);
@@ -536,6 +608,10 @@ export class GameTable {
     this.error.set('');
   }
   openIndicators(kind: 'dora' | 'ura'): void {
+    if (this.remotePlayer()) {
+      this.error.set('Ask the host to enter Dora indicators first.');
+      return;
+    }
     const m = this.match();
     if (!m || this.busy()) return;
     this.error.set('');
@@ -567,6 +643,14 @@ export class GameTable {
   }
   async riichi(): Promise<void> {
     await this.act(async () => {
+      if (this.remotePlayer()) {
+        if (this.selected !== this.roomPlayerId())
+          throw new Error('Declare only for your own seat.');
+        await this.room.submit('riichi', { double: this.doubleRiichi });
+        this.sounds.play(this.doubleRiichi ? 'doubleRiichi' : 'riichi');
+        this.close(true);
+        return;
+      }
       if (this.paused()) throw new Error('Resume the game before recording actions.');
       if (this.doubleRiichi && !this.firstTurn)
         throw new Error('Confirm the uninterrupted first turn.');
@@ -613,12 +697,23 @@ export class GameTable {
   }
   async cancelDeclaration(): Promise<void> {
     await this.act(async () => {
+      if (this.remotePlayer()) {
+        if (this.selected !== this.roomPlayerId())
+          throw new Error('Declare only for your own seat.');
+        await this.room.submit('cancelRiichi', {});
+        this.close(true);
+        return;
+      }
       if (this.paused()) throw new Error('Resume the game before recording actions.');
       await this.persist(cancelRiichi(this.match()!, this.selected));
       this.close(true);
     });
   }
   async tableAction(action: { player: string; type: string }): Promise<void> {
+    if (this.remotePlayer() && action.player !== this.roomPlayerId()) {
+      this.error.set('Declare only for your own seat.');
+      return;
+    }
     if (action.type === 'riichi') {
       this.selected = action.player;
       if (livePlayer(this.match()!, action.player).riichi === 'none')
@@ -675,122 +770,34 @@ export class GameTable {
   }
   async saveCall(keepOpen = false): Promise<void> {
     await this.act(async () => {
-      const m = this.match()!;
-      if (m.ended || this.paused()) throw new Error('Resume the game before recording actions.');
-      const live = structuredClone(m.live ?? emptyLive()),
-        state = structuredClone(livePlayer(m, this.selected));
-      if (state.riichi !== 'none' && !['ankan', 'kita'].includes(this.callType))
-        throw new Error('Riichi/Ippatsu require a closed hand.');
-      let tiles = parseTiles(this.callText, newId());
-      if (tiles.length === 1 && ['pon', 'ankan', 'daiminkan'].includes(this.callType)) {
-        const tile = tiles[0];
-        tiles = Array.from({ length: this.callType === 'pon' ? 3 : 4 }, (_, index) => ({
-          ...tile,
-          id: newId(),
-          isRed: index === 0 && tile.isRed,
-        }));
-      }
-      if (this.callType === 'kita') {
-        if (m.playerCount !== 3 || tiles.length !== 1 || kindIndex(tiles[0].kind) !== 30)
-          throw new Error('Kita requires one North tile in a three-player game.');
-        state.kita.push(tiles[0]);
-      } else if (this.callType === 'kakan') {
-        const pon = state.melds.find((meld) => meld.id === this.upgradeId && meld.type === 'pon');
-        if (!pon || tiles.length !== 1 || kindIndex(tiles[0].kind) !== kindIndex(pon.tiles[0].kind))
-          throw new Error('Choose a Pon and its matching fourth tile.');
-        state.melds = state.melds.map((meld) =>
-          meld.id !== pon.id
-            ? meld
-            : {
-                ...pon,
-                type: 'kakan',
-                tiles: [...pon.tiles, tiles[0]],
-                upgradedFromMeldId: pon.id,
-                originalPon: {
-                  id: pon.id,
-                  tiles: pon.tiles,
-                  calledTileId: pon.calledTileId!,
-                  fromPlayerId: pon.fromPlayerId!,
-                },
-              },
-        );
-      } else {
-        const required = ['chi', 'pon'].includes(this.callType) ? 3 : 4;
-        if (tiles.length !== required)
-          throw new Error('Chi/Pon need three tiles; Kan needs four tiles.');
-        const indices = tiles.map((t) => kindIndex(t.kind)).sort((a, b) => a - b);
-        if (
-          this.callType === 'chi'
-            ? !(
-                indices[0] < 27 &&
-                Math.floor(indices[0] / 9) === Math.floor(indices[2] / 9) &&
-                indices[1] === indices[0] + 1 &&
-                indices[2] === indices[0] + 2
-              )
-            : !indices.every((i) => i === indices[0])
-        )
-          throw new Error('Select a legal sequence or matching tiles.');
-        const open = this.callType !== 'ankan';
-        if (
-          open &&
-          (!this.players.some((p) => p.id === this.callSource) ||
-            this.callSource === this.selected ||
-            !tiles[this.called])
-        )
-          throw new Error('Select the call source and called tile.');
-        if (
-          this.callType === 'chi' &&
-          (m.playerCount === 3 ||
-            this.callSource !==
-              m.players[
-                (m.players.findIndex((p) => p.id === this.selected) + m.playerCount - 1) %
-                  m.playerCount
-              ].id)
-        )
-          throw new Error('Chi is only allowed from the previous player in a four-player game.');
-        state.melds.push({
-          id: newId(),
+      if (this.remotePlayer()) {
+        if (this.selected !== this.roomPlayerId())
+          throw new Error('Declare only for your own seat.');
+        const payload = {
           type: this.callType,
-          tiles,
-          fromPlayerId: open ? this.callSource : undefined,
-          calledTileId: open ? tiles[this.called].id : undefined,
-          callOrder: live.calls + 1,
-        });
+          text: this.callText,
+          source: this.callSource,
+          called: this.called,
+          upgradeId: this.upgradeId,
+        };
+        recordCall(this.match()!, this.selected, payload, newId);
+        await this.room.submit('call', payload);
+        this.close(true);
+        return;
       }
-      if (
-        ruleSettings(m.rules).redFives &&
-        ['ankan', 'daiminkan', 'kakan'].includes(this.callType)
-      ) {
-        const kan =
-          this.callType === 'kakan'
-            ? state.melds.find((meld) => meld.id === this.upgradeId)
-            : state.melds[state.melds.length - 1];
-        if (
-          kan &&
-          kan.tiles.length === 4 &&
-          [4, 13, 22].includes(kindIndex(kan.tiles[0].kind)) &&
-          !kan.tiles.some((tile) => tile.isRed)
-        ) {
-          kan.tiles[3] = { ...kan.tiles[3], isRed: true };
-        }
-      }
-      live.players[this.selected] = state;
-      live.calls++;
-      live.actions = [
-        ...(live.actions ?? []),
+      const updated = recordCall(
+        this.match()!,
+        this.selected,
         {
           type: this.callType,
-          playerId: this.selected,
-          timestamp: new Date().toISOString(),
-          elapsedMs: elapsedMs(m.clock),
+          text: this.callText,
+          source: this.callSource,
+          called: this.called,
+          upgradeId: this.upgradeId,
         },
-      ];
-      validateRevealed(m, live);
-      const kans = Object.values(live.players)
-        .flatMap((p) => p.melds)
-        .filter((meld) => !['chi', 'pon'].includes(meld.type)).length;
-      if (kans > 4) throw new Error('At most four Kans can be recorded in a hand.');
-      await this.persist({ ...m, live }, true);
+        newId,
+      );
+      await this.persist(updated, true);
       if (
         !['chi', 'pon', 'kita'].includes(this.callType) &&
         !(this.editingHand() ? this.manualEntry() : this.scoringMode.advanced())
@@ -834,6 +841,10 @@ export class GameTable {
     });
   }
   startOutcome(): void {
+    if (this.remotePlayer() && this.selected !== this.roomPlayerId()) {
+      this.error.set('Declare only for your own seat.');
+      return;
+    }
     const edited = this.originalMatch?.events.find((event) => event.id === this.editingHand());
     this.manualEntry.set(
       this.editingHand()
@@ -942,6 +953,7 @@ export class GameTable {
       this.open('indicators');
       this.ura = ura;
       this.resumeRonAfterDora = true;
+      if (this.remotePlayer()) this.error.set('Ask the host to enter Dora indicators first.');
       return;
     }
     try {
@@ -1069,6 +1081,21 @@ export class GameTable {
   }
   async settle(): Promise<void> {
     await this.act(async () => {
+      if (this.roomCode && !this.editingHand() && this.inputs.length) {
+        for (const input of this.inputs) {
+          if (this.remotePlayer() && input.win.winnerId !== this.roomPlayerId())
+            throw new Error('Declare only for your own seat.');
+          await this.room.submit(
+            'win',
+            { input },
+            this.players.findIndex((player) => player.id === input.win.winnerId),
+          );
+        }
+        this.inputs = [];
+        this.round = null;
+        this.close();
+        return;
+      }
       const m = this.match()!;
       if (!this.round?.isValid || this.paused())
         throw new Error('Resume the game before recording actions.');
@@ -1113,7 +1140,8 @@ export class GameTable {
           live: emptyLive(),
           clock,
         });
-        await this.repo.save(rebuilt, original.updatedAt);
+        if (this.roomCode) await this.room.save(rebuilt);
+        else await this.repo.save(rebuilt, original.updatedAt);
         this.originalMatch = undefined;
         this.editingHand.set(null);
         this.match.set(rebuilt);

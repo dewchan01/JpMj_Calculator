@@ -20,6 +20,7 @@ export const recordedCalls: Partial<Record<CallSound, string>> = {
   kakan: 'kan',
   ankan: 'kan',
   riichi: 'riichi',
+  doubleRiichi: 'riichi',
   ron: 'ron',
   tsumo: 'tsumo',
 };
@@ -95,6 +96,54 @@ export class GameSounds {
       }
     }
     this.playFallback(call);
+  }
+
+  playDice(): void {
+    if (!this.enabled()) return;
+    this.unlock();
+    const context = this.context;
+    if (!context) return;
+    const roll = () => {
+      if (!this.enabled() || context.state !== 'running') return;
+      try {
+        const buffer = context.createBuffer(
+          1,
+          Math.ceil(context.sampleRate * 0.04),
+          context.sampleRate,
+        );
+        const samples = buffer.getChannelData(0);
+        for (let i = 0; i < samples.length; i++) samples[i] = Math.random() * 2 - 1;
+        for (let i = 0; i < 12; i++) {
+          const source = context.createBufferSource();
+          const filter = context.createBiquadFilter();
+          const gain = context.createGain();
+          const start = context.currentTime + i * 0.055 + i * i * 0.0015;
+          source.buffer = buffer;
+          filter.type = 'bandpass';
+          filter.frequency.value = 900 + Math.random() * 1600;
+          filter.Q.value = 1.5;
+          gain.gain.setValueAtTime(0.25 * (1 - i / 16), start);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + 0.04);
+          source.connect(filter);
+          filter.connect(gain);
+          gain.connect(context.destination);
+          source.onended = () => {
+            source.disconnect();
+            filter.disconnect();
+            gain.disconnect();
+          };
+          source.start(start);
+        }
+      } catch {
+        /* Optional audio must not interrupt the dice. */
+      }
+    };
+    if (context.state === 'running') roll();
+    else
+      void context
+        .resume()
+        .then(roll)
+        .catch(() => undefined);
   }
 
   private playFallback(call: CallSound): void {

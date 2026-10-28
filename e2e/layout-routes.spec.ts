@@ -40,6 +40,7 @@ test('one URL adapts navigation on resize without losing the hand or match', asy
   expect(axe.violations).toEqual([]);
   await nav.getByRole('link', { name: 'My table', exact: true }).click();
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await expect(page).toHaveURL(/\/score\/[^/]+$/);
   const matchUrl = page.url();
   await expect(navigation).toBeHidden();

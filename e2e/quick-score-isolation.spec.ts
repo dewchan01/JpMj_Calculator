@@ -8,6 +8,7 @@ test('Quick score stays independent of an ongoing match and its saved draft', as
   await page.getByRole('textbox', { name: 'Match name', exact: true }).fill('Isolation table');
   await applyPreset(page, 'tenhou');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   const nav = page.getByRole('navigation', { name: 'Main navigation' });
   await expect(page.locator('.game-shell')).toBeVisible();
   await expect(page.locator('.app-navigation')).toHaveClass(/in-game/);

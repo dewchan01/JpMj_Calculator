@@ -1,5 +1,10 @@
 # Riichi / table
 
+Optional online services now live in `apps/api` (ASP.NET Core 10). The first stage adds expiring
+JSON share links/QR and rooms with PINs, seat access and synchronized declarations. Players declare
+from their phones; the host's open browser validates actions and settles pending wins with the existing
+scoring engine. See [backend setup and scope](docs/online-backend.md).
+
 An offline-first Angular PWA for scoring Japanese Riichi Mahjong, with Mahjong Soul, Tenhou, M.League and Custom presets. Includes manual scoring, draw/multiple-winner settlement, match progression and configurable photo recognition. Manual scoring works offline; API recognition uploads selected photos. This independent application is not affiliated with the rule platforms or detection provider.
 
 Others > Advanced scoring switches between complete-hand verification (default) and direct total

@@ -8,6 +8,11 @@ playwright-report/
 .env
 .playwright/
 artifacts/
+**/bin/
+**/obj/
+**/App_Data/
+**/TestResults/
+**/appsettings.Local.json
 
 # Generated at build/start with the current version and commit
 /apps/web/public/version.json

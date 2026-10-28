@@ -7,6 +7,7 @@ test('meld editor explains one-tile completion and validates inside the editor',
   await page.setViewportSize({ width: 390, height: 740 });
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await playerAction(page, 'Player 1');
   await prompt(page).getByRole('button', { name: 'Pon', exact: true }).click();
   await prompt(page).getByRole('button', { name: 'Enter Meld tiles', exact: true }).click();

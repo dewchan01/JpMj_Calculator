@@ -379,3 +379,24 @@
   max-height: 85dvh;
   border-radius: 18px;
 }
+.start-game-dialog {
+  width: min(440px, calc(100vw - 24px));
+}
+.shared-game-dialog {
+  width: min(600px, calc(100vw - 24px));
+  height: min(760px, calc(100dvh - 32px));
+}
+.shared-game-dialog > .dialog-header {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+.start-game-options {
+  display: grid;
+  gap: 12px;
+}
+.start-game-options > button {
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+}

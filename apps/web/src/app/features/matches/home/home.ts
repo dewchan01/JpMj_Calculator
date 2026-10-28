@@ -1,4 +1,5 @@
 import { DialogBackdrop } from '../../../shared/dialog-backdrop';
+import { Online } from '../../online/online';
 import { ruleName } from '../../../../../../../packages/mahjong-rules/index';
 import { TileArt } from '../../../shared/tile-art/tile-art';
 import { parseTiles } from '../../../../../../../packages/mahjong-core/index';
@@ -23,6 +24,7 @@ import { adjustFinalPoints } from '../../../../../../../packages/mahjong-core/fi
 import { localDateTimeInput } from '../../../core/i18n/date-format';
 @Component({
   imports: [
+    Online,
     TileArt,
     ResponsiveSheet,
     DialogBackdrop,
@@ -41,6 +43,19 @@ import { localDateTimeInput } from '../../../core/i18n/date-format';
   styleUrl: './home.css',
 })
 export class Home {
+  readonly sharedMode = signal<'host' | 'join' | ''>('');
+  readonly sharedGameId = signal('');
+  readonly prepareSharedGame = async (): Promise<string> => {
+    await this.create(false, true);
+    if (!this.sharedGameId()) throw new Error(this.error() || 'Could not create match.');
+    return this.sharedGameId();
+  };
+  async openShared(mode: 'host' | 'join', dialog: HTMLDialogElement): Promise<void> {
+    this.sharedGameId.set('');
+    this.sharedMode.set('');
+    this.sharedMode.set(mode);
+    dialog.showModal();
+  }
   gameRuleName(game: Match): string {
     return game.rules.preset === 'custom' && game.rules.name
       ? game.rules.name
@@ -224,7 +239,7 @@ export class Home {
     this.swapB = 1;
     this.seatNotice.set('');
   }
-  async create(resultsOnly = false): Promise<void> {
+  async create(resultsOnly = false, shared = false): Promise<void> {
     if (this.busy()) return;
     this.busy.set(true);
     this.error.set('');
@@ -282,6 +297,11 @@ export class Home {
         );
       }
       await this.repo.save(match);
+      if (shared) {
+        this.sharedGameId.set(match.id);
+        await this.loadOngoing();
+        return;
+      }
       await this.router.navigate([resultsOnly ? '/records' : '/score', match.id]);
     } catch (e) {
       this.error.set(e instanceof Error ? e.message : 'Could not create match.');

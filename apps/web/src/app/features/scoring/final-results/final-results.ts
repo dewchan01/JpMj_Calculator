@@ -90,7 +90,6 @@ export class FinalResults {
     list: 'List',
   };
   readonly selected = signal('');
-  readonly confirmDiscard = signal(false);
   readonly busy = signal(false);
   readonly notice = signal('');
   readonly i18n = inject(I18n);

@@ -12,6 +12,7 @@ for (const width of [320, 390, 1280]) {
     await page.goto('/');
     await expect(page.getByText('Saved tables', { exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: /Start match/ }).click();
+    await page.getByRole('button', { name: 'Start game', exact: true }).click();
     await expect(page).toHaveURL(/\/score\/[^/]+$/);
     await leaveGame(page);
     const base = presetRules('custom', 3);

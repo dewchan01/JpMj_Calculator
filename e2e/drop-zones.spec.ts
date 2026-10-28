@@ -172,6 +172,7 @@ test('ongoing matches use saved round context while Quick score retains manual f
 }) => {
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   // The live table reads the current match context on reload.
   await setSavedRound(page, { dealerId: 'p2', roundWind: 'south', handNumber: 3, honba: 2 });
   await page.reload();

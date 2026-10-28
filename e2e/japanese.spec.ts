@@ -12,6 +12,7 @@ test('Japanese saved matches and history format dates without changing names', a
   await page.getByRole('textbox', { name: '対局名', exact: true }).fill('陳萬發');
   await setLanguage(page, 'en');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await beginWin(page);
   await finishWin(page);
   await setLanguage(page, 'ja');

@@ -60,6 +60,10 @@
   min-height: 0;
   padding: 0;
 }
+:host(.room-table.compact) .table-layout {
+  flex: none;
+  min-height: calc(var(--hub-height) + 2 * var(--seat-gap) + 2 * var(--card-depth) + 100px);
+}
 :host(.compact) .table-center {
   position: absolute;
   left: 50%;

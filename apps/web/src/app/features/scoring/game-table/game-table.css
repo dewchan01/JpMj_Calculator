@@ -408,3 +408,25 @@ h1 {
 .recorded-call.concealed-call {
   grid-template-columns: minmax(0, 1fr) auto;
 }
+.room-status {
+  padding: 0.4rem;
+  margin: 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.8rem;
+}
+.room-status p {
+  margin-block: 0.15rem;
+}
+.game-shell.room-game {
+  height: auto;
+}
+.room-game .live-table {
+  flex: none;
+  height: auto;
+}
+.pending-win {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}

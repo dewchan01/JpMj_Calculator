@@ -5,6 +5,13 @@ import ja from './ja.json';
 import { readFileSync, readdirSync } from 'node:fs';
 
 describe('zh-TW catalog', () => {
+  it('contains no corrupted translation text', () => {
+    for (const catalog of [zhTW, zhCN, ja]) {
+      for (const [key, value] of Object.entries(catalog)) {
+        expect(value, key).not.toMatch(/\?{2,}|\uFFFD/);
+      }
+    }
+  });
   it('translates live-call and ledger action names in every supported catalog', () => {
     for (const key of [
       'chi',

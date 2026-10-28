@@ -7,6 +7,7 @@ test('desktop prompts keep the heading fixed and use one contained vertical scro
   await page.setViewportSize({ width: 1280, height: 740 });
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await gameMenu(page, 'In-game settings');
   const modal = prompt(page);
   await expect(page.locator('html')).toHaveCSS('overflow-y', 'hidden');

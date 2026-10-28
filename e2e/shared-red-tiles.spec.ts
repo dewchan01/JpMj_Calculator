@@ -35,6 +35,7 @@ test('live indicators, calls and winning-hand sheets share a separate red row', 
 }) => {
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   for (const [label, red] of [['Dora indicators', /^0p:/]] as const) {
     await page.locator('.indicator-bar').getByRole('button', { name: label, exact: true }).click();
     const sheet = page.getByRole('dialog', { name: 'Enter ' + label, exact: true });

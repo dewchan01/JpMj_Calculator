@@ -45,6 +45,7 @@ for (const preset of ['mahjong-soul', 'tenhou', 'm-league', 'custom'])
       await page.goto('/');
       await applyPreset(page, preset, count as 3 | 4);
       await page.getByRole('button', { name: /Start match/ }).click();
+      await page.getByRole('button', { name: 'Start game', exact: true }).click();
       await beginWin(page, 'Player 2', 'tsumo');
       await finishWin(page, count === 3 ? '123p456p789s234s55p' : undefined);
       await expect(page.locator('.table-round')).toHaveText('east 2');

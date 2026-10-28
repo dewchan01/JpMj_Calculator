@@ -8,6 +8,7 @@ test('manual Yakuman uses an explicit responsibility share and renders its limit
   await page.addInitScript(() => localStorage.setItem('riichi-advanced-scoring', 'true'));
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await playerAction(page, 'Player 2');
   await prompt(page).getByRole('button', { name: 'Ron · discard', exact: true }).click();
   await prompt(page).getByRole('button', { name: 'Next', exact: true }).click();
@@ -43,6 +44,7 @@ test('advanced preference persists; Riichi, calls, manual Ron and historical edi
     .screenshot({ path: 'artifacts/advanced-mode-switch.png' });
   await page.locator('.app-navigation a').first().click();
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await page
     .locator('.player-seat')
     .filter({ hasText: 'Player 2' })
@@ -101,6 +103,7 @@ test('advanced Tsumo validates Han/Fu and settles Sanma without tiles', async ({
   await page.goto('/');
   await page.getByRole('button', { name: /3 players/ }).click();
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await playerAction(page, 'Player 2');
   await prompt(page).getByRole('button', { name: 'Tsumo · self draw', exact: true }).click();
   await prompt(page).getByRole('spinbutton', { name: 'Han', exact: true }).fill('1');
@@ -130,6 +133,7 @@ test('advanced multiple Ron collects independent Han/Fu for each winner', async 
   await page.addInitScript(() => localStorage.setItem('riichi-advanced-scoring', 'true'));
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await page.getByRole('button', { name: 'End this hand', exact: true }).click();
   await prompt(page).getByRole('button', { name: 'Win', exact: true }).click();
   for (const name of ['Player 2', 'Player 3'])

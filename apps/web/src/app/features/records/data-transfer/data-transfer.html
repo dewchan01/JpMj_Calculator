@@ -94,6 +94,14 @@
         </button>
       }
       @if (!importing()) {
+        @if (online.url()) {
+          <button
+            (click)="shareSelected()"
+            [disabled]="busy() || invalidDates() || !selected().length || !!share()"
+          >
+            {{ 'Share selected games' | t }}
+          </button>
+        }
         <button
           class="primary"
           (click)="export()"
@@ -103,5 +111,27 @@
         </button>
       }
     </div>
+    @if (share(); as receipt) {
+      <section class="share-result" aria-live="polite">
+        <p>{{ 'Anyone with this link can import the selected games for 24 hours.' | t }}</p>
+        @if (shareQr()) {
+          <img [src]="shareQr()" width="240" height="240" [alt]="'Share QR code' | t" />
+        }
+        <label>
+          {{ 'Share link' | t }}
+          <input readonly [value]="online.link('share', receipt.id)" />
+        </label>
+        <p>{{ 'Expires' | t }}: {{ receipt.expiresAt | localDate: 'dateTime' }}</p>
+        <button class="danger" (click)="revokeShare()" [disabled]="busy()">
+          {{ 'Revoke share' | t }}
+        </button>
+        <p class="hint">
+          {{
+            'Keep this dialog open to revoke the share early. Otherwise it expires automatically.'
+              | t
+          }}
+        </p>
+      </section>
+    }
   </div>
 </dialog>

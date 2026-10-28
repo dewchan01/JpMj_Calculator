@@ -1,4 +1,7 @@
 node_modules/
+**/bin/
+**/obj/
+**/App_Data/
 dist/
 .angular/
 .playwright/

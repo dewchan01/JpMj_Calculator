@@ -50,6 +50,7 @@ test('dark theme and Simplified Chinese persist, and both tile sets render', asy
   await toggleTheme(page);
   await page.getByRole('link', { name: 'My table', exact: true }).click();
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   const matchAxe = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
     .analyze();

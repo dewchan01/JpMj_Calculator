@@ -12,6 +12,7 @@ test('zh-TW table history persists offline and preserves user names', async ({ p
   await page.getByRole('textbox', { name: 'Match name', exact: true }).fill('My table name');
   await choosePlayer(page, 'South', 'East');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await beginWin(page, 'East');
   await finishWin(page);
   await setLanguage(page, 'zh-TW');

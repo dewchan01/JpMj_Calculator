@@ -13,6 +13,7 @@ test('setup, table and condition prompts meet automated WCAG AA checks', async (
     ).toEqual([]);
   await check();
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await check();
   await page.getByRole('button', { name: 'End this hand', exact: true }).click();
   await check();

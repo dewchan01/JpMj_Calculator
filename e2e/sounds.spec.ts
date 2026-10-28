@@ -79,6 +79,7 @@ test('sound previews, persistent mute and successful live declarations', async (
   await page.getByRole('checkbox', { name: 'Sound effects', exact: true }).check();
   await page.getByRole('navigation').getByRole('link', { name: 'My table', exact: true }).click();
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   const riichi = page
     .locator('.player-seat')
     .filter({ hasText: 'Player 2' })

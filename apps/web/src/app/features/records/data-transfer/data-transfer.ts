@@ -1,5 +1,6 @@
 import { Component, computed, inject, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { OnlineApi, type ShareReceipt } from '../../../core/online/online-api';
 import { Repository } from '../../matches/data-access/repository';
 import { TranslatePipe } from '../../../core/i18n/i18n';
 import { LocalDatePipe } from '../../../core/i18n/local-date';
@@ -15,6 +16,9 @@ import type { Match } from '../../../../../../../packages/mahjong-core/ledger';
   styleUrl: './data-transfer.css',
 })
 export class DataTransfer {
+  readonly online = inject(OnlineApi);
+  readonly share = signal<ShareReceipt | null>(null);
+  readonly shareQr = signal('');
   private readonly repo = inject(Repository);
   readonly changed = output<void>();
   readonly games = signal<Match[]>([]);
@@ -44,6 +48,8 @@ export class DataTransfer {
   async open(dialog: HTMLDialogElement, mode: 'import' | 'export'): Promise<void> {
     this.error.set('');
     this.status.set('');
+    this.share.set(null);
+    this.shareQr.set('');
     this.importing.set(mode === 'import');
     this.games.set([]);
     this.from.set('');
@@ -105,6 +111,46 @@ export class DataTransfer {
     link.download = `riichi-games-${new Date().toISOString().slice(0, 10)}.json`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  async shareSelected(): Promise<void> {
+    if (this.busy() || this.invalidDates() || !this.selected().length) return;
+    this.busy.set(true);
+    this.error.set('');
+    try {
+      const archive = gameArchive(this.selected());
+      if (new Blob([JSON.stringify(archive)]).size > 5 * 1024 * 1024)
+        throw new Error('Shared data must be smaller than 5 MiB.');
+      const receipt = await this.online.request<ShareReceipt>('/api/shares', 'POST', archive);
+      this.share.set(receipt);
+      const { default: qr } = await import('qrcode');
+      this.shareQr.set(
+        await qr.toDataURL(this.online.link('share', receipt.id), { width: 240, margin: 2 }),
+      );
+    } catch (error) {
+      this.error.set(
+        error instanceof Error ? error.message : 'Could not connect to the online service.',
+      );
+    } finally {
+      this.busy.set(false);
+    }
+  }
+  async revokeShare(): Promise<void> {
+    const receipt = this.share();
+    if (!receipt || this.busy()) return;
+    this.busy.set(true);
+    try {
+      await this.online.request(`/api/shares/${receipt.id}`, 'DELETE', undefined, undefined, {
+        'X-Deletion-Secret': receipt.deletionSecret,
+      });
+      this.share.set(null);
+      this.shareQr.set('');
+    } catch (error) {
+      this.error.set(
+        error instanceof Error ? error.message : 'Could not connect to the online service.',
+      );
+    } finally {
+      this.busy.set(false);
+    }
   }
   async import(): Promise<void> {
     if (this.busy() || this.invalidDates() || !this.selected().length) return;

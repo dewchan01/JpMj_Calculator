@@ -70,6 +70,7 @@ test('shared indicator entry removes selected tiles dragged outside without remo
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await page
     .locator('.indicator-bar')
     .getByRole('button', { name: 'Dora indicators', exact: true })

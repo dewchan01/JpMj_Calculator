@@ -57,8 +57,7 @@
 .graph-legend button,
 .standing-card button,
 .result-actions button,
-.player-filter button,
-.discard-confirm button {
+.player-filter button {
   min-height: 36px;
   padding: 7px 10px;
   border: 1px solid var(--border);
@@ -243,22 +242,15 @@ dd {
   height: 10px;
   border-radius: 50%;
 }
-.discard-confirm {
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-}
 .result-actions .primary {
   background: var(--green);
   color: var(--surface);
 }
-.result-actions .danger,
-.discard-confirm .danger {
+.result-actions .danger {
   color: #a03b2f;
 }
 
-:host-context([data-theme='dark']) .result-actions .danger,
-:host-context([data-theme='dark']) .discard-confirm .danger {
+:host-context([data-theme='dark']) .result-actions .danger {
   color: #ffb6a3;
 }
 

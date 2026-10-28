@@ -20,6 +20,7 @@ test('M.League is four-player only and persists its match profile', async ({ pag
   await expectApplied(page, 'm-league');
   await expect(page.getByRole('combobox', { name: 'Game length', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await page.waitForURL('**/score/*');
   await expectApplied(page, 'm-league');
   await page.reload();
@@ -72,6 +73,7 @@ test('chosen rules persist, draws advance the round, and undo restores it', asyn
   await applyPreset(page, 'tenhou');
   await page.getByRole('combobox', { name: 'Game length', exact: true }).selectOption('east');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await recordDraw(page, ['Player 2']);
   await expect(page.locator('.table-round')).toHaveText('east 2');
   await page.reload();
@@ -83,6 +85,7 @@ test('chosen rules persist, draws advance the round, and undo restores it', asyn
 test('double Ron queue settles both hands and stores the explanations', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await page.getByRole('button', { name: 'End this hand', exact: true }).click();
   await prompt(page).getByRole('button', { name: 'Win', exact: true }).click();
   await prompt(page).getByRole('checkbox', { name: 'Player 1', exact: true }).check();
@@ -128,6 +131,7 @@ test('exposed Daisangen uses original call order and selected Pao policy', async
 test('last-hand finish ends the match and undo reopens it', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await setSavedRound(page, { dealerId: 'p3', roundWind: 'south', handNumber: 4, honba: 0 });
   await page.reload();
   await beginWin(page);

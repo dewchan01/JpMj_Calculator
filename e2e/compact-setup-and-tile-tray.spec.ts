@@ -29,6 +29,7 @@ test('indicator tray reserves empty space and accepts dragged palette tiles', as
   await page.setViewportSize({ width: 390, height: 740 });
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await page
     .locator('.indicator-bar')
     .getByRole('button', { name: 'Dora indicators', exact: true })

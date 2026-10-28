@@ -11,6 +11,7 @@ for (const count of [3, 4])
       await page.goto('/');
       if (count === 3) await page.getByRole('button', { name: /3 players/ }).click();
       await page.getByRole('button', { name: /Start match/ }).click();
+      await page.getByRole('button', { name: 'Start game', exact: true }).click();
       const table = page.locator('app-table-summary');
       await expect(table.locator('.player-seat')).toHaveCount(count);
       await expect(table.locator('.player-seat.dealer')).toHaveCount(1);

@@ -6,6 +6,7 @@ test('five Kans automatically include one red tile for open, concealed and added
 }) => {
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await playerAction(page, 'Player 3');
   await prompt(page).getByRole('button', { name: 'Pon', exact: true }).click();
   await enterLiveTiles(page, 'Meld tiles', '5p');

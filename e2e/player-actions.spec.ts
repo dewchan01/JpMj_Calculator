@@ -7,6 +7,7 @@ test('Ron with missing Dora requests an indicator and resumes the same winning h
 }) => {
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await beginWin(page);
   await enterLiveTiles(page, 'The winning hand', '123m456m789p234s55p');
   await prompt(page)
@@ -36,6 +37,7 @@ test('quick Riichi deposits directly, double declaration is explicit, and calls 
   await page.setViewportSize({ width: 390, height: 740 });
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   const seat = page.locator('.player-seat').filter({ hasText: 'Player 2' });
   await seat.getByRole('button', { name: 'Riichi', exact: true }).click();
   await expect(prompt(page)).not.toBeVisible();
@@ -103,6 +105,7 @@ test('player Ron and Tsumo actions preselect the winner and keep hand validation
 }) => {
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await playerAction(page, 'Player 2');
   await prompt(page).getByRole('button', { name: 'Ron · discard', exact: true }).click();
   await expect(prompt(page).getByRole('combobox', { name: 'Win method', exact: true })).toHaveValue(

@@ -73,13 +73,15 @@ describe('game sounds', () => {
     );
     service.play('pon');
     service.play('ankan');
+    service.play('doubleRiichi');
     expect(sources).toEqual([
       'https://example.com/app/sounds/ichihime/pon.mp3',
       'https://example.com/app/sounds/ichihime/kan.mp3',
+      'https://example.com/app/sounds/ichihime/riichi.mp3',
     ]);
     expect(speech.speak).not.toHaveBeenCalled();
     service.setEnabled(false);
-    expect(pause).toHaveBeenCalledTimes(2);
+    expect(pause).toHaveBeenCalledTimes(3);
   });
   it('falls back when a recording cannot play, but skips stale rejected playback', async () => {
     const { service, speech } = setup();

@@ -30,6 +30,7 @@ test('manual scoring and matches work without the secure-context UUID API', asyn
   await expect(dora.locator('.indicator-editor > .selected-tiles app-tile-art')).toHaveCount(1);
   await page.getByRole('navigation').getByRole('link', { name: 'My table', exact: true }).click();
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await expect(page).toHaveURL(/\/score\/[0-9a-f-]+$/);
   await expect(page.locator('app-table-summary')).toBeVisible();
   expect(errors).toEqual([]);

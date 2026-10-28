@@ -11,6 +11,7 @@ test('final results offer table, list, history, statistics, PNG export, keep and
   );
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await expect(page).toHaveURL(/\/score\/[^/]+$/);
   await beginWin(page);
   await finishWin(page, '123m456m789p234s50p');
@@ -250,6 +251,7 @@ test('root backdrops close, nested prompts stay open, and reopening resumes the 
   await page.setViewportSize({ width: 390, height: 740 });
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await page
     .locator('.indicator-bar')
     .getByRole('button', { name: 'Dora indicators', exact: true })

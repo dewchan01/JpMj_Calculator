@@ -2,6 +2,15 @@ import { type Routes } from '@angular/router';
 
 export const routes: Routes = [
   {
+    path: 'room/:room',
+    loadComponent: () =>
+      import('./features/scoring/game-table/game-table').then((module) => module.GameTable),
+  },
+  {
+    path: 'online',
+    loadComponent: () => import('./features/online/online').then((module) => module.Online),
+  },
+  {
     path: 'others/rules',
     loadComponent: () => import('./features/about/about').then((module) => module.About),
   },

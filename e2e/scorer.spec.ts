@@ -11,6 +11,7 @@ test('mobile match, draft, verified settlement, escrow, history, reload and offl
   await page.goto('/');
   await page.getByLabel('Match name').fill('Test table');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await page
     .locator('.player-seat')
     .filter({ hasText: 'Player 2' })

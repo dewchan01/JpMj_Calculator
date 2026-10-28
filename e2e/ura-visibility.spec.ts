@@ -7,6 +7,7 @@ for (const method of ['ron', 'tsumo'] as const) {
   }) => {
     await page.goto('/');
     await page.getByRole('button', { name: /Start match/ }).click();
+    await page.getByRole('button', { name: 'Start game', exact: true }).click();
     const uraOnTable = page
       .locator('.indicator-bar')
       .getByRole('button', { name: 'Ura indicators', exact: true });
@@ -60,6 +61,7 @@ test('non-Riichi winning conditions do not offer Ura even when another player de
 }) => {
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await page
     .locator('.player-seat')
     .filter({ hasText: 'Player 1' })

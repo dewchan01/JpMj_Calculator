@@ -7,6 +7,7 @@ test('point comparison works while held by touch or keyboard and always releases
   await page.setViewportSize({ width: 390, height: 740 });
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   const compare = page.getByRole('button', { name: 'Point differences Player 2', exact: true });
   const session = await page.context().newCDPSession(page);
   await session.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
@@ -39,6 +40,7 @@ test('match settings show the saved rules and returning to My table pauses the c
   await page.setViewportSize({ width: 390, height: 740 });
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await expect(page.locator('.game-shell')).toBeVisible();
   const matchUrl = page.url();
   await gameMenu(page, 'In-game settings');
@@ -70,6 +72,7 @@ test('Riichi and indicator dialogs contain only their selected operation and pre
   await page.setViewportSize({ width: 390, height: 740 });
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await page
     .locator('.player-seat')
     .filter({ hasText: 'Player 2' })

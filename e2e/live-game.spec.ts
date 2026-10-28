@@ -21,6 +21,7 @@ for (const width of [390, 1280])
       await page.goto('/');
       await page.getByRole('button', { name: new RegExp(count + ' players') }).click();
       await page.getByRole('button', { name: /Start match/ }).click();
+      await page.getByRole('button', { name: 'Start game', exact: true }).click();
       await expect(page.locator('.game-shell')).toBeVisible();
       await expect(
         page.locator('.table-center').getByRole('button', { name: 'End this hand', exact: true }),
@@ -184,6 +185,7 @@ test('saved player library survives reload and fills a chosen seat', async ({ pa
     'Alice',
   );
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await expect(page.locator('.player-seat.dealer')).toContainText('Alice');
 });
 
@@ -193,6 +195,7 @@ test('Chi infers the previous seat and a selected Riichi can be cancelled after 
   await page.setViewportSize({ width: 390, height: 667 });
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   for (const name of ['Player 2', 'Player 3']) {
     await page
       .locator('.player-seat')
@@ -236,6 +239,7 @@ test('table buttons offer visible actions and undo restores declarations and one
   await page.setViewportSize({ width: 390, height: 900 });
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   const seat = page.locator('.player-seat').filter({ hasText: 'Player 2' });
   await seat.getByRole('button', { name: 'Riichi', exact: true }).click();
   await expect(prompt(page)).not.toBeVisible();
@@ -265,6 +269,7 @@ for (const width of [360, 390]) {
       await page.goto('/');
       await page.getByRole('button', { name: new RegExp(count + ' players') }).click();
       await page.getByRole('button', { name: /Start match/ }).click();
+      await page.getByRole('button', { name: 'Start game', exact: true }).click();
       await expect(page.locator('.game-shell')).toBeVisible();
       const boxes = await page.locator('.player-seat, .table-center').evaluateAll((elements) =>
         elements.map((e) => {
@@ -339,6 +344,7 @@ test('Pon upgrades retain the called tile and Kan actions reveal additional indi
 }) => {
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await playerAction(page, 'Player 3');
   await prompt(page).getByRole('button', { name: 'Pon', exact: true }).click();
   await enterLiveTiles(page, 'Meld tiles', '1z');

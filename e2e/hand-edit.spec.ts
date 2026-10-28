@@ -33,6 +33,7 @@ test('edit an earlier draw, replay later hands, cancel drafts, then replace it w
   await page.setViewportSize({ width: 390, height: 740 });
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await recordDraw(page, ['Player 1']);
   await recordDraw(page, ['Player 1']);
   const original = await stored(page);
@@ -90,6 +91,7 @@ test('indicator buttons open the tile sheet directly; Done saves, Escape discard
   await page.setViewportSize({ width: 390, height: 740 });
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await page
     .locator('.indicator-bar')
     .getByRole('button', { name: 'Dora indicators', exact: true })
