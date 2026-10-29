@@ -14,7 +14,7 @@
   "Invalid CSV file.": "無効なCSVファイルです。",
   "Invalid transfer code.": "無効なデータコードです。",
   "No QR code found.": "QRコードが見つかりません。",
-  "Scan this QR code to join automatically. It includes the room passcode.": "このQRコードをスキャンすると自動で参加します。ルームのパスコードが含まれています。",
+  "Scan this QR code to join automatically.": "このQRコードをスキャンすると自動で参加します。",
   "Start game": "対局を開始",
   "Start shared game": "共有対局を開始",
   "Host game": "対局を主催",
@@ -1329,5 +1329,6 @@
   "Online": "オンライン",
   "Offline": "オフライン",
   "Checking": "確認中",
-  "Select": "選択"
+  "Select": "選択",
+  "Joined the room. Waiting for the host to start the game.": "入室しました。ホストの対局開始を待っています。"
 }

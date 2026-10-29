@@ -1,5 +1,13 @@
 # Table-first match flow
 
+## Shared room lobby
+
+Hosting creates a room before the game starts. Players can scan its QR code or enter the room
+credentials and see a joined/waiting message. The host presses Start game to publish the prepared
+match; joined players then enter the table through the room notification. The game clock starts
+at that point, excluding lobby waiting time. Hosting reuses the players selected on the home page;
+the host prompt does not repeat the player selection buttons.
+
 ## Assisted scoring and Manual Han entry
 
 Others → Scoring mode offers Assisted scoring (default) and Manual Han entry, persisted per device.

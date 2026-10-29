@@ -278,7 +278,7 @@ export class Home {
         honba: 0,
         events: [],
         live: emptyLive(),
-        clock: { elapsedMs: 0, runningSince: now, handStartMs: 0 },
+        clock: { elapsedMs: 0, runningSince: shared ? null : now, handStartMs: 0 },
       };
       match.gameLength = rules.preset === 'm-league' ? 'south' : setup.gameLength;
       const mySeat = +setup.mySeat < players.length ? +setup.mySeat : 0;

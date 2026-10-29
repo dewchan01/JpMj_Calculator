@@ -508,13 +508,6 @@
       }
     </label>
 
-    <div class="players-grid">
-      @for (seat of seats.slice(0, count()); track seat; let i = $index) {
-        <button class="secondary" (click)="openPlayers(playersDialog, i)">
-          {{ setup().names[i] || ('Player ' + (i + 1) | t) }}
-        </button>
-      }
-    </div>
     <app-error-notice [message]="error()" />
     <button class="primary" (click)="openShared('host', sharedGameDialog)" [disabled]="busy()">
       {{ 'Host game' | t }}

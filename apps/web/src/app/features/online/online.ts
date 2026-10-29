@@ -51,6 +51,7 @@ export class Online implements OnInit {
   readonly archive = signal<GameArchive | null>(null);
   readonly games = signal<Match[]>([]);
   readonly game = signal<RoomGame | null>(null);
+  readonly pendingGame = signal<Match | null>(null);
   readonly selectedGame = new FormControl('', { nonNullable: true });
   readonly connectionStatus = signal('Disconnected');
   readonly presence = signal<PresenceSnapshot | null>(null);
@@ -204,8 +205,8 @@ export class Online implements OnInit {
       'POST',
       {
         playerCount: this.form.controls.count.value,
-        match: updated,
-        handKey: updated ? roomHandKey(updated) : undefined,
+        match: this.embedded() ? undefined : updated,
+        handKey: !this.embedded() && updated ? roomHandKey(updated) : undefined,
         hostSeat,
       },
     );
@@ -222,8 +223,15 @@ export class Online implements OnInit {
     if (this.destroyed || this.closing) return;
     if (gameId && !access.game?.match) {
       this.selectedGame.setValue(gameId);
-      await this.attachSelected();
+      this.pendingGame.set(match ?? null);
+      if (!this.embedded()) await this.attachSelected();
     }
+  }
+  startGame(): void {
+    void this.run(async () => {
+      await this.attachSelected();
+      if (this.game()?.match?.id) await this.router.navigate(['/room', this.access()!.id]);
+    });
   }
   join(): void {
     void this.run(() => this.joinRoom());
@@ -285,7 +293,8 @@ export class Online implements OnInit {
   }
   private async attachSelected(): Promise<void> {
     const access = this.access()!;
-    const match = this.games().find((match) => match.id === this.selectedGame.value);
+    const match =
+      this.pendingGame() ?? this.games().find((match) => match.id === this.selectedGame.value);
     if (!match) return;
     const current = await this.api.request<RoomGame>(
       `/api/rooms/${access.id}/game`,
@@ -480,6 +489,7 @@ export class Online implements OnInit {
     this.room.set(null);
     this.qr.set('');
     this.game.set(null);
+    this.pendingGame.set(null);
     this.games.set([]);
     try {
       localStorage.removeItem(this.storageKey());

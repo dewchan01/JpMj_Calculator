@@ -50,7 +50,13 @@ test('host permissions synchronize and final choices affect only each local copy
   await guest.getByRole('textbox', { name: 'Room code', exact: true }).fill(code);
   await guest.getByRole('textbox', { name: 'Room PIN', exact: true }).fill(pin);
   await guest.getByRole('button', { name: 'Join room', exact: true }).click();
-  await host.getByRole('link', { name: 'Open room table', exact: true }).click();
+  await expect(
+    guest.getByText('Joined the room. Waiting for the host to start the game.', { exact: true }),
+  ).toBeVisible();
+  await expect(guest.locator('.game-shell')).toHaveCount(0);
+  await host.locator('app-online').getByRole('button', { name: 'Start game', exact: true }).click();
+  await expect(guest.locator('.game-shell')).toBeVisible();
+
   await expect(host.locator('.seat-bottom h3')).toHaveText('Player 3');
   const ownPresence = host
     .locator('.seat-bottom h3')

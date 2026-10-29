@@ -33,7 +33,8 @@
     </button>
   }
 } @else if (access() && !access()!.host) {
-  <p role="status">{{ 'The host has not attached a game yet.' | t }}</p>
+  <app-connection-status [state]="connectionStatus()" />
+  <p role="status">{{ 'Joined the room. Waiting for the host to start the game.' | t }}</p>
   <button class="secondary" (click)="forget()" [disabled]="busy()">{{ 'Leave room' | t }}</button>
 } @else if (access(); as credential) {
   @if (qr()) {
@@ -96,10 +97,10 @@
   </section>
 
   @if (credential.pin) {
-    <p>{{ 'Scan this QR code to join automatically. It includes the room passcode.' | t }}</p>
+    <p>{{ 'Scan this QR code to join automatically.' | t }}</p>
   }
   @if (room(); as state) {
-    @if (credential.host && game()?.match; as currentMatch) {
+    @if (credential.host && (game()?.match ?? pendingGame()); as currentMatch) {
       <app-player-presence
         [players]="currentMatch.players"
         [onlineSeats]="presence()?.seats ?? null"
@@ -111,7 +112,7 @@
       <span>{{ 'Expires' | t }}</span>
       <time [attr.datetime]="state.expiresAt">{{ state.expiresAt | localDate: 'dateTime' }}</time>
     </div>
-    @if (!game()?.match?.id && credential.host) {
+    @if (!game()?.match?.id && credential.host && !pendingGame()) {
       <label>
         {{ 'Game' | t }}
         <select [formControl]="selectedGame">
@@ -145,6 +146,10 @@
       }
       @if (game()?.match?.id) {
         <a class="primary" [routerLink]="['/room', credential.id]">{{ 'Open room table' | t }}</a>
+      } @else if (credential.host && pendingGame()) {
+        <button class="primary" (click)="startGame()" [disabled]="busy()">
+          {{ 'Start game' | t }}
+        </button>
       }
     </div>
   }

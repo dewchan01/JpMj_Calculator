@@ -14,7 +14,7 @@
   "Invalid CSV file.": "无效的 CSV 档案。",
   "Invalid transfer code.": "无效的资料代码。",
   "No QR code found.": "找不到 QR 码。",
-  "Scan this QR code to join automatically. It includes the room passcode.": "扫描此 QR 码即可自动加入，其中包含房间密码。",
+  "Scan this QR code to join automatically.": "扫描此 QR 码即可自动加入。",
   "Start game": "开始对局",
   "Start shared game": "开始共享对局",
   "Host game": "主持对局",
@@ -1329,5 +1329,6 @@
   "Online": "在线",
   "Offline": "离线",
   "Checking": "确认中",
-  "Select": "选择"
+  "Select": "选择",
+  "Joined the room. Waiting for the host to start the game.": "已加入房间，等待房主开始对局。"
 }

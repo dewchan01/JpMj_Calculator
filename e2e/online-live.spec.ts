@@ -54,7 +54,9 @@ test('host and guest synchronize Riichi, Kan and a winning declaration through t
   await expect(host.getByRole('img', { name: 'Room QR code', exact: true })).toBeVisible();
   await expect(host.getByLabel('Room link', { exact: true })).toHaveCount(0);
   await expect(host.getByRole('button', { name: 'Copy room details', exact: true })).toBeVisible();
-  await expect(host.getByRole('link', { name: 'Open room table', exact: true })).toBeVisible();
+  await expect(
+    host.locator('app-online').getByRole('button', { name: 'Start game', exact: true }),
+  ).toBeVisible();
 
   await host.request.post(api + '/api/rooms/' + code + '/join', { data: { pin, seat: 0 } });
   const guestContext = await browser.newContext({ serviceWorkers: 'block' });
@@ -72,8 +74,11 @@ test('host and guest synchronize Riichi, Kan and a winning declaration through t
     mimeType: 'image/png',
     buffer: Buffer.from(roomQR!.split(',')[1], 'base64'),
   });
+  await expect(
+    guest.getByText('Joined the room. Waiting for the host to start the game.', { exact: true }),
+  ).toBeVisible();
+  await host.locator('app-online').getByRole('button', { name: 'Start game', exact: true }).click();
   await expect(guest.locator('.game-shell')).toBeVisible();
-  await host.getByRole('link', { name: 'Open room table', exact: true }).click();
   const guestSeat = guest.locator('.player-seat').filter({ hasText: 'Player 2' });
   const hostSeat = host.locator('.player-seat').filter({ hasText: 'Player 2' });
   await expect(guestSeat).toBeVisible();
@@ -292,8 +297,10 @@ test('host can select three players and room header stays visible', async ({ pag
     .locator('..')
     .getByRole('button', { name: 'Host game', exact: true })
     .click();
-  await expect(page.getByRole('link', { name: 'Open room table', exact: true })).toBeVisible();
-  const dialog = page.getByRole('dialog', { name: 'Host game', exact: true });
+  await expect(
+    page.locator('app-online').getByRole('button', { name: 'Start game', exact: true }),
+  ).toBeVisible();
+  const dialog = page.locator('dialog.shared-game-dialog');
   await expect(dialog.locator('app-player-presence li')).toHaveCount(3);
   await expect(dialog.locator('.connection-row .connection-chip')).toHaveAttribute(
     'aria-label',
