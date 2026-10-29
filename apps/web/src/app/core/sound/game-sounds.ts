@@ -100,6 +100,33 @@ export class GameSounds {
 
   playDice(): void {
     if (!this.enabled()) return;
+    const playback = ++this.playback;
+    this.audio?.pause();
+    if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
+    this.unlock();
+    let failed = false;
+    const fallback = () => {
+      if (failed || playback !== this.playback || !this.enabled()) return;
+      failed = true;
+      this.playDiceFallback();
+    };
+    if (typeof Audio !== 'undefined') {
+      try {
+        const audio = new Audio(new URL('sounds/rolling-dice.mp3', document.baseURI).href);
+        this.audio = audio;
+        audio.volume = 0.7;
+        audio.onerror = fallback;
+        void audio.play().catch(fallback);
+        return;
+      } catch {
+        /* Fall back to generated dice audio. */
+      }
+    }
+    fallback();
+  }
+
+  private playDiceFallback(): void {
+    if (!this.enabled()) return;
     this.unlock();
     const context = this.context;
     if (!context) return;

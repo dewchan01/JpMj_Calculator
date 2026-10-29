@@ -29,7 +29,7 @@ export class ErrorNotice {
     const log = inject(DiagnosticLog);
     effect(() => {
       const messages = this.content();
-      for (const message of messages) log.add('error', message);
+      for (const message of messages) log.userMessage(message);
     });
     afterRenderEffect(() => {
       if (!this.content().length || !this.focusOnShow()) return;

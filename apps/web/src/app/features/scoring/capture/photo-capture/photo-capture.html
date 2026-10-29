@@ -13,12 +13,6 @@
     }}
   </p>
 }
-@if (configuration.error()) {
-  <app-error-notice [message]="configuration.error()" [focusOnShow]="false" />
-}
-@if (error()) {
-  <app-error-notice [message]="error()" />
-}
 <label class="choose-image">
   {{ 'Choose an image' | t }}
   <input
@@ -46,37 +40,34 @@
   }
   <section [attr.aria-label]="'Review tiles before applying' | t">
     <h3>{{ 'Review tiles before applying' | t }}</h3>
-    <div class="review-tray">
+    @if (error() || configuration.error()) {
+      <app-error-notice [message]="error() || configuration.error()" [focusOnShow]="!!error()" />
+    } @else {
+      @let message = previewMessage();
+      <div class="preview-message" [class]="'preview-message ' + message.type" role="status">
+        <p>{{ message.text | t }}</p>
+      </div>
+    }
+    <div
+      class="review-tray"
+      appTileReorder
+      (tileReordered)="reorder($event)"
+      role="group"
+      [attr.aria-label]="'Review tiles before applying' | t"
+    >
       @for (tile of review(); track tile.id; let index = $index) {
-        <div class="review-tile">
-          <span class="tile preview-tile-face"><app-tile-art [tile]="tile" /></span>
+        <div class="review-tile" [attr.data-tile-index]="index">
+          <button
+            class="tile preview-tile-face"
+            (click)="remove(index)"
+            [disabled]="busy()"
+            [attr.aria-label]="'Remove preview tile' | t"
+          >
+            <app-tile-art [tile]="tile" />
+          </button>
           @if (confidence()[index] !== undefined) {
             <small>{{ confidence()[index] | percent: '1.0-1' }}</small>
           }
-          <div class="review-actions">
-            <button
-              (click)="move(index, -1)"
-              [disabled]="!index || busy()"
-              [attr.aria-label]="'Move tile left' | t"
-            >
-              ←
-            </button>
-            <button
-              (click)="move(index, 1)"
-              [disabled]="index === review().length - 1 || busy()"
-              [attr.aria-label]="'Move tile right' | t"
-            >
-              →
-            </button>
-            <button
-              class="icon-button"
-              (click)="remove(index)"
-              [disabled]="busy()"
-              [attr.aria-label]="'Remove preview tile' | t"
-            >
-              ×
-            </button>
-          </div>
         </div>
       } @empty {
         <p class="hint">
@@ -100,12 +91,6 @@
         {{ 'Apply reviewed tiles' | t }}
       </button>
     </div>
-    <p class="hint">
-      {{
-        'Applying replaces only the target tiles. Meld type, caller, winning tile and round declarations must be checked manually.'
-          | t
-      }}
-    </p>
   </section>
   <label>
     {{ 'Take a photo' | t }}
@@ -117,13 +102,4 @@
       [disabled]="busy() || !configuration.value()"
     />
   </label>
-  <div aria-live="polite">
-    @if (busy()) {
-      <p>{{ 'Recognizing tiles…' | t }}</p>
-    }
-
-    @if (completed() && !review().length) {
-      <p>{{ 'No tiles detected. Try another photo or enter tiles manually.' | t }}</p>
-    }
-  </div>
 </details>

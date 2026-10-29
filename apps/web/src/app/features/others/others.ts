@@ -69,7 +69,7 @@ export class Others {
     },
     {
       path: '/others/advanced',
-      title: 'Advanced scoring',
+      title: 'Scoring mode',
       group: 'Preferences',
       icon: 'M5 3h14v18H5ZM8 6h8v4H8Zm0 8h2m4 0h2m-8 4h2m4 0h2',
     },

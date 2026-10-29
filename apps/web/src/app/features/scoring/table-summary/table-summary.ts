@@ -2,11 +2,12 @@ import { Component, computed, inject, input, output } from '@angular/core';
 import { DecimalPipe, NgOptimizedImage } from '@angular/common';
 import { WINDS, type Wind } from '../../../../../../../packages/mahjong-core/index';
 import { I18n, TranslatePipe } from '../../../core/i18n/i18n';
+import { ConnectionStatus } from '../../../shared/connection-status/connection-status';
 import type { LedgerEvent } from '../../../../../../../packages/mahjong-core/ledger';
 
 @Component({
   selector: 'app-table-summary',
-  imports: [DecimalPipe, NgOptimizedImage, TranslatePipe],
+  imports: [DecimalPipe, NgOptimizedImage, TranslatePipe, ConnectionStatus],
   templateUrl: './table-summary.html',
   styleUrl: './table-summary.css',
   host: {
@@ -18,6 +19,7 @@ import type { LedgerEvent } from '../../../../../../../packages/mahjong-core/led
 })
 export class TableSummary {
   readonly interactive = input(false);
+  readonly presence = input<Readonly<Record<string, string>> | null>(null);
   readonly compact = input(false);
   readonly liveControls = input(false);
   readonly ended = input(false);
@@ -25,6 +27,9 @@ export class TableSummary {
   readonly playerAction = output<string>();
   readonly quickAction = output<{ player: string; type: string }>();
   readonly actionsDisabled = input(false);
+  readonly activePlayer = input('');
+  readonly allowRiichi = input(true);
+  readonly allowCalls = input(true);
   readonly callCounts = input<Record<string, number>>({});
   readonly concealedKanCounts = input<Record<string, number>>({});
   readonly northCounts = input<Record<string, number>>({});

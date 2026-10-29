@@ -3,6 +3,8 @@ using Riichi.Api.Data;
 using Riichi.Api.Features;
 using Riichi.Api.Infrastructure;
 using Riichi.Api.Infrastructure.Logging;
+using Riichi.Api.Infrastructure.Persistence;
+using Riichi.Api.Infrastructure.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddApiServices();
@@ -23,6 +25,7 @@ app.Use(async (context, next) =>
 app.UseCors();
 app.UseRateLimiter();
 app.MapFeatures();
+app.MapApiDocumentation();
 // Production migrations are an explicit deployment step, never automatic startup.
 if (args.Contains("--migrate"))
 {
@@ -34,7 +37,7 @@ if (args.Contains("--migrate"))
 if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
 {
     using var scope = app.Services.CreateScope();
-    await scope.ServiceProvider.GetRequiredService<AppDb>().Database.EnsureCreatedAsync();
+    await DevelopmentDatabase.InitializeAsync(scope.ServiceProvider.GetRequiredService<AppDb>());
 }
 app.Run();
 /// <summary>The API entry point, exposed for integration testing.</summary>

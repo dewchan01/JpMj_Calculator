@@ -11,7 +11,7 @@ import {
   validateRevealed,
 } from './live';
 import { recordCall, type CallInput } from './record-call';
-import { parseTiles } from './index';
+import { parseTiles, tileLabel, kindIndex } from './index';
 import { score, type ScoringInput } from '../mahjong-scoring/index';
 import { multipleRon, type RoundSettlement } from '../mahjong-scoring/rounds';
 import { handChips } from '../mahjong-scoring/chips';
@@ -82,6 +82,28 @@ export function applyRoomAction(
       )
         throw new Error('Invalid online request.');
       updated = recordCall(match, actor, p as unknown as CallInput, idFactory);
+      if (
+        p['requireDora'] === true &&
+        ['ankan', 'daiminkan', 'kakan'].includes(String(p['type']))
+      ) {
+        if (typeof p['dora'] !== 'string')
+          throw new Error('Fill every required indicator before saving.');
+        const live = initialLive(updated);
+        const required =
+          1 +
+          Object.values(live.players)
+            .flatMap((player) => player.melds)
+            .filter((meld) => !['chi', 'pon'].includes(meld.type)).length;
+        if (parseTiles(p['dora']).length !== required)
+          throw new Error('Fill every required indicator before saving.');
+        const previous = parseTiles(match.live?.dora ?? '').map(tileLabel);
+        const next = parseTiles(p['dora']).map(tileLabel);
+        if (previous.some((tile, index) => next[index] !== tile))
+          throw new Error('Invalid online request.');
+        live.dora = p['dora'];
+        validateRevealed(updated, live);
+        updated = { ...updated, live };
+      }
       break;
     }
     default:
@@ -124,7 +146,9 @@ export function roomWinInput(match: Match, action: RoomAction): ScoringInput {
       riichi: state.riichi === 'riichi',
       doubleRiichi: state.riichi === 'double',
     },
-    doraIndicators: parseTiles(match.live?.dora ?? '', 'dora'),
+    doraIndicators: supplied.doraIndicators?.length
+      ? supplied.doraIndicators
+      : parseTiles(match.live?.dora ?? '', 'dora'),
     uraIndicators: state.riichi === 'none' ? [] : supplied.uraIndicators,
     otherPlayerKans: Object.entries(initialLive(match).players)
       .filter(([id]) => id !== actor)
@@ -134,6 +158,31 @@ export function roomWinInput(match: Match, action: RoomAction): ScoringInput {
   if (!input.manualScore && !input.doraIndicators.length)
     throw new Error('Ask the host to enter Dora indicators first.');
   const live = initialLive(match);
+  if (!input.manualScore) {
+    const existing = parseTiles(match.live?.dora ?? '').map(tileLabel);
+    if (
+      existing.some(
+        (tile, index) =>
+          input.doraIndicators[index] && tileLabel(input.doraIndicators[index]) !== tile,
+      )
+    )
+      throw new Error('Invalid online request.');
+    const required =
+      1 +
+      Object.values(live.players)
+        .flatMap((player) => player.melds)
+        .filter((meld) => !['chi', 'pon'].includes(meld.type)).length;
+    if (
+      input.doraIndicators.length !== required ||
+      (state.riichi !== 'none' && input.uraIndicators.length !== required)
+    )
+      throw new Error('Fill every required indicator before saving.');
+    live.dora = input.doraIndicators
+      .map((tile) =>
+        tile.kind.type === 'suited' ? tileLabel(tile) : `${kindIndex(tile.kind) - 26}z`,
+      )
+      .join(' ');
+  }
   const discarder = live.players[input.win.discarderId ?? ''];
   if (input.win.method === 'ron' && discarder) {
     if (input.win.robbed === 'kita') discarder.kita.pop();
@@ -156,6 +205,14 @@ export function settleRoomWins(
 ): Match {
   if (!actions.length) throw new Error('Enter at least one winning hand.');
   const inputs = actions.map((action) => roomWinInput(match, action));
+  if (
+    inputs.some(
+      (input) =>
+        input.doraIndicators.map(tileLabel).join(' ') !==
+        inputs[0].doraIndicators.map(tileLabel).join(' '),
+    )
+  )
+    throw new Error('Winning hands must use the same Dora indicators.');
   const result = score(inputs[0]);
   const round: RoundSettlement =
     inputs[0].win.method === 'ron'

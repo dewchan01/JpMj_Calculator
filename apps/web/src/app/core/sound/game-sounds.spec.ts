@@ -3,6 +3,45 @@ import { callSounds, GameSounds } from './game-sounds';
 
 afterEach(() => vi.unstubAllGlobals());
 describe('game sounds', () => {
+  it('plays the bundled dice recording, restarts it and stops on mute', () => {
+    const { service, speech } = setup();
+    const pause = vi.fn();
+    const play = vi.fn(() => Promise.resolve());
+    const sources: string[] = [];
+    vi.stubGlobal(
+      'Audio',
+      class {
+        pause = pause;
+        play = play;
+        constructor(src: string) {
+          sources.push(src);
+        }
+      },
+    );
+    service.playDice();
+    service.playDice();
+    expect(sources).toEqual(Array(2).fill('https://example.com/app/sounds/rolling-dice.mp3'));
+    expect(play).toHaveBeenCalledTimes(2);
+    service.setEnabled(false);
+    service.playDice();
+    expect(play).toHaveBeenCalledTimes(2);
+    expect(pause).toHaveBeenCalledTimes(2);
+    expect(speech.speak).not.toHaveBeenCalled();
+  });
+  it('handles dice playback rejection without interrupting the game', async () => {
+    const { service } = setup();
+    vi.stubGlobal(
+      'Audio',
+      class {
+        pause() {}
+        play() {
+          return Promise.reject(new Error('unavailable'));
+        }
+      },
+    );
+    expect(() => service.playDice()).not.toThrow();
+    await Promise.resolve();
+  });
   function setup(saved: string | null = null) {
     const store = { getItem: vi.fn(() => saved), setItem: vi.fn() };
     const voice = { lang: 'ja-JP', localService: true };

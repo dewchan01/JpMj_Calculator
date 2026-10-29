@@ -40,23 +40,43 @@
   <section class="card other-detail">
     @switch (section()) {
       @case ('advanced') {
-        <label class="advanced-mode-toggle">
-          <span class="preference-copy">
-            {{ 'Advanced scoring' | t }}
-            <small>
-              {{
-                'Enter total Han and Fu instead of a complete hand. Calls and Riichi remain available.'
-                  | t
-              }}
-            </small>
-          </span>
-          <input
-            type="checkbox"
-            role="switch"
-            [checked]="scoringMode.advanced()"
-            (change)="scoringMode.setAdvanced($any($event.target).checked)"
-          />
-        </label>
+        <fieldset class="scoring-mode-options">
+          <label class="scoring-mode-option">
+            <span class="scoring-mode-description">
+              <strong id="assisted-scoring-title">{{ 'Assisted scoring' | t }}</strong>
+              <small id="assisted-scoring-description">
+                {{ 'Enter tiles to calculate Han, Fu and payments automatically.' | t }}
+              </small>
+            </span>
+            <input
+              type="radio"
+              name="scoringMode"
+              aria-labelledby="assisted-scoring-title"
+              aria-describedby="assisted-scoring-description"
+              [checked]="!scoringMode.advanced()"
+              (change)="scoringMode.setAdvanced(false)"
+            />
+          </label>
+          <label class="scoring-mode-option">
+            <span class="scoring-mode-description">
+              <strong id="manual-scoring-title">{{ 'Manual Han entry' | t }}</strong>
+              <small id="manual-scoring-description">
+                {{
+                  'Enter total Han and Fu instead of a complete hand. Calls and Riichi remain available.'
+                    | t
+                }}
+              </small>
+            </span>
+            <input
+              type="radio"
+              name="scoringMode"
+              aria-labelledby="manual-scoring-title"
+              aria-describedby="manual-scoring-description"
+              [checked]="scoringMode.advanced()"
+              (change)="scoringMode.setAdvanced(true)"
+            />
+          </label>
+        </fieldset>
       }
       @case ('sound') {
         <label class="check">
@@ -203,7 +223,10 @@
       @for (entry of logs.entries().slice().reverse(); track entry.id) {
         <li>
           <time>{{ entry.timestamp | localDate }}</time>
-          <span class="log-level">{{ entry.level }}</span>
+          <span class="log-level">{{ entry.level }} · {{ entry.category }}</span>
+          @if (entry.occurrences > 1) {
+            <span>×{{ entry.occurrences }}</span>
+          }
           <pre>{{ entry.message }}</pre>
         </li>
       } @empty {

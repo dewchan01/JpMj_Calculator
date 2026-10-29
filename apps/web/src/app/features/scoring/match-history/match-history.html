@@ -119,56 +119,36 @@
             </div>
           }
         }
-        @if (event.hand) {
-          @let wind = event.roundWind ?? event.before?.roundWind ?? event.scoringInput?.roundWind;
-          <p class="hint">
-            {{ event.win?.method | t }}
-            @if (wind) {
-              · {{ 'Round wind' | t }}: {{ wind | t }}
-            }
-          </p>
-          <div class="mini-tiles">
-            @for (t of event.hand.concealedTiles; track t.id) {
-              <span><app-tile-art [tile]="t" /></span>
-            }
-          </div>
-          @for (m of event.hand.melds; track m.id) {
-            <p class="hint">
-              {{ m.type | t }} · {{ m.fromPlayerId ? name(m.fromPlayerId) : i18n.t('concealed') }}
-            </p>
-            <div class="mini-tiles">
-              @for (t of m.tiles; track t.id) {
-                <span><app-tile-art [tile]="t" /></span>
-              }
-            </div>
-          }
-        }
-        @if (event.result; as r) {
-          <p>{{ r.han + ' Han · ' + r.fu + ' Fu' | t }} · {{ r.limitName ?? 'standard' | t }}</p>
-          @for (y of r.yaku; track y.id) {
-            <div class="explain-row">
-              <span>{{ y.name | t }}</span>
-              <strong>
-                {{ (y.yakumanMultiplier ? y.yakumanMultiplier + '× Yakuman' : y.han + ' Han') | t }}
-              </strong>
-            </div>
-          }
-        }
         @if (event.drawInput; as draw) {
           <p>{{ draw.type | t }} · {{ draw.reason ?? '' | t }}</p>
           <p>{{ 'Tenpai players' | t }}: {{ playerList(draw.tenpaiIds) }}</p>
         }
-        @for (input of event.scoringInputs; track input.win.winnerId) {
-          <p>{{ name(input.win.winnerId) }}</p>
-          <div class="mini-tiles">
-            @for (tile of input.hand.concealedTiles; track tile.id) {
-              <span><app-tile-art [tile]="tile" /></span>
+        @for (entry of scoredHands(event); track $index) {
+          @let r = entry.result;
+          @if (entry.winnerId) {
+            <h3>{{ name(entry.winnerId) }}</h3>
+          }
+          @if (entry.hand; as hand) {
+            <div class="mini-tiles">
+              @for (tile of hand.concealedTiles; track tile.id) {
+                <span><app-tile-art [tile]="tile" /></span>
+              }
+            </div>
+            @for (meld of hand.melds; track meld.id) {
+              <p class="hint">
+                {{ meld.type | t }} ·
+                {{ meld.fromPlayerId ? name(meld.fromPlayerId) : i18n.t('concealed') }}
+              </p>
+              <div class="mini-tiles">
+                @for (tile of meld.tiles; track tile.id) {
+                  <span><app-tile-art [tile]="tile" /></span>
+                }
+              </div>
             }
-          </div>
-        }
-        @for (r of event.results; track $index) {
-          <h3>{{ name(event.winnerIds?.[$index] ?? '') }}</h3>
-          <p>{{ r.han + ' Han · ' + r.fu + ' Fu' | t }} · {{ r.limitName ?? 'standard' | t }}</p>
+          }
+          <p class="hand-score-summary">
+            {{ r.han + ' Han · ' + r.fu + ' Fu' | t }} · {{ entry.limitName ?? 'standard' | t }}
+          </p>
           @for (y of r.yaku; track y.id) {
             <div class="explain-row">
               <span>{{ y.name | t }}</span>

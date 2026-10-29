@@ -46,10 +46,26 @@ test('file configuration, editable capture preview, and independent tile targets
   );
   expect(received).toBe(true);
   await expect(page.locator('.hand-tray > .hand-tiles > button.tile app-tile-art')).toHaveCount(0);
-  await capture.getByRole('button', { name: 'Move tile left' }).nth(1).click();
+  const previewTiles = capture.locator('.preview-tile-face');
+  await previewTiles.nth(1).scrollIntoViewIfNeeded();
+  const firstTile = (await previewTiles.first().boundingBox())!;
+  const secondTile = (await previewTiles.nth(1).boundingBox())!;
+  await page.mouse.move(secondTile.x + secondTile.width / 2, secondTile.y + secondTile.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(firstTile.x + firstTile.width / 2, firstTile.y + firstTile.height / 2, {
+    steps: 6,
+  });
+  await page.mouse.up();
   await expect(capture.getByRole('textbox', { name: 'Edit preview tiles' })).toHaveValue('7z2m');
+  await expect(capture.locator('.review-tile small').first()).toContainText('94%');
+  await expect(capture.locator('.preview-tile-face')).toHaveCount(2);
+  await previewTiles.first().focus();
+  await previewTiles.first().press('Alt+ArrowRight');
+  await expect(capture.getByRole('textbox', { name: 'Edit preview tiles' })).toHaveValue('2m7z');
+  await expect(capture.locator('.preview-message.success')).toBeVisible();
   await capture.getByRole('button', { name: 'Remove preview tile' }).first().click();
   await capture.getByRole('textbox', { name: 'Edit preview tiles' }).fill('123p');
+  await expect(capture.locator('.preview-message.warning')).toBeVisible();
   await expect(capture.getByRole('button', { name: 'Apply reviewed tiles' })).toBeDisabled();
   await capture.getByRole('button', { name: 'Update preview' }).click();
   await capture.getByRole('button', { name: 'Apply reviewed tiles' }).click();
@@ -98,7 +114,6 @@ test('invalid configuration disables uploads without preventing manual previews'
   await openQuickScore(page);
   await page.getByRole('button', { name: 'Enter tiles', exact: true }).click();
   const capture = page.locator('app-photo-capture').first();
-  await capture.locator('summary').click();
   await expect(capture.getByRole('alert')).toContainText('config.json');
   await expect(capture.locator('input[type="file"]').first()).toBeDisabled();
   await capture.getByRole('textbox', { name: 'Edit preview tiles' }).fill('123m');

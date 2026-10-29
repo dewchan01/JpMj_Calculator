@@ -313,3 +313,53 @@ dd {
 .advanced-mode-toggle input:checked::before {
   transform: translateX(18px);
 }
+.scoring-mode-options {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.scoring-mode-option {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 56px;
+  margin: 0;
+  padding: 14px 0;
+  text-align: left;
+  cursor: pointer;
+}
+.scoring-mode-option + .scoring-mode-option {
+  border-top: 1px solid var(--border);
+}
+.scoring-mode-description {
+  flex: 1;
+  min-width: 0;
+}
+.scoring-mode-description strong,
+.scoring-mode-description small {
+  display: block;
+}
+.scoring-mode-description strong {
+  font-size: var(--field-label-size, 0.85rem);
+}
+.scoring-mode-description small {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.scoring-mode-option input[type='radio'] {
+  appearance: auto;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--green);
+  cursor: pointer;
+}

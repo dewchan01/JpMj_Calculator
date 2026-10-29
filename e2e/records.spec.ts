@@ -99,10 +99,14 @@ for (const width of [320, 390, 1280]) {
     await expect(page.locator('.mode-filter-row .game-count')).toContainText('games found');
     await expect(page.locator('.records-summary')).toHaveCount(0);
     await expect(page.locator('.game-card .game-meta').first()).toContainText(
-      'Latest hand: east 2 · Honba 1',
+      'Latest hand: East 2 · Honba 1',
     );
     await expect(page.locator('.game-card tfoot').first()).toContainText('Total');
     await expect(page.locator('.game-card tfoot td').first()).toHaveText('105,000');
+    const rankedRows = page.locator('.game-card').first().locator('tbody tr');
+    await expect(rankedRows.first().locator('.score-breakdown')).toContainText('Oka');
+    await expect(rankedRows.nth(1).locator('.score-breakdown')).not.toContainText('Oka');
+    await expect(rankedRows.nth(2).locator('.score-breakdown')).not.toContainText('Oka');
     await expect(page.locator('.game-card thead th').nth(1)).toHaveCSS('text-align', 'left');
     await expect(page.locator('.game-card .player-name').first()).toHaveCSS('text-align', 'left');
     const controls = await page.locator('.records-controls').boundingBox();
@@ -154,6 +158,14 @@ for (const width of [320, 390, 1280]) {
     await page.getByRole('button', { name: 'Apply filters', exact: true }).click();
     await expect(dialog).not.toBeVisible();
     await page.getByRole('button', { name: '3P East-only', exact: true }).click();
+    await expect(page.locator('.mode-filter-row .filter-reset')).toHaveCSS(
+      'border-top-width',
+      '0px',
+    );
+    await expect(page.locator('.mode-filter-row .filter-reset')).toHaveCSS(
+      'color',
+      'rgb(140, 80, 27)',
+    );
     await expect(page.locator('.game-card')).toHaveCount(1);
     await expect(page.locator('.game-card')).toContainText('90 minutes');
     await expect(page.locator('.game-card tbody tr').first()).toContainText('41,000');

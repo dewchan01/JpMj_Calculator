@@ -81,7 +81,7 @@ Double-wind pairs receive two Fu. Ankan robbery, abortive draws and Nagashi Mang
 Pao includes the fourth Daiminkan after three Kans, and concealed honor Kans count toward exposure
 for the relevant liability decision. Recorded call order is required.
 
-Matches use East/South rounds, continue through negative balances, and have no first-place dealer
+M.League uses a fixed East/South schedule in new-game setup. Other presets default to East-only and allow selecting East + South. M.League games continue through negative balances and have no first-place dealer
 finish or extension. Final tied leaders share remaining escrow; three-way ties use a 400/300/300
 split per stick by initial seat order. Final table results now include the saved Oka/Uma model; league/team standings and referee penalties remain outside the app. This is a scoring and settlement preset, not a complete competition management system.
 

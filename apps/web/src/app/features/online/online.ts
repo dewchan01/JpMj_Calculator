@@ -13,11 +13,14 @@ import { roomHandKey } from '../../../../../../packages/mahjong-core/room-action
 import { initialLive, clockAt } from '../../../../../../packages/mahjong-core/live';
 import type { Match } from '../../../../../../packages/mahjong-core/ledger';
 import type { RoomGame } from '../../core/online/room-session';
+import { parsePresence, type PresenceSnapshot } from '../../core/online/presence';
+import { PlayerPresence } from '../../shared/player-presence/player-presence';
 
 @Component({
   selector: 'app-online',
   imports: [
     ConnectionStatus,
+    PlayerPresence,
     CopyButton,
     ReactiveFormsModule,
     RouterLink,
@@ -50,6 +53,18 @@ export class Online implements OnInit {
   readonly game = signal<RoomGame | null>(null);
   readonly selectedGame = new FormControl('', { nonNullable: true });
   readonly connectionStatus = signal('Disconnected');
+  readonly presence = signal<PresenceSnapshot | null>(null);
+  private acceptPresence(value: unknown): void {
+    const snapshot = parsePresence(value);
+    if (
+      !this.destroyed &&
+      !this.closing &&
+      this.access()?.host &&
+      snapshot &&
+      snapshot.version >= (this.presence()?.version ?? -1)
+    )
+      this.presence.set(snapshot);
+  }
   readonly shareId = this.route.snapshot.queryParamMap.get('share');
   readonly form = new FormGroup({
     code: new FormControl(this.route.snapshot.queryParamMap.get('room') ?? '', {
@@ -171,6 +186,18 @@ export class Online implements OnInit {
           clock: clockAt(match.clock ?? { elapsedMs: 0, runningSince: null, handStartMs: 0 }, true),
         }
       : undefined;
+    let hostSeat: number | undefined;
+    if (match) {
+      try {
+        const view: unknown = JSON.parse(localStorage.getItem(`riichi-view:${match.id}`) ?? 'null');
+        hostSeat = Array.isArray(view)
+          ? match.players.findIndex((player) => player.id === view[0])
+          : 0;
+        if (hostSeat < 0) hostSeat = 0;
+      } catch {
+        hostSeat = 0;
+      }
+    }
     const access = await this.api.request<RoomAccess & { room?: RoomState; game?: RoomGame }>(
       '/api/rooms',
       'POST',
@@ -178,6 +205,7 @@ export class Online implements OnInit {
         playerCount: this.form.controls.count.value,
         match: updated,
         handKey: updated ? roomHandKey(updated) : undefined,
+        hostSeat,
       },
     );
     if (this.destroyed) {
@@ -281,6 +309,7 @@ export class Online implements OnInit {
     this.qr.set(await qr.toDataURL(invitation, { width: 200, margin: 2 }));
     if (this.destroyed) return;
     await this.connection?.stop();
+    this.presence.set(null);
     this.connection = new HubConnectionBuilder()
       .withUrl(`${this.api.url()}/hubs/rooms`, { withCredentials: false })
       .configureLogging(LogLevel.None)
@@ -295,11 +324,21 @@ export class Online implements OnInit {
           this.room.set(null);
         });
     });
-    this.connection.onreconnecting(() => this.connectionStatus.set('Reconnecting'));
-    this.connection.onclose(() => this.connectionStatus.set('Disconnected'));
+    this.connection.on('Presence', (value: unknown) => this.acceptPresence(value));
+    this.connection.onreconnecting(() => {
+      this.presence.set(null);
+      this.connectionStatus.set('Reconnecting');
+    });
+    this.connection.onclose(() => {
+      this.presence.set(null);
+      this.connectionStatus.set('Disconnected');
+    });
     this.connection.onreconnected(async () => {
+      this.presence.set(null);
       try {
-        await this.connection!.invoke('Join', access.id, access.token);
+        this.acceptPresence(
+          await this.connection!.invoke<unknown>('Join', access.id, access.token),
+        );
         await this.refresh();
         this.connectionStatus.set('Connected');
       } catch {
@@ -315,7 +354,7 @@ export class Online implements OnInit {
         await this.connection.stop();
         return;
       }
-      await this.connection.invoke('Join', access.id, access.token);
+      this.acceptPresence(await this.connection.invoke<unknown>('Join', access.id, access.token));
       if (!initialState) await this.refresh();
       this.connectionStatus.set('Connected');
     } catch {

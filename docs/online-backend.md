@@ -6,6 +6,8 @@ No account registration is required. Frontend and backend deploy independently.
 
 Backend operations use [vertical slices](backend-architecture.md): each room, game or sharing operation owns its endpoint, request and handler. Shared persistence, configuration and logging live under `Infrastructure`. Backend tests use MSTest, FluentAssertions and Moq.
 
+Development exposes Swagger at `/swagger` and OpenAPI at `/openapi/v1.json`. Import the [Postman v1 package](api/v1/README.md) to test local or production HTTP endpoints. These additions do not require another database migration.
+
 Backend logs use Serilog with optional Seq shipping, configured by `Seq__ServerUrl` and `Seq__ApiKey`. Request events use route templates and correlation IDs rather than concrete share IDs or credentials. See [logging and cloud configuration](logging.md).
 
 ## Sharing and room access
@@ -25,16 +27,17 @@ Backend logs use Serilog with optional Seq shipping, configured by `Seq__ServerU
 
 ## Live room tables
 
+See [shared table permissions and scoring flow](shared-room-permissions.md) for host-only capability switches, per-device viewing angles, mandatory normal-mode indicators and local final-result choices. This update requires the `RoomPermissions` database migration.
+
 1. Choose players and rules on My table, then Start match > Start shared game. Select 3 or 4 players, rule preset and game length before Host game. Joined games use the host settings.
 2. **Host game** creates the room and attaches its initial game atomically in one request; the response contains lobby and game state, avoiding initial room/game GETs and a separate attach PUT. Seat numbers follow the player order.
 3. Other devices enter the room code and PIN, receive a free seat automatically, and enter the table directly. Guests waiting for the host see a waiting message rather than host invitation controls.
 4. Keep the host's room table open. Players can declare their own Riichi/Double Riichi, cancel their
    own Riichi, record Chi/Pon/Kan/Kita, and submit Ron/Tsumo using the normal tile flow or advanced Han/Fu.
 5. The host automatically processes non-winning declarations with the existing TypeScript rules engine.
-   Winning hands remain pending. The host waits for every Ron winner and chooses **Settle pending wins**.
-   All winners are scored together; the existing multiple-Ron rules determine payments and progression.
-6. The host controls indicators, corrections, draw settlement, historical hand editing and closing the game.
-   Host commits also save a local copy. Players cannot upload arbitrary table snapshots or edit another seat.
+   Guest winning hands appear in the winning-declarations dialog for settlement. The host's own winning preview settles directly, combining pending Ron on that hand. The existing multiple-Ron rules determine payments and progression.
+6. The host controls indicators, corrections, draw settlement, historical hand editing and closing the game by default. Independent capability switches can delegate indicators, settlement, history and finishing. The API restricts delegated changes to their operation and preserves game identity, rules and player identities.
+   Ongoing host commits save a local backup. On ending, each device chooses whether to save or discard its own copy.
 
 Commands are persisted before processing, bound to the authenticated seat and current hand, and use stable
 IDs so network retries cannot apply them twice. Table commits compare database revisions. If two host tabs

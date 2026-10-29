@@ -12,6 +12,7 @@ apps/api/
       GetRoom/
       ReleaseSeat/
       CloseRoom/
+      UpdatePermissions/
       Notifications/   RoomHub.cs
       IRoomAccess.cs
       RoomAccess.cs

@@ -1,5 +1,7 @@
 # Local records and player analysis
 
+Hand history uses the same result presentation on the live table and saved records. Each winner's Han/Fu, limit (Mangan, Haneman, Baiman, Sanbaiman, Yakuman or counted Yakuman), tiles and Yaku appear once in the expanded details. Multi-winner fields take precedence over mirrored single-winner fields. Older results without a saved limit derive its display from recorded Han/Fu and rule settings, including Kiriage and counted-Yakuman caps; stored payments are never rewritten.
+
 ## Entry points
 
 Records lists **completed games only**. Click anywhere on a game card to open its saved result at

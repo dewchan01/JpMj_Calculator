@@ -48,11 +48,11 @@ for (const preset of ['mahjong-soul', 'tenhou', 'm-league', 'custom'])
       await page.getByRole('button', { name: 'Start game', exact: true }).click();
       await beginWin(page, 'Player 2', 'tsumo');
       await finishWin(page, count === 3 ? '123p456p789s234s55p' : undefined);
-      await expect(page.locator('.table-round')).toHaveText('east 2');
+      await expect(page.locator('.table-round')).toHaveText('East 2');
       await page.reload();
       await expectApplied(page, preset);
       await recordDraw(page);
-      await expect(page.locator('.table-round')).toHaveText('east 3');
+      await expect(page.locator('.table-round')).toHaveText('East 3');
     });
   }
 

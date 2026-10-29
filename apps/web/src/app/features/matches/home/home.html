@@ -60,16 +60,26 @@
       </div>
       <app-rule-picker [profile]="rules()" />
       <div class="setup-fields">
-        @if (rules().preset !== 'm-league') {
-          <label>
-            {{ 'Game length' | t }}
+        <label>
+          {{ 'My player' | t }}
+          <select [formField]="setupForm.mySeat">
+            @for (player of activeNames(); track $index; let index = $index) {
+              <option [value]="index">{{ player || ('Player ' + (index + 1) | t) }}</option>
+            }
+          </select>
+        </label>
+        <label>
+          {{ 'Game length' | t }}
+          @if (rules().preset === 'm-league') {
+            <input readonly [value]="i18n.t('East + South')" />
+          } @else {
             <select [formField]="setupForm.gameLength">
               <option value="east">{{ 'East only' | t }}</option>
               <option value="south">{{ 'East + South' | t }}</option>
             </select>
-          </label>
-        }
-        <label>
+          }
+        </label>
+        <label class="match-name-field">
           {{ 'Match name' | t }}
           <input [formField]="setupForm.name" [attr.placeholder]="'Saturday afternoon' | t" />
         </label>
@@ -447,16 +457,26 @@
         <option [ngValue]="3">{{ '3 players' | t }}</option>
       </select>
     </label>
+    <label>
+      {{ 'My player' | t }}
+      <select [formField]="setupForm.mySeat">
+        @for (player of activeNames(); track $index; let index = $index) {
+          <option [value]="index">{{ player || ('Player ' + (index + 1) | t) }}</option>
+        }
+      </select>
+    </label>
     <app-rule-picker [profile]="rules()" />
-    @if (rules().preset !== 'm-league') {
-      <label>
-        {{ 'Game length' | t }}
+    <label>
+      {{ 'Game length' | t }}
+      @if (rules().preset === 'm-league') {
+        <input readonly [value]="i18n.t('East + South')" />
+      } @else {
         <select [formField]="setupForm.gameLength">
           <option value="east">{{ 'East only' | t }}</option>
           <option value="south">{{ 'East + South' | t }}</option>
         </select>
-      </label>
-    }
+      }
+    </label>
     <app-error-notice [message]="error()" />
     <button
       class="secondary"

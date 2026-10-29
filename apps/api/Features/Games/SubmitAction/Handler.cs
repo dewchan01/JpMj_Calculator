@@ -38,6 +38,14 @@ public sealed class Handler(AppDb db, IHubContext<RoomHub> hub, IOptions<Storage
         var hash = Secrets.Hash(command.Token);
         var seat = await _db.Seats.SingleOrDefaultAsync(x => x.RoomId == id && x.TokenHash == hash, cancellationToken);
         var host = Secrets.Matches(command.Token, room.HostHash);
+        var permissions = DelegatedChanges.Permissions(room.Permissions);
+        if (!host && !(input.Kind switch
+        {
+            "riichi" or "cancelRiichi" => permissions.Riichi,
+            "call" => permissions.Calls,
+            "win" => permissions.Win,
+            _ => false
+        })) return Results.StatusCode(403);
         var actorSeat = host ? input.Seat : seat?.Number;
         if (actorSeat is null || actorSeat < 0 || actorSeat >= room.PlayerCount) return Results.Unauthorized();
         var duplicate = await _db.Actions.SingleOrDefaultAsync(x => x.RoomId == id && x.Id == input.Id, cancellationToken);

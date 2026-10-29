@@ -8,6 +8,7 @@ import { type Match, type LedgerEvent } from '../../../../../../../packages/mahj
 import { ruleName, type RuleProfile } from '../../../../../../../packages/mahjong-rules/index';
 import { I18n, TranslatePipe } from '../../../core/i18n/i18n';
 import { editableHand } from '../game-table/hand-edit';
+import { historyResults } from './history-results';
 @Component({
   selector: 'app-match-history',
   imports: [SignedValue, TileArt, LocalDatePipe, DecimalPipe, TranslatePipe],
@@ -167,19 +168,19 @@ export class MatchHistory {
       : this.i18n.t(ruleName(profile));
   }
   outcomeMarks(event: LedgerEvent): string[] {
-    const inputs = event.scoringInputs ?? (event.scoringInput ? [event.scoringInput] : []);
-    const results = event.results ?? (event.result ? [event.result] : []);
-    return results.map((result, index) => {
-      const win = inputs[index]?.win ?? event.win;
+    return this.scoredHands(event).map(({ result, win, limitName }) => {
       return [
         win ? this.i18n.t(win.method === 'ron' ? 'Ron · discard' : 'Tsumo · self draw') : '',
         this.i18n.t(result.han + ' Han · ' + result.fu + ' Fu'),
-        result.limitName ? this.i18n.t(result.limitName) : '',
+        limitName ? this.i18n.t(limitName) : '',
         ...result.yaku.map((yaku) => this.i18n.t(yaku.name)),
       ]
         .filter(Boolean)
         .join(' · ');
     });
+  }
+  scoredHands(event: LedgerEvent) {
+    return historyResults(event, this.eventRules(event));
   }
   playerList(ids: string[]): string {
     return ids.map((id) => this.name(id)).join(', ') || '—';

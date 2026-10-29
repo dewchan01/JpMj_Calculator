@@ -1,0 +1,613 @@
+{
+  "info": {
+    "name": "Riichi API v1",
+    "version": {
+      "major": 1,
+      "minor": 0,
+      "patch": 0
+    },
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Version 1: rooms, host/player credentials, capabilities, game snapshots and expiring shares. Run on a test backend. Scores and snapshots are calculated by the client, not by this API. SignalR Presence/Changed subscriptions are documented separately."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5080",
+      "type": "string"
+    },
+    {
+      "key": "roomId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "pin",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "hostToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "playerToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "seat",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "revision",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "handKey",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "sampleMatch",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "matchJson",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "archiveMatch",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "shareId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "deletionSecret",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Health",
+      "request": {
+        "method": "GET",
+        "description": "",
+        "url": "{{baseUrl}}/api/health",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Expected status', () => pm.expect([200]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rooms and game synchronization",
+      "item": [
+        {
+          "name": "02 Create room with a valid sample game",
+          "request": {
+            "method": "POST",
+            "description": "",
+            "url": "{{baseUrl}}/api/rooms",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"playerCount\":4,\"hostSeat\":0,\"match\":{{sampleMatch}},\"handKey\":\"{{handKey}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const match = {\"id\":\"api-example\",\"schemaVersion\":1,\"name\":\"API example\",\"createdAt\":\"2026-10-29T00:00:00.000Z\",\"updatedAt\":\"2026-10-29T00:00:00.000Z\",\"playerCount\":4,\"gameLength\":\"east\",\"rules\":{\"id\":\"mahjong-soul-4p\",\"version\":2,\"preset\":\"mahjong-soul\",\"playerCount\":4,\"startingPoints\":25000,\"tsumo\":\"loss\",\"kiriage\":false,\"openTanyao\":true},\"players\":[{\"id\":\"a\",\"name\":\"Player 1\"},{\"id\":\"b\",\"name\":\"Player 2\"},{\"id\":\"c\",\"name\":\"Player 3\"},{\"id\":\"d\",\"name\":\"Player 4\"}],\"initialBalances\":{\"a\":25000,\"b\":25000,\"c\":25000,\"d\":25000},\"initialDealerId\":\"a\",\"dealerId\":\"a\",\"roundWind\":\"east\",\"handNumber\":1,\"honba\":0,\"events\":[],\"live\":{\"players\":{},\"dora\":\"7z\",\"ura\":\"\",\"calls\":0},\"clock\":{\"elapsedMs\":0,\"runningSince\":\"2026-10-29T00:00:00.000Z\",\"handStartMs\":0}};",
+                  "match.id = pm.variables.replaceIn('{{$guid}}');",
+                  "match.createdAt = match.updatedAt = match.clock.runningSince = new Date().toISOString();",
+                  "pm.collectionVariables.set('sampleMatch', JSON.stringify(match));",
+                  "pm.collectionVariables.set('handKey', match.id + ':start:a:east:1:0:false');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Expected status', () => pm.expect([200]).to.include(pm.response.code));",
+                  "if (pm.response.code === 200) { const data = pm.response.json(); pm.collectionVariables.set('roomId', data.id);",
+                  "pm.collectionVariables.set('pin', data.pin); pm.collectionVariables.set('hostToken', data.token); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Read lobby as host",
+          "request": {
+            "method": "GET",
+            "description": "",
+            "url": "{{baseUrl}}/api/rooms/{{roomId}}",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hostToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Expected status', () => pm.expect([200]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 Join an available player seat",
+          "request": {
+            "method": "POST",
+            "description": "",
+            "url": "{{baseUrl}}/api/rooms/{{roomId}}/join",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"pin\":\"{{pin}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Expected status', () => pm.expect([200]).to.include(pm.response.code));",
+                  "if (pm.response.code === 200) { const data = pm.response.json(); pm.collectionVariables.set('playerToken', data.token); pm.collectionVariables.set('seat', data.seat); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 Read game and current capabilities",
+          "request": {
+            "method": "GET",
+            "description": "",
+            "url": "{{baseUrl}}/api/rooms/{{roomId}}/game",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hostToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Expected status', () => pm.expect([200]).to.include(pm.response.code));",
+                  "if (pm.response.code === 200) { const data = pm.response.json();",
+                  "pm.collectionVariables.set('revision', data.revision); pm.collectionVariables.set('handKey', data.handKey);",
+                  "pm.collectionVariables.set('matchJson', JSON.stringify(data.match)); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 Submit own Riichi as a player",
+          "request": {
+            "method": "POST",
+            "description": "Queues a declaration. An open host browser processes it; the API alone does not calculate or apply it.",
+            "url": "{{baseUrl}}/api/rooms/{{roomId}}/game/actions",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{playerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"id\":\"{{$guid}}\",\"handKey\":\"{{handKey}}\",\"kind\":\"riichi\",\"payload\":{\"double\":false}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Expected status', () => pm.expect([200]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "07 Refresh revision after submission",
+          "request": {
+            "method": "GET",
+            "description": "",
+            "url": "{{baseUrl}}/api/rooms/{{roomId}}/game",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hostToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Expected status', () => pm.expect([200]).to.include(pm.response.code));",
+                  "if (pm.response.code === 200) { const data = pm.response.json();",
+                  "pm.collectionVariables.set('revision', data.revision); pm.collectionVariables.set('handKey', data.handKey);",
+                  "pm.collectionVariables.set('matchJson', JSON.stringify(data.match)); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "08 Set player capabilities as host",
+          "request": {
+            "method": "PUT",
+            "description": "",
+            "url": "{{baseUrl}}/api/rooms/{{roomId}}/permissions",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hostToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"riichi\": true,\n  \"calls\": true,\n  \"win\": true,\n  \"indicators\": false,\n  \"settle\": false,\n  \"history\": false,\n  \"finish\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Expected status', () => pm.expect([204]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09 Refresh revision after capability change",
+          "request": {
+            "method": "GET",
+            "description": "",
+            "url": "{{baseUrl}}/api/rooms/{{roomId}}/game",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hostToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Expected status', () => pm.expect([200]).to.include(pm.response.code));",
+                  "if (pm.response.code === 200) { const data = pm.response.json();",
+                  "pm.collectionVariables.set('revision', data.revision); pm.collectionVariables.set('handKey', data.handKey);",
+                  "pm.collectionVariables.set('matchJson', JSON.stringify(data.match)); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10 Commit a client-calculated snapshot",
+          "request": {
+            "method": "PUT",
+            "description": "By default resends the unchanged latest snapshot. To settle, supply a validated client-calculated match and decisions. This endpoint does not calculate scores. A stale revision returns 409.",
+            "url": "{{baseUrl}}/api/rooms/{{roomId}}/game",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hostToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"revision\":{{revision}},\"handKey\":\"{{handKey}}\",\"match\":{{matchJson}},\"decisions\":[]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Expected status', () => pm.expect([200]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "24-hour archive sharing",
+      "item": [
+        {
+          "name": "11 Create share",
+          "request": {
+            "method": "POST",
+            "description": "",
+            "url": "{{baseUrl}}/api/shares",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"format\":\"riichi-table\",\"version\":1,\"matches\":[{{archiveMatch}}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const match = {\"id\":\"api-example\",\"schemaVersion\":1,\"name\":\"API example\",\"createdAt\":\"2026-10-29T00:00:00.000Z\",\"updatedAt\":\"2026-10-29T00:00:00.000Z\",\"playerCount\":4,\"gameLength\":\"east\",\"rules\":{\"id\":\"mahjong-soul-4p\",\"version\":2,\"preset\":\"mahjong-soul\",\"playerCount\":4,\"startingPoints\":25000,\"tsumo\":\"loss\",\"kiriage\":false,\"openTanyao\":true},\"players\":[{\"id\":\"a\",\"name\":\"Player 1\"},{\"id\":\"b\",\"name\":\"Player 2\"},{\"id\":\"c\",\"name\":\"Player 3\"},{\"id\":\"d\",\"name\":\"Player 4\"}],\"initialBalances\":{\"a\":25000,\"b\":25000,\"c\":25000,\"d\":25000},\"initialDealerId\":\"a\",\"dealerId\":\"a\",\"roundWind\":\"east\",\"handNumber\":1,\"honba\":0,\"events\":[],\"live\":{\"players\":{},\"dora\":\"7z\",\"ura\":\"\",\"calls\":0},\"clock\":{\"elapsedMs\":0,\"runningSince\":\"2026-10-29T00:00:00.000Z\",\"handStartMs\":0}};",
+                  "match.id = pm.variables.replaceIn('{{$guid}}');",
+                  "match.createdAt = match.updatedAt = match.clock.runningSince = new Date().toISOString();",
+                  "pm.collectionVariables.set('archiveMatch', JSON.stringify(match));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Expected status', () => pm.expect([200]).to.include(pm.response.code));",
+                  "if (pm.response.code === 200) { const data = pm.response.json(); pm.collectionVariables.set('shareId', data.id); pm.collectionVariables.set('deletionSecret', data.deletionSecret); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "12 Download archive",
+          "request": {
+            "method": "GET",
+            "description": "",
+            "url": "{{baseUrl}}/api/shares/{{shareId}}",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Expected status', () => pm.expect([200]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "13 Revoke archive",
+          "request": {
+            "method": "DELETE",
+            "description": "",
+            "url": "{{baseUrl}}/api/shares/{{shareId}}",
+            "header": [
+              {
+                "key": "X-Deletion-Secret",
+                "value": "{{deletionSecret}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Expected status', () => pm.expect([204]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Cleanup",
+      "item": [
+        {
+          "name": "14 Release joined seat",
+          "request": {
+            "method": "DELETE",
+            "description": "",
+            "url": "{{baseUrl}}/api/rooms/{{roomId}}/seats/{{seat}}",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hostToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Expected status', () => pm.expect([204]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "15 Close room",
+          "request": {
+            "method": "DELETE",
+            "description": "",
+            "url": "{{baseUrl}}/api/rooms/{{roomId}}",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{hostToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Expected status', () => pm.expect([204]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

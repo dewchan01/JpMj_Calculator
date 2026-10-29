@@ -176,7 +176,7 @@ test('ongoing matches use saved round context while Quick score retains manual f
   // The live table reads the current match context on reload.
   await setSavedRound(page, { dealerId: 'p2', roundWind: 'south', handNumber: 3, honba: 2 });
   await page.reload();
-  await expect(page.locator('.round-status .table-round')).toHaveText('south 3');
+  await expect(page.locator('.round-status .table-round')).toHaveText('South 3');
   await expect(page.locator('.round-status .table-honba')).toHaveText('Honba 2');
   await expect(page.getByRole('combobox', { name: 'Dealer', exact: true })).toHaveCount(0);
   await expect(page.getByRole('combobox', { name: 'Round wind', exact: true })).toHaveCount(0);

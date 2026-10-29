@@ -93,6 +93,12 @@
   border-collapse: collapse;
   font-size: 0.8rem;
 }
+.result-table:not(.comparison-table) th:nth-child(3) {
+  width: 24%;
+}
+.result-table:not(.comparison-table) th:nth-child(4) {
+  width: 36%;
+}
 caption {
   text-align: left;
   font-weight: 650;
@@ -271,4 +277,13 @@ dd {
 .comparison-table td {
   width: auto;
   text-align: right;
+}
+
+.conversion-formula {
+  white-space: nowrap;
+  overflow-x: auto;
+  max-width: 100%;
+}
+.money-conversion {
+  white-space: nowrap;
 }

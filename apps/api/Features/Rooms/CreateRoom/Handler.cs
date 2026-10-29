@@ -21,6 +21,7 @@ public sealed class Handler(AppDb db, IOptions<StorageOptions> storage) : Comman
     {
         var input = command;
         if (input.PlayerCount is not (3 or 4)) return Results.BadRequest();
+        if (input.HostSeat is { } hostSeat && (hostSeat < 0 || hostSeat >= input.PlayerCount)) return Results.BadRequest();
         var snapshot = "null";
         if (input.Match is { } match)
         {
@@ -43,6 +44,8 @@ public sealed class Handler(AppDb db, IOptions<StorageOptions> storage) : Comman
         var (room, pin, token) = RoomFactory.Create(input.PlayerCount, snapshot, input.HandKey, now);
         var id = room.Id;
         _db.Rooms.Add(room);
+        if (input.HostSeat is { } reservedSeat)
+            _db.Seats.Add(new Seat { RoomId = id, Number = reservedSeat, TokenHash = room.HostHash });
         await _db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return Results.Ok(new
@@ -50,9 +53,9 @@ public sealed class Handler(AppDb db, IOptions<StorageOptions> storage) : Comman
             id,
             pin,
             token,
-            seat = (int?)null,
+            seat = input.HostSeat,
             host = true,
-            room = new { id, room.PlayerCount, room.Revision, seats = Array.Empty<int>(), expiresAt = DateTimeOffset.FromUnixTimeSeconds(room.ExpiresAt) },
+            room = new { id, room.PlayerCount, room.Revision, seats = input.HostSeat.HasValue ? new[] { input.HostSeat.Value } : Array.Empty<int>(), expiresAt = DateTimeOffset.FromUnixTimeSeconds(room.ExpiresAt) },
             game = new { room.Revision, room.HandKey, match = JsonSerializer.Deserialize<JsonElement>(snapshot), actions = Array.Empty<object>() }
         });
     }

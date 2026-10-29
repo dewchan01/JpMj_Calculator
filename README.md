@@ -5,15 +5,19 @@ QR/ID data transfers and rooms with PINs, seat access and synchronized declarati
 from their phones; the host's open browser validates actions and settles pending wins with the existing
 scoring engine. See [backend setup and scope](docs/online-backend.md) and [backend vertical slices](docs/backend-architecture.md).
 
+Shared tables support a host-only list of independent player permissions, per-device viewing rotation, mandatory normal-mode indicators and a final-result choice on every device. See [permissions and scoring flow](docs/shared-room-permissions.md), including the required database upgrade.
+
 An offline-first Angular PWA for scoring Japanese Riichi Mahjong, with Mahjong Soul, Tenhou, M.League and Custom presets. Includes manual scoring, draw/multiple-winner settlement, match progression and configurable photo recognition. Manual scoring works offline; API recognition uploads selected photos. This independent application is not affiliated with the rule platforms or detection provider.
 
-Others > Advanced scoring switches between complete-hand verification (default) and direct total
-Han/Fu entry for the live table and quick score. The device remembers the preference. Advanced mode
+Others > Scoring mode offers Assisted scoring (complete-hand verification, default) and Manual Han entry
+(direct total Han/Fu) for the live table and quick score. The device remembers the preference. Manual entry
 keeps Riichi and calls, calculates Ron/Tsumo payments with the saved rules, and supports multiple Ron,
 explicit Yakuman/Pao/chips, saved history and later-hand replay. Total Han already includes Riichi
 and bonuses; the app does not add them again or infer undisclosed Yaku from an incomplete hand.
 
 ## Run
+
+New games default to East-only except M.League, which displays a fixed East + South schedule. Other presets allow choosing the length. Local setup, shared hosting and results-only entries follow these rules; saved games retain their recorded length.
 
 Public frontend settings are selected automatically: `npm start` uses `apps/web/config/development/config.json` (localhost:5080), while `npm run build` uses `apps/web/config/production/config.json`. Angular publishes the selected file as `config.json`. Each file contains `backend.apiUrl`, recognition settings, support email and developer name; one shared loader reads it for all consumers. An empty `backend.apiUrl` disables online features. Keep private credentials out of these public files.
 
@@ -52,7 +56,7 @@ Save reusable player names on My table, choose them for seats, then start a 3P/4
 
 Data and drafts stay in IndexedDB on this browser. Others > Data provides separate Import data / Export data actions using CSV files and QR/ID transfers, filtered by game, player and inclusive local dates; existing game IDs are skipped on import. See [data transfer](docs/data-transfer.md). Site-data deletion removes local matches. Dealer rotation, honba, round wind, extension rounds, bankruptcy and first-place dealer finish are automatic after settlement. Undo restores points and the preceding round state.
 
-Others > Sound effects offers previews and a saved mute preference for call announcements. Six Myinstants Ichihime MP3 recordings are bundled and cached offline; missing clips and playback failures fall back to local Japanese device voices or generated tones. Source pages and rights notes are recorded in [sound provenance](apps/web/public/sounds/ichihime/SOURCES.md). See [live-table behavior](docs/live-table.md).
+Others > Sound effects offers previews and a saved mute preference for call announcements. Six Myinstants Ichihime MP3 recordings and the selected [Rolling Dice recording](apps/web/public/sounds/SOURCES.md) are bundled locally. Missing clips and playback failures fall back to local Japanese device voices or generated sounds. Source pages and rights notes for calls are recorded in [sound provenance](apps/web/public/sounds/ichihime/SOURCES.md). See [live-table behavior](docs/live-table.md).
 
 ## Rule presets and advanced conditions
 
@@ -157,9 +161,9 @@ New-player entry stacks over the picker. New tabs/filter chips reset their scrol
 Result, player-analysis, settings and Others controls preserve the page gutter while sticky.
 
 Others > Developer includes the support email. Click the brand name three times consecutively to
-open session logs: the latest 200 navigation/error entries, with Clear logs beside Close and an
+open session logs: the latest 200 categorized operational/navigation entries, with Clear logs beside Close and an
 explanation below the title. This hidden trigger alone has no ripple. Detailed recognition Console
-logs are separate; see [diagnostics](docs/recognition-and-storage.md).
+logs are development-only; see the [logging policy](docs/frontend-diagnostics.md) and [recognition diagnostics](docs/recognition-and-storage.md).
 
 Final results show raw points, Oka, Uma, net chips and money when a table ends. Money is `(final score × rate) + (net chips × chip value)`, rounded to two decimals with any residual assigned to first place. Chip transfers for valid Ippatsu, actual red/ura tiles and configured Yakuman awards are recorded separately from points. Chip value 0 disables chips. Undo removes the latest event’s point transfers, chip changes and final penalties together. The app calculates balances and never sends payments. Custom rules and matches are local to this browser origin.
 

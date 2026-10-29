@@ -235,6 +235,7 @@ export class Home {
   });
   setCount(count: 3 | 4): void {
     this.count.set(count);
+    if (+this.setup().mySeat >= count) this.setup.update((value) => ({ ...value, mySeat: '0' }));
     this.swapA = 0;
     this.swapB = 1;
     this.seatNotice.set('');
@@ -280,6 +281,13 @@ export class Home {
         clock: { elapsedMs: 0, runningSince: now, handStartMs: 0 },
       };
       match.gameLength = rules.preset === 'm-league' ? 'south' : setup.gameLength;
+      const mySeat = +setup.mySeat < players.length ? +setup.mySeat : 0;
+      localStorage.setItem(
+        `riichi-view:${match.id}`,
+        JSON.stringify(
+          [...players.slice(mySeat), ...players.slice(0, mySeat)].map((player) => player.id),
+        ),
+      );
       if (resultsOnly) {
         const date = new Date(this.resultDate);
         if (!Number.isFinite(date.getTime())) throw new Error('Enter a valid game date.');

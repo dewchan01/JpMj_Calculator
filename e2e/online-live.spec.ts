@@ -90,8 +90,8 @@ test('host and guest synchronize Riichi, Kan and a winning declaration through t
     const localBoard = (await local.locator('.table-summary').boundingBox())!;
     const sharedBoard = (await guest.locator('.table-summary').boundingBox())!;
     expect(sharedBoard.height).toBeGreaterThanOrEqual(localBoard.height - 60);
-    const localSeat = (await local.locator('.player-seat').first().boundingBox())!;
-    const sharedSeat = (await guest.locator('.player-seat').first().boundingBox())!;
+    const localSeat = (await local.locator('.player-seat.seat-bottom').boundingBox())!;
+    const sharedSeat = (await guest.locator('.player-seat.seat-bottom').boundingBox())!;
     expect(Math.abs(localSeat.width - sharedSeat.width)).toBeLessThan(1);
     await guest.screenshot({ path: 'artifacts/shared-table-desktop-size.png' });
   } finally {
@@ -161,7 +161,7 @@ test('host and guest synchronize Riichi, Kan and a winning declaration through t
     .getByRole('button', { name: 'Confirm & save settlement', exact: true })
     .click();
   await expect(
-    host.getByRole('heading', { name: 'Pending winning declarations', exact: true }),
+    host.getByRole('heading', { name: 'Winning declarations', exact: true }),
   ).toBeVisible({ timeout: 15000 });
   await host.getByRole('button', { name: 'Settle pending wins', exact: true }).click();
   await expect(host.locator('.table-round b')).toHaveText('2', { timeout: 15000 });
@@ -170,7 +170,7 @@ test('host and guest synchronize Riichi, Kan and a winning declaration through t
   // When the host leaves, declarations persist and are processed after it returns.
   await host.goto('/');
   await guestSeat.getByRole('button', { name: 'Riichi', exact: true }).click();
-  await expect(guest.locator('.room-status p[role=status]')).toContainText('Waiting for the host');
+  await expect(guest.locator('.room-status p[role=status]')).toHaveCount(0);
   await expect(guest.locator('.table-pot strong')).toHaveText('0');
   await host.evaluate((code) => {
     history.pushState(null, '', '/room/' + code);
@@ -181,6 +181,11 @@ test('host and guest synchronize Riichi, Kan and a winning declaration through t
     [guest, 'Player 2'],
     [host, 'Player 4'],
   ] as const) {
+    if (page === host) {
+      await expect(
+        host.getByRole('heading', { name: 'Winning declarations', exact: true }),
+      ).toBeVisible();
+    }
     await playerAction(page, name);
     await prompt(page).getByRole('button', { name: 'Ron · discard', exact: true }).click();
     await prompt(page).getByRole('button', { name: 'Next', exact: true }).click();
@@ -189,8 +194,7 @@ test('host and guest synchronize Riichi, Kan and a winning declaration through t
       .getByRole('button', { name: 'Confirm & save settlement', exact: true })
       .click();
   }
-  await expect(host.locator('.pending-win')).toHaveCount(2);
-  await host.getByRole('button', { name: 'Settle pending wins', exact: true }).click();
+  // The host's own confirmation settles its win together with the pending guest Ron.
   await expect(guest.locator('.table-honba strong')).toHaveText('1', { timeout: 15000 });
   await expect(guest.locator('.table-pot strong')).toHaveText('0');
   await guest.screenshot({ path: 'artifacts/online-live-guest.png' });
@@ -203,7 +207,7 @@ test('host and guest synchronize Riichi, Kan and a winning declaration through t
   const actionTops = await exportDialog
     .locator('.transfer-actions button')
     .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().top));
-  expect(actionTops).toHaveLength(3);
+  expect(actionTops).toHaveLength(2);
   expect(Math.max(...actionTops) - Math.min(...actionTops)).toBeLessThan(1);
   await host.screenshot({ path: 'artifacts/export-page-390.png' });
   await exportDialog.getByRole('button', { name: 'Share selected games', exact: true }).click();
@@ -278,9 +282,12 @@ test('host can select three players and room header stays visible', async ({ pag
   await page.getByRole('button', { name: 'Host game', exact: true }).click();
   await expect(page.getByRole('link', { name: 'Open room table', exact: true })).toBeVisible();
   const dialog = page.getByRole('dialog', { name: 'Host game', exact: true });
-  await expect(dialog.locator('li')).toHaveCount(0);
-  await expect(dialog.locator('.connection-chip')).toHaveAttribute('aria-label', 'Connected');
-  await expect(dialog.locator('.connection-chip')).toHaveText('Connected');
+  await expect(dialog.locator('app-player-presence li')).toHaveCount(3);
+  await expect(dialog.locator('.connection-row .connection-chip')).toHaveAttribute(
+    'aria-label',
+    'Connected',
+  );
+  await expect(dialog.locator('.connection-row .connection-chip')).toHaveText('Connected');
   await page.evaluate(() => {
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,

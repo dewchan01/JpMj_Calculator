@@ -39,6 +39,6 @@ for (const count of [3, 4])
           .violations,
       ).toEqual([]);
       await recordDraw(page, ['Player 2']);
-      await expect(page.locator('.round-status .table-round')).toHaveText('east 2');
+      await expect(page.locator('.round-status .table-round')).toHaveText('East 2');
     });
   }

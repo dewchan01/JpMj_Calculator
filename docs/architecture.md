@@ -1,6 +1,8 @@
 # Architecture
 
-`ScoringMode` stores the device's Advanced scoring preference. Live-table wins snapshot the entry
+Route scrolling has one owner: Angular `withInMemoryScrolling` with `scrollPositionRestoration: 'top'`. `TabScroll` only handles in-page tab/filter changes (including independently scrolling dialogs); it does not subscribe to route navigation or restore browser-history positions.
+
+`ScoringMode` stores the device's Assisted scoring / Manual Han entry preference using the existing internal `advanced` boolean. Live-table wins snapshot the entry
 mode when the flow starts; historical edits use their recorded mode. `ScoringInput.manualScore`
 stores player-confirmed Han/Fu, optional Yakuman, chip totals and responsibility shares. The scoring
 engine retains context/physical-call validation but skips complete-hand decomposition for these

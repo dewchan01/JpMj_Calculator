@@ -35,6 +35,8 @@ import { tableRules } from '../../../../../../../packages/mahjong-rules/index';
   styleUrl: './final-results.css',
 })
 export class FinalResults {
+  readonly saveLocal = input<((match: Match) => Promise<void>) | null>(null);
+  readonly discardLocal = input<((match: Match) => Promise<void>) | null>(null);
   readonly offerGameActions = input(false);
   readonly showEditAction = input(true);
   private readonly scoreDialog = viewChild.required<ElementRef<HTMLDialogElement>>('scoreDialog');
@@ -164,7 +166,9 @@ export class FinalResults {
   async keepGame(): Promise<void> {
     this.busy.set(true);
     try {
-      await this.repo.save(this.match(), this.match().updatedAt);
+      const save = this.saveLocal();
+      if (save) await save(this.match());
+      else await this.repo.save(this.match(), this.match().updatedAt);
       await this.router.navigateByUrl('/records');
     } catch {
       this.notice.set('Could not save match.');
@@ -175,7 +179,9 @@ export class FinalResults {
   async discardGame(): Promise<void> {
     this.busy.set(true);
     try {
-      await this.repo.remove(this.match().id);
+      const discard = this.discardLocal();
+      if (discard) await discard(this.match());
+      else await this.repo.remove(this.match().id);
       await this.router.navigateByUrl('/');
     } catch {
       this.notice.set('Could not delete match.');

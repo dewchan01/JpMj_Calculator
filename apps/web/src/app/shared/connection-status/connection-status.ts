@@ -9,4 +9,6 @@ import { TranslatePipe } from '../../core/i18n/i18n';
 })
 export class ConnectionStatus {
   readonly state = input('Disconnected');
+  readonly label = input('');
+  readonly compact = input(false);
 }

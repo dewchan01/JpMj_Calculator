@@ -14,6 +14,8 @@ public static class FeatureRegistration
     {
         ArgumentNullException.ThrowIfNull(services);
         services.AddScoped<IRoomAccess, RoomAccess>();
+        services.AddSingleton<RoomPresence>();
+        services.AddScoped<ICommandHandler<Rooms.UpdatePermissions.Request>, Rooms.UpdatePermissions.Handler>();
         services.AddScoped<ICommandHandler<Rooms.CreateRoom.Request>, Rooms.CreateRoom.Handler>();
         services.AddScoped<ICommandHandler<Rooms.JoinRoom.Request>, Rooms.JoinRoom.Handler>();
         services.AddScoped<IQueryHandler<Rooms.GetRoom.Request>, Rooms.GetRoom.Handler>();
@@ -41,6 +43,7 @@ public static class FeatureRegistration
         Rooms.GetRoom.Endpoint.Map(rooms);
         Rooms.ReleaseSeat.Endpoint.Map(rooms);
         Rooms.CloseRoom.Endpoint.Map(rooms);
+        Rooms.UpdatePermissions.Endpoint.Map(rooms);
         Games.GetGame.Endpoint.Map(games);
         Games.SubmitAction.Endpoint.Map(games);
         Games.CommitGame.Endpoint.Map(games);

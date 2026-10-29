@@ -6,6 +6,7 @@ export class TableSetup {
   readonly value = signal({
     name: '',
     names: ['', '', '', ''],
-    gameLength: 'south' as 'east' | 'south',
+    mySeat: '0',
+    gameLength: 'east' as 'east' | 'south',
   });
 }

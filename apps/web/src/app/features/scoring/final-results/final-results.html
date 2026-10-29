@@ -100,11 +100,13 @@
                     <br />
                     {{ 'Uma' | t }}
                     <app-signed-value [value]="row.uma" />
-                    · {{ 'Oka' | t }}
-                    <app-signed-value [value]="row.oka" />
+                    @if (row.rank === 1) {
+                      · {{ 'Oka' | t }}
+                      <app-signed-value [value]="row.oka" />
+                    }
                   </small>
                   @if (settings().bettingRate || settings().chipValue) {
-                    <small>
+                    <small class="money-conversion">
                       <app-signed-value [value]="row.totalMoney" digits="1.2-2" />
                       {{ settings().currency }}
                       <br />
@@ -159,7 +161,13 @@
             <tr>
               <th scope="row">{{ 'Oka' | t }}</th>
               @for (row of rows(); track row.id) {
-                <td><app-signed-value [value]="row.oka" /></td>
+                <td>
+                  @if (row.rank === 1) {
+                    <app-signed-value [value]="row.oka" />
+                  } @else {
+                    <span>—</span>
+                  }
+                </td>
               }
             </tr>
             <tr>
@@ -288,7 +296,7 @@
       <app-match-history [match]="match()" [rules]="match().rules" [readOnly]="true" />
     }
   }
-  <p class="hint">
+  <p class="hint conversion-formula">
     {{
       'Final score = (points − return score) ÷ 1,000 + Oka + Uma. Money = final score × rate + net chips × chip value.'
         | t
@@ -305,8 +313,10 @@
     </div>
     <p class="hint">
       {{
-        'This game is saved automatically. Save keeps the record; discard removes it and its history.'
-          | t
+        (saveLocal()
+          ? 'Save or discard only this device’s copy. Other players and the room are unaffected.'
+          : 'This game is saved automatically. Save keeps the record; discard removes it and its history.'
+        ) | t
       }}
     </p>
   }

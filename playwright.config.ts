@@ -20,7 +20,8 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: 'node node_modules/http-server/bin/http-server dist/web/browser -p 4300 -c-1',
+    command:
+      'node node_modules/http-server/bin/http-server dist/web/browser -p 4300 -c-1 --proxy http://localhost:4300?',
     url: 'http://localhost:4300',
     reuseExistingServer: !process.env['CI'],
   },

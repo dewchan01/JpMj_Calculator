@@ -28,6 +28,7 @@ export async function gameMenu(page: Page, action: string): Promise<void> {
     await expect(prompt(page)).not.toBeVisible();
 }
 export async function playerAction(page: Page, name: string): Promise<void> {
+  if (await prompt(page).isVisible()) await prompt(page).locator('.close-prompt').click();
   await page.getByRole('button', { name: 'Player actions ' + name, exact: true }).click();
 }
 export async function enterLiveTiles(page: Page, label: string, notation: string): Promise<void> {

@@ -81,7 +81,7 @@ test('CSV archive filters whole games, round trips and skips duplicate IDs', asy
   const exported = parseGamesCsv(Buffer.concat(chunks).toString());
   expect(exported.version).toBe(1);
   expect(exported.matches.map((match: Match) => match.id)).toEqual(['third']);
-  await exportDialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await exportDialog.getByRole('link', { name: 'Back', exact: true }).click();
   await page.getByRole('link', { name: 'Import data', exact: true }).click();
   await dialog.getByLabel('Import CSV file', { exact: true }).setInputFiles({
     name: 'invalid.csv',

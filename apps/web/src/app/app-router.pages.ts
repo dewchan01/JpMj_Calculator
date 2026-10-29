@@ -5,5 +5,5 @@ import { routes } from './app.routes';
 export const appRouter = provideRouter(
   routes,
   withHashLocation(),
-  withInMemoryScrolling({ scrollPositionRestoration: 'enabled' }),
+  withInMemoryScrolling({ scrollPositionRestoration: 'top' }),
 );

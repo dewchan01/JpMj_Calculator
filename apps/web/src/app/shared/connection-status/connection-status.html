@@ -1,11 +1,15 @@
 <span
   class="connection-chip"
+  [class.compact]="compact()"
   role="status"
   [class.connected]="state() === 'Connected'"
   [class.connecting]="state() === 'Connecting' || state() === 'Reconnecting'"
-  [attr.aria-label]="state() | t"
-  [title]="state() | t"
+  [class.unknown]="state() === 'Unknown'"
+  [attr.aria-label]="label() || state() | t"
+  [title]="label() || state() | t"
 >
   <span class="connection-pulse" aria-hidden="true"></span>
-  <span aria-hidden="true">{{ state() | t }}</span>
+  @if (!compact()) {
+    <span aria-hidden="true">{{ label() || state() | t }}</span>
+  }
 </span>

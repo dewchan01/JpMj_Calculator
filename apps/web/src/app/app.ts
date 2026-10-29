@@ -5,6 +5,7 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 import { Theme } from './core/theme/theme';
+import { GameSounds } from './core/sound/game-sounds';
 @Component({
   selector: 'app-root',
   imports: [TranslatePipe, RouterOutlet, RouterLink, RouterLinkActive],
@@ -12,11 +13,17 @@ import { Theme } from './core/theme/theme';
   styleUrl: './app.css',
 })
 export class App {
+  readonly sounds = inject(GameSounds);
+  toggleSound(): void {
+    this.sounds.setEnabled(!this.sounds.enabled());
+    if (this.sounds.enabled()) this.sounds.unlock();
+  }
   private readonly tabScroll = inject(TabScroll);
   private readonly diagnosticLog = inject(DiagnosticLog);
   private readonly ripples = inject(ButtonRipples);
   readonly configuration = inject(CaptureConfiguration);
   constructor() {
+    this.diagnosticLog.trackNavigation(this.router);
     void this.configuration.load();
   }
   private readonly router = inject(Router);

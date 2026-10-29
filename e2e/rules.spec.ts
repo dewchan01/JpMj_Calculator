@@ -75,12 +75,12 @@ test('chosen rules persist, draws advance the round, and undo restores it', asyn
   await page.getByRole('button', { name: /Start match/ }).click();
   await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await recordDraw(page, ['Player 2']);
-  await expect(page.locator('.table-round')).toHaveText('east 2');
+  await expect(page.locator('.table-round')).toHaveText('East 2');
   await page.reload();
   await expectApplied(page, 'tenhou');
   await gameMenu(page, 'History');
   await prompt(page).getByRole('button', { name: 'Undo last ledger event', exact: true }).click();
-  await expect(page.locator('.table-round')).toHaveText('east 1');
+  await expect(page.locator('.table-round')).toHaveText('East 1');
 });
 test('double Ron queue settles both hands and stores the explanations', async ({ page }) => {
   await page.goto('/');

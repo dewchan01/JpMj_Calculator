@@ -4,14 +4,17 @@ using Riichi.Api.Data;
 using Riichi.Api.Infrastructure.Security;
 using Riichi.Api.Shared.Handlers;
 using Riichi.Api.Features.Rooms;
+using Riichi.Api.Features.Rooms.Notifications;
 
 namespace Riichi.Api.Features.Games.GetGame;
 
 /// <summary>Reads the versioned game and declarations visible to the caller.</summary>
 /// <param name="db">The scoped database context.</param>
 /// <param name="access">The room membership checker.</param>
-public sealed class Handler(AppDb db, IRoomAccess access) : QueryHandler<Request>
+/// <param name="presence">The online connection registry.</param>
+public sealed class Handler(AppDb db, IRoomAccess access, RoomPresence presence) : QueryHandler<Request>
 {
+    private readonly RoomPresence _presence = presence ?? throw new ArgumentNullException(nameof(presence));
     private readonly AppDb _db = db ?? throw new ArgumentNullException(nameof(db));
     private readonly IRoomAccess _access = access ?? throw new ArgumentNullException(nameof(access));
 
@@ -28,12 +31,15 @@ public sealed class Handler(AppDb db, IRoomAccess access) : QueryHandler<Request
         if (revision == room.Revision) return Results.NoContent();
         var host = Secrets.Matches(token, room.HostHash);
         var hash = Secrets.Hash(token);
-        var visible = _db.Actions.AsNoTracking().Where(x => x.RoomId == id && (host || x.ActorHash == hash));
+        var canSettle = host || DelegatedChanges.Permissions(room.Permissions).Settle;
+        var visible = _db.Actions.AsNoTracking().Where(x => x.RoomId == id && (canSettle || x.ActorHash == hash));
         var pending = await visible.Where(x => x.Status == "pending").OrderBy(x => x.CreatedAt).ToArrayAsync(cancellationToken);
         var recent = await visible.Where(x => x.Status != "pending").OrderByDescending(x => x.CreatedAt).Take(20).ToArrayAsync(cancellationToken);
         var actions = pending.Concat(recent);
         return Results.Ok(new
         {
+            presence = host ? _presence.Get(id) : null,
+            permissions = DelegatedChanges.Permissions(room.Permissions),
             room.Revision,
             room.HandKey,
             match = JsonSerializer.Deserialize<JsonElement>(room.Snapshot),

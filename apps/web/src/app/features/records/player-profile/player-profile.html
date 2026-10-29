@@ -496,7 +496,7 @@
       <app-error-notice [message]="'From date must not be after to date.'" />
     }
     <div class="dialog-actions">
-      <button (click)="filterDraft.set({ from: '', to: '', length: '' })">
+      <button class="filter-reset" (click)="filterDraft.set({ from: '', to: '', length: '' })">
         {{ 'Reset filters' | t }}
       </button>
       <button class="primary" (click)="applyFilters(filterDialog)" [disabled]="invalidDraftDates()">

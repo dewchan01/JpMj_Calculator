@@ -10,9 +10,19 @@ import {
   type RoomAction,
 } from '../../../../../../packages/mahjong-core/room-actions';
 import type { Match } from '../../../../../../packages/mahjong-core/ledger';
+import type { ScoringInput } from '../../../../../../packages/mahjong-scoring/index';
 import { newId } from '../id/new-id';
+import { parsePresence, type PresenceSnapshot } from './presence';
+import { DiagnosticLog } from '../diagnostic-log';
+import {
+  defaultRoomPermissions,
+  type RoomPermission,
+  type RoomPermissions,
+} from './room-permissions';
 
 export interface RoomGame {
+  presence?: PresenceSnapshot | null;
+  permissions?: RoomPermissions;
   revision: number;
   handKey: string;
   match: Match | null;
@@ -23,11 +33,44 @@ export interface RoomGame {
 export class RoomSession {
   private readonly api = inject(OnlineApi);
   private readonly repo = inject(Repository);
+  private readonly logs = inject(DiagnosticLog);
+  private updateConnection(state: string): void {
+    if (this.access() && this.connectionStatus() !== state)
+      this.logs.add(
+        state === 'Disconnected' || state === 'Reconnecting' ? 'warn' : 'info',
+        `Room connection: ${state}.`,
+        'room',
+      );
+    this.connectionStatus.set(state);
+  }
   readonly access = signal<RoomAccess | null>(null);
   readonly state = signal<RoomGame | null>(null);
   readonly status = signal('');
   readonly error = signal('');
   readonly connectionStatus = signal('Disconnected');
+  readonly presence = signal<PresenceSnapshot | null>(null);
+  private acceptPresence(value: unknown): void {
+    const snapshot = parsePresence(value);
+    if (snapshot && this.access()?.host && snapshot.version >= (this.presence()?.version ?? -1))
+      this.presence.set(snapshot);
+  }
+  readonly permissions = computed(() => ({
+    ...defaultRoomPermissions,
+    ...this.state()?.permissions,
+  }));
+  can(permission: RoomPermission): boolean {
+    return !!this.access()?.host || this.permissions()[permission];
+  }
+  async setPermission(permission: RoomPermission, enabled: boolean): Promise<void> {
+    if (!this.access()?.host) throw new Error('Only the host can change shared table settings.');
+    await this.api.request(
+      `/api/rooms/${this.access()!.id}/permissions`,
+      'PUT',
+      { ...this.permissions(), [permission]: enabled },
+      this.access()!.token,
+    );
+    await this.sync();
+  }
   readonly wins = computed(
     () =>
       this.state()?.actions.filter(
@@ -41,6 +84,16 @@ export class RoomSession {
   private saving = false;
   private generation = 0;
   private backedUpRevision = -1;
+  private readonly discardedLocal = new Set<string>();
+  async saveLocalResult(match: Match): Promise<void> {
+    const previous = await this.repo.get(match.id);
+    await this.repo.save(match, previous?.updatedAt);
+    this.discardedLocal.delete(match.id);
+  }
+  async discardLocalResult(match: Match): Promise<void> {
+    this.discardedLocal.add(match.id);
+    await this.repo.remove(match.id);
+  }
   private retries = new Map<string, string>();
   changed: (match: Match) => void = () => {};
   canProcess: () => boolean = () => true;
@@ -59,7 +112,7 @@ export class RoomSession {
     if (!access || access.id !== code || typeof access.token !== 'string')
       throw new Error('Join the room before opening its table.');
     this.access.set(access);
-    this.connectionStatus.set('Connecting');
+    this.updateConnection('Connecting');
     await this.sync();
     if (generation !== this.generation) return;
     this.connection = new HubConnectionBuilder()
@@ -70,45 +123,53 @@ export class RoomSession {
     this.connection.on('Changed', () => {
       if (generation === this.generation) this.requestSync();
     });
+    this.connection.on('Presence', (value: unknown) => {
+      if (generation === this.generation) this.acceptPresence(value);
+    });
     this.connection.onreconnecting(() => {
       if (generation === this.generation) {
-        this.connectionStatus.set('Reconnecting');
+        this.presence.set(null);
+        this.updateConnection('Reconnecting');
         this.startPolling();
       }
     });
     this.connection.onclose(() => {
       if (generation === this.generation) {
-        this.connectionStatus.set('Disconnected');
+        this.presence.set(null);
+        this.updateConnection('Disconnected');
         this.startPolling();
       }
     });
     this.connection.onreconnected(async () => {
       if (generation !== this.generation) return;
+      this.presence.set(null);
       try {
-        await this.connection?.invoke('Join', access.id, access.token);
+        const presence = await this.connection?.invoke<unknown>('Join', access.id, access.token);
         if (generation !== this.generation) return;
+        this.acceptPresence(presence);
         this.stopPolling();
         await this.sync();
-        this.connectionStatus.set('Connected');
+        this.updateConnection('Connected');
       } catch {
         if (generation !== this.generation) return;
         this.startPolling();
-        this.connectionStatus.set('Disconnected');
+        this.updateConnection('Disconnected');
         this.error.set('Room credentials are incorrect or expired.');
       }
     });
     try {
       await this.connection.start();
       if (generation !== this.generation) return;
-      await this.connection.invoke('Join', access.id, access.token);
+      const presence = await this.connection.invoke<unknown>('Join', access.id, access.token);
       if (generation !== this.generation) return;
+      this.acceptPresence(presence);
       this.stopPolling();
       await this.sync();
-      this.connectionStatus.set('Connected');
+      this.updateConnection('Connected');
     } catch {
       if (generation !== this.generation) return;
       this.startPolling();
-      this.connectionStatus.set('Disconnected');
+      this.updateConnection('Disconnected');
       this.status.set('Live connection unavailable. Refreshing periodically.');
     }
   }
@@ -119,10 +180,11 @@ export class RoomSession {
     const connection = this.connection;
     this.connection = undefined;
     this.access.set(null);
+    this.presence.set(null);
     this.state.set(null);
     this.error.set('');
     this.status.set('');
-    this.connectionStatus.set('Disconnected');
+    this.updateConnection('Disconnected');
     this.retries.clear();
     this.backedUpRevision = -1;
     await connection?.stop();
@@ -171,6 +233,7 @@ export class RoomSession {
       let state = await this.read();
       if (generation !== this.generation) return;
       this.state.set(state);
+      if (state.presence) this.acceptPresence(state.presence);
       if (this.access()?.host && state.match && this.canProcess()) {
         let match = state.match;
         const decisions: { id: string; error: string }[] = [];
@@ -226,16 +289,18 @@ export class RoomSession {
     match: Match,
     decisions: { id: string; error: string }[],
     revision: number,
+    operation?: string,
   ): Promise<void> {
     await this.api.request(
       this.path(),
       'PUT',
-      { revision, handKey: roomHandKey(match), match, decisions },
+      { revision, handKey: roomHandKey(match), match, decisions, operation },
       this.access()!.token,
     );
   }
   // Also backs up snapshots recovered after an acknowledgement was lost in transit.
   private async backup(match: Match): Promise<void> {
+    if (this.discardedLocal.has(match.id) || match.ended) return;
     try {
       const previous = await this.repo.get(match.id);
       await this.repo.save(match, previous?.updatedAt);
@@ -245,14 +310,15 @@ export class RoomSession {
       );
     }
   }
-  async save(match: Match): Promise<void> {
-    if (!this.access()?.host) throw new Error('Only the host can change shared table settings.');
+  async save(match: Match, operation?: RoomPermission): Promise<void> {
+    if (!this.access()?.host && (!operation || !this.can(operation)))
+      throw new Error('This action is not permitted by the host.');
     if (this.syncing || this.saving) throw new Error('The room is synchronizing. Try again.');
     if (this.wins().length)
       throw new Error('Settle or reject pending wins before changing the table.');
     this.saving = true;
     try {
-      await this.write(match, [], this.state()!.revision);
+      await this.write(match, [], this.state()!.revision, operation);
     } finally {
       this.saving = false;
     }
@@ -279,7 +345,7 @@ export class RoomSession {
     await this.sync();
   }
   async settleWins(): Promise<void> {
-    if (!this.access()?.host) throw new Error('Only the host can change shared table settings.');
+    if (!this.can('settle')) throw new Error('This action is not permitted by the host.');
     if (this.syncing || this.saving) throw new Error('The room is synchronizing. Try again.');
     const state = this.state()!;
     const wins = this.wins();
@@ -291,6 +357,37 @@ export class RoomSession {
         match,
         wins.map((action) => ({ id: action.id, error: '' })),
         state.revision,
+        'settle',
+      );
+    } finally {
+      this.saving = false;
+    }
+    await this.sync();
+  }
+  async settleWith(inputs: ScoringInput[]): Promise<void> {
+    if (!this.can('settle')) throw new Error('This action is not permitted by the host.');
+    if (this.syncing || this.saving) throw new Error('The room is synchronizing. Try again.');
+    const state = this.state()!;
+    const wins = this.wins();
+    if (!state.match) return;
+    const own: RoomAction[] = inputs.map((input) => ({
+      id: newId(),
+      seat: state.match!.players.findIndex((player) => player.id === input.win.winnerId),
+      handKey: state.handKey,
+      kind: 'win',
+      payload: { input },
+      status: 'pending',
+      error: '',
+      createdAt: Date.now(),
+    }));
+    this.saving = true;
+    try {
+      const match = settleRoomWins(state.match, [...wins, ...own], newId);
+      await this.write(
+        match,
+        wins.map((action) => ({ id: action.id, error: '' })),
+        state.revision,
+        'settle',
       );
     } finally {
       this.saving = false;

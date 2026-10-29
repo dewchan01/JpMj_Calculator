@@ -25,7 +25,7 @@ details {
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  width: 90px;
+  width: 45px;
   text-align: center;
 }
 .preview-tile-face {
@@ -36,13 +36,29 @@ details {
 small {
   display: block;
 }
-.review-actions {
-  display: flex;
-  justify-content: center;
+.preview-message {
+  --message-color: #286397;
+  margin: 8px 0 12px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--message-color) 45%, var(--surface));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--message-color) 8%, var(--surface));
+  color: var(--message-color);
+  font-size: 0.8rem;
+  line-height: 1.5;
 }
-.review-actions button {
-  min-width: 28px;
-  min-height: 44px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
+.preview-message p {
+  margin: 0;
+}
+.preview-message.warning {
+  --message-color: #855600;
+}
+.preview-message.success {
+  --message-color: var(--green);
+}
+:host-context([data-theme='dark']) .preview-message.info {
+  --message-color: #a4cdef;
+}
+:host-context([data-theme='dark']) .preview-message.warning {
+  --message-color: #ffd28c;
 }

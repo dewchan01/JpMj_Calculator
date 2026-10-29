@@ -663,3 +663,16 @@
   border-radius: 4px;
   padding: 1px 3px;
 }
+.player-seat h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.seat-player-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.player-seat h3 app-connection-status {
+  flex-shrink: 0;
+}

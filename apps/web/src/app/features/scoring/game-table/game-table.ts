@@ -1,5 +1,8 @@
+import { ResponsiveSheet } from '../../../shared/responsive-sheet';
+import { roomPermissionItems, type RoomPermission } from '../../../core/online/room-permissions';
 import { gamesCsv } from '../../records/data-transfer/data-csv';
 import { ConnectionStatus } from '../../../shared/connection-status/connection-status';
+import { playerConnectionStates } from '../../../core/online/presence';
 import { recordCall } from '../../../../../../../packages/mahjong-core/record-call';
 import { RoomSession } from '../../../core/online/room-session';
 import type { RoomAction } from '../../../../../../../packages/mahjong-core/room-actions';
@@ -12,6 +15,7 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  effect,
   computed,
   inject,
   signal,
@@ -74,6 +78,7 @@ import { handChips } from '../../../../../../../packages/mahjong-scoring/chips';
 
 type Panel =
   | 'menu'
+  | 'perspective'
   | 'player'
   | 'call'
   | 'indicators'
@@ -87,13 +92,16 @@ type Panel =
   | 'finish'
   | 'info'
   | 'settings'
-  | 'seats'
   | 'help'
   | 'difference'
   | 'dice'
-  | 'results';
+  | 'results'
+  | 'permissions'
+  | 'declarations'
+  | 'notice';
 @Component({
   imports: [
+    ResponsiveSheet,
     ConnectionStatus,
     DialogBackdrop,
     FormsModule,
@@ -112,6 +120,102 @@ type Panel =
 })
 export class GameTable {
   readonly scoringMode = inject(ScoringMode);
+  readonly permissionItems = roomPermissionItems;
+  readonly viewOrder = signal<string[]>([]);
+  readonly winningPicker = viewChild.required<ElementRef<HTMLDialogElement>>('winningPicker');
+  private resultShown = '';
+  private pendingSignature = '';
+  private noticedError = '';
+  private resumeCall: Meld['type'] | null = null;
+  private pendingKan: Match | null = null;
+  private pendingCallPayload: Record<string, unknown> | null = null;
+  requiredIndicators = 0;
+  indicatorResume: 'hand' | 'details' | null = null;
+  can(permission: RoomPermission): boolean {
+    return !this.roomCode || this.room.can(permission);
+  }
+  readonly saveLocalResult = (match: Match) => this.room.saveLocalResult(match);
+  readonly discardLocalResult = (match: Match) => this.room.discardLocalResult(match);
+  async changePermission(key: RoomPermission, enabled: boolean): Promise<void> {
+    await this.act(() => this.room.setPermission(key, enabled));
+  }
+  initializeView(match: Match): void {
+    if (this.viewOrder().length) return;
+    const ids = match.players.map((player) => player.id);
+    try {
+      const stored: unknown = JSON.parse(localStorage.getItem('riichi-view:' + match.id) ?? 'null');
+      if (
+        Array.isArray(stored) &&
+        stored.length === ids.length &&
+        new Set(stored).size === ids.length &&
+        stored.every((id) => ids.includes(id))
+      ) {
+        this.viewOrder.set(stored);
+        return;
+      }
+    } catch {
+      /* Use the assigned player as the viewing origin. */
+    }
+    const first = this.roomCode ? (this.room.access()?.seat ?? 0) : 0;
+    this.viewOrder.set([...ids.slice(first), ...ids.slice(0, first)]);
+  }
+  rotateView(clockwise: boolean): void {
+    const order = [...this.viewOrder()];
+    if (!order.length) return;
+    if (clockwise) order.push(order.shift()!);
+    else order.unshift(order.pop()!);
+    this.viewOrder.set(order);
+    localStorage.setItem('riichi-view:' + this.match()!.id, JSON.stringify(order));
+  }
+  showResultsIfEnded(match: Match): void {
+    if (!match.ended || this.resultShown === match.id) return;
+    setTimeout(() => {
+      if (!this.match()?.ended || this.resultShown === match.id) return;
+      if (this.busy()) {
+        this.showResultsIfEnded(match);
+        return;
+      }
+      this.resultShown = match.id;
+      this.open('results');
+    }, 50);
+  }
+  chooseWinningTile(): void {
+    this.winningPicker().nativeElement.showModal();
+  }
+  selectWinningTile(index: number): void {
+    this.winningIndex = index;
+    this.winningPicker().nativeElement.close();
+  }
+  get indicatorsComplete(): boolean {
+    try {
+      return (
+        !this.requiredIndicators ||
+        parseTiles(this.indicatorKind() === 'dora' ? this.dora : this.ura).length ===
+          this.requiredIndicators
+      );
+    } catch {
+      return false;
+    }
+  }
+  get winningTile(): Tile | undefined {
+    return this.tiles[this.winningIndex];
+  }
+  get requiredDoraCount(): number {
+    const match = this.pendingKan ?? this.match();
+    return (
+      1 +
+      Object.values(match?.live?.players ?? {})
+        .flatMap((player) => player.melds)
+        .filter((meld) => !['chi', 'pon'].includes(meld.type)).length
+    );
+  }
+  requireIndicators(kind: 'dora' | 'ura', resume: 'hand' | 'details'): void {
+    this.indicatorResume = resume;
+    this.requiredIndicators = this.requiredDoraCount;
+    this.indicatorKind.set(kind);
+    this.navigatePanel('indicators');
+  }
+
   readonly manualEntry = signal(false);
   manualHan = 3;
   manualFu = 40;
@@ -185,21 +289,35 @@ export class GameTable {
   }
   async settleRoomDeclarations(): Promise<void> {
     await this.act(() => this.room.settleWins());
+    if (!this.error()) {
+      this.close();
+      if (this.match()?.ended) this.open('results');
+    }
   }
   async rejectRoomDeclaration(id: string): Promise<void> {
     await this.act(() => this.room.reject(id));
   }
   readonly match = signal<Match | null>(null);
+  readonly playerPresence = computed(() => {
+    if (!this.roomCode || !this.room.access()?.host) return null;
+    const players = this.match()?.players ?? [];
+    const states = playerConnectionStates(
+      players.length,
+      this.room.presence()?.seats ?? null,
+      this.room.access()?.seat ?? null,
+      this.room.connectionStatus(),
+    );
+    return Object.fromEntries(players.map((player, index) => [player.id, states[index]]));
+  });
   readonly error = signal('');
   readonly busy = signal(false);
   readonly now = signal(Date.now());
   readonly editingHand = signal<string | null>(null);
   private originalMatch?: Match;
   readonly directIndicator = signal<'dora' | 'ura' | null>(null);
-  resumeRonAfterDora = false;
   editHand(eventId: string): void {
-    if (this.remotePlayer()) {
-      this.error.set('Only the host can change shared table settings.');
+    if (!this.can('history')) {
+      this.error.set('This action is not permitted by the host.');
       return;
     }
     if (this.busy() || this.editingHand()) return;
@@ -223,7 +341,11 @@ export class GameTable {
     this.editingHand.set(null);
   }
   onPromptClosed(): void {
-    this.resumeRonAfterDora = false;
+    this.pendingKan = null;
+    this.pendingCallPayload = null;
+    this.resumeCall = null;
+    this.requiredIndicators = 0;
+    this.indicatorResume = null;
     if (this.editingHand()) this.cancelHandEdit();
     this.error.set('');
   }
@@ -250,6 +372,7 @@ export class GameTable {
   readonly panelParents = signal<Panel[]>([]);
   readonly canDismissPrompt = () => !this.busy() && this.panelParents().length === 0;
   navigatePanel(panel: Panel): void {
+    if (panel === 'permissions' && !this.room.access()?.host) return;
     if (panel === this.panel()) return;
     this.panelParents.update((parents) => [...parents, this.panel()]);
     this.panel.set(panel);
@@ -257,6 +380,13 @@ export class GameTable {
   }
   backPanel(): void {
     const parents = this.panelParents();
+    if (this.panel() === 'indicators' && this.requiredIndicators) {
+      this.pendingKan = null;
+      this.pendingCallPayload = null;
+      this.resumeCall = null;
+      this.requiredIndicators = 0;
+      this.indicatorResume = null;
+    }
     const previous = parents.at(-1);
     if (!previous) {
       this.close();
@@ -359,8 +489,6 @@ export class GameTable {
   drawInput?: DrawInput;
   editName = '';
   editNames: string[] = [];
-  swapA = '';
-  swapB = '';
   readonly diceRequest = signal(0);
   readonly ruleName = ruleName;
   readonly tableRules = tableRules;
@@ -386,6 +514,23 @@ export class GameTable {
             .filter((meld) => !['pon', 'chi'].includes(meld.type)).length;
         const previous = this.match();
         this.match.set(match);
+        this.initializeView(match);
+        this.showResultsIfEnded(match);
+        const signature = this.room
+          .wins()
+          .map((action) => action.id)
+          .join(':');
+        if (
+          signature &&
+          signature !== this.pendingSignature &&
+          this.can('settle') &&
+          !this.busy() &&
+          !match.ended
+        )
+          queueMicrotask(() => {
+            if (!this.dialog().nativeElement.open) this.open('declarations');
+          });
+        this.pendingSignature = signature;
         if (
           previous &&
           this.room.access()?.host &&
@@ -397,6 +542,21 @@ export class GameTable {
           this.openIndicators('dora');
       }
     };
+    effect(() => {
+      const error = this.room.error();
+      if (
+        error &&
+        error !== this.noticedError &&
+        error !== 'Could not connect to the online service.'
+      ) {
+        this.noticedError = error;
+        queueMicrotask(() => {
+          this.open('notice');
+          this.error.set(error);
+        });
+      }
+      if (!error) this.noticedError = '';
+    });
     void this.load();
   }
   get players() {
@@ -438,7 +598,7 @@ export class GameTable {
       indicators: 'Dora / Ura',
       outcome: 'End this hand',
       win: this.playerWinSelected ? 'Win method' : 'Who won this hand?',
-      hand: this.manualEntry() ? 'Advanced scoring' : 'The winning hand',
+      hand: this.manualEntry() ? 'Manual Han entry' : 'The winning hand',
       details: 'Winning conditions',
       review: 'Review settlement',
       draw: 'Record draw',
@@ -446,11 +606,14 @@ export class GameTable {
       finish: 'End entire match',
       info: 'Edit game info',
       settings: 'In-game settings',
-      seats: 'Change seats',
+      perspective: 'Adjust view',
       help: 'Help',
       difference: 'Point differences',
       dice: 'Dice',
       results: 'Final results',
+      permissions: 'Player permissions',
+      declarations: 'Winning declarations',
+      notice: 'Notice',
     };
     return titles[this.panel()];
   }
@@ -509,12 +672,16 @@ export class GameTable {
         const match = this.room.state()?.match;
         if (!match) throw new Error('The host has not attached a game yet.');
         this.match.set(match);
+        this.initializeView(match);
+        this.showResultsIfEnded(match);
         this.basis = match.players[0].id;
         return;
       }
       const match = await this.repo.get(this.route.snapshot.paramMap.get('id') ?? '');
       if (!match) throw new Error('Match not found. Return to My table.');
       this.match.set(match);
+      this.initializeView(match);
+      this.showResultsIfEnded(match);
       if (!match.clock || !match.live)
         await this.persist({
           ...match,
@@ -536,9 +703,14 @@ export class GameTable {
   private fail(e: unknown): void {
     this.error.set(e instanceof Error ? e.message : 'Could not save match.');
   }
-  private async persist(updated: Match, remember = false): Promise<void> {
+  private async persist(
+    updated: Match,
+    remember = false,
+    operation?: RoomPermission,
+  ): Promise<void> {
     const previous = this.match();
-    if (previous && remember) updated = rememberLiveAction(previous, updated);
+    if (previous && remember && !(this.remotePlayer() && operation === 'indicators'))
+      updated = rememberLiveAction(previous, updated);
     else if (
       previous &&
       updated.events !== previous.events &&
@@ -549,7 +721,7 @@ export class GameTable {
       updated = { ...updated, liveUndo: [] };
     updated.updatedAt = new Date().toISOString();
     if (!this.editingHand()) {
-      if (this.roomCode) await this.room.save(updated);
+      if (this.roomCode) await this.room.save(updated, operation);
       else await this.repo.save(updated, previous?.updatedAt);
     }
     this.match.set(updated);
@@ -569,13 +741,16 @@ export class GameTable {
     }
   }
   open(panel: Panel, player?: string): void {
-    if (this.remotePlayer() && player && player !== this.roomPlayerId()) {
+    if (this.remotePlayer() && !this.editingHand() && player && player !== this.roomPlayerId()) {
       this.error.set('Declare only for your own seat.');
       return;
     }
     if (
       this.remotePlayer() &&
-      ['indicators', 'outcome', 'finish', 'info', 'settings', 'seats'].includes(panel)
+      ((panel === 'indicators' && !this.can('indicators')) ||
+        (panel === 'outcome' && !this.can('settle')) ||
+        (panel === 'finish' && !this.can('finish')) ||
+        ['info', 'permissions'].includes(panel))
     ) {
       this.error.set('Only the host can change shared table settings.');
       return;
@@ -595,8 +770,6 @@ export class GameTable {
       this.ura = m.live?.ura ?? '';
       this.editName = m.name;
       this.editNames = m.players.map((p) => p.name);
-      this.swapA = m.players[0].id;
-      this.swapB = m.players[1].id;
     }
     if (!this.dialog().nativeElement.open) this.dialog().nativeElement.showModal();
   }
@@ -611,8 +784,9 @@ export class GameTable {
     this.error.set('');
   }
   openIndicators(kind: 'dora' | 'ura'): void {
-    if (this.remotePlayer()) {
-      this.error.set('Ask the host to enter Dora indicators first.');
+    if (!this.can('indicators')) {
+      this.open('notice');
+      this.error.set('This action is not permitted by the host.');
       return;
     }
     const m = this.match();
@@ -634,7 +808,7 @@ export class GameTable {
   async returnToTables(): Promise<void> {
     await this.act(async () => {
       const m = this.match()!;
-      if (!m.ended)
+      if (!m.ended && !this.remotePlayer())
         await this.persist({
           ...m,
           clock: m.clock
@@ -646,7 +820,7 @@ export class GameTable {
   }
   async riichi(): Promise<void> {
     await this.act(async () => {
-      if (this.remotePlayer()) {
+      if (this.remotePlayer() && !this.editingHand()) {
         if (this.selected !== this.roomPlayerId())
           throw new Error('Declare only for your own seat.');
         await this.room.submit('riichi', { double: this.doubleRiichi });
@@ -672,8 +846,20 @@ export class GameTable {
       this.close(true);
     });
   }
-  startCall(type: Meld['type'] | 'kita'): void {
-    if (this.paused() || this.busy() || this.match()?.ended) return;
+  startCall(type: Meld['type'] | 'kita', resuming = false): void {
+    if (this.paused() || (this.busy() && !resuming) || this.match()?.ended) return;
+    if (
+      type !== 'kita' &&
+      !['chi', 'pon'].includes(type) &&
+      !(this.editingHand() ? this.manualEntry() : this.scoringMode.advanced()) &&
+      !parseTiles(this.dora || this.match()?.live?.dora || '').length
+    ) {
+      this.resumeCall = type;
+      this.requiredIndicators = 1;
+      this.indicatorKind.set('dora');
+      this.navigatePanel('indicators');
+      return;
+    }
     this.sounds.play(type);
     this.callType = type;
     this.callText = type === 'kita' ? '4z' : '';
@@ -700,7 +886,7 @@ export class GameTable {
   }
   async cancelDeclaration(): Promise<void> {
     await this.act(async () => {
-      if (this.remotePlayer()) {
+      if (this.remotePlayer() && !this.editingHand()) {
         if (this.selected !== this.roomPlayerId())
           throw new Error('Declare only for your own seat.');
         await this.room.submit('cancelRiichi', {});
@@ -773,43 +959,31 @@ export class GameTable {
   }
   async saveCall(keepOpen = false): Promise<void> {
     await this.act(async () => {
-      if (this.remotePlayer()) {
-        if (this.selected !== this.roomPlayerId())
-          throw new Error('Declare only for your own seat.');
-        const payload = {
-          type: this.callType,
-          text: this.callText,
-          source: this.callSource,
-          called: this.called,
-          upgradeId: this.upgradeId,
-        };
-        recordCall(this.match()!, this.selected, payload, newId);
-        await this.room.submit('call', payload);
-        this.close(true);
-        return;
-      }
-      const updated = recordCall(
-        this.match()!,
-        this.selected,
-        {
-          type: this.callType,
-          text: this.callText,
-          source: this.callSource,
-          called: this.called,
-          upgradeId: this.upgradeId,
-        },
-        newId,
-      );
-      await this.persist(updated, true);
+      const payload = {
+        type: this.callType,
+        text: this.callText,
+        source: this.callSource,
+        called: this.called,
+        upgradeId: this.upgradeId,
+      };
+      const updated = recordCall(this.match()!, this.selected, payload, newId);
       if (
         !['chi', 'pon', 'kita'].includes(this.callType) &&
         !(this.editingHand() ? this.manualEntry() : this.scoringMode.advanced())
       ) {
+        this.pendingKan = updated;
+        this.pendingCallPayload = payload;
+        this.requiredIndicators = this.requiredDoraCount;
         this.indicatorKind.set('dora');
-        this.open('indicators');
-      } else {
-        if (!keepOpen) this.close(true);
+        this.navigatePanel('indicators');
+        return;
       }
+      if (this.remotePlayer() && !this.editingHand()) {
+        if (this.selected !== this.roomPlayerId())
+          throw new Error('Declare only for your own seat.');
+        await this.room.submit('call', payload);
+      } else await this.persist(updated, true);
+      if (!keepOpen) this.close(true);
     });
   }
   upgradeTileKind(): number | undefined {
@@ -820,31 +994,56 @@ export class GameTable {
   }
   async saveIndicators(): Promise<void> {
     await this.act(async () => {
-      const m = this.match()!;
-      const live = {
-        ...(m.live ?? emptyLive()),
-        [this.indicatorKind()]: this.indicatorKind() === 'dora' ? this.dora : this.ura,
-      };
-      const kans = Object.values(live.players)
-        .flatMap((p) => p.melds)
-        .filter((meld) => !['chi', 'pon'].includes(meld.type)).length;
-      if (parseTiles(this.dora).length > 1 + kans || parseTiles(this.ura).length > 1 + kans)
+      const m = this.pendingKan ?? this.match()!;
+      const kind = this.indicatorKind();
+      const text = kind === 'dora' ? this.dora : this.ura;
+      const count = parseTiles(text).length;
+      if (this.requiredIndicators && count !== this.requiredIndicators)
+        throw new Error('Fill every required indicator before saving.');
+      const live = { ...(m.live ?? emptyLive()), [kind]: text };
+      const maximum =
+        1 +
+        Object.values(live.players)
+          .flatMap((player) => player.melds)
+          .filter((meld) => !['chi', 'pon'].includes(meld.type)).length;
+      if (parseTiles(this.dora).length > maximum || parseTiles(this.ura).length > maximum)
         throw new Error('Indicators cannot exceed one plus the recorded Kan count.');
       validateRevealed(m, live);
-      if (this.resumeRonAfterDora && !parseTiles(this.dora).length)
-        throw new Error('Enter at least one Dora indicator.');
-      await this.persist({ ...m, live }, true);
-      if (this.resumeRonAfterDora) {
-        this.resumeRonAfterDora = false;
-        this.panel.set('details');
-        this.reviewWinner();
+      if (this.pendingKan) {
+        if (this.remotePlayer() && !this.editingHand())
+          await this.room.submit('call', {
+            ...this.pendingCallPayload,
+            dora: this.dora,
+            requireDora: true,
+          });
+        else await this.persist({ ...m, live }, true);
+        this.pendingKan = null;
+        this.pendingCallPayload = null;
+        this.requiredIndicators = 0;
+        this.close(true);
+        return;
+      }
+      const resumeCall = this.resumeCall;
+      const resume = this.indicatorResume;
+      if (this.editingHand() || !this.remotePlayer() || this.can('indicators'))
+        await this.persist({ ...m, live }, true, 'indicators');
+      this.resumeCall = null;
+      this.requiredIndicators = 0;
+      this.indicatorResume = null;
+      if (resumeCall) {
+        this.startCall(resumeCall, true);
+        return;
+      }
+      if (resume) {
+        this.panel.set(resume);
+        this.panelParents.update((parents) => parents.slice(0, -1));
         return;
       }
       this.close(true);
     });
   }
   startOutcome(): void {
-    if (this.remotePlayer() && this.selected !== this.roomPlayerId()) {
+    if (this.remotePlayer() && !this.editingHand() && this.selected !== this.roomPlayerId()) {
       this.error.set('Declare only for your own seat.');
       return;
     }
@@ -903,6 +1102,11 @@ export class GameTable {
     this.firstTurn = false;
     this.wareme = this.match()?.live?.waremePlayerId ?? '';
     this.navigatePanel('hand');
+    if (
+      !this.manualEntry() &&
+      parseTiles(this.dora || this.match()?.live?.dora || '').length !== this.requiredDoraCount
+    )
+      this.requireIndicators('dora', 'hand');
   }
   nextHand(): void {
     this.error.set('');
@@ -918,6 +1122,11 @@ export class GameTable {
       return;
     }
     this.navigatePanel('details');
+    if (
+      this.winnerState.riichi !== 'none' &&
+      parseTiles(this.ura).length !== this.requiredDoraCount
+    )
+      this.requireIndicators('ura', 'details');
   }
   get claimOptions(): { key: string; label: string }[] {
     const tsumo = this.method === 'tsumo',
@@ -950,13 +1159,19 @@ export class GameTable {
   }
   reviewWinner(): void {
     this.error.set('');
-    if (!this.manualEntry() && this.method === 'ron' && !this.indicatorTiles('dora').length) {
-      const ura = this.ura;
-      this.indicatorKind.set('dora');
-      this.open('indicators');
-      this.ura = ura;
-      this.resumeRonAfterDora = true;
-      if (this.remotePlayer()) this.error.set('Ask the host to enter Dora indicators first.');
+    if (
+      !this.manualEntry() &&
+      parseTiles(this.dora || this.match()?.live?.dora || '').length !== this.requiredDoraCount
+    ) {
+      this.requireIndicators('dora', 'details');
+      return;
+    }
+    if (
+      !this.manualEntry() &&
+      this.winnerState.riichi !== 'none' &&
+      parseTiles(this.ura).length !== this.requiredDoraCount
+    ) {
+      this.requireIndicators('ura', 'details');
       return;
     }
     try {
@@ -1022,7 +1237,7 @@ export class GameTable {
           extractedNorthTiles: state.kita,
         },
         win,
-        doraIndicators: parseTiles(m.live?.dora ?? '', 'dora'),
+        doraIndicators: parseTiles(this.dora || m.live?.dora || '', 'dora'),
         uraIndicators: state.riichi !== 'none' ? parseTiles(this.ura, 'ura') : [],
         otherPlayerKans: Object.entries(m.live?.players ?? {})
           .filter(([id]) => id !== this.activeWinner)
@@ -1084,7 +1299,7 @@ export class GameTable {
   }
   async settle(): Promise<void> {
     await this.act(async () => {
-      if (this.roomCode && !this.editingHand() && this.inputs.length) {
+      if (this.remotePlayer() && !this.editingHand() && this.inputs.length) {
         for (const input of this.inputs) {
           if (this.remotePlayer() && input.win.winnerId !== this.roomPlayerId())
             throw new Error('Declare only for your own seat.');
@@ -1097,6 +1312,14 @@ export class GameTable {
         this.inputs = [];
         this.round = null;
         this.close();
+        return;
+      }
+      if (this.roomCode && !this.editingHand() && this.inputs.length && this.room.wins().length) {
+        await this.room.settleWith(this.inputs);
+        this.inputs = [];
+        this.round = null;
+        this.close();
+        if (this.match()?.ended) this.open('results');
         return;
       }
       const m = this.match()!;
@@ -1143,7 +1366,7 @@ export class GameTable {
           live: emptyLive(),
           clock,
         });
-        if (this.roomCode) await this.room.save(rebuilt);
+        if (this.roomCode) await this.room.save(rebuilt, 'history');
         else await this.repo.save(rebuilt, original.updatedAt);
         this.originalMatch = undefined;
         this.editingHand.set(null);
@@ -1152,7 +1375,7 @@ export class GameTable {
         this.open('history');
         return;
       }
-      await this.persist({ ...updated, live: emptyLive(), clock });
+      await this.persist({ ...updated, live: emptyLive(), clock }, false, 'settle');
       this.inputs = [];
       this.round = null;
       this.drawInput = undefined;
@@ -1165,7 +1388,7 @@ export class GameTable {
       const m = this.match()!;
       const updated = finishMatch(m, newId());
       updated.events[updated.events.length - 1].liveBefore = structuredClone(m.live ?? emptyLive());
-      await this.persist({ ...updated, clock: clockAt(m.clock!, false) });
+      await this.persist({ ...updated, clock: clockAt(m.clock!, false) }, false, 'finish');
       this.open('results');
     });
   }
@@ -1181,7 +1404,7 @@ export class GameTable {
           if (live.players[payment.from]) live.players[payment.from].riichi = 'none';
       const clock = clockAt(m.clock!, false);
       clock.handStartMs = Math.max(0, clock.handStartMs - (last.durationMs ?? 0));
-      await this.persist({ ...updated, live, clock });
+      await this.persist({ ...updated, live, clock }, false, 'history');
       this.navigatePanel('history');
     });
   }
@@ -1200,18 +1423,6 @@ export class GameTable {
         name: this.editName.trim(),
         players: m.players.map((p, i) => ({ ...p, name: this.editNames[i].trim() })),
       });
-      this.close();
-    });
-  }
-  async swapSeats(): Promise<void> {
-    await this.act(async () => {
-      const m = this.match()!;
-      const order = [...(m.viewSeats ?? m.players.map((p) => p.id))];
-      const a = order.indexOf(this.swapA),
-        b = order.indexOf(this.swapB);
-      if (a < 0 || b < 0 || a === b) throw new Error('Choose two different players.');
-      [order[a], order[b]] = [order[b], order[a]];
-      await this.persist({ ...m, viewSeats: order });
       this.close();
     });
   }

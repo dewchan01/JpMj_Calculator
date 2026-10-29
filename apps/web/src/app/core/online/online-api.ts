@@ -2,6 +2,7 @@ import { Service, signal, inject } from '@angular/core';
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { AppConfiguration } from '../config/app-config';
+import { DiagnosticLog } from '../diagnostic-log';
 
 export interface ShareReceipt {
   id: string;
@@ -28,6 +29,7 @@ export class OnlineApi {
   private readonly location = inject(Location);
   private readonly router = inject(Router);
   private readonly configuration = inject(AppConfiguration);
+  private readonly logs = inject(DiagnosticLog);
   readonly url = signal('');
   readonly ready = this.configure();
 
@@ -53,7 +55,7 @@ export class OnlineApi {
       if (url.username || url.password || url.search || url.hash) return;
       this.url.set(url.href.replace(/\/$/, ''));
     } catch {
-      /* An unavailable backend must not interrupt offline play. */
+      this.logs.add('warn', 'Online configuration is invalid.', 'configuration');
     }
   }
 
@@ -81,12 +83,20 @@ export class OnlineApi {
         body: body === undefined ? undefined : JSON.stringify(body),
       });
     } catch {
+      this.logs.add('warn', 'Network request failed.', 'network');
       throw new Error('Could not connect to the online service.');
     }
     if (!response.ok) {
+      if (response.status >= 500)
+        this.logs.add('error', `Online service returned HTTP ${response.status}.`, 'network');
+      else if (response.status === 429)
+        this.logs.add('warn', 'Online service rate limit reached.', 'network');
+      else if (response.status === 409)
+        this.logs.add('warn', 'Concurrent shared update detected.', 'room');
       const errors: Record<number, string> = {
         400: 'Invalid online request.',
         401: 'Room credentials are incorrect or expired.',
+        403: 'This action is not permitted by the host.',
         404: 'This room or share has expired or was removed.',
         409: path.endsWith('/join')
           ? 'This seat is already occupied.'

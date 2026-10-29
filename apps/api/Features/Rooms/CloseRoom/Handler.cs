@@ -10,8 +10,10 @@ namespace Riichi.Api.Features.Rooms.CloseRoom;
 /// <summary>Closes a room after verifying host credentials.</summary>
 /// <param name="db">The scoped database context.</param>
 /// <param name="hub">The room notification hub.</param>
-public sealed class Handler(AppDb db, IHubContext<RoomHub> hub) : CommandHandler<Request>
+/// <param name="presence">The online connection registry.</param>
+public sealed class Handler(AppDb db, IHubContext<RoomHub> hub, RoomPresence presence) : CommandHandler<Request>
 {
+    private readonly RoomPresence _presence = presence ?? throw new ArgumentNullException(nameof(presence));
     private readonly AppDb _db = db ?? throw new ArgumentNullException(nameof(db));
     private readonly IHubContext<RoomHub> _hub = hub ?? throw new ArgumentNullException(nameof(hub));
 
@@ -23,6 +25,7 @@ public sealed class Handler(AppDb db, IHubContext<RoomHub> hub) : CommandHandler
         if (room is null) return Results.NotFound();
         if (!Secrets.Matches(command.Token, room.HostHash)) return Results.Unauthorized();
         await _db.Rooms.Where(x => x.Id == id).ExecuteDeleteAsync(cancellationToken);
+        _presence.Remove(id);
         await _hub.Clients.Group(id).SendAsync("Changed");
         return Results.NoContent();
     }

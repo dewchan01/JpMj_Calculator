@@ -136,9 +136,6 @@
   line-height: 1.3;
   margin: 0;
 }
-.transfer-actions > .action-cancel {
-  flex: 0 0 auto;
-}
 .share-history-list {
   padding: 0;
   margin: 0;

@@ -10,6 +10,26 @@ namespace Riichi.Api.Tests;
 public sealed class ConfigurationTests
 {
     [TestMethod]
+    [DataRow("https://dewchan01.github.io", true)]
+    [DataRow("https://untrusted.example", false)]
+    public async Task ProductionPreflightAllowsOnlyConfiguredOrigins(string origin, bool allowed)
+    {
+        using var root = new ApiFactory();
+        using var app = root.WithWebHostBuilder(builder => builder.UseEnvironment("Production"));
+        using var client = app.CreateClient(new() { BaseAddress = new Uri("https://localhost") });
+        using var request = new HttpRequestMessage(HttpMethod.Options, "/api/rooms");
+        request.Headers.Add("Origin", origin);
+        request.Headers.Add("Access-Control-Request-Method", "POST");
+        request.Headers.Add("Access-Control-Request-Headers", "content-type");
+
+        using var response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(System.Net.HttpStatusCode.NoContent);
+        response.Headers.TryGetValues("Access-Control-Allow-Origin", out var origins).Should().Be(allowed);
+        if (allowed) origins.Should().ContainSingle().Which.Should().Be(origin);
+    }
+
+    [TestMethod]
     public void InvalidStorageLimitsFailAtStartup()
     {
         // Arrange.

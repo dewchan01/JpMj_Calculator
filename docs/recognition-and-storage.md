@@ -3,19 +3,19 @@
 ## In-app diagnostics
 
 Open Others > Developer and click the brand name three times consecutively, within 900 ms between
-clicks. The sheet shows up to 200 session entries, newest first: startup, route names, UI errors,
-navigation failures and unhandled browser errors/rejections. Clear logs is beside Close; the
+clicks. The sheet shows up to 200 session entries, newest first: safe route names, operational failures,
+connection transitions and unhandled browser errors/rejections. Expected validation is not logged as a system error. See the [logging policy](frontend-diagnostics.md). Clear logs is beside Close; the
 explanation is below Logs. The hidden trigger has no ripple. Entries are not uploaded or persisted.
 Detailed recognition logging is a separate browser Console stream described below.
 
 ## Recognition logs
 
 Open the browser developer tools (`F12` or `Ctrl+Shift+J` in Chrome/Edge), select **Console**,
-enable Info and Warning messages, then filter for `[recognition]`. Selecting a photo logs the
+enable Info and Warning messages, then filter for `[recognition]` in a development build. Selecting a photo logs the
 provider, image byte count/type, elapsed time, prediction count or failure type. The app's own
 diagnostics do not log image contents, filenames, API keys or full provider responses.
 Enable **Preserve log** to retain messages across navigation/reloads. These logs are local to
-the browser console; they are not sent to a monitoring service or saved in IndexedDB.
+the browser console; they are not sent to a monitoring service or saved in IndexedDB. Production suppresses this detailed Console stream and keeps only safe recognition counts/failures in session diagnostics.
 
 Use **Network** to inspect failed model downloads/API status codes. Inference runs in a worker
 for Roboflow, so inspect Console messages as well. Avoid sharing full network exports, which can
@@ -99,8 +99,10 @@ The adapter validates responses, normalizes boxes, and orders suggestions left t
 out after 30 seconds, accepts images up to 20 MiB, and reports server/network errors without
 substituting mock results. Confidence is displayed, but every tile must be checked by the user.
 Capture or enter all hand, meld and North tiles together, without choosing their destinations first.
-Photo results stay in the review tray until confirmed. Remove or reorder tiles, or edit notation
-and choose **Update preview**, then **Apply reviewed tiles**. Select tiles from the collection
+Photo results stay in the review tray until confirmed. Drag within the tray to reorder, click a tile
+to remove it, or use Alt+Left/Right on a focused tile. Confidence values follow their tiles. Messages
+sit below the preview heading with information, success, warning or error styling. You can also edit
+notation and choose **Update preview**, then **Apply reviewed tiles**. Select tiles from the collection
 and assign them to Chi/Pon/Kan or extracted North afterward. Remaining tiles stay concealed.
 Assignments can be undone or returned to the collection without recapturing. Replacing the full
 collection resets its assignments and supports Undo. Dora/Ura have separate review trays.

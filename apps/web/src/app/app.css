@@ -161,3 +161,9 @@
     padding-inline: 4px;
   }
 }
+
+@media (max-width: 700px) {
+  .sound-toggle {
+    display: none;
+  }
+}

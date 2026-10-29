@@ -1,4 +1,5 @@
-import { isDevMode } from '@angular/core';
+import { isDevMode, ErrorHandler } from '@angular/core';
+import { DiagnosticErrorHandler } from './app/core/diagnostic-error-handler';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideServiceWorker } from '@angular/service-worker';
 import { App } from './app/app';
@@ -15,6 +16,7 @@ registerLocaleData(zhHans, 'zh-CN', zhHansExtra);
 registerLocaleData(zhHant, 'zh-TW', zhHantExtra);
 bootstrapApplication(App, {
   providers: [
+    { provide: ErrorHandler, useClass: DiagnosticErrorHandler },
     appRouter,
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),

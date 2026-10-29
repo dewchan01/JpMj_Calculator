@@ -1,15 +1,9 @@
 import { DestroyRef, Injectable, afterNextRender, inject } from '@angular/core';
-import { NavigationEnd, Router } from '@angular/router';
 
 @Injectable({ providedIn: 'root' })
 export class TabScroll {
   constructor() {
     const destroy = inject(DestroyRef);
-    const navigation = inject(Router).events.subscribe((event) => {
-      if (event instanceof NavigationEnd && !event.urlAfterRedirects.includes('#'))
-        requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
-    });
-    destroy.onDestroy(() => navigation.unsubscribe());
     afterNextRender(() => {
       const controller = new AbortController();
       document.addEventListener(

@@ -31,16 +31,16 @@ test('advanced preference persists; Riichi, calls, manual Ron and historical edi
   await page.setViewportSize({ width: 390, height: 850 });
   await page.goto('/');
   await page.locator('.app-navigation a[href$="/others"]').click();
-  await expect(page.getByRole('switch')).toHaveCount(0);
-  await page.getByRole('link', { name: 'Advanced scoring', exact: true }).click();
-  const toggle = page.getByRole('switch');
-  await expect(page.locator('.other-detail .advanced-mode-toggle')).toBeVisible();
+  await expect(page.getByRole('radio', { name: 'Manual Han entry', exact: true })).toHaveCount(0);
+  await page.getByRole('link', { name: 'Scoring mode', exact: true }).click();
+  const toggle = page.getByRole('radio', { name: 'Manual Han entry', exact: true });
+  await expect(page.locator('.other-detail .scoring-mode-options')).toBeVisible();
   await expect(toggle).not.toBeChecked();
   await toggle.check();
   await page.reload();
   await expect(toggle).toBeChecked();
   await page
-    .locator('.advanced-mode-toggle')
+    .locator('.scoring-mode-options')
     .screenshot({ path: 'artifacts/advanced-mode-switch.png' });
   await page.locator('.app-navigation a').first().click();
   await page.getByRole('button', { name: /Start match/ }).click();
@@ -92,10 +92,12 @@ test('advanced preference persists; Riichi, calls, manual Ron and historical edi
   await expect(prompt(page)).toContainText('4 Han');
   await leaveGame(page);
   await page.locator('.app-navigation a[href$="/others"]').click();
-  await page.getByRole('link', { name: 'Advanced scoring', exact: true }).click();
-  await page.getByRole('switch').uncheck();
+  await page.getByRole('link', { name: 'Scoring mode', exact: true }).click();
+  await page.getByRole('radio', { name: 'Assisted scoring', exact: true }).check();
   await page.reload();
-  await expect(page.getByRole('switch')).not.toBeChecked();
+  await expect(
+    page.getByRole('radio', { name: 'Manual Han entry', exact: true }),
+  ).not.toBeChecked();
 });
 
 test('advanced Tsumo validates Han/Fu and settles Sanma without tiles', async ({ page }) => {
@@ -164,8 +166,8 @@ test('quick score supports manual Han/Fu and normal tile entry returns when disa
   await page.getByRole('button', { name: /Calculate score/ }).click();
   await expect(page.locator('.result-column')).toContainText('5,200');
   await page.locator('.app-navigation a[href$="/others"]').click();
-  await page.getByRole('link', { name: 'Advanced scoring', exact: true }).click();
-  await page.getByRole('switch').uncheck();
+  await page.getByRole('link', { name: 'Scoring mode', exact: true }).click();
+  await page.getByRole('radio', { name: 'Assisted scoring', exact: true }).check();
   await openQuickScore(page);
   await expect(page.getByRole('button', { name: 'Enter tiles', exact: true })).toBeVisible();
 });

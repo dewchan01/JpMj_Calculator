@@ -108,6 +108,7 @@ test('final results offer table, list, history, statistics, PNG export, keep and
   await expect(results.locator('app-match-history > .card')).toHaveCount(0);
   await results.locator('.history-event > summary').last().click();
   await expect(results.locator('.history-event[open]')).toContainText('Player 2');
+  await expect(results.locator('.history-event[open] .hand-score-summary')).toHaveCount(1);
   await expect(results.locator('.history-event[open] .hand-player')).toHaveCount(4);
   await expect(
     results.locator('.history-event[open] .hand-player[aria-expanded="true"]'),

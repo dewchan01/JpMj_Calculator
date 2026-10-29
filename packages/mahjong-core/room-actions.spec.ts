@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { fixture } from '../mahjong-fixtures/index';
 import { balances, type Match } from './ledger';
 import { emptyLive } from './live';
+import { parseTiles } from './index';
 import {
   applyRoomAction,
   roomHandKey,
@@ -59,6 +60,46 @@ function win(match: Match, seat: number, method: 'ron' | 'tsumo' = 'ron'): RoomA
   return action(match, 'win', seat, { input });
 }
 describe('room declarations', () => {
+  it('requires the complete Dora set before atomically recording a normal-mode Kan', () => {
+    const before = game();
+    before.live!.dora = '7z';
+    const payload = {
+      type: 'ankan',
+      text: '5p',
+      source: '',
+      called: 0,
+      upgradeId: '',
+      requireDora: true,
+      dora: '7z',
+    };
+    expect(() => applyRoomAction(before, action(before, 'call', 1, payload))).toThrow(
+      'required indicator',
+    );
+    expect(before.live!.players.b).toBeUndefined();
+    const after = applyRoomAction(before, action(before, 'call', 1, { ...payload, dora: '7z6z' }));
+    expect(after.live!.dora).toBe('7z6z');
+    expect(after.live!.players.b.melds).toHaveLength(1);
+    expect(() =>
+      applyRoomAction(before, action(before, 'call', 1, { ...payload, dora: '1z6z' })),
+    ).toThrow('Invalid online request');
+  });
+  it('requires Ura for Riichi wins but ignores it for a winner without Riichi', () => {
+    const before = game();
+    before.live!.dora = '7z';
+    const input = fixture();
+    input.win.method = 'tsumo';
+    input.win.discarderId = undefined;
+    input.doraIndicators = parseTiles('7z', 'dora');
+    input.uraIndicators = parseTiles('6z', 'ura');
+    expect(roomWinInput(before, action(before, 'win', 1, { input })).uraIndicators).toEqual([]);
+    const riichi = applyRoomAction(before, action(before, 'riichi', 1));
+    input.uraIndicators = [];
+    expect(() => roomWinInput(riichi, action(riichi, 'win', 1, { input }))).toThrow(
+      'required indicator',
+    );
+    input.uraIndicators = parseTiles('6z', 'ura');
+    expect(roomWinInput(riichi, action(riichi, 'win', 1, { input })).uraIndicators).toHaveLength(1);
+  });
   it('preserves two seat deposits and never charges a repeated declaration twice', () => {
     const before = game();
     const first = action(before, 'riichi', 0);

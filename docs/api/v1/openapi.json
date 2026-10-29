@@ -1,0 +1,585 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Riichi / table API",
+    "description": "Room credentials, versioned game synchronization and 24-hour archive transfers. The host browser calculates scores; the API persists and authorizes changes.",
+    "version": "v1"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:5089/"
+    }
+  ],
+  "paths": {
+    "/api/rooms": {
+      "post": {
+        "tags": ["Riichi.Api"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Request"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Invalid request input."
+          },
+          "429": {
+            "description": "Request rate limit reached."
+          }
+        }
+      }
+    },
+    "/api/rooms/{id}/join": {
+      "post": {
+        "tags": ["Riichi.Api"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Invalid request input."
+          },
+          "401": {
+            "description": "Unknown or expired room, or incorrect passcode."
+          },
+          "409": {
+            "description": "Revision conflict, stale hand or occupied seat. Refresh state before retrying."
+          },
+          "429": {
+            "description": "Request rate limit reached."
+          }
+        }
+      }
+    },
+    "/api/rooms/{id}": {
+      "get": {
+        "tags": ["Riichi.Api"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Missing, expired or incorrect credential."
+          },
+          "429": {
+            "description": "Request rate limit reached."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["Riichi.Api"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Operation completed without a response body."
+          },
+          "401": {
+            "description": "Missing, expired or incorrect credential."
+          },
+          "429": {
+            "description": "Request rate limit reached."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/rooms/{id}/seats/{seat}": {
+      "delete": {
+        "tags": ["Riichi.Api"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "seat",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Operation completed without a response body."
+          },
+          "401": {
+            "description": "Missing, expired or incorrect credential."
+          },
+          "429": {
+            "description": "Request rate limit reached."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/rooms/{id}/permissions": {
+      "put": {
+        "tags": ["Riichi.Api"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoomPermissions"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Operation completed without a response body."
+          },
+          "400": {
+            "description": "Invalid request input."
+          },
+          "401": {
+            "description": "Missing, expired or incorrect credential."
+          },
+          "403": {
+            "description": "The host has not granted the requested capability."
+          },
+          "409": {
+            "description": "Revision conflict, stale hand or occupied seat. Refresh state before retrying."
+          },
+          "429": {
+            "description": "Request rate limit reached."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/rooms/{id}/game": {
+      "get": {
+        "tags": ["Riichi.Api"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "204": {
+            "description": "The requested revision is current; no game payload is returned."
+          },
+          "401": {
+            "description": "Missing, expired or incorrect credential."
+          },
+          "403": {
+            "description": "The host has not granted the requested capability."
+          },
+          "409": {
+            "description": "Revision conflict, stale hand or occupied seat. Refresh state before retrying."
+          },
+          "429": {
+            "description": "Request rate limit reached."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": ["Riichi.Api"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Invalid request input."
+          },
+          "401": {
+            "description": "Missing, expired or incorrect credential."
+          },
+          "403": {
+            "description": "The host has not granted the requested capability."
+          },
+          "409": {
+            "description": "Revision conflict, stale hand or occupied seat. Refresh state before retrying."
+          },
+          "429": {
+            "description": "Request rate limit reached."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/rooms/{id}/game/actions": {
+      "post": {
+        "tags": ["Riichi.Api"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Invalid request input."
+          },
+          "401": {
+            "description": "Missing, expired or incorrect credential."
+          },
+          "403": {
+            "description": "The host has not granted the requested capability."
+          },
+          "409": {
+            "description": "Revision conflict, stale hand or occupied seat. Refresh state before retrying."
+          },
+          "429": {
+            "description": "Request rate limit reached."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/shares": {
+      "post": {
+        "tags": ["Riichi.Api"],
+        "requestBody": {
+          "description": "Internal riichi-table v1 archive JSON. Maximum 5 MiB, 1–500 matches; expires after 24 hours.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Invalid request input."
+          },
+          "413": {
+            "description": "Archive exceeds the configured upload limit."
+          },
+          "429": {
+            "description": "Request rate limit reached."
+          },
+          "507": {
+            "description": "The shared storage quota has been reached."
+          }
+        }
+      }
+    },
+    "/api/shares/{id}": {
+      "get": {
+        "tags": ["Riichi.Api"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "429": {
+            "description": "Request rate limit reached."
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Riichi.Api"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Operation completed without a response body."
+          },
+          "401": {
+            "description": "Missing, expired or incorrect credential."
+          },
+          "429": {
+            "description": "Request rate limit reached."
+          }
+        },
+        "security": [
+          {
+            "DeletionSecret": []
+          }
+        ]
+      }
+    },
+    "/api/health": {
+      "get": {
+        "tags": ["Riichi.Api"],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "429": {
+            "description": "Request rate limit reached."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Body": {
+        "required": ["pin", "seat"],
+        "type": "object",
+        "properties": {
+          "pin": {
+            "type": "string",
+            "description": "The six-digit room passcode."
+          },
+          "seat": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["null", "integer", "string"],
+            "description": "The optional zero-based seat index.",
+            "format": "int32"
+          }
+        },
+        "description": "The JSON payload accepted by this operation."
+      },
+      "Request": {
+        "required": ["playerCount"],
+        "type": "object",
+        "properties": {
+          "playerCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "description": "The number of player seats, either three or four.",
+            "format": "int32"
+          },
+          "match": {
+            "description": "The optional initial game snapshot."
+          },
+          "handKey": {
+            "type": ["null", "string"],
+            "description": "The optional initial hand identity."
+          },
+          "hostSeat": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["null", "integer", "string"],
+            "description": "The optional seat reserved for the hosting player.",
+            "format": "int32"
+          }
+        },
+        "description": "Input for create room."
+      },
+      "RoomPermissions": {
+        "type": "object",
+        "properties": {
+          "riichi": {
+            "type": "boolean",
+            "description": "Whether players may declare or cancel their own Riichi.",
+            "default": true
+          },
+          "calls": {
+            "type": "boolean",
+            "description": "Whether players may record their own melds and North extractions.",
+            "default": true
+          },
+          "win": {
+            "type": "boolean",
+            "description": "Whether players may submit their own winning hands.",
+            "default": true
+          },
+          "indicators": {
+            "type": "boolean",
+            "description": "Whether players may edit shared indicators.",
+            "default": false
+          },
+          "settle": {
+            "type": "boolean",
+            "description": "Whether players may settle hands and pending wins.",
+            "default": false
+          },
+          "history": {
+            "type": "boolean",
+            "description": "Whether players may edit or undo recorded hands.",
+            "default": false
+          },
+          "finish": {
+            "type": "boolean",
+            "description": "Whether players may end the shared game.",
+            "default": false
+          }
+        },
+        "description": "Host-controlled capabilities granted to occupied player seats."
+      }
+    },
+    "securitySchemes": {
+      "Bearer": {
+        "type": "http",
+        "description": "Host or occupied-seat token returned when creating or joining a room.",
+        "scheme": "bearer"
+      },
+      "DeletionSecret": {
+        "type": "apiKey",
+        "description": "Independent revocation credential returned when creating an archive share.",
+        "name": "X-Deletion-Secret",
+        "in": "header"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Riichi.Api"
+    }
+  ]
+}

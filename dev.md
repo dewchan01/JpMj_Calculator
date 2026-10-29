@@ -1,5 +1,7 @@
 Deploy **only `apps/api`** to your MonsterASP website. Your Angular app stays where it is.
 
+The shared-player permission update adds a database column. For an existing deployment, apply `artifacts/room-permissions-upgrade.sql` before uploading the new backend. See [permissions and deployment steps](docs/shared-room-permissions.md). The matching Angular build is deployed separately to its existing host.
+
 The API now logs through Serilog to console, with optional Seq shipping. Set `Seq__ServerUrl` and `Seq__ApiKey` in backend hosting settings to enable Seq; otherwise it stays console-only. See [logging and cloud configuration](docs/logging.md).
 
 Use [apps/api/.env.example](apps/api/.env.example) as the version-controlled checklist of configuration names. It contains placeholders, not credentials. ASP.NET Core does **not** automatically read `.env` files: enter the values in hosting settings, inject secrets from your hosting secret manager, or set process environment variables. `.env` and `.env.*` files are ignored by Git, while `.env.example` stays tracked.

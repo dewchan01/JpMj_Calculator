@@ -5,6 +5,32 @@ import ja from './ja.json';
 import { readFileSync, readdirSync } from 'node:fs';
 
 describe('zh-TW catalog', () => {
+  it('formats internal call, win and ledger keys for English interfaces', () => {
+    for (const [key, label] of Object.entries({
+      chi: 'Chi',
+      pon: 'Pon',
+      ankan: 'Ankan',
+      daiminkan: 'Open Kan',
+      kakan: 'Added Kan',
+      kita: 'North extraction',
+      riichi: 'Riichi',
+      doubleRiichi: 'Double Riichi',
+      ron: 'Ron',
+      tsumo: 'Tsumo',
+      multipleRon: 'Multiple Ron',
+      matchEnd: 'Match ended',
+    }))
+      expect(translate(key, 'en')).toBe(label);
+    expect(translate('alice', 'en')).toBe('alice');
+  });
+  it('capitalizes English wind labels without changing domain keys', () => {
+    expect(['east', 'south', 'west', 'north'].map((wind) => translate(wind, 'en'))).toEqual([
+      'East',
+      'South',
+      'West',
+      'North',
+    ]);
+  });
   it('contains no corrupted translation text', () => {
     for (const catalog of [zhTW, zhCN, ja]) {
       for (const [key, value] of Object.entries(catalog)) {

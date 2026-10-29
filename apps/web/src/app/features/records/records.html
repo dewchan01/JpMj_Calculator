@@ -93,7 +93,9 @@
       }
     </div>
     <footer class="filter-dialog-actions">
-      <button class="quiet" (click)="filterDraft.reset()">{{ 'Reset filters' | t }}</button>
+      <button class="quiet filter-reset" (click)="filterDraft.reset()">
+        {{ 'Reset filters' | t }}
+      </button>
       <button class="primary" (click)="applyFilters()" [disabled]="invalidDraftDates()">
         {{ 'Apply filters' | t }}
       </button>
@@ -128,7 +130,7 @@
           </button>
         }
         @if (activeFilterCount()) {
-          <button class="filter-chip" (click)="reset()">{{ 'Reset filters' | t }}</button>
+          <button class="quiet filter-reset" (click)="reset()">{{ 'Reset filters' | t }}</button>
         }
       </div>
       @if (view() === 'games') {
@@ -201,9 +203,11 @@
                     <br />
                     {{ 'Uma' | t }}
                     <app-signed-value [value]="row.uma" />
-                    <br />
-                    {{ 'Oka' | t }}
-                    <app-signed-value [value]="row.oka" />
+                    @if (row.rank === 1) {
+                      <br />
+                      {{ 'Oka' | t }}
+                      <app-signed-value [value]="row.oka" />
+                    }
                   </small>
                 </td>
                 <td>

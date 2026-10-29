@@ -21,7 +21,7 @@ public sealed class GameTests
         guest.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", player.GetProperty("token").GetString());
         var match = new { id = "game", playerCount = 3, players = new[] { new { id = "a" }, new { id = "b" }, new { id = "c" } } };
         var commit = new { revision = 0, handKey = "first", match, decisions = Array.Empty<object>() };
-        ((await guest.PutAsJsonAsync(path + "/game", commit)).StatusCode).Should().Be(HttpStatusCode.Unauthorized);
+        ((await guest.PutAsJsonAsync(path + "/game", commit)).StatusCode).Should().Be(HttpStatusCode.Forbidden);
         ((await host.PutAsJsonAsync(path + "/game", commit)).StatusCode).Should().Be(HttpStatusCode.OK);
         var action = new { id = Guid.NewGuid().ToString(), handKey = "first", kind = "riichi", payload = new { }, seat = 0 };
         ((await guest.PostAsJsonAsync(path + "/game/actions", action)).StatusCode).Should().Be(HttpStatusCode.OK);

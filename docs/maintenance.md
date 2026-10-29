@@ -14,6 +14,8 @@ Maintain translations in `core/i18n/zh-tw.json` and `ja.json`. Run `npm run i18n
 editing Traditional Chinese to regenerate `zh-cn.json`, then format. English source keys and
 interpolation placeholders must match across catalogs; names and saved domain data stay unchanged.
 Japanese uses `ja`. Translation lookup code belongs in `messages.ts`, not catalog data.
+English labels for internal call, win and ledger keys also live in `messages.ts`; render `ankan`
+as `Ankan` rather than exposing a lowercase domain key. Keep saved enums unchanged.
 
 The hand workspace collects all tiles through one palette, notation editor or photo review.
 After collection, select tiles and assign them to Chi/Pon/Kan or extracted North in one undoable

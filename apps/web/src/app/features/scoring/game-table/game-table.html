@@ -39,27 +39,9 @@
           </p>
           <app-connection-status [state]="room.connectionStatus()" />
         </div>
-        @if (
-          room.status() && room.status() !== 'Live connection unavailable. Refreshing periodically.'
-        ) {
-          <p role="status">{{ room.status() | t }}</p>
-        }
-        @if (room.error() && room.error() !== 'Could not connect to the online service.') {
-          <p role="alert">{{ room.error() | t }}</p>
-        }
-        @if (room.access()?.host && room.wins().length) {
-          <h2>{{ 'Pending winning declarations' | t }}</h2>
-          <p>{{ 'Wait for all Ron winners, then settle them together.' | t }}</p>
-          @for (action of room.wins(); track action.id) {
-            <div class="pending-win">
-              <span>{{ m.players[action.seat].name }} · {{ roomWinSummary(action) }}</span>
-              <button class="danger" (click)="rejectRoomDeclaration(action.id)" [disabled]="busy()">
-                {{ 'Reject' | t }}
-              </button>
-            </div>
-          }
-          <button class="primary" (click)="settleRoomDeclarations()" [disabled]="busy()">
-            {{ 'Settle pending wins' | t }}
+        @if (can('settle') && room.wins().length) {
+          <button (click)="open('declarations')">
+            {{ 'Winning declarations' | t }} · {{ room.wins().length }}
           </button>
         }
       </section>
@@ -73,6 +55,10 @@
       [liveControls]="true"
       [ended]="!!m.ended"
       [players]="m.players"
+      [presence]="playerPresence()"
+      [activePlayer]="remotePlayer() ? roomPlayerId() : ''"
+      [allowRiichi]="can('riichi')"
+      [allowCalls]="can('calls')"
       [balances]="book().players"
       [dealer]="m.dealerId"
       [winner]="''"
@@ -88,11 +74,18 @@
       [northCounts]="northCounts()"
       [riichiPlayers]="riichiPlayers()"
       [differenceFrom]="comparisonPlayer()"
-      [viewSeats]="m.viewSeats ?? []"
+      [viewSeats]="viewOrder()"
       (playerAction)="open('player', $event)"
       (quickAction)="tableAction($event)"
       (pointDifference)="showPlayerDifference($event)"
-      (handAction)="open(m.ended ? 'results' : 'outcome'); !m.ended && startOutcome()"
+      (handAction)="
+        m.ended
+          ? open('results')
+          : can('settle')
+            ? open('outcome')
+            : open('player', roomPlayerId());
+        !m.ended && can('settle') && startOutcome()
+      "
     />
     <div class="indicator-bar">
       @for (kind of indicatorKinds; track kind) {
@@ -181,32 +174,97 @@
     <app-error-notice [messages]="error().split('\n')" />
     @if (match(); as m) {
       @switch (panel()) {
+        @case ('notice') {}
+        @case ('permissions') {
+          @if (room.access()?.host) {
+            <div class="permission-list">
+              @for (item of permissionItems; track item.key) {
+                <label class="permission-item">
+                  <span>{{ item.label | t }}</span>
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    [checked]="room.permissions()[item.key]"
+                    (change)="changePermission(item.key, $any($event.target).checked)"
+                    [disabled]="busy()"
+                  />
+                </label>
+              }
+            </div>
+          }
+        }
+        @case ('declarations') {
+          @if (can('settle')) {
+            <p>{{ 'Wait for all Ron winners, then settle them together.' | t }}</p>
+            @for (action of room.wins(); track action.id) {
+              <div class="pending-win">
+                <span>{{ m.players[action.seat].name }} · {{ roomWinSummary(action) }}</span>
+                @if (room.access()?.host) {
+                  <button
+                    class="danger"
+                    (click)="rejectRoomDeclaration(action.id)"
+                    [disabled]="busy()"
+                  >
+                    {{ 'Reject' | t }}
+                  </button>
+                }
+              </div>
+            }
+            <button
+              class="primary"
+              (click)="settleRoomDeclarations()"
+              [disabled]="busy() || !room.wins().length"
+            >
+              {{ 'Settle pending wins' | t }}
+            </button>
+          }
+        }
         @case ('menu') {
           <div class="menu-list">
+            @if (roomCode && room.access()?.host) {
+              <button (click)="navigatePanel('permissions')">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3 3 7v5c0 5 9 9 9 9s9-4 9-9V7ZM8 12l3 3 5-6" />
+                </svg>
+                {{ 'Player permissions' | t }}
+              </button>
+            }
             @if (!m.ended) {
-              <button (click)="undoAction()" [disabled]="busy() || !m.liveUndo?.length">
+              <button
+                [hidden]="remotePlayer()"
+                (click)="undoAction()"
+                [disabled]="busy() || !m.liveUndo?.length"
+              >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M4 10h10a6 6 0 1 1-5 9M4 10l5-5m-5 5 5 5" />
                 </svg>
                 {{ 'Undo previous action' | t }}
               </button>
-              <button (click)="pause()">
+              <button [hidden]="remotePlayer()" (click)="pause()">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path [attr.d]="paused() ? 'm8 4 12 8-12 8Z' : 'M8 5v14M16 5v14'" />
                 </svg>
                 {{ (paused() ? 'Resume game' : 'Pause game') | t }}
               </button>
-              <button (click)="startOutcome()" [disabled]="paused()">
+              <button [hidden]="!can('settle')" (click)="startOutcome()" [disabled]="paused()">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
                 {{ 'End this hand' | t }}
               </button>
-              <button class="danger end-match-menu" (click)="navigatePanel('finish')">
+              <button
+                [hidden]="!can('finish')"
+                class="danger end-match-menu"
+                (click)="navigatePanel('finish')"
+              >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M6 4h12v16H6zM9 8h6m-6 4h6" />
                 </svg>
                 {{ 'End entire match' | t }}
               </button>
-              <button (click)="undo()" [disabled]="busy() || !m.events.length">
+              <button
+                [hidden]="!can('history')"
+                (click)="undo()"
+                [disabled]="busy() || !m.events.length"
+              >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M9 5 3 11l6 6M3 11h11a6 6 0 0 1 6 6v3" />
                 </svg>
@@ -226,23 +284,23 @@
               </svg>
               {{ 'History' | t }} · {{ m.events.length }}
             </button>
-            <button (click)="navigatePanel('info')">
+            <button [hidden]="remotePlayer()" (click)="navigatePanel('info')">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="m4 16 12-12 4 4-12 12H4z" />
               </svg>
               {{ 'Edit game info' | t }}
+            </button>
+            <button (click)="navigatePanel('perspective')">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20 7v5h-5M4 17v-5h5M5 8a8 8 0 0 1 13-3l2 2M4 17l2 2a8 8 0 0 0 13-3" />
+              </svg>
+              {{ 'Adjust view' | t }}
             </button>
             <button (click)="navigatePanel('settings')">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M4 7h16M4 17h16M8 4v6m8 4v6" />
               </svg>
               {{ 'In-game settings' | t }}
-            </button>
-            <button (click)="navigatePanel('seats')">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 7h16m-4-4 4 4-4 4M20 17H4m4-4-4 4 4 4" />
-              </svg>
-              {{ 'Change seats' | t }}
             </button>
             <button (click)="navigatePanel('help')">
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -257,6 +315,22 @@
                 <path d="m3 10 9-7 9 7v11h-7v-7h-4v7H3Z" />
               </svg>
               {{ 'My table' | t }}
+            </button>
+          </div>
+        }
+        @case ('perspective') {
+          <div class="menu-list">
+            <button (click)="rotateView(false)">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 4v6h6M3 10a9 9 0 1 1 2 9" />
+              </svg>
+              {{ 'Rotate counterclockwise' | t }}
+            </button>
+            <button (click)="rotateView(true)">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21 4v6h-6M21 10a9 9 0 1 0-2 9" />
+              </svg>
+              {{ 'Rotate clockwise' | t }}
             </button>
           </div>
         }
@@ -282,7 +356,7 @@
             </button>
           }
           @if (playerMode() !== 'riichi' && playerMode() !== 'ankan') {
-            @if (playerMode() !== 'calls') {
+            @if (playerMode() !== 'calls' && can('win')) {
               <section class="player-win-actions" [attr.aria-label]="'Win' | t">
                 <h4>{{ 'Win' | t }}</h4>
                 <div class="button-grid">
@@ -295,7 +369,7 @@
                 </div>
               </section>
             }
-            <div class="button-grid">
+            <div class="button-grid" [class.sanma]="m.playerCount === 3">
               @if (m.playerCount === 4) {
                 <button (click)="startCall('chi')" [disabled]="paused()">{{ 'Chi' | t }}</button>
               }
@@ -308,15 +382,23 @@
                   {{ 'Concealed Kan' | t }}
                 </button>
               }
-              <button
-                (click)="declarePlayerRiichi(true)"
-                [disabled]="paused() || busy() || !canDeclareDoubleRiichi()"
-              >
-                {{ 'Double Riichi' | t }}
-              </button>
+
               <button (click)="startCall('kakan')" [disabled]="paused() || !hasPon()">
                 {{ 'Added Kan' | t }}
               </button>
+              @if (playerMode() === 'all' && currentPlayer.riichi === 'none') {
+                <button
+                  class="double-riichi-action"
+                  (click)="declarePlayerRiichi(true)"
+                  [disabled]="!can('riichi') || paused() || busy() || !canDeclareDoubleRiichi()"
+                  [title]="
+                    'Confirm Double Riichi was declared on your uninterrupted first turn. Turn order is not tracked.'
+                      | t
+                  "
+                >
+                  {{ 'Double Riichi' | t }}
+                </button>
+              }
               @if (m.playerCount === 3) {
                 <button (click)="startCall('kita')" [disabled]="paused()">
                   {{ 'North extraction' | t }}
@@ -325,14 +407,6 @@
             </div>
           }
           @if (playerMode() !== 'riichi') {
-            @if (playerMode() !== 'ankan') {
-              <p class="hint">
-                {{
-                  'Confirm Double Riichi was declared on your uninterrupted first turn. Turn order is not tracked.'
-                    | t
-                }}
-              </p>
-            }
             @for (group of playerMeldGroups; track group.label) {
               <section class="meld-section" [attr.aria-label]="group.label | t">
                 <h4>{{ group.label | t }}</h4>
@@ -471,8 +545,8 @@
         @case ('indicators') {
           <p class="hint">
             {{
-              (resumeRonAfterDora
-                ? 'Enter at least one Dora indicator.'
+              (requiredIndicators
+                ? 'Fill every required indicator before saving.'
                 : 'After a Kan, add the newly revealed indicator here.'
               ) | t
             }}
@@ -492,7 +566,14 @@
               [redFives]="settings?.redFives ?? true"
             />
           }
-          <button class="primary" (click)="saveIndicators()" [disabled]="busy() || m.ended">
+          @if (requiredIndicators) {
+            <p class="hint">{{ 'Required indicators' | t }}: {{ requiredIndicators }}</p>
+          }
+          <button
+            class="primary"
+            (click)="saveIndicators()"
+            [disabled]="busy() || m.ended || !indicatorsComplete"
+          >
             {{ 'Save indicators' | t }}
           </button>
         }
@@ -557,10 +638,28 @@
           <button class="primary" (click)="nextWinners()">{{ 'Next' | t }}</button>
         }
         @case ('hand') {
+          <section class="winning-recorded" [attr.aria-label]="'Recorded calls' | t">
+            @for (meld of winnerState.melds; track meld.id) {
+              <div class="winning-recorded-group">
+                <span>{{ meld.type | t }}</span>
+                @for (tile of meld.tiles; track tile.id) {
+                  <app-tile-art [tile]="tile" [decorative]="true" />
+                }
+              </div>
+            }
+            @if (winnerState.kita.length) {
+              <div class="winning-recorded-group">
+                <span>{{ 'North extraction' | t }}</span>
+                @for (tile of winnerState.kita; track tile.id) {
+                  <app-tile-art [tile]="tile" [decorative]="true" />
+                }
+              </div>
+            }
+          </section>
           @if (manualEntry()) {
             <p>
               <strong>{{ name(activeWinner) }}</strong>
-              · {{ 'Advanced scoring' | t }}
+              · {{ 'Manual Han entry' | t }}
             </p>
             <p class="hint">
               {{
@@ -648,15 +747,19 @@
               [playerCount]="m.playerCount"
               [redFives]="settings?.redFives ?? true"
             />
-            <label>
-              {{ 'Winning tile' | t }}
-              <select [(ngModel)]="winningIndex">
-                <option [ngValue]="-1">{{ 'Choose winning tile' | t }}</option>
-                @for (tile of tiles; track tile.id; let index = $index) {
-                  <option [ngValue]="index">{{ i18n.tile(tile) }} · {{ index + 1 }}</option>
-                }
-              </select>
-            </label>
+            <button
+              class="winning-tile-button"
+              [attr.aria-label]="'Winning tile' | t"
+              (click)="chooseWinningTile()"
+              [disabled]="!tiles.length"
+            >
+              <span>{{ 'Winning tile' | t }}</span>
+              @if (winningTile; as tile) {
+                <app-tile-art [tile]="tile" [decorative]="true" />
+              } @else {
+                <span>{{ 'Choose winning tile' | t }}</span>
+              }
+            </button>
             <button class="primary" (click)="nextHand()">{{ 'Next' | t }}</button>
           }
         }
@@ -820,6 +923,9 @@
           <app-final-results
             [match]="m"
             [offerGameActions]="true"
+            [showEditAction]="!roomCode"
+            [saveLocal]="roomCode ? saveLocalResult : null"
+            [discardLocal]="roomCode ? discardLocalResult : null"
             (matchChanged)="match.set($event)"
           />
         }
@@ -828,7 +934,8 @@
             [match]="m"
             [rules]="m.rules"
             [busy]="busy()"
-            [allowHandEditing]="true"
+            [allowHandEditing]="can('history')"
+            [readOnly]="!can('history')"
             (editRequested)="editHand($event)"
             (undoRequested)="undo()"
             (exportRequested)="exportMatch()"
@@ -883,31 +990,6 @@
             </section>
           }
         }
-        @case ('seats') {
-          <p class="hint">
-            {{
-              'Swap display positions only. Seat winds, dealer, balances and tie priority stay with the players.'
-                | t
-            }}
-          </p>
-          <label>
-            {{ 'First player' | t }}
-            <select [(ngModel)]="swapA">
-              @for (p of players; track p.id) {
-                <option [value]="p.id">{{ p.name }}</option>
-              }
-            </select>
-          </label>
-          <label>
-            {{ 'Second player' | t }}
-            <select [(ngModel)]="swapB">
-              @for (p of players; track p.id) {
-                <option [value]="p.id">{{ p.name }}</option>
-              }
-            </select>
-          </label>
-          <button (click)="swapSeats()">{{ 'Swap positions' | t }}</button>
-        }
         @case ('difference') {
           <label>
             {{ 'Compare from player' | t }}
@@ -955,3 +1037,29 @@
     (entryClosed)="finishDirectIndicator($event)"
   />
 }
+
+<dialog
+  #winningPicker
+  appDialogBackdrop
+  appResponsiveSheet
+  class="winning-picker"
+  aria-labelledby="winning-picker-title"
+>
+  <header class="dialog-header">
+    <h2 id="winning-picker-title">{{ 'Choose winning tile' | t }}</h2>
+    <button class="icon-button" (click)="winningPicker.close()" [attr.aria-label]="'Close' | t">
+      ×
+    </button>
+  </header>
+  <div class="winning-picker-tiles">
+    @for (tile of tiles; track tile.id; let index = $index) {
+      <button
+        [class.selected]="winningIndex === index"
+        (click)="selectWinningTile(index)"
+        [attr.aria-label]="i18n.tile(tile) + ' ' + (index + 1)"
+      >
+        <app-tile-art [tile]="tile" [decorative]="true" />
+      </button>
+    }
+  </div>
+</dialog>

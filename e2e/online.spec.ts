@@ -12,9 +12,17 @@ test.beforeEach(async ({ page }) => {
 
 test('start choices stack and close without creating a game', async ({ page }) => {
   await page.goto('/');
+  await expect(page.getByRole('combobox', { name: 'Game length', exact: true })).toHaveValue(
+    'east',
+  );
   await page.getByRole('button', { name: /Start match/ }).click();
   await expect(page.getByRole('button', { name: 'Host game', exact: true })).toBeHidden();
   await page.getByRole('button', { name: 'Start shared game', exact: true }).click();
+  await expect(
+    page
+      .getByRole('dialog', { name: 'Start shared game', exact: true })
+      .getByRole('combobox', { name: 'Game length', exact: true }),
+  ).toHaveValue('east');
   await page.getByRole('button', { name: 'Host game', exact: true }).click();
   const host = page.getByRole('dialog', { name: 'Host game', exact: true });
   await expect(host).toBeVisible();

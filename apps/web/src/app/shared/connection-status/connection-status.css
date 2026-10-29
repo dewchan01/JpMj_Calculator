@@ -17,8 +17,18 @@
 .connected {
   --connection-color: var(--green);
 }
+.connection-chip.compact {
+  height: 16px;
+  padding: 0 4px;
+}
 .connecting {
   --connection-color: #af7b20;
+}
+.unknown {
+  --connection-color: var(--muted);
+}
+.unknown .connection-pulse {
+  animation: none;
 }
 .connection-pulse {
   width: 8px;

@@ -38,6 +38,10 @@ namespace Riichi.Api.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Permissions")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("PinHash")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");

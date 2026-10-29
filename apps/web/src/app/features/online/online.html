@@ -99,6 +99,14 @@
     <p>{{ 'Scan this QR code to join automatically. It includes the room passcode.' | t }}</p>
   }
   @if (room(); as state) {
+    @if (credential.host && game()?.match; as currentMatch) {
+      <app-player-presence
+        [players]="currentMatch.players"
+        [onlineSeats]="presence()?.seats ?? null"
+        [ownSeat]="credential.seat"
+        [connection]="connectionStatus()"
+      />
+    }
     <div class="room-expiry">
       <span>{{ 'Expires' | t }}</span>
       <time [attr.datetime]="state.expiresAt">{{ state.expiresAt | localDate: 'dateTime' }}</time>

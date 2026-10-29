@@ -36,7 +36,15 @@ public sealed class Handler(AppDb db, IHubContext<RoomHub> hub, IOptions<Storage
         await using var transaction = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         var room = await _db.Rooms.SingleOrDefaultAsync(x => x.Id == id && x.ExpiresAt > now, cancellationToken);
         if (room is null) return Results.NotFound();
-        if (!Secrets.Matches(command.Token, room.HostHash)) return Results.Unauthorized();
+        var host = Secrets.Matches(command.Token, room.HostHash);
+        if (!host)
+        {
+            var hash = Secrets.Hash(command.Token);
+            if (!await _db.Seats.AnyAsync(x => x.RoomId == id && x.TokenHash == hash, cancellationToken)) return Results.Unauthorized();
+            if (!DelegatedChanges.Allowed(room.Snapshot, input.Match, input.Operation, DelegatedChanges.Permissions(room.Permissions)) ||
+                (input.Operation == "indicators" && input.HandKey != room.HandKey) ||
+                (input.Decisions.Length > 0 && input.Operation != "settle")) return Results.StatusCode(403);
+        }
         if (room.Revision != input.Revision) return Results.Conflict(new { error = ErrorMessages.Get("RoomChanged") });
         if (room.PlayerCount != playerCount) return Results.BadRequest();
         if (await _db.StorageBytes(cancellationToken) + (input.Match.GetRawText().Length - room.Snapshot.Length) * 2L > _storage.MaxBytes) return Results.StatusCode(507);

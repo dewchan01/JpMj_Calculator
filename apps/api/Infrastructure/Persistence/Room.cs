@@ -3,6 +3,8 @@ namespace Riichi.Api.Data;
 /// <summary>A shared room and its versioned game snapshot.</summary>
 public sealed class Room
 {
+    /// <summary>Gets or sets the serialized host-controlled player capabilities.</summary>
+    public string Permissions { get; set; } = "{}";
     /// <summary>Gets or sets the persistent identifier.</summary>
     public string Id { get; set; } = "";
     /// <summary>Gets or sets the salted room passcode hash.</summary>

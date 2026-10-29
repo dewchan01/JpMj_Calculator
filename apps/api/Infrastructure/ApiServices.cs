@@ -7,6 +7,7 @@ using Riichi.Api.Features;
 using Riichi.Api.Infrastructure.Configuration;
 using Riichi.Api.Infrastructure.Logging;
 using Riichi.Api.Resources;
+using Riichi.Api.Infrastructure.OpenApi;
 namespace Riichi.Api.Infrastructure;
 /// <summary>Configures application services and hosting infrastructure.</summary>
 public static class ApiServices
@@ -48,6 +49,7 @@ public static class ApiServices
                     _ => new FixedWindowRateLimiterOptions { PermitLimit = limit, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
         });
         builder.Services.AddProblemDetails();
+        builder.Services.AddApiDocumentation();
 
         builder.Services.AddFeatures();
     }

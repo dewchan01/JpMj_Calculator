@@ -1,4 +1,5 @@
 import type { InferenceEngine } from 'inferencejs';
+import { isDevMode } from '@angular/core';
 import { detectionPredictions } from './api-recognizer';
 import { type TileRecognizer, type RecognitionOptions, type RecognitionResult } from './recognizer';
 
@@ -18,10 +19,11 @@ export function roboflowPredictions(
   ignoredClasses: readonly string[] = [],
 ) {
   if (!Array.isArray(value)) {
-    console.warn('[recognition] Roboflow output rejected', {
-      reason: 'Expected a detection array',
-      responseType: value === null ? 'null' : typeof value,
-    });
+    if (isDevMode())
+      console.warn('[recognition] Roboflow output rejected', {
+        reason: 'Expected a detection array',
+        responseType: value === null ? 'null' : typeof value,
+      });
     throw new Error('Invalid detection response.');
   }
   const included = value.filter(
@@ -45,10 +47,11 @@ export function roboflowPredictions(
       prediction.bbox === null ||
       !('confidence' in prediction)
     ) {
-      console.warn('[recognition] Roboflow output rejected', {
-        reason: 'Missing class, confidence or bounding box',
-        predictionIndex: index,
-      });
+      if (isDevMode())
+        console.warn('[recognition] Roboflow output rejected', {
+          reason: 'Missing class, confidence or bounding box',
+          predictionIndex: index,
+        });
       throw new Error('Invalid detection response.');
     }
     return {
@@ -74,7 +77,7 @@ export class RoboflowRecognizer implements TileRecognizer {
           this.settings.version,
           this.settings.publishableApiKey.trim(),
         );
-        console.info('[recognition] Roboflow model ready');
+        if (isDevMode()) console.info('[recognition] Roboflow model ready');
         return { engine, worker };
       })();
       this.session = startup;

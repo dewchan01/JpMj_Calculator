@@ -216,6 +216,19 @@
 .setup-fields label {
   min-width: 0;
 }
+.setup-fields .match-name-field {
+  grid-column: 1 / -1;
+}
+.match-name-field input {
+  width: 100%;
+}
+:host-context([data-theme='dark']) .tile-still-life > span {
+  background: #111;
+  border-color: #82947a;
+  box-shadow:
+    0 7px #5c7254,
+    0 13px 15px #0003;
+}
 .setup-note {
   display: block;
 }

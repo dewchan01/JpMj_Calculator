@@ -43,6 +43,7 @@
             @if (interactive()) {
               <button
                 class="seat-hit"
+                [disabled]="!!activePlayer() && activePlayer() !== player.id"
                 (click)="playerAction.emit(player.id)"
                 [attr.aria-label]="('Player actions' | t) + ' ' + player.name"
               ></button>
@@ -66,7 +67,24 @@
                 </small>
               }
             </div>
-            <h3 [title]="player.name">{{ player.name }}</h3>
+            <h3 [title]="player.name">
+              <span class="seat-player-name">{{ player.name }}</span>
+              @if (presence()?.[player.id]; as status) {
+                <app-connection-status
+                  [state]="status"
+                  [label]="
+                    status === 'Connected'
+                      ? 'Online'
+                      : status === 'Disconnected'
+                        ? 'Offline'
+                        : status === 'Unknown'
+                          ? 'Status unavailable'
+                          : status
+                  "
+                  [compact]="true"
+                />
+              }
+            </h3>
             @if (interactive()) {
               <p
                 class="player-points"
@@ -119,7 +137,11 @@
                 <button
                   [class.action-active]="!!riichiPlayers()[player.id]"
                   [attr.aria-pressed]="!!riichiPlayers()[player.id]"
-                  [disabled]="actionsDisabled()"
+                  [disabled]="
+                    !allowRiichi() ||
+                    actionsDisabled() ||
+                    (!!activePlayer() && activePlayer() !== player.id)
+                  "
                   (click)="quickAction.emit({ player: player.id, type: 'riichi' })"
                 >
                   {{ 'Riichi' | t }}
@@ -127,7 +149,11 @@
                 <button
                   [class.action-active]="callCounts()[player.id] > 0"
                   [attr.aria-pressed]="callCounts()[player.id] > 0"
-                  [disabled]="actionsDisabled()"
+                  [disabled]="
+                    !allowCalls() ||
+                    actionsDisabled() ||
+                    (!!activePlayer() && activePlayer() !== player.id)
+                  "
                   (click)="quickAction.emit({ player: player.id, type: 'calls' })"
                 >
                   {{ 'Call' | t }}
@@ -138,7 +164,11 @@
                 <button
                   [class.action-active]="concealedKanCounts()[player.id] > 0"
                   [attr.aria-pressed]="concealedKanCounts()[player.id] > 0"
-                  [disabled]="actionsDisabled()"
+                  [disabled]="
+                    !allowCalls() ||
+                    actionsDisabled() ||
+                    (!!activePlayer() && activePlayer() !== player.id)
+                  "
                   (click)="quickAction.emit({ player: player.id, type: 'ankan' })"
                   [attr.aria-label]="'Concealed Kan' | t"
                 >
