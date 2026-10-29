@@ -664,6 +664,7 @@ export class GameTable {
         this.initializeView(match);
         this.showResultsIfEnded(match);
         this.basis = match.players[0].id;
+        this.promptStartingIndicator();
         return;
       }
       const match = await this.repo.get(this.route.snapshot.paramMap.get('id') ?? '');
@@ -685,9 +686,24 @@ export class GameTable {
       if (!current.ended && current.clock && !current.clock.runningSince)
         await this.persist({ ...current, clock: clockAt(current.clock, true) });
       this.basis = match.players[0].id;
+      this.promptStartingIndicator();
     } catch (e) {
       this.fail(e);
     }
+  }
+  private promptStartingIndicator(): void {
+    const match = this.match();
+    if (
+      !match ||
+      match.ended ||
+      this.scoringMode.advanced() ||
+      (this.roomCode && !this.room.access()?.host) ||
+      parseTiles(match.live?.dora ?? '').length
+    )
+      return;
+    this.open('indicators');
+    this.indicatorKind.set('dora');
+    this.requiredIndicators = this.requiredDoraCount;
   }
   private fail(e: unknown): void {
     this.error.set(e instanceof Error ? e.message : 'Could not save match.');

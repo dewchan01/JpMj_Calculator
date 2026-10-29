@@ -1,0 +1,14 @@
+:host {
+  display: block;
+}
+video {
+  display: block;
+  width: 100%;
+  max-height: 50dvh;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #000;
+}
+video[hidden] {
+  display: none;
+}

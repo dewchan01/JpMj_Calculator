@@ -1,4 +1,9 @@
 {
+  "Camera unavailable. Allow camera access or choose a QR image.": "カメラを起動できません。カメラへのアクセスを許可するか、QR画像を選択してください。",
+  "Keep the QR code in view. It will join automatically when recognized.": "QRコードをカメラに映してください。認識すると自動で参加します。",
+  "Camera preview": "カメラプレビュー",
+  "Scanning for a QR code…": "QRコードをスキャン中…",
+  "Choose QR image": "QR画像を選択",
   "Share history": "共有履歴",
   "No active shares.": "有効な共有履歴はありません。",
   "Share history could not be saved on this device.": "この端末に共有履歴を保存できませんでした。",

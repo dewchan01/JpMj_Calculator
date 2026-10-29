@@ -1,4 +1,9 @@
 {
+  "Camera unavailable. Allow camera access or choose a QR image.": "无法开启相机，请允许相机权限或选择 QR 图片。",
+  "Keep the QR code in view. It will join automatically when recognized.": "请将 QR 码保持在镜头内，识别成功后会自动加入。",
+  "Camera preview": "相机预览",
+  "Scanning for a QR code…": "正在扫描 QR 码…",
+  "Choose QR image": "选择 QR 图片",
   "Share history": "分享纪录",
   "No active shares.": "目前没有有效的分享纪录。",
   "Share history could not be saved on this device.": "无法在此装置储存分享纪录。",

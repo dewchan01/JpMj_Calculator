@@ -16,11 +16,12 @@ import type { RoomGame } from '../../core/online/room-session';
 import { parsePresence, type PresenceSnapshot } from '../../core/online/presence';
 import { PlayerPresence } from '../../shared/player-presence/player-presence';
 import { Toast } from '../../shared/toast/toast';
-import { scanQrImage } from '../../shared/qr/scan-qr';
+import { QrScanner } from '../../shared/qr/qr-scanner';
 
 @Component({
   selector: 'app-online',
   imports: [
+    QrScanner,
     ConnectionStatus,
     PlayerPresence,
     CopyButton,
@@ -343,7 +344,7 @@ export class Online implements OnInit {
     const access = this.access()!;
     const { default: qr } = await import('qrcode');
     const invitation = access.pin ? this.api.link('room', access.id, access.pin) : access.id;
-    this.qr.set(await qr.toDataURL(invitation, { width: 200, margin: 2 }));
+    this.qr.set(await qr.toDataURL(invitation, { width: 512, margin: 4 }));
     if (this.destroyed) return;
     await this.connection?.stop();
     this.presence.set(null);
@@ -402,12 +403,9 @@ export class Online implements OnInit {
   reconnect(): void {
     void this.run(() => this.connect());
   }
-  async scanRoom(input: HTMLInputElement): Promise<void> {
-    const file = input.files?.[0];
-    input.value = '';
-    if (!file) return;
+  async scanRoom(text: string): Promise<void> {
     await this.run(async () => {
-      let code = await scanQrImage(file);
+      let code = text.trim();
       let pin = '';
       try {
         const invitation: unknown = JSON.parse(code);
@@ -441,8 +439,10 @@ export class Online implements OnInit {
           code = '';
         }
       }
-      if (!/^[a-f0-9]{10}$/i.test(code))
-        throw new Error('No room QR code found. Try another image or enter the code.');
+      if (!/^[a-f0-9]{10}$/i.test(code)) {
+        this.toast.error('No room QR code found. Try another image or enter the code.');
+        return;
+      }
       this.form.controls.code.setValue(code.toUpperCase());
       if (pin) {
         this.form.controls.pin.setValue(pin);

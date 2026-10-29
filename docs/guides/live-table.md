@@ -140,3 +140,15 @@ Legacy entries without a round snapshot are not offered Edit hand.
 Player action panels separate open melds from concealed Kans. The grouping preserves each meld's
 original storage index for remove/upgrade operations. History lists open calls separately from the
 concealed-Kan count, without treating a concealed Kan as an open hand.
+
+Room QR scanning uses a live rear-camera preview and keeps reading frames until a code is
+recognized or the scanner closes. Recognition stops the camera before joining. Camera access
+requires HTTPS (or localhost) and browser permission; choosing an existing QR image remains
+available if camera access is denied. Photo decoding retries at different resolutions, with
+overlapping crops and contrast adjustment. These retries cannot recover an out-of-focus image.
+Unreadable QR images and non-room QR codes use the shared toast. Camera permission instructions
+remain in the scanner so the alternative image action stays clear.
+
+Opening an assisted-scoring table without Dora immediately opens the required indicator input.
+Saving requires one indicator plus the recorded Kan count. A shared table prompts only its host;
+manual Han/Fu mode and tables with indicators already recorded skip this opening prompt.

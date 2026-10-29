@@ -16,6 +16,14 @@ test('selected player is below, rotation is local, and a Kan needs its new indic
   await page.getByRole('combobox', { name: 'My player', exact: true }).selectOption('1');
   await page.getByRole('button', { name: /Start match/ }).click();
   await page.getByRole('button', { name: 'Start game', exact: true }).click();
+  await expect(
+    prompt(page).getByRole('button', { name: 'Save indicators', exact: true }),
+  ).toBeDisabled();
+  await enterLiveTiles(page, 'Dora indicators', '7z');
+  await prompt(page).getByRole('button', { name: 'Save indicators', exact: true }).click();
+  await page.reload();
+  await expect(page.locator('.game-shell')).toBeVisible();
+  await expect(prompt(page)).not.toBeVisible();
   await expect(page.locator('.seat-bottom h3')).toHaveText('Player 2');
   await page.getByRole('button', { name: 'Game menu', exact: true }).click();
   await expect(prompt(page).getByRole('button', { name: 'Change seats', exact: true })).toHaveCount(
@@ -58,11 +66,6 @@ test('selected player is below, rotation is local, and a Kan needs its new indic
   ).toHaveCount(0);
   await prompt(page).locator('.close-prompt').click();
   await seat.getByRole('button', { name: 'Concealed Kan', exact: true }).click();
-  await expect(
-    prompt(page).getByRole('button', { name: 'Save indicators', exact: true }),
-  ).toBeDisabled();
-  await enterLiveTiles(page, 'Dora indicators', '7z');
-  await prompt(page).getByRole('button', { name: 'Save indicators', exact: true }).click();
   await enterLiveTiles(page, 'Meld tiles', '5p');
   await prompt(page).getByRole('button', { name: 'Record action', exact: true }).click();
   await expect(
@@ -94,4 +97,13 @@ test('selected player is below, rotation is local, and a Kan needs its new indic
   await expect(
     prompt(page).getByRole('button', { name: 'Confirm & save settlement', exact: true }),
   ).toBeVisible();
+});
+
+test('manual Han/Fu mode does not require opening indicators', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('riichi-advanced-scoring', 'true'));
+  await page.goto('/');
+  await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
+  await expect(page.locator('.game-shell')).toBeVisible();
+  await expect(prompt(page)).not.toBeVisible();
 });

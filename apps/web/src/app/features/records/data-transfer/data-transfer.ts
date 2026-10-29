@@ -204,7 +204,7 @@ export class DataTransfer implements OnInit {
       this.transferCode.set(transferId(await scanQrImage(file)));
       await this.loadTransfer();
     } catch (error) {
-      this.error.set(error instanceof Error ? error.message : 'Invalid transfer code.');
+      this.toast.error(error instanceof Error ? error.message : 'Invalid transfer code.');
     } finally {
       this.busy.set(false);
     }

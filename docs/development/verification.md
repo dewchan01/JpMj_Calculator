@@ -16,6 +16,11 @@ Last recorded local runs: **2026-10-29**. These results describe the tested work
 
 Historical test numbers remain in [archived reports](../archive/2026-10-23-verification.md). Do not use them as current release evidence.
 
+Room QR scanner checks cover continuous camera frames (blank frames followed by an actual QR),
+automatic join submission, camera-track cleanup, denied-permission fallback and QR-image selection.
+The three decoder unit tests and translation checks pass. Phone camera focus and exposure still
+need real-device verification; synthetic video and generated images do not prove photo reliability.
+
 Shared-toast checks passed for update results, CSV transfers, online notices, modal layering,
 dismissal and rule-save feedback. The older full `e2e/settings.spec.ts` run still fails on legacy
 hold-help behavior, a navigation locator matching a hidden setup dialog, and the old win-entry

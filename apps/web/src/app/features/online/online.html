@@ -166,17 +166,7 @@
       @if (!embedded()) {
         <h2>{{ 'Join room' | t }}</h2>
       }
-      <input
-        #scanInput
-        hidden
-        type="file"
-        accept="image/*"
-        capture="environment"
-        (change)="scanRoom(scanInput)"
-      />
-      <button type="button" class="secondary" (click)="scanInput.click()" [disabled]="busy()">
-        {{ 'Scan room QR code' | t }}
-      </button>
+      <app-qr-scanner [disabled]="busy()" (scanned)="scanRoom($event)" />
       <label>
         {{ 'Room code' | t }}
         <input

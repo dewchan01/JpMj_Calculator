@@ -1,0 +1,39 @@
+<button type="button" class="secondary" (click)="open()" [disabled]="disabled()">
+  {{ 'Scan room QR code' | t }}
+</button>
+<dialog
+  appDialogBackdrop
+  #scanner
+  class="app-dialog"
+  aria-labelledby="qr-scanner-title"
+  (close)="stop()"
+>
+  <header class="dialog-header">
+    <h2 id="qr-scanner-title">{{ 'Scan room QR code' | t }}</h2>
+    <button type="button" class="icon-button" (click)="close()" [attr.aria-label]="'Close' | t">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
+    </button>
+  </header>
+  <div class="dialog-body">
+    <p>{{ 'Keep the QR code in view. It will join automatically when recognized.' | t }}</p>
+    <video
+      #preview
+      autoplay
+      muted
+      playsinline
+      [hidden]="!active()"
+      [attr.aria-label]="'Camera preview' | t"
+    ></video>
+    @if (error()) {
+      <app-error-notice [message]="error()" />
+    } @else if (active()) {
+      <p role="status">{{ 'Scanning for a QR code…' | t }}</p>
+    }
+    <input #imageInput hidden type="file" accept="image/*" (change)="chooseImage(imageInput)" />
+    <div class="dialog-actions">
+      <button type="button" class="secondary" (click)="imageInput.click()">
+        {{ 'Choose QR image' | t }}
+      </button>
+    </div>
+  </div>
+</dialog>

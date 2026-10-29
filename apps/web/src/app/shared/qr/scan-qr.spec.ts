@@ -66,7 +66,7 @@ describe('QR image scanning', () => {
     vi.stubGlobal('BarcodeDetector', undefined);
     decode.mockReturnValue(null);
     await expect(scanQrImage({ size: 10 } as File)).rejects.toThrow('No QR code found.');
-    expect(decode).toHaveBeenCalledTimes(3);
+    expect(decode).toHaveBeenCalledTimes(13);
     expect(bitmap.close).toHaveBeenCalledOnce();
   });
 });

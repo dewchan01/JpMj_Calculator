@@ -10,6 +10,8 @@ for (const width of [390, 1280]) {
     await page.goto('/');
     await page.getByRole('button', { name: /Start match/ }).click();
     await page.getByRole('button', { name: 'Start game', exact: true }).click();
+    await enterLiveTiles(page, 'Dora indicators', '7z');
+    await prompt(page).getByRole('button', { name: 'Save indicators', exact: true }).click();
     await playerAction(page, 'Player 2');
     await expect(prompt(page).getByRole('button', { name: 'Chi', exact: true })).toHaveCount(0);
     await expect(prompt(page).getByRole('button', { name: 'Pon', exact: true })).toHaveCount(0);
