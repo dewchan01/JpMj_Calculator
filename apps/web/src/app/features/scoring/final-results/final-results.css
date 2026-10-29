@@ -3,9 +3,20 @@
   min-width: 0;
 }
 .result-controls {
+  --page-sticky-gap: 0px;
+  --result-sticky-bleed: 0px;
+  top: var(--app-header-height, 0px);
+  isolation: isolate;
   padding-block: 8px 1px;
   margin-bottom: 12px;
   background: var(--page);
+}
+.result-controls::before {
+  inset: -16px calc(-1 * var(--result-sticky-bleed)) 0;
+  height: auto;
+  z-index: -1;
+  background: inherit;
+  pointer-events: none;
 }
 .comparison-table {
   overflow-x: auto;
@@ -15,7 +26,7 @@
   table-layout: fixed;
 }
 :host-context(dialog) .result-controls {
-  --page-sticky-gap: 0px;
+  --result-sticky-bleed: 16px;
   top: 0;
   background: var(--surface);
 }

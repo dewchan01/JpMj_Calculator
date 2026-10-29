@@ -149,6 +149,7 @@ const collection = {
               win: true,
               indicators: false,
               settle: false,
+              draw: false,
               history: false,
               finish: false,
             },

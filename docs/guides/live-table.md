@@ -22,6 +22,9 @@ gestures retain normal page scrolling. Result conversion explanations wrap withi
 Table dice also identify who rolls second: count the total from the current East player as one,
 continuing through South, West and North (or the three occupied winds in Sanma). The result shows
 the player's name and wind independently of the local view rotation.
+Winning-tile and called-tile choices use the same tile-image selector. Called-tile candidates
+come only from the entered meld (or selected quick-score tiles), preserving the exact red-five
+identity. Choosing updates the preview immediately; closing the selector keeps the prior choice.
 
 ## Assisted scoring and Manual Han entry
 

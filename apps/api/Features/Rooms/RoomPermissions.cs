@@ -8,5 +8,6 @@ namespace Riichi.Api.Features.Rooms;
 /// <param name="Settle">Whether players may settle hands and pending wins.</param>
 /// <param name="History">Whether players may edit or undo recorded hands.</param>
 /// <param name="Finish">Whether players may end the shared game.</param>
+/// <param name="Draw">Whether players may record a draw without winning-settlement access.</param>
 public sealed record RoomPermissions(bool Riichi = true, bool Calls = true, bool Win = true,
-    bool Indicators = false, bool Settle = false, bool History = false, bool Finish = false);
+    bool Indicators = false, bool Settle = false, bool History = false, bool Finish = false, bool Draw = false);

@@ -244,6 +244,14 @@
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
                 {{ 'End this hand' | t }}
               </button>
+              @if (can('draw') && !can('settle')) {
+                <button (click)="startDraw()" [disabled]="paused() || busy()">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 7h16M4 12h16M4 17h16" />
+                  </svg>
+                  {{ 'Record draw' | t }}
+                </button>
+              }
               <button
                 [hidden]="!can('finish')"
                 class="danger end-match-menu"
@@ -277,12 +285,6 @@
                 <path d="M4 4h16v16H4zM8 8h8m-8 4h8m-8 4h5" />
               </svg>
               {{ 'History' | t }} · {{ m.events.length }}
-            </button>
-            <button [hidden]="remotePlayer()" (click)="navigatePanel('info')">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="m4 16 12-12 4 4-12 12H4z" />
-              </svg>
-              {{ 'Edit game info' | t }}
             </button>
             <button (click)="navigatePanel('perspective')">
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -372,22 +374,26 @@
               </section>
             }
             <div class="button-grid" [class.sanma]="m.playerCount === 3">
-              @if (m.playerCount === 4) {
-                <button (click)="startCall('chi')" [disabled]="paused()">{{ 'Chi' | t }}</button>
+              @if (playerMode() === 'calls') {
+                @if (m.playerCount === 4) {
+                  <button (click)="startCall('chi')" [disabled]="paused()">{{ 'Chi' | t }}</button>
+                }
+                <button (click)="startCall('pon')" [disabled]="paused()">{{ 'Pon' | t }}</button>
+                <button (click)="startCall('daiminkan')" [disabled]="paused()">
+                  {{ 'Open Kan' | t }}
+                </button>
               }
-              <button (click)="startCall('pon')" [disabled]="paused()">{{ 'Pon' | t }}</button>
-              <button (click)="startCall('daiminkan')" [disabled]="paused()">
-                {{ 'Open Kan' | t }}
-              </button>
               @if (playerMode() !== 'calls') {
-                <button (click)="startCall('ankan')" [disabled]="paused()">
+                <button (click)="startCall('ankan')" [disabled]="paused() || !can('calls')">
                   {{ 'Concealed Kan' | t }}
                 </button>
               }
 
-              <button (click)="startCall('kakan')" [disabled]="paused() || !hasPon()">
-                {{ 'Added Kan' | t }}
-              </button>
+              @if (playerMode() === 'calls') {
+                <button (click)="startCall('kakan')" [disabled]="paused() || !hasPon()">
+                  {{ 'Added Kan' | t }}
+                </button>
+              }
               @if (playerMode() === 'all' && currentPlayer.riichi === 'none') {
                 <button
                   class="double-riichi-action"
@@ -401,14 +407,19 @@
                   {{ 'Double Riichi' | t }}
                 </button>
               }
-              @if (m.playerCount === 3) {
+              @if (m.playerCount === 3 && playerMode() === 'calls') {
                 <button (click)="startCall('kita')" [disabled]="paused()">
                   {{ 'North extraction' | t }}
                 </button>
               }
             </div>
+            @if (playerMode() === 'all' && can('draw')) {
+              <button (click)="startDraw()" [disabled]="paused() || busy()">
+                {{ 'Record draw' | t }}
+              </button>
+            }
           }
-          @if (playerMode() !== 'riichi') {
+          @if (playerMode() === 'calls') {
             @for (group of playerMeldGroups; track group.label) {
               <section class="meld-section" [attr.aria-label]="group.label | t">
                 <h4>{{ group.label | t }}</h4>
@@ -509,14 +520,12 @@
               </label>
             }
             @if (callType === 'chi' || callTiles().length > 1) {
-              <label>
-                {{ 'Called tile' | t }}
-                <select [(ngModel)]="called">
-                  @for (tile of callTiles(); track tile.id; let index = $index) {
-                    <option [ngValue]="index">{{ i18n.tile(tile) }} · {{ index + 1 }}</option>
-                  }
-                </select>
-              </label>
+              <app-tile-choice
+                label="Called tile"
+                pickerLabel="Choose called tile"
+                [tiles]="callTiles()"
+                [(selected)]="called"
+              />
             }
           }
           <div class="dialog-actions">
@@ -596,11 +605,13 @@
           }
           <div class="menu-list">
             <button (click)="navigatePanel('win')">{{ 'Win' | t }}</button>
-            <button
-              (click)="drawType = 'exhaustive'; tenpai = {}; nagashi = {}; navigatePanel('draw')"
-            >
-              {{ 'Record draw' | t }}
-            </button>
+            @if (can('draw')) {
+              <button
+                (click)="drawType = 'exhaustive'; tenpai = {}; nagashi = {}; navigatePanel('draw')"
+              >
+                {{ 'Record draw' | t }}
+              </button>
+            }
           </div>
         }
         @case ('win') {
@@ -758,24 +769,12 @@
               [playerCount]="m.playerCount"
               [redFives]="settings?.redFives ?? true"
             />
-            <section class="winning-tile-field" [attr.aria-label]="'Winning tile' | t">
-              <h3>{{ 'Winning tile' | t }}</h3>
-              <div class="winning-tile-editor">
-                @if (winningTile; as tile) {
-                  <span class="tile"><app-tile-art [tile]="tile" [decorative]="true" /></span>
-                } @else {
-                  <p class="input-empty">{{ 'No tiles selected' | t }}</p>
-                }
-                <button
-                  class="secondary"
-                  [attr.aria-label]="'Winning tile' | t"
-                  (click)="chooseWinningTile()"
-                  [disabled]="!tiles.length"
-                >
-                  {{ 'Select' | t }}
-                </button>
-              </div>
-            </section>
+            <app-tile-choice
+              label="Winning tile"
+              pickerLabel="Choose winning tile"
+              [tiles]="tiles"
+              [(selected)]="winningIndex"
+            />
             <section class="winning-recorded" [attr.aria-label]="'Recorded calls' | t">
               @for (meld of winnerState.melds; track meld.id) {
                 <div class="winning-recorded-group">
@@ -1090,29 +1089,3 @@
     (entryClosed)="finishDirectIndicator($event)"
   />
 }
-
-<dialog
-  #winningPicker
-  appDialogBackdrop
-  appResponsiveSheet
-  class="winning-picker"
-  aria-labelledby="winning-picker-title"
->
-  <header class="dialog-header">
-    <h2 id="winning-picker-title">{{ 'Choose winning tile' | t }}</h2>
-    <button class="icon-button" (click)="winningPicker.close()" [attr.aria-label]="'Close' | t">
-      ×
-    </button>
-  </header>
-  <div class="winning-picker-tiles">
-    @for (tile of tiles; track tile.id; let index = $index) {
-      <button
-        [class.selected]="winningIndex === index"
-        (click)="selectWinningTile(index)"
-        [attr.aria-label]="i18n.tile(tile) + ' ' + (index + 1)"
-      >
-        <app-tile-art [tile]="tile" [decorative]="true" />
-      </button>
-    }
-  </div>
-</dialog>

@@ -612,6 +612,11 @@
             "type": "boolean",
             "description": "Whether players may end the shared game.",
             "default": false
+          },
+          "draw": {
+            "type": "boolean",
+            "description": "Whether players may record a draw without winning-settlement access.",
+            "default": false
           }
         },
         "description": "Host-controlled capabilities granted to occupied player seats."

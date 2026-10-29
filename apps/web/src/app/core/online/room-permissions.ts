@@ -4,6 +4,7 @@ export const defaultRoomPermissions = {
   win: true,
   indicators: false,
   settle: false,
+  draw: false,
   history: false,
   finish: false,
 };
@@ -15,6 +16,7 @@ export const roomPermissionItems: { key: RoomPermission; label: string }[] = [
   { key: 'win', label: 'Submit own winning hand' },
   { key: 'indicators', label: 'Edit shared indicators' },
   { key: 'settle', label: 'Settle hands and winning declarations' },
+  { key: 'draw', label: 'Record draws' },
   { key: 'history', label: 'Edit or undo hand history' },
   { key: 'finish', label: 'End the shared game' },
 ];

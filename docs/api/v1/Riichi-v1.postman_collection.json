@@ -348,7 +348,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"riichi\": true,\n  \"calls\": true,\n  \"win\": true,\n  \"indicators\": false,\n  \"settle\": false,\n  \"history\": false,\n  \"finish\": false\n}",
+              "raw": "{\n  \"riichi\": true,\n  \"calls\": true,\n  \"win\": true,\n  \"indicators\": false,\n  \"settle\": false,\n  \"draw\": false,\n  \"history\": false,\n  \"finish\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"

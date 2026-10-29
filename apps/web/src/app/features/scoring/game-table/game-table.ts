@@ -1,4 +1,3 @@
-import { ResponsiveSheet } from '../../../shared/responsive-sheet';
 import { roomPermissionItems, type RoomPermission } from '../../../core/online/room-permissions';
 import { gamesCsv } from '../../records/data-transfer/data-csv';
 import { ConnectionStatus } from '../../../shared/connection-status/connection-status';
@@ -11,6 +10,7 @@ import { GameSounds } from '../../../core/sound/game-sounds';
 import { ScoringMode } from '../../../core/scoring-mode';
 import { handEditDraft, finishHandEdit } from './hand-edit';
 import { DiceSimulator } from '../../../shared/dice-simulator/dice-simulator';
+import { TileChoice } from '../tiles/tile-choice/tile-choice';
 import {
   Component,
   DestroyRef,
@@ -101,7 +101,6 @@ type Panel =
   | 'notice';
 @Component({
   imports: [
-    ResponsiveSheet,
     ConnectionStatus,
     DialogBackdrop,
     FormsModule,
@@ -113,6 +112,7 @@ type Panel =
     MatchHistory,
     FinalResults,
     DiceSimulator,
+    TileChoice,
     ErrorNotice,
   ],
   templateUrl: './game-table.html',
@@ -122,7 +122,6 @@ export class GameTable {
   readonly scoringMode = inject(ScoringMode);
   readonly permissionItems = roomPermissionItems;
   readonly viewOrder = signal<string[]>([]);
-  readonly winningPicker = viewChild.required<ElementRef<HTMLDialogElement>>('winningPicker');
   private resultShown = '';
   private pendingSignature = '';
   private noticedError = '';
@@ -179,13 +178,6 @@ export class GameTable {
       this.open('results');
     }, 50);
   }
-  chooseWinningTile(): void {
-    this.winningPicker().nativeElement.showModal();
-  }
-  selectWinningTile(index: number): void {
-    this.winningIndex = index;
-    this.winningPicker().nativeElement.close();
-  }
   get indicatorsComplete(): boolean {
     try {
       return (
@@ -196,9 +188,6 @@ export class GameTable {
     } catch {
       return false;
     }
-  }
-  get winningTile(): Tile | undefined {
-    return this.tiles[this.winningIndex];
   }
   get requiredDoraCount(): number {
     const match = this.pendingKan ?? this.match();
@@ -1297,6 +1286,15 @@ export class GameTable {
     this.error.set('');
     this.navigatePanel('review');
   }
+  startDraw(): void {
+    if (!this.can('draw') || this.busy() || this.paused() || this.match()?.ended) return;
+    if (this.remotePlayer()) this.selected = this.roomPlayerId();
+    this.startOutcome();
+    this.drawType = 'exhaustive';
+    this.tenpai = {};
+    this.nagashi = {};
+    this.panel.set('draw');
+  }
   async settle(): Promise<void> {
     await this.act(async () => {
       if (this.remotePlayer() && !this.editingHand() && this.inputs.length) {
@@ -1375,7 +1373,11 @@ export class GameTable {
         this.open('history');
         return;
       }
-      await this.persist({ ...updated, live: emptyLive(), clock }, false, 'settle');
+      await this.persist(
+        { ...updated, live: emptyLive(), clock },
+        false,
+        this.drawInput ? 'draw' : 'settle',
+      );
       this.inputs = [];
       this.round = null;
       this.drawInput = undefined;

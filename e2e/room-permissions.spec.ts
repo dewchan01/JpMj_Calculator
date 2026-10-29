@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { gameMenu, prompt, enterLiveTiles } from './helpers/game';
+import { gameMenu, prompt, enterLiveTiles, playerAction } from './helpers/game';
 
 test('host permissions synchronize and final choices affect only each local copy', async ({
   page: host,
@@ -90,7 +90,21 @@ test('host permissions synchronize and final choices affect only each local copy
   ).toHaveCount(0);
   await prompt(guest).locator('.close-prompt').click();
   await gameMenu(host, 'Player permissions');
-  await expect(prompt(host).getByRole('switch')).toHaveCount(7);
+  await expect(prompt(host).getByRole('switch')).toHaveCount(8);
+  await playerAction(guest, 'Player 4');
+  await expect(prompt(guest).getByRole('button', { name: 'Record draw', exact: true })).toHaveCount(
+    0,
+  );
+  await expect(prompt(guest).getByRole('button', { name: 'Pon', exact: true })).toHaveCount(0);
+  await prompt(host).getByRole('switch', { name: 'Record draws', exact: true }).check();
+  await prompt(guest).getByRole('button', { name: 'Record draw', exact: true }).click();
+  await prompt(guest).getByRole('button', { name: 'Review settlement', exact: true }).click();
+  await prompt(guest)
+    .getByRole('button', { name: 'Confirm & save settlement', exact: true })
+    .click();
+  await expect(prompt(guest)).toBeHidden();
+  await expect(host.locator('.table-honba strong')).toHaveText('1');
+  await prompt(host).getByRole('switch', { name: 'Record draws', exact: true }).uncheck();
   const permissionRow = prompt(host).locator('.permission-item').first();
   const description = await permissionRow.locator('span').boundingBox();
   const toggle = await permissionRow.getByRole('switch').boundingBox();

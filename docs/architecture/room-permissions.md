@@ -13,6 +13,7 @@ The host opens **Game menu → Player permissions**. Each item has an independen
 | Submit own Ron/Tsumo hand                              | On      | SubmitAction checks the capability and authenticated seat                                         |
 | Edit shared Dora/Ura indicators                        | Off     | CommitGame allows only indicator fields and update timestamp                                      |
 | Settle hands and winning declarations                  | Off     | CommitGame requires the settle capability; previous events cannot be rewritten                    |
+| Record draws                                           | Off     | CommitGame accepts one new draw event; old events remain unchanged and pending wins block it      |
 | Edit or undo recorded hands                            | Off     | CommitGame requires the history capability; game identity, rules and players remain fixed         |
 | End the shared game                                    | Off     | CommitGame requires the finish capability and an ended snapshot; previous events remain unchanged |
 
@@ -27,6 +28,8 @@ Select **My player** before starting. The selected player appears below on that 
 ## Normal scoring flow
 
 - The meld-only panel excludes Double Riichi. Double Riichi remains in the separate player declaration controls.
+- Player-box actions hide open meld buttons and records. Use the dedicated Call button for Chi, Pon, Open/Added Kan and North; concealed Kan remains separate.
+- Record draws is independent of winning-settlement access and defaults off. An authorized guest can record a draw from player actions or the table menu; this does not grant win, history-edit or manual-finish operations. Deploy both frontend and backend; the existing permissions JSON needs no schema migration.
 - Winning-hand entry displays recorded melds, concealed Kans and extracted North tiles in a read-only row.
 - Choose the winning tile from a tile dialog: a bottom sheet on phones and a centered prompt on desktop.
 - Before recording a Kan with no public indicator, enter the initial Dora indicator. A normal-mode Kan then remains a draft until the complete indicator set (one plus the recorded Kan count) is filled. Cancelling the draft does not record the Kan.
@@ -37,7 +40,7 @@ Select **My player** before starting. The selected player appears below on that 
 
 An ended room opens final results for each connected participant, including after reconnection. Save stores a local copy on that device; Delete removes only that device's copy. Neither choice closes the room or removes other participants' records. Ended snapshots are not automatically backed up again after a local deletion.
 
-Oka is displayed only for first-place entries (including tied leaders). Monetary values and the conversion explanation avoid wrapping; long formulas can scroll horizontally.
+Oka is displayed only for first-place entries (including tied leaders). Monetary values stay on one line; the conversion explanation wraps within the page.
 
 ## Deployment
 

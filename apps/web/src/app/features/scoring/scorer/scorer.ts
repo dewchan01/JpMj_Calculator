@@ -12,6 +12,7 @@ import { TileReorder } from '../tiles/tile-reorder';
 import { TableSummary } from '../table-summary/table-summary';
 import { TileEntryDialog } from '../tiles/tile-entry-dialog/tile-entry-dialog';
 import { TileInput } from '../tiles/tile-input/tile-input';
+import { TileChoice } from '../tiles/tile-choice/tile-choice';
 import { TilePicker } from '../tiles/tile-picker/tile-picker';
 import { TileArt } from '../../../shared/tile-art/tile-art';
 import { Component, DestroyRef, ElementRef, inject, signal, viewChild } from '@angular/core';
@@ -110,6 +111,7 @@ const emptyFlags = (): Flags => ({
     FinalResults,
     ErrorNotice,
     TileInput,
+    TileChoice,
     TileDropZones,
     TableSummary,
     TileEntryDialog,

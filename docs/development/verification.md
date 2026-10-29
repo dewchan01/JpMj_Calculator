@@ -5,7 +5,7 @@ Last recorded local runs: **2026-10-29**. These results describe the tested work
 | Check                                 | Latest recorded result                                                                                                                                |
 | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Vitest application/domain tests       | 293 passed in 29 spec files                                                                                                                           |
-| ASP.NET Core tests                    | 36 passed; includes configuration fallback, lobby player selection, authorization and concurrent-seat protection                                      |
+| ASP.NET Core tests                    | 37 passed; includes configuration, lobby selection, concurrent-seat protection and draw-only authorization                                            |
 | Angular production build              | Passed                                                                                                                                                |
 | TypeScript typecheck                  | Passed                                                                                                                                                |
 | Backend Release publish               | Passed; private Development JSON and its template excluded                                                                                            |

@@ -23,6 +23,11 @@ Bearer auth uses a room host token or occupied-seat token. Archive revocation us
 
 ## SignalR
 
+The host-controlled permissions object includes `draw` (default false). A guest with this capability
+may commit one new `exhaustiveDraw`, `abortiveDraw` or `nagashi` event using `operation: "draw"`.
+The event must carry matching draw input; earlier events and game identity remain unchanged.
+Pending winning declarations block the draw. This is independent of `settle`, `history` and `finish`.
+
 Before starting a game, `POST /api/rooms` accepts optional ordered `playerNames` along with
 `playerCount` and `hostSeat`. The authenticated lobby response includes `playerNames` and occupied
 `seats`. A joined guest can `PUT /api/rooms/{id}/player` with `{ "seat": 2 }` and their seat Bearer

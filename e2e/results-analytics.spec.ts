@@ -234,7 +234,7 @@ test('record results without playing, correct points, persist ranks, and audit t
   await expect(results.locator('.metric-card')).toHaveCount(12);
   await page.evaluate(() => scrollTo(0, 650));
   await expect(results.locator('.result-controls')).toHaveCSS('position', 'sticky');
-  expect((await results.locator('.result-controls').boundingBox())!.y).toBeCloseTo(16, 0);
+  expect((await results.locator('.result-controls').boundingBox())!.y).toBeCloseTo(0, 0);
   await expect(page.locator('.record-result-heading')).toBeInViewport();
   await expect(results.locator('.result-tabs')).toBeInViewport();
   await expect(results.locator('.graph-legend')).toBeInViewport();

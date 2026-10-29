@@ -261,7 +261,7 @@ h1 {
   margin-block: 12px;
 }
 .double-riichi-action {
-  grid-column: 2;
+  grid-column: 1;
 }
 .sanma > .double-riichi-action {
   grid-column: 1;
@@ -530,61 +530,4 @@ h1 {
 .winning-recorded-group app-tile-art {
   width: 25px;
   display: block;
-}
-.winning-tile-field {
-  margin-block: 12px;
-}
-.winning-tile-field h3 {
-  font-size: 0.8rem;
-  margin: 0 0 0.5rem;
-}
-.winning-tile-editor {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-  padding: 10px;
-  min-height: 78px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--subtle-surface);
-}
-.winning-tile-editor > button {
-  align-self: start;
-  margin-top: 6px;
-  justify-self: end;
-}
-.winning-tile-editor .input-empty {
-  font-size: 0.75rem;
-  color: var(--muted);
-  margin: 0;
-}
-.winning-picker {
-  width: min(560px, calc(100vw - 24px));
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  background: var(--surface);
-}
-.winning-picker-tiles {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 20px;
-}
-.winning-picker-tiles button {
-  padding: 4px;
-  width: 48px;
-}
-.winning-picker-tiles button.selected {
-  background: var(--accent);
-  outline: 2px solid var(--text);
-}
-@media (max-width: 700px) {
-  .winning-picker {
-    width: 100%;
-    max-width: 100%;
-    margin: auto 0 0;
-    border-radius: 20px 20px 0 0;
-  }
 }

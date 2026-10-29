@@ -58,6 +58,7 @@ public sealed class Handler(AppDb db, IHubContext<RoomHub> hub, IOptions<Storage
                     .SequenceEqual(players.EnumerateArray().Select(x => x.GetProperty("id").GetString()))) return Results.BadRequest();
         }
         var pending = await _db.Actions.Where(x => x.RoomId == id && x.Status == "pending").ToArrayAsync(cancellationToken);
+        if (!host && input.Operation == "draw" && pending.Any(action => action.Kind == "win")) return Results.Conflict();
         foreach (var decision in input.Decisions)
         {
             var action = pending.SingleOrDefault(x => x.Id == decision.Id);

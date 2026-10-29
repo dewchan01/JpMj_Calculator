@@ -1,0 +1,45 @@
+<section [attr.aria-label]="label() | t">
+  <h3>{{ label() | t }}</h3>
+  <div class="tile-choice-editor">
+    @if (tile(); as chosen) {
+      <span class="tile"><app-tile-art [tile]="chosen" [decorative]="true" /></span>
+    } @else {
+      <p class="input-empty">{{ 'No tiles selected' | t }}</p>
+    }
+    <button
+      class="secondary"
+      (click)="open()"
+      [disabled]="!tiles().length"
+      [attr.aria-label]="label() | t"
+    >
+      {{ 'Select' | t }}
+    </button>
+  </div>
+</section>
+<dialog
+  #dialog
+  appDialogBackdrop
+  appResponsiveSheet
+  class="tile-choice-dialog"
+  [attr.aria-label]="pickerLabel() | t"
+>
+  <header class="dialog-header">
+    <h2>{{ pickerLabel() | t }}</h2>
+    <button class="icon-button" (click)="dialog.close()" [attr.aria-label]="'Close' | t">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
+    </button>
+  </header>
+  <div class="tile-choice-options">
+    @for (option of tiles(); track option.id; let index = $index) {
+      <button
+        class="tile"
+        [class.selected]="selected() === index"
+        [attr.aria-pressed]="selected() === index"
+        (click)="choose(index)"
+        [attr.aria-label]="i18n.tile(option) + ' ' + (index + 1)"
+      >
+        <app-tile-art [tile]="option" [decorative]="true" />
+      </button>
+    }
+  </div>
+</dialog>
