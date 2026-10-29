@@ -46,6 +46,7 @@ import {
 import { score, type ScoringInput } from '../../../../../../../packages/mahjong-scoring/index';
 import { Repository } from '../../matches/data-access/repository';
 import { PhotoCapture } from '../capture/photo-capture/photo-capture';
+import type { ReviewedCapture } from '../capture/recognition-layout';
 import { I18n, TranslatePipe } from '../../../core/i18n/i18n';
 import { RulePicker } from '../../../shared/rules/rule-picker/rule-picker';
 import { ScoreResultView } from '../score-result/score-result';
@@ -1137,11 +1138,22 @@ export class Scorer {
     this.editStatus();
     this.closeAssignment();
   }
-  applyWorkspacePhoto(tiles: Tile[]): void {
+  applyWorkspacePhoto(capture: ReviewedCapture): void {
     this.remember();
-    this.tiles = tiles.map((tile) => ({ ...tile, id: newId() }));
-    this.melds = [];
-    this.kita = [];
+    const assigned = new Set([
+      ...capture.groups.flatMap((group) => group.tiles.map((tile) => tile.id)),
+      ...(capture.kita ?? []).map((tile) => tile.id),
+    ]);
+    this.tiles = structuredClone(capture.tiles.filter((tile) => !assigned.has(tile.id)));
+    this.melds = capture.groups.map((group) => ({
+      id: newId(),
+      type: group.type,
+      tiles: structuredClone(group.tiles),
+      ...(group.type === 'ankan'
+        ? {}
+        : { fromPlayerId: group.fromPlayerId, calledTileId: group.calledTileId }),
+    }));
+    this.kita = structuredClone(capture.kita ?? []);
     this.selectedHandTiles.set([]);
     this.winningId = this.tiles.at(-1)?.id ?? '';
     this.editStatus();

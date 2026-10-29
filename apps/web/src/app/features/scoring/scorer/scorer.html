@@ -303,7 +303,10 @@
                     </details>
                     <app-photo-capture
                       [playerCount]="rules.playerCount"
-                      (tilesConfirmed)="applyWorkspacePhoto($event)"
+                      [autoAssign]="true"
+                      [players]="players"
+                      [winnerId]="winner"
+                      (layoutConfirmed)="applyWorkspacePhoto($event)"
                     />
                   </ng-template>
                 </app-tile-entry-dialog>

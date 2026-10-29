@@ -1,5 +1,7 @@
 import { kindAt, type TileKind } from '../../../../../../../packages/mahjong-core/index';
 export interface TilePrediction {
+  /** Derived from pixel dimensions, before normalizing the bounding box. */
+  orientation?: 'upright' | 'sideways' | 'unknown';
   box: { x: number; y: number; width: number; height: number };
   candidates: { tile: TileKind; isRed: boolean; confidence: number }[];
 }

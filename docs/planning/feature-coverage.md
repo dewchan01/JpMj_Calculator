@@ -1,6 +1,6 @@
 # Feature coverage
 
-Implementation summary refreshed from the repository on **2026-10-29**. Platform rule-source
+Implementation summary refreshed from the repository on **2026-10-30**. Platform rule-source
 review dates remain in [rule verification](../rules/verification.md); this is not a new external rule audit.
 
 ## Scoring and records
@@ -27,6 +27,7 @@ review dates remain in [rule verification](../rules/verification.md); this is no
 | Player library      | Search/sort/filter, independently scrolling incremental list, floating add and stacked creation prompt                  |
 | Tile entry          | Shared palette/notation/photo inputs; selected-tray dragging, click removal and keyboard alternatives                   |
 | Recognition         | Roboflow browser worker, configured JSON API or explicit mock; editable photo preview with confidence following reorder |
+| Guided camera       | Quick-score hand/caller/Kan/North areas, frame-aligned capture, shape/boundary checks and editable assignment review    |
 | Records/analysis    | Completed records, ongoing games on My table, result/history/details and recorded-hand player statistics                |
 | Transfer            | Routed CSV import/export and QR/ID transfer; game/player/date filtering; duplicate IDs skipped atomically               |
 | Storage             | IndexedDB games/drafts, timestamp conflict checks and ledger reconciliation; no permanent account backup                |
@@ -52,7 +53,7 @@ review dates remain in [rule verification](../rules/verification.md); this is no
 ## Remaining scope
 
 Permanent accounts, long-term cloud backup/user-ID QR lookup, full wall/discard timing,
-automatic photo-to-meld assignment, image crop/rotation/merging, formal platform replay
+fully automatic physical-photo assignment (quick-score geometry suggestions require review), image crop/rotation/merging, formal platform replay
 certification, team/league standings, local nonstandard Yaku and referee/chombo workflows are
 not implemented. Presence is process-local for a single backend instance. Real-device Safari/Android
 and representative physical-photo accuracy remain separate verification work.

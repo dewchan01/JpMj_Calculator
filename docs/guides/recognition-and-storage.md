@@ -107,7 +107,50 @@ and assign them to Chi/Pon/Kan or extracted North afterward. Remaining tiles sta
 Assignments can be undone or returned to the collection without recapturing. Replacing the full
 collection resets its assignments and supports Undo. Dora/Ura have separate review trays.
 North assignments reject non-North tiles and more than four tiles. Structural and claim validation still run before settling; there is no separate verification checkbox.
-Multi-row grouping and automatic meld inference are not implemented.
+Quick-score collection photos now retain normalized boxes and orientation derived from the
+original pixel width/height. A conservative layout pass separates rows and gaps and requires a
+distinct concealed-hand cluster of at least five tiles. Isolated three/four-tile shapes are
+review candidates. A single sideways tile, adequate confidence and no stacking preselect a
+candidate; shape alone never establishes an open call. Sanma does not suggest Chi.
+
+The preview lists candidate groups. Confirm the source player (Chi is restricted to the preceding
+player) and called tile before applying. Uncertain upright/stacked groups remain unchecked and
+stay concealed unless explicitly selected; four matching tiles allow manual Open/Concealed Kan
+selection. Applied groups preserve red tiles and IDs, move out of the hand and can be returned
+through the existing controls. Applying is one undoable action. Editing notation or reordering
+the preview clears the photographed-layout suggestions; removal recomputes remaining candidates.
+
+Ordinary uploaded photos do not infer call chronology, hidden face-down tiles, added-Kan provenance or North
+extraction. Stacked tiles, ambiguous groups and photos without a distinct hand region need manual
+review. Call order remains unset until the user supplies it. Target-specific live-table hand,
+Dora/Ura and meld-photo inputs remain scoped to their selected target; this grouping is for the
+quick-score whole collection. Provider predictions and synthetic layout tests do not establish
+accuracy on physical photographs.
+
+### Guided quick-score camera
+
+Quick score's **Guided photo** opens a rear-camera preview with normalized areas: concealed hand,
+four single-meld slots labeled Meld 1–4, a concealed-Kan area and (only in Sanma) a North area.
+Source selectors use Previous/Opposite/Next relative to the winning player, without displaying
+other player names in the camera grid. Sanma offers only Previous/Next. These labels map back to
+the actual player IDs for scoring. Change the source before arranging the tiles, or select Concealed Kan for an
+additional concealed-Kan slot. The same player may supply several melds. The called tile should
+be sideways; if it cannot be uniquely located, the review still requires selecting it. Show all
+four tile faces in concealed-Kan slots because the current recognizer does not identify backs.
+
+The preview uses the video's actual aspect ratio, including dimension changes, without cropping
+or mirroring the captured frame. Grid labels/borders are HTML overlays and are absent from the
+uploaded image. Zone coordinates are held with that capture; saved photos continue to use the
+ordinary conservative layout pass. Guided assignment does not require a long concealed-hand row.
+
+At least 85% of each detected box must lie inside one area. Boundary-crossing tiles invalidate
+the touched group rather than turning a partial Kan into Pon. Invalid shapes, wrong-source Chi,
+Sanma Chi and invalid North groups remain in the collection with a warning. A valid region supplies
+the source/type, but all assignments can still be reviewed, unchecked or corrected before applying.
+Guided North is optional in the review and restricted to at most four North tiles. Closing the
+camera, capturing or navigating away stops its tracks. Permission denial preserves saved-photo
+input. This camera and zone routing are limited to quick score, not live-table target inputs.
+It does not detect table wind markers or derive the camera's physical orientation from the photo.
 
 Changing the URL supports another provider with the same contract. For another contract, add a
 separate `TileRecognizer` adapter instead of coupling the scorer to provider-specific fields.

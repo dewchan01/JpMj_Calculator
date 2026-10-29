@@ -68,6 +68,12 @@ export function detectionPredictions(value: unknown): TilePrediction[] {
       if (right <= left || bottom <= top)
         throw new Error('Invalid tile prediction in detection response.');
       return {
+        orientation:
+          boxWidth > boxHeight * 1.15
+            ? 'sideways'
+            : boxHeight > boxWidth * 1.15
+              ? 'upright'
+              : 'unknown',
         box: {
           x: left / width,
           y: top / height,

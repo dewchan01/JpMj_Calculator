@@ -1,0 +1,72 @@
+:host {
+  display: block;
+  margin-block: 8px;
+}
+.guided-camera {
+  width: min(1000px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 0;
+}
+.guided-camera[open] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.dialog-body {
+  min-height: 0;
+  overflow-y: auto;
+}
+.camera-frame {
+  position: relative;
+  width: 100%;
+  background: #17251e;
+  overflow: hidden;
+  border-radius: 8px;
+}
+video,
+.camera-grid {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+video {
+  object-fit: contain;
+}
+.camera-grid {
+  pointer-events: none;
+}
+.camera-zone {
+  position: absolute;
+  border: 2px dashed #fff;
+  background: #0002;
+  border-radius: 6px;
+}
+.camera-zone span {
+  display: inline-block;
+  background: #132c24e6;
+  color: #fff;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: clamp(10px, 1.1vw, 14px);
+}
+.zone-settings {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-block: 12px;
+}
+.zone-settings label {
+  margin: 0;
+  min-width: 0;
+  font-size: 0.75rem;
+}
+.zone-settings select {
+  width: 100%;
+  min-width: 0;
+}
+@media (max-width: 600px) {
+  .zone-settings {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

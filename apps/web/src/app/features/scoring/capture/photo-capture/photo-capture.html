@@ -22,6 +22,15 @@
     [disabled]="busy() || !configuration.value()"
   />
 </label>
+@if (autoAssign()) {
+  <app-guided-camera
+    [players]="players()"
+    [winnerId]="winnerId()"
+    [playerCount]="playerCount()"
+    [disabled]="busy() || !configuration.value()"
+    (captured)="captureGuided($event)"
+  />
+}
 <p class="hint">{{ 'Choose a saved photo. The preview opens automatically for editing.' | t }}</p>
 <details
   #reviewPanel
@@ -75,6 +84,93 @@
         </p>
       }
     </div>
+    @if (groups().length || guided().kita.length) {
+      <section class="layout-review" [attr.aria-label]="'Suggested tile groups' | t">
+        <h3>{{ 'Suggested tile groups' | t }}</h3>
+        <p class="hint">
+          {{
+            'Uncertain groups stay concealed. Confirm the caller and called tile before applying.'
+              | t
+          }}
+        </p>
+        @for (group of groups(); track group.id) {
+          @let choice = groupSelection(group);
+          <div class="layout-group">
+            <label class="check">
+              <input
+                type="checkbox"
+                [checked]="choice.included"
+                (change)="includeGroup(group, $event)"
+              />
+              {{ 'Assign this group' | t }} ·
+              {{ (group.type === 'chi' ? 'Chi' : group.type === 'pon' ? 'Pon' : 'Kan') | t }}
+            </label>
+            <div class="layout-tiles">
+              @for (tile of group.tiles; track tile.id) {
+                <span class="tile"><app-tile-art [tile]="tile" /></span>
+              }
+            </div>
+            @if (!group.confident) {
+              <p class="hint">
+                {{ 'This group may be concealed or stacked. Check its type manually.' | t }}
+              </p>
+            }
+            @if (choice.included) {
+              @if (group.tiles.length === 4) {
+                <label>
+                  {{ 'Meld type' | t }}
+                  <select [value]="choice.type" (change)="changeGroupType(group, $event)">
+                    <option value="daiminkan" [selected]="choice.type === 'daiminkan'">
+                      {{ 'Open Kan' | t }}
+                    </option>
+                    <option value="ankan" [selected]="choice.type === 'ankan'">
+                      {{ 'Concealed Kan' | t }}
+                    </option>
+                  </select>
+                </label>
+              }
+              @if (choice.type !== 'ankan') {
+                <label>
+                  {{ 'Called from' | t }}
+                  <select [value]="choice.fromPlayerId" (change)="groupSource(group, $event)">
+                    <option value="" [selected]="!choice.fromPlayerId">{{ 'Select' | t }}</option>
+                    @for (player of groupSources(group); track player.id) {
+                      <option [value]="player.id" [selected]="choice.fromPlayerId === player.id">
+                        {{ player.name }}
+                      </option>
+                    }
+                  </select>
+                </label>
+                <app-tile-choice
+                  label="Called tile"
+                  pickerLabel="Choose called tile"
+                  [tiles]="group.tiles"
+                  [selected]="calledIndex(group)"
+                  (selectedChange)="selectCalled(group, $event)"
+                />
+              }
+            }
+          </div>
+        }
+        @if (guided().kita.length) {
+          <div class="layout-group">
+            <label class="check">
+              <input
+                type="checkbox"
+                [checked]="includeKita()"
+                (change)="includeKita.set(!includeKita())"
+              />
+              {{ 'Extracted North' | t }}
+            </label>
+            <div class="layout-tiles">
+              @for (tile of guided().kita; track tile.id) {
+                <span class="tile"><app-tile-art [tile]="tile" /></span>
+              }
+            </div>
+          </div>
+        }
+      </section>
+    }
     <label>
       {{ 'Edit preview tiles' | t }}
       <input [formField]="editForm.notation" placeholder="123m456p789s11z" />
@@ -86,7 +182,7 @@
       <button
         class="primary"
         (click)="confirm()"
-        [disabled]="busy() || !review().length || hasUnappliedText()"
+        [disabled]="busy() || !review().length || hasUnappliedText() || !groupsReady()"
       >
         {{ 'Apply reviewed tiles' | t }}
       </button>

@@ -24,10 +24,29 @@ import { TileArt } from '../../../../shared/tile-art/tile-art';
 import { CaptureConfiguration } from '../capture-config';
 import { createRecognizer } from '../create-recognizer';
 import { TileReorder } from '../../tiles/tile-reorder';
+import { TileChoice } from '../../tiles/tile-choice/tile-choice';
+import { GuidedCamera } from '../guided-camera/guided-camera';
+import { guidedLayout, type CaptureZone, type GuidedPhoto } from '../guided-layout';
+import {
+  recognizeLayout,
+  type CaptureGroup,
+  type CaptureMeldType,
+  type LocatedTile,
+  type ReviewedCapture,
+} from '../recognition-layout';
 
 @Component({
   selector: 'app-photo-capture',
-  imports: [ErrorNotice, FormField, TranslatePipe, PercentPipe, TileArt, TileReorder],
+  imports: [
+    ErrorNotice,
+    FormField,
+    TranslatePipe,
+    PercentPipe,
+    TileArt,
+    TileReorder,
+    TileChoice,
+    GuidedCamera,
+  ],
   templateUrl: './photo-capture.html',
   styleUrl: './photo-capture.css',
 })
@@ -36,6 +55,96 @@ export class PhotoCapture {
   readonly playerCount = input.required<3 | 4>();
   readonly title = input('Photo recognition');
   readonly tilesConfirmed = output<Tile[]>();
+  readonly autoAssign = input(false);
+  readonly players = input<readonly { id: string; name: string }[]>([]);
+  readonly winnerId = input('');
+  readonly layoutConfirmed = output<ReviewedCapture>();
+  private readonly located = signal<LocatedTile[]>([]);
+  private readonly guidedZones = signal<CaptureZone[]>([]);
+  readonly includeKita = signal(true);
+  readonly guided = computed(() => {
+    const ids = new Set(this.review().map((tile) => tile.id));
+    const index = this.players().findIndex((player) => player.id === this.winnerId());
+    const preceding =
+      this.players()[(index + this.players().length - 1) % this.players().length]?.id ?? '';
+    return guidedLayout(
+      this.located().filter((item) => ids.has(item.tile.id)),
+      this.guidedZones(),
+      this.playerCount(),
+      preceding,
+    );
+  });
+  readonly groups = computed(() => {
+    const ids = new Set(this.review().map((tile) => tile.id));
+    return this.autoAssign()
+      ? this.guidedZones().length
+        ? this.guided().groups
+        : recognizeLayout(
+            this.located().filter((item) => ids.has(item.tile.id)),
+            this.playerCount(),
+          )
+      : [];
+  });
+  private readonly selections = signal<
+    Record<
+      string,
+      { included: boolean; type: CaptureMeldType; fromPlayerId: string; calledTileId: string }
+    >
+  >({});
+  groupSelection(group: CaptureGroup) {
+    return (
+      this.selections()[group.id] ?? {
+        included: group.confident,
+        type: group.type,
+        fromPlayerId: group.fromPlayerId ?? '',
+        calledTileId: group.calledTileId,
+      }
+    );
+  }
+  setGroup(group: CaptureGroup, change: Partial<ReturnType<PhotoCapture['groupSelection']>>): void {
+    this.selections.update((values) => ({
+      ...values,
+      [group.id]: { ...this.groupSelection(group), ...change },
+    }));
+  }
+  includeGroup(group: CaptureGroup, event: Event): void {
+    this.setGroup(group, { included: (event.target as HTMLInputElement).checked });
+  }
+  changeGroupType(group: CaptureGroup, event: Event): void {
+    const type = (event.target as HTMLSelectElement).value;
+    if (type === 'ankan' || type === 'daiminkan') this.setGroup(group, { type, fromPlayerId: '' });
+  }
+  groupSource(group: CaptureGroup, event: Event): void {
+    this.setGroup(group, { fromPlayerId: (event.target as HTMLSelectElement).value });
+  }
+  groupSources(group: CaptureGroup) {
+    const winner = this.players().findIndex((player) => player.id === this.winnerId());
+    const preceding = this.players()[(winner + this.players().length - 1) % this.players().length];
+    return this.players().filter(
+      (player) =>
+        player.id !== this.winnerId() &&
+        (this.groupSelection(group).type !== 'chi' || player.id === preceding?.id),
+    );
+  }
+  calledIndex(group: CaptureGroup): number {
+    return group.tiles.findIndex((tile) => tile.id === this.groupSelection(group).calledTileId);
+  }
+  selectCalled(group: CaptureGroup, index: number): void {
+    this.setGroup(group, { calledTileId: group.tiles[index]?.id ?? '' });
+  }
+  readonly groupsReady = computed(
+    () =>
+      this.groups().filter((group) => this.groupSelection(group).included).length <= 4 &&
+      this.groups().every((group) => {
+        const selected = this.groupSelection(group);
+        return (
+          !selected.included ||
+          selected.type === 'ankan' ||
+          (this.groupSources(group).some((player) => player.id === selected.fromPlayerId) &&
+            this.calledIndex(group) >= 0)
+        );
+      }),
+  );
   readonly configuration = inject(CaptureConfiguration);
   readonly editor = signal({ notation: '' });
   readonly editForm = form(this.editor);
@@ -54,6 +163,11 @@ export class PhotoCapture {
     if (this.busy()) return { type: 'info', text: 'Recognizing tiles…' };
     if (this.hasUnappliedText())
       return { type: 'warning', text: 'Update the preview before applying your edited notation.' };
+    if (this.guidedZones().length && this.guided().needsReview)
+      return {
+        type: 'warning',
+        text: 'Some tiles cross an area boundary or form an invalid group. They remain in the hand for manual correction.',
+      };
     if (this.completed() && !this.review().length)
       return {
         type: 'warning',
@@ -99,6 +213,9 @@ export class PhotoCapture {
     try {
       this.update(parseTiles(this.editor().notation, newId()));
       this.confidence.set([]);
+      this.located.set([]);
+      this.guidedZones.set([]);
+      this.selections.set({});
       this.error.set('');
     } catch {
       this.error.set('Invalid review notation. Correct the tiles before applying.');
@@ -120,6 +237,10 @@ export class PhotoCapture {
     )
       return;
     const tiles = [...this.review()];
+    // Explicit reordering supersedes the photographed layout.
+    this.located.set([]);
+    this.guidedZones.set([]);
+    this.selections.set({});
     tiles.splice(to, 0, tiles.splice(from, 1)[0]);
     this.update(tiles);
     this.confidence.update((values) => {
@@ -130,13 +251,30 @@ export class PhotoCapture {
     });
   }
   confirm(): void {
-    if (!this.review().length || this.busy() || this.hasUnappliedText()) return;
-    this.tilesConfirmed.emit(structuredClone(this.review()));
+    if (!this.review().length || this.busy() || this.hasUnappliedText() || !this.groupsReady())
+      return;
+    if (this.autoAssign())
+      this.layoutConfirmed.emit(
+        structuredClone({
+          tiles: this.review(),
+          kita: this.includeKita() ? this.guided().kita : [],
+          groups: this.groups()
+            .filter((group) => this.groupSelection(group).included)
+            .map((group) => ({ ...group, ...this.groupSelection(group) })),
+        }),
+      );
+    else this.tilesConfirmed.emit(structuredClone(this.review()));
   }
   async capture(event: Event): Promise<void> {
     const target = event.target as HTMLInputElement;
     const file = target.files?.[0];
     target.value = '';
+    if (file) await this.recognizePhoto(file);
+  }
+  async captureGuided(photo: GuidedPhoto): Promise<void> {
+    await this.recognizePhoto(photo.file, photo.zones);
+  }
+  private async recognizePhoto(file: File, zones: CaptureZone[] = []): Promise<void> {
     const config = this.configuration.value();
     if (!file || !config) return;
     this.reviewOpen.set(true);
@@ -145,6 +283,10 @@ export class PhotoCapture {
     this.pending = pending;
     this.update([]);
     this.confidence.set([]);
+    this.located.set([]);
+    this.guidedZones.set(zones);
+    this.includeKita.set(true);
+    this.selections.set({});
     this.completed.set(false);
     this.error.set('');
     if (!file.type.startsWith('image/')) {
@@ -193,6 +335,9 @@ export class PhotoCapture {
       );
       this.confidence.set(
         result.predictions.map((prediction) => prediction.candidates[0].confidence),
+      );
+      this.located.set(
+        this.review().map((tile, index) => ({ tile, prediction: result.predictions[index] })),
       );
       this.completed.set(true);
     } catch (error) {

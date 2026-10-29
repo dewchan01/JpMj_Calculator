@@ -21,6 +21,13 @@ automatic join submission, camera-track cleanup, denied-permission fallback and 
 The three decoder unit tests and translation checks pass. Phone camera focus and exposure still
 need real-device verification; synthetic video and generated images do not prove photo reliability.
 
+On 2026-10-30, recognition grouping and guided zones passed 56 focused unit/translation tests and eight browser
+checks covering reviewed assignment, red/called-tile preservation, returning groups, manual
+notation invalidation and existing target inputs/themes. Build, typecheck and targeted ESLint
+passed. Guided-camera checks cover 3P/4P caller presets, full-frame dimensions, an overlay-free
+upload, track cleanup, red called tiles, concealed Kan, North and accessibility at phone width.
+Fixtures use synthetic detector boxes/video; physical-photo grouping is unverified.
+
 Shared-toast checks passed for update results, CSV transfers, online notices, modal layering,
 dismissal and rule-save feedback. The older full `e2e/settings.spec.ts` run still fails on legacy
 hold-help behavior, a navigation locator matching a hidden setup dialog, and the old win-entry
