@@ -1,11 +1,59 @@
 import { test, expect, type Page } from '@playwright/test';
 import { playerAction, prompt, enterLiveTiles } from './helpers/game';
 import AxeBuilder from '@axe-core/playwright';
+import QRCode from 'qrcode';
 
 test.skip(
   !process.env['RIICHI_API_TEST_URL'],
   'Run with playwright.online.config.ts for the real API.',
 );
+
+test('QR invitation waits in a join-only lobby and leaving returns home', async ({ page }) => {
+  const api = process.env['RIICHI_API_TEST_URL']!;
+  await page.route('**/config.json', (route) =>
+    route.fulfill({ json: { backend: { apiUrl: api } } }),
+  );
+  const response = await page.request.post(`${api}/api/rooms`, {
+    data: { playerCount: 4, playerNames: ['Alice', 'Bob', 'Carol', 'David'], hostSeat: 0 },
+  });
+  expect(response.ok()).toBe(true);
+  const room = (await response.json()) as { id: string; pin: string; token: string };
+  try {
+    await page.goto(`/online?room=${room.id}&pin=${room.pin}`);
+    await expect(
+      page.getByText('Joined the room. Waiting for the host to start the game.', {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Join game', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Create room', exact: true })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Leave room', exact: true }).click();
+    await expect(page.getByRole('button', { name: /Start match/ })).toBeVisible();
+    await expect(page.locator('dialog[open]')).toHaveCount(0);
+    await expect(page.locator('app-online')).toHaveCount(0);
+    await page.getByRole('button', { name: /Start match/ }).click();
+    await page.getByRole('button', { name: 'Start shared game', exact: true }).click();
+    await page.getByRole('button', { name: 'Join game', exact: true }).click();
+    await page.locator('input[type=file]').setInputFiles({
+      name: 'invitation.png',
+      mimeType: 'image/png',
+      buffer: await QRCode.toBuffer(`http://localhost:4300/online?room=${room.id}&pin=${room.pin}`),
+    });
+    await expect(
+      page.getByText('Joined the room. Waiting for the host to start the game.', {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(page).not.toHaveURL(/online\?/);
+    await page.getByRole('button', { name: 'Leave room', exact: true }).click();
+    await expect(page.locator('dialog[open]')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Host game', exact: true })).toBeHidden();
+  } finally {
+    await page.request.delete(`${api}/api/rooms/${room.id}`, {
+      headers: { Authorization: `Bearer ${room.token}` },
+    });
+  }
+});
 
 test('host and guest synchronize Riichi, Kan and a winning declaration through the real API', async ({
   page: host,
@@ -102,6 +150,16 @@ test('host and guest synchronize Riichi, Kan and a winning declaration through t
       }),
     ).toBeVisible();
     await expect(cameraGuest.locator('.game-shell')).toHaveCount(0);
+    await expect(
+      cameraGuest.getByRole('heading', { name: 'Join game', exact: true }),
+    ).toBeVisible();
+    await expect(cameraGuest.getByRole('button', { name: 'Create room', exact: true })).toHaveCount(
+      0,
+    );
+    await cameraGuest.getByRole('button', { name: 'Leave room', exact: true }).click();
+    await expect(cameraGuest.locator('app-home app-online')).toHaveCount(0);
+    await expect(cameraGuest.getByRole('button', { name: /Start match/ })).toBeVisible();
+    await expect(cameraGuest.locator('dialog[open]')).toHaveCount(0);
   } finally {
     await cameraContext.close();
   }

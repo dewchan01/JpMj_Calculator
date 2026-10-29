@@ -1,19 +1,44 @@
+interface NativeQrDetector {
+  detect(image: ImageBitmap): Promise<Array<{ rawValue: string }>>;
+}
+
 export async function scanQrImage(file: File): Promise<string> {
   if (file.size > 20 * 1024 * 1024) throw new Error('Archive must be smaller than 20 MiB.');
   const bitmap = await createImageBitmap(file);
   try {
-    const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+    const Detector = (
+      globalThis as typeof globalThis & {
+        BarcodeDetector?: new (options: { formats: string[] }) => NativeQrDetector;
+      }
+    ).BarcodeDetector;
+    if (Detector) {
+      try {
+        const codes = await new Detector({ formats: ['qr_code'] }).detect(bitmap);
+        const value = codes.find((code) => code.rawValue.trim())?.rawValue.trim();
+        if (value) return value;
+      } catch {
+        // Some browsers expose the detector without supporting QR codes.
+      }
+    }
     const canvas = document.createElement('canvas');
-    canvas.width = Math.round(bitmap.width * scale);
-    canvas.height = Math.round(bitmap.height * scale);
     const context = canvas.getContext('2d');
     if (!context) throw new Error('No QR code found.');
-    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
     const { default: jsQR } = await import('jsqr');
-    const result = jsQR(pixels.data, pixels.width, pixels.height);
-    if (!result) throw new Error('No QR code found.');
-    return result.data.trim();
+    const sizes = new Set(
+      [3200, 1600, 1000].map((limit) => Math.min(limit, Math.max(bitmap.width, bitmap.height))),
+    );
+    for (const size of sizes) {
+      const scale = size / Math.max(bitmap.width, bitmap.height);
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+      const result = jsQR(pixels.data, pixels.width, pixels.height, {
+        inversionAttempts: 'attemptBoth',
+      });
+      if (result?.data.trim()) return result.data.trim();
+    }
+    throw new Error('No QR code found.');
   } finally {
     bitmap.close();
   }

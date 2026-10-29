@@ -16,6 +16,7 @@ import type { RoomGame } from '../../core/online/room-session';
 import { parsePresence, type PresenceSnapshot } from '../../core/online/presence';
 import { PlayerPresence } from '../../shared/player-presence/player-presence';
 import { Toast } from '../../shared/toast/toast';
+import { scanQrImage } from '../../shared/qr/scan-qr';
 
 @Component({
   selector: 'app-online',
@@ -68,6 +69,7 @@ export class Online implements OnInit {
       this.presence.set(snapshot);
   }
   readonly shareId = this.route.snapshot.queryParamMap.get('share');
+  readonly roomInvitation = this.route.snapshot.queryParamMap.has('room');
   readonly form = new FormGroup({
     code: new FormControl(this.route.snapshot.queryParamMap.get('room') ?? '', {
       nonNullable: true,
@@ -405,62 +407,48 @@ export class Online implements OnInit {
     input.value = '';
     if (!file) return;
     await this.run(async () => {
-      const bitmap = await createImageBitmap(file);
+      let code = await scanQrImage(file);
+      let pin = '';
       try {
-        const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.round(bitmap.width * scale);
-        canvas.height = Math.round(bitmap.height * scale);
-        const ctx = canvas.getContext('2d')!;
-        ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-        const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const { default: jsQR } = await import('jsqr');
-        const result = jsQR(pixels.data, pixels.width, pixels.height);
-        let code = result?.data.trim() ?? '';
-        let pin = '';
+        const invitation: unknown = JSON.parse(code);
+        if (
+          invitation &&
+          typeof invitation === 'object' &&
+          'format' in invitation &&
+          invitation.format === 'riichi-room' &&
+          'version' in invitation &&
+          invitation.version === 1 &&
+          'code' in invitation &&
+          typeof invitation.code === 'string' &&
+          'pin' in invitation &&
+          typeof invitation.pin === 'string' &&
+          /^\d{6}$/.test(invitation.pin)
+        ) {
+          code = invitation.code;
+          pin = invitation.pin;
+        }
+      } catch {
+        /* Older room QR codes contain only a room code or URL. */
+      }
+      if (!/^[a-f0-9]{10}$/i.test(code)) {
         try {
-          const invitation: unknown = JSON.parse(code);
-          if (
-            invitation &&
-            typeof invitation === 'object' &&
-            'format' in invitation &&
-            invitation.format === 'riichi-room' &&
-            'version' in invitation &&
-            invitation.version === 1 &&
-            'code' in invitation &&
-            typeof invitation.code === 'string' &&
-            'pin' in invitation &&
-            typeof invitation.pin === 'string' &&
-            /^\d{6}$/.test(invitation.pin)
-          ) {
-            code = invitation.code;
-            pin = invitation.pin;
-          }
+          const url = new URL(code);
+          const hashParams = new URLSearchParams(url.hash.split('?')[1]);
+          code = url.searchParams.get('room') ?? hashParams.get('room') ?? '';
+          const scannedPin = url.searchParams.get('pin') ?? hashParams.get('pin') ?? '';
+          if (/^\d{6}$/.test(scannedPin)) pin = scannedPin;
         } catch {
-          /* Older room QR codes contain only a room code or URL. */
+          code = '';
         }
-        if (!/^[a-f0-9]{10}$/i.test(code)) {
-          try {
-            const url = new URL(code);
-            const hashParams = new URLSearchParams(url.hash.split('?')[1]);
-            code = url.searchParams.get('room') ?? hashParams.get('room') ?? '';
-            const scannedPin = url.searchParams.get('pin') ?? hashParams.get('pin') ?? '';
-            if (/^\d{6}$/.test(scannedPin)) pin = scannedPin;
-          } catch {
-            code = '';
-          }
-        }
-        if (!/^[a-f0-9]{10}$/i.test(code))
-          throw new Error('No room QR code found. Try another image or enter the code.');
-        this.form.controls.code.setValue(code.toUpperCase());
-        if (pin) {
-          this.form.controls.pin.setValue(pin);
-          await this.joinRoom();
-        } else {
-          this.toast.show('Room code scanned. Enter the passcode to join.');
-        }
-      } finally {
-        bitmap.close();
+      }
+      if (!/^[a-f0-9]{10}$/i.test(code))
+        throw new Error('No room QR code found. Try another image or enter the code.');
+      this.form.controls.code.setValue(code.toUpperCase());
+      if (pin) {
+        this.form.controls.pin.setValue(pin);
+        await this.joinRoom();
+      } else {
+        this.toast.show('Room code scanned. Enter the passcode to join.');
       }
     });
   }
@@ -490,6 +478,13 @@ export class Online implements OnInit {
       await this.forget();
       this.error.set('');
       this.dismissed.emit();
+    });
+  }
+  leave(): void {
+    void this.run(async () => {
+      await this.forget();
+      if (this.embedded()) this.dismissed.emit();
+      else await this.router.navigate(['/'], { replaceUrl: true });
     });
   }
   async forget(): Promise<void> {

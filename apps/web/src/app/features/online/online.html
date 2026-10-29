@@ -1,6 +1,6 @@
 @if (!embedded()) {
   <a routerLink="/">{{ 'My table' | t }}</a>
-  <h1>{{ 'Online sharing and rooms' | t }}</h1>
+  <h1>{{ (roomInvitation ? 'Join game' : 'Online sharing and rooms') | t }}</h1>
 }
 @if (error() === 'Could not connect to the online service.') {
   @if (!access()) {
@@ -44,7 +44,7 @@
       </select>
     </label>
   }
-  <button class="secondary" (click)="forget()" [disabled]="busy()">{{ 'Leave room' | t }}</button>
+  <button class="secondary" (click)="leave()" [disabled]="busy()">{{ 'Leave room' | t }}</button>
 } @else if (access(); as credential) {
   @if (credential.pin) {
     <p class="room-qr-hint">{{ 'Scan this QR code to join automatically.' | t }}</p>
@@ -147,7 +147,7 @@
           {{ 'Close room' | t }}
         </button>
       } @else {
-        <button class="secondary" (click)="forget()" [disabled]="busy()">
+        <button class="secondary" (click)="leave()" [disabled]="busy()">
           {{ 'Leave room' | t }}
         </button>
       }
@@ -199,10 +199,10 @@
 
       <button class="primary" [disabled]="busy() || form.invalid">{{ 'Join room' | t }}</button>
     }
-    @if (!entryMode()) {
+    @if (!entryMode() && !roomInvitation) {
       <hr />
     }
-    @if (entryMode() !== 'join') {
+    @if (entryMode() !== 'join' && !roomInvitation) {
       @if (!embedded()) {
         <h2>{{ 'Create room' | t }}</h2>
       }
