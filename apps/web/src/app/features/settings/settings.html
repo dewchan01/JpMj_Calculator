@@ -70,14 +70,7 @@
                     [attr.aria-label]="(field.label | t) + ': ' + ('What does this mean?' | t)"
                     [attr.aria-expanded]="help() === field.key"
                     [attr.aria-describedby]="'hint-' + field.key"
-                    (pointerdown)="holdHelp(field.key, $event)"
-                    (pointerup)="help.set('')"
-                    (pointercancel)="help.set('')"
-                    (lostpointercapture)="help.set('')"
-                    (keydown)="helpKey(field.key, $event)"
-                    (keyup)="help.set('')"
-                    (blur)="help.set('')"
-                    (contextmenu)="$event.preventDefault()"
+                    (click)="toggleHelp(field.key, $event)"
                   >
                     ?
                   </button>

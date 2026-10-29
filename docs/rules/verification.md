@@ -1,6 +1,6 @@
 # Rule verification register
 
-Source-review dates below are historical; the 2026-10-26 documentation refresh did not repeat external rule research. Current implementation includes final table Uma/Oka/return points, saved-rule money/chip conversion and auditable final-score correction. League/team ranking and referee penalties remain outside the app.
+Source-review dates below retain their original audit dates. The 2026-10-29 documentation reorganization does not claim a new external rule audit. Current implementation includes final table Uma/Oka/return points, saved-rule money/chip conversion and auditable final-score correction. League/team ranking and referee penalties remain outside the app.
 
 Reviewed 2026-10-22. Platform-labelled presets are independent implementations. Custom settings are explicitly house rules.
 

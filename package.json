@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "docs:check": "node scripts/check-doc-links.mjs",
     "i18n:generate": "node scripts/generate-zh-cn.mjs",
     "format": "prettier --write apps packages e2e scripts *.json *.ts *.js docs README.md",
     "format:check": "prettier --check apps packages e2e scripts *.json *.ts *.js docs README.md",

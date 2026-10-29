@@ -101,7 +101,7 @@ export class Online implements OnInit {
         const data = await this.api.request<unknown>(`/api/shares/${this.shareId}`);
         this.archive.set(parseArchive(JSON.stringify(data)));
       } else {
-        const access = this.entryMode() === 'host' ? null : this.savedAccess();
+        const access = this.entryMode() ? null : this.savedAccess();
         if (
           access &&
           !(this.entryMode() === 'join' && access.host) &&
@@ -115,7 +115,8 @@ export class Online implements OnInit {
             /* Session storage may be unavailable. */
           }
           await this.connect();
-          await this.openJoinedGame();
+          if (this.game()?.match?.ended) await this.forget();
+          else await this.openJoinedGame();
         }
       }
     }).finally(() => this.initializing.set(false));
@@ -239,8 +240,18 @@ export class Online implements OnInit {
     await this.openJoinedGame();
   }
   private async openJoinedGame(): Promise<void> {
+    if (this.game()?.match?.ended) {
+      await this.forget();
+      return;
+    }
     const access = this.access();
-    if (!this.destroyed && access && !access.host && this.game()?.match?.id)
+    if (
+      !this.destroyed &&
+      access &&
+      !access.host &&
+      this.game()?.match?.id &&
+      !this.game()?.match?.ended
+    )
       await this.router.navigate(['/room', access.id]);
   }
   async refresh(): Promise<void> {

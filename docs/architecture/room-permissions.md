@@ -30,7 +30,7 @@ Select **My player** before starting. The selected player appears below on that 
 - Winning-hand entry displays recorded melds, concealed Kans and extracted North tiles in a read-only row.
 - Choose the winning tile from a tile dialog: a bottom sheet on phones and a centered prompt on desktop.
 - Before recording a Kan with no public indicator, enter the initial Dora indicator. A normal-mode Kan then remains a draft until the complete indicator set (one plus the recorded Kan count) is filled. Cancelling the draft does not record the Kan.
-- Ron and Tsumo check Dora before scoring. Only Riichi/Double Riichi winners must fill Ura; concealed Kan alone does not qualify. Advanced Han/Fu scoring does not require tile indicators.
+- Ron and Tsumo check Dora before scoring. Only Riichi/Double Riichi winners must fill Ura; concealed Kan alone does not qualify. Manual Han entry does not require tile indicators.
 - The host's own actions take effect directly. Confirming its own winning preview settles it immediately, combining pending guest Ron on the same hand when applicable. Guest wins still require a permitted settlement operator; pending wins are shown in a dialog rather than an inline declaration panel.
 
 ## Results on each device
@@ -49,6 +49,6 @@ dotnet ef migrations script RoomGameActions RoomPermissions --idempotent --proje
 
 Run that generated SQL against the production SQL Server database. Alternatively run the published backend with `--migrate` and its production connection string. Normal production startup still does not apply migrations automatically. The Angular app must be rebuilt and deployed for the new controls.
 
-For AdminNeo, select **MS SQL** and the existing application database, then execute the complete [AdminNeo upgrade](sql/room-permissions-upgrade.adminneo.sql) as one command. It wraps the transaction in a single `EXEC` and contains no `GO` batch separator. It checks the physical column independently of migration history, so it also handles a previously added column without adding it twice. The result should show migration `20261029031707_RoomPermissions` and column length `-1` (`nvarchar(max)`). If it fails, retain the exact error text; this script requires SQL Server, not MySQL or SQLite. Back up the database before applying a production migration. Re-running the EF generator above replaces only the generated artifact, not the checked-in AdminNeo script.
+For AdminNeo, select **MS SQL** and the existing application database, then execute the complete [AdminNeo upgrade](../sql/room-permissions-upgrade.adminneo.sql) as one command. It wraps the transaction in a single `EXEC` and contains no `GO` batch separator. It checks the physical column independently of migration history, so it also handles a previously added column without adding it twice. The result should show migration `20261029031707_RoomPermissions` and column length `-1` (`nvarchar(max)`). If it fails, retain the exact error text; this script requires SQL Server, not MySQL or SQLite. Back up the database before applying a production migration. Re-running the EF generator above replaces only the generated artifact, not the checked-in AdminNeo script.
 
 Development/Testing SQLite databases receive this additive column upgrade at startup without deleting existing rooms. This local compatibility path never runs in Production.

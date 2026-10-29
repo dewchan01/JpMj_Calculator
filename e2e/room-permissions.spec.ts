@@ -14,6 +14,12 @@ test('host permissions synchronize and final choices affect only each local copy
   await host.getByRole('button', { name: /Start match/ }).click();
   await host.getByRole('button', { name: 'Start shared game', exact: true }).click();
   await host.getByRole('button', { name: 'Host game', exact: true }).click();
+  await host
+    .locator('#host-setup-title')
+    .locator('..')
+    .locator('..')
+    .getByRole('button', { name: 'Host game', exact: true })
+    .click();
   const code = await host.getByRole('textbox', { name: 'Room code', exact: true }).inputValue();
   const pin = await host.getByRole('textbox', { name: 'Room PIN', exact: true }).inputValue();
   for (const width of [320, 390, 1280]) {

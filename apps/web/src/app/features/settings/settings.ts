@@ -19,7 +19,12 @@ import {
 
 @Component({
   imports: [ReactiveFormsModule, TranslatePipe, ErrorNotice],
-  host: { '(window:blur)': "help.set('')", '(document:visibilitychange)': "help.set('')" },
+  host: {
+    '(document:click)': "help.set('')",
+    '(document:keydown.escape)': "help.set('')",
+    '(window:blur)': "help.set('')",
+    '(document:visibilitychange)': "help.set('')",
+  },
   templateUrl: './settings.html',
   styleUrl: './settings.css',
 })
@@ -37,16 +42,9 @@ export class Settings {
   readonly errors = signal<string[]>([]);
   readonly notice = signal('');
   readonly help = signal('');
-  holdHelp(key: string, event: PointerEvent): void {
-    if (event.button !== 0) return;
-    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
-    this.help.set(key);
-  }
-  helpKey(key: string, event: KeyboardEvent): void {
-    if (event.key === ' ' || event.key === 'Enter') {
-      event.preventDefault();
-      this.help.set(key);
-    } else if (event.key === 'Escape') this.help.set('');
+  toggleHelp(key: string, event: Event): void {
+    event.stopPropagation();
+    this.help.update((current) => (current === key ? '' : key));
   }
 
   readonly groups = settingGroups;

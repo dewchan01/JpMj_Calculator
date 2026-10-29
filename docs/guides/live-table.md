@@ -1,9 +1,10 @@
 # Table-first match flow
 
-## Advanced scoring
+## Assisted scoring and Manual Han entry
 
-Others has an Advanced scoring switch, disabled by default and persisted per device. It applies to
-new live-table win entries and quick score. Advanced winners enter final total Han/Fu rather than
+Others → Scoring mode offers Assisted scoring (default) and Manual Han entry, persisted per device.
+The compact radio rows have descriptions on the left and controls on the right. The preference applies to
+new live-table win entries and quick score. Manual-entry winners enter final total Han/Fu rather than
 concealed tiles; Han already includes Riichi, Dora and other bonuses. Existing Riichi, calls,
 concealed Kan and North actions remain. Manual mode does not require Dora/Ura entry after a Kan or
 before Ron; complete-hand mode retains those prompts. Each winner in multiple Ron has independent
@@ -25,10 +26,11 @@ flow when entered there. History omits its duplicate heading and export control;
 remains under Others. The history undo control has extra space above it. Home dice use a centered
 dialog on phones and desktops. Mobile data-transfer date fields stack vertically.
 
-Open, added and concealed Kan all open the Dora editor after recording the Kan. Ron with no Dora
-indicator requests at least one before previewing settlement, then resumes the same winning hand
-after saving. Indicator limits use the recorded Kan count and physical-tile validation uses the saved
-game rules. The app does not track discards, so players still decide the rule-specific reveal timing.
+Open, added and concealed Kan use the Dora editor. In Assisted scoring, a Kan remains a draft
+until the required indicator count is filled. Ron and Tsumo also check required Dora before
+settlement and resume the same winning hand after saving. Indicator counts and physical-tile
+validation use the recorded Kans and saved rules. Manual Han entry does not require indicator
+tiles. The app does not track discards, so players decide the rule-specific reveal timing.
 
 ## Call sounds
 
@@ -38,12 +40,13 @@ after declaration validation and before saving; Ron/Tsumo play when selected (or
 winner selection). Confirming tiles or settlement does not replay the call. Undo and reloads are silent. Audio failures never prevent saving a game action.
 
 Playback prefers six bundled Ichihime MP3 clips downloaded from the user-selected Myinstants pages.
-Open, added and concealed Kan share the Kan clip. North and Double Riichi use an available local
-Japanese device voice through the [Web Speech API](https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis/getVoices),
-then generated tones if unavailable. Playback failure also uses this fallback. Clips are cached
-offline and interrupted when muted or replaced by another call.
+Open, added and concealed Kan share the Kan clip; Double Riichi uses the Riichi clip. North uses
+an available local Japanese voice through the [Web Speech API](https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis/getVoices),
+then generated tones if unavailable. Playback failures use the same fallback. Dice use the
+selected [Rolling Dice recording](../../apps/web/public/sounds/SOURCES.md), with generated audio
+as fallback. Clips are cached offline and interrupted when muted or replaced by another sound.
 
-See [source and rights notes](../apps/web/public/sounds/ichihime/SOURCES.md). Download availability
+See [source and rights notes](../../apps/web/public/sounds/ichihime/SOURCES.md). Download availability
 is not an open license; no open redistribution license was identified on the source pages.
 
 `/score` remains the independent quick calculator. `/score/:id` now opens the live table: player balances, round, Honba, escrow, timer, indicator control, dice and point differences. The main table fits the viewport at supported phone and desktop sizes; detailed operations open native dialogs. Very short viewports, large accessibility text and long histories can still require scrolling inside dialogs.
@@ -52,9 +55,9 @@ The home page stores reusable player names in `riichi-players-v1` in localStorag
 
 The setup toolbar is a single row of labelled icon buttons outside and above the setup card. It opens Saved players, a two-seat Quick swap dialog, Random positions, and the dice simulator. Swapping or shuffling moves only the active 3P/4P names; a fourth saved setup name stays untouched while in 3P. Empty active names become their displayed default player names before moving. Saved-player selectors follow the new seat assignments. Setup and live games share the same animated, reduced-motion-aware dice component.
 
-Each player has visible Riichi, Call and Concealed Kan buttons. North extraction is available only inside the 3P player-action prompt. The Riichi button below the player declares ordinary Riichi immediately (1,000-point deposit); clicking an active Riichi button cancels the current declaration and refunds 1,000 points immediately, without a prompt. Player actions offers a separate Double Riichi button: it sits below Open Kan and records a user-confirmed uninterrupted first-turn declaration. Turn/discard order is not tracked, so a closed player can record it after other calls were entered; these recorded calls still interrupt Ippatsu. Already declared or open players cannot declare again. The same prompt has a separate Ron/Tsumo section preselecting that player; Ron still chooses a discarder, but does not repeat the winner selector when entered from a player box; hand/settlement validation is unchanged. Meld removal uses labelled trash icons. North extraction records immediately without another confirmation; extracted North tiles are visible beside labelled plus/minus controls in the player prompt. Pon and open/concealed Kan can be entered with one representative tile; the remaining matching copies are generated with unique IDs. For Pon, choose a red five when the set contains one; only one generated copy is red. With red fives enabled, every five Kan (open, concealed or added) automatically contains exactly one red five, even when ordinary five input is used. An added Kan preserves the original Pon and marks the fourth tile red only if needed. Disabled-red rules remain ordinary; duplicate physical tiles are still rejected. Chi still needs its sequence and added Kan its fourth tile. Full-set notation remains accepted. The editor explains the required shape and disables Done for invalid one-tile/full-set, Chi sequence or Kakan fourth-tile input.
+Each player has visible Riichi, Call and Concealed Kan buttons. North extraction is available only inside the 3P player-action prompt. The Riichi button below the player declares ordinary Riichi immediately (1,000-point deposit); clicking an active Riichi button cancels the current declaration and refunds 1,000 points immediately, without a prompt. Player actions offers a separate Double Riichi button: it sits below Concealed Kan and records a user-confirmed uninterrupted first-turn declaration. Turn/discard order is not tracked, so a closed player can record it after other calls were entered; these recorded calls still interrupt Ippatsu. Already declared or open players cannot declare again. The same prompt has a separate Ron/Tsumo section preselecting that player; Ron still chooses a discarder, but does not repeat the winner selector when entered from a player box; hand/settlement validation is unchanged. Meld removal uses labelled trash icons. North extraction records immediately without another confirmation; extracted North tiles are visible beside labelled plus/minus controls in the player prompt. Pon and open/concealed Kan can be entered with one representative tile; the remaining matching copies are generated with unique IDs. For Pon, choose a red five when the set contains one; only one generated copy is red. With red fives enabled, every five Kan (open, concealed or added) automatically contains exactly one red five, even when ordinary five input is used. An added Kan preserves the original Pon and marks the fourth tile red only if needed. Disabled-red rules remain ordinary; duplicate physical tiles are still rejected. Chi still needs its sequence and added Kan its fourth tile. Full-set notation remains accepted. The editor explains the required shape and disables Done for invalid one-tile/full-set, Chi sequence or Kakan fourth-tile input.
 
-Live player cards face the centre from their current display positions, including after a seat swap. All four cards use the same gap from the centre control, with a bordered Riichi-stick lane reserved even before a declaration. Seat wind, dealer and the Yakitori skewered-bird marker sit above and outside the score box. Riichi, Call and Concealed Kan buttons sit below it, show an active colour, and keep separate open-call and concealed-Kan counts. Dealer and Yakitori markers have individual borders. Tap the player box for actions. Hold its internal ± icon to keep that player's actual score and show signed differences on the other players (other player minus selected player). Release, pointer cancellation, focus loss or a window switch restores actual scores. Keyboard users can hold Space or Enter. This only changes the display.
+Live player cards face the centre from their current display positions, including after local view rotation. All four cards use the same gap from the centre control, with a bordered Riichi-stick lane reserved even before a declaration. Seat wind, dealer and the Yakitori skewered-bird marker sit above and outside the score box. Riichi, Call and Concealed Kan buttons sit below it, show an active colour, and keep separate open-call and concealed-Kan counts. Dealer and Yakitori markers have individual borders. Tap the player box for actions. Hold its internal ± icon to keep that player's actual score and show signed differences on the other players (other player minus selected player). Release, pointer cancellation, focus loss or a window switch restores actual scores. Keyboard users can hold Space or Enter. This only changes the display.
 
 The centre action is a round checkmark button, labelled End this hand for assistive technology (Final results after the match ends). A larger round/Honba/escrow strip and the timer stay at the top. The Dora preview below the table opens its tile sheet directly. Done validates and saves; dismissing discards the draft. Ura has no ongoing-table control and is entered only in winning conditions for a Riichi/Double Riichi winner, for Ron or Tsumo. Kan opens the Dora editor. Dice and the game menu sit at the bottom. Phone views have additional padding. The dedicated Riichi prompt excludes call buttons and recorded melds. Holding ± changes only the numbers and icon state, without outlining the player box; the old separate point-difference strip is no longer shown.
 

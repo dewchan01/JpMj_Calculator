@@ -43,16 +43,31 @@ public sealed class ConfigurationTests
     }
 
     [TestMethod]
-    [DataRow("Development", "http://localhost:4200")]
-    [DataRow("Production", "https://dewchan01.github.io")]
-    public void EnvironmentSelectsTheCorrectJsonSettings(string environment, string expectedOrigin)
+    [DataRow("Development", true, "http://localhost:4200")]
+    [DataRow("Production", true, "https://dewchan01.github.io")]
+    [DataRow("Development", false, "https://dewchan01.github.io")]
+    public void EnvironmentSelectsTheCorrectJsonSettings(string environment, bool includeDevelopmentFile, string expectedOrigin)
     {
-        using var root = new ApiFactory();
-        using var app = root.WithWebHostBuilder(builder => builder.UseEnvironment(environment));
-        using var client = app.CreateClient();
-        var configuration = app.Services.GetRequiredService<IConfiguration>();
-        (configuration["Cors:AllowedOrigins:0"]).Should().Be(expectedOrigin);
-        (configuration.GetConnectionString("Database")).Should().Be("");
-        (configuration.GetValue<long>("Storage:MaxBytes")).Should().Be(52428800);
+        // Do not depend on a developer's ignored appsettings.Development.json.
+        var directory = Directory.CreateTempSubdirectory("riichi-configuration-");
+        try
+        {
+            File.Copy(Path.Combine(AppContext.BaseDirectory, "appsettings.json"), Path.Combine(directory.FullName, "appsettings.json"));
+            if (includeDevelopmentFile)
+                File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "appsettings.Development.example.json"),
+                    Path.Combine(directory.FullName, "appsettings.Development.json"));
+
+            using var root = new ApiFactory();
+            using var app = root.WithWebHostBuilder(builder => builder.UseContentRoot(directory.FullName).UseEnvironment(environment));
+            using var client = app.CreateClient();
+            var configuration = app.Services.GetRequiredService<IConfiguration>();
+            (configuration["Cors:AllowedOrigins:0"]).Should().Be(expectedOrigin);
+            (configuration.GetConnectionString("Database")).Should().Be("");
+            (configuration.GetValue<long>("Storage:MaxBytes")).Should().Be(52428800);
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
     }
 }

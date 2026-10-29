@@ -4,11 +4,11 @@ The existing Angular app remains offline-first. `apps/api` is a separate ASP.NET
 service; production uses SQL Server, while development and integration tests use SQLite.
 No account registration is required. Frontend and backend deploy independently.
 
-Backend operations use [vertical slices](backend-architecture.md): each room, game or sharing operation owns its endpoint, request and handler. Shared persistence, configuration and logging live under `Infrastructure`. Backend tests use MSTest, FluentAssertions and Moq.
+Backend operations use [vertical slices](backend.md): each room, game or sharing operation owns its endpoint, request and handler. Shared persistence, configuration and logging live under `Infrastructure`. Backend tests use MSTest, FluentAssertions and Moq.
 
-Development exposes Swagger at `/swagger` and OpenAPI at `/openapi/v1.json`. Import the [Postman v1 package](api/v1/README.md) to test local or production HTTP endpoints. These additions do not require another database migration.
+Development/Testing exposes Swagger at `/swagger` and OpenAPI at `/openapi/v1.json`. Import the [Postman v1 package](../api/v1/README.md) to test local or production HTTP endpoints. These additions do not require another database migration.
 
-Backend logs use Serilog with optional Seq shipping, configured by `Seq__ServerUrl` and `Seq__ApiKey`. Request events use route templates and correlation IDs rather than concrete share IDs or credentials. See [logging and cloud configuration](logging.md).
+Backend logs use Serilog with optional Seq shipping, configured by `Seq__ServerUrl` and `Seq__ApiKey`. Request events use route templates and correlation IDs rather than concrete share IDs or credentials. See [logging and cloud configuration](../development/backend-logging.md).
 
 ## Sharing and room access
 
@@ -23,17 +23,17 @@ Backend logs use Serilog with optional Seq shipping, configured by `Seq__ServerU
 - Random host/seat tokens are stored in this browser's localStorage, scoped by API URL, to support reloads. Clearing site data loses them.
 - The server stores token hashes and a PBKDF2 hash of the PIN. The server cannot recover the PIN; the creating tab retains it in sessionStorage for reloads.
 - Hosts can release seats and close rooms. Rooms expire after 24 hours. Every room-state request verifies current access.
-- SignalR sends only change notifications. Clients refetch state, rejoin on reconnection, and can manually reconnect after retries are exhausted.
+- SignalR sends game-change notifications and host-only presence snapshots. Join returns the initial host presence snapshot. Clients refetch changed game state, rejoin on reconnection, and can manually reconnect after retries are exhausted. Connected rooms do not use regular game polling.
 
 ## Live room tables
 
-See [shared table permissions and scoring flow](shared-room-permissions.md) for host-only capability switches, per-device viewing angles, mandatory normal-mode indicators and local final-result choices. This update requires the `RoomPermissions` database migration.
+See [shared table permissions and scoring flow](room-permissions.md) for host-only capability switches, per-device viewing angles, mandatory normal-mode indicators and local final-result choices. This update requires the `RoomPermissions` database migration.
 
 1. Choose players and rules on My table, then Start match > Start shared game. Select 3 or 4 players, rule preset and game length before Host game. Joined games use the host settings.
 2. **Host game** creates the room and attaches its initial game atomically in one request; the response contains lobby and game state, avoiding initial room/game GETs and a separate attach PUT. Seat numbers follow the player order.
 3. Other devices enter the room code and PIN, receive a free seat automatically, and enter the table directly. Guests waiting for the host see a waiting message rather than host invitation controls.
 4. Keep the host's room table open. Players can declare their own Riichi/Double Riichi, cancel their
-   own Riichi, record Chi/Pon/Kan/Kita, and submit Ron/Tsumo using the normal tile flow or advanced Han/Fu.
+   own Riichi, record Chi/Pon/Kan/Kita, and submit Ron/Tsumo using the Assisted scoring or Manual Han entry.
 5. The host automatically processes non-winning declarations with the existing TypeScript rules engine.
    Guest winning hands appear in the winning-declarations dialog for settlement. The host's own winning preview settles directly, combining pending Ron on that hand. The existing multiple-Ron rules determine payments and progression.
 6. The host controls indicators, corrections, draw settlement, historical hand editing and closing the game by default. Independent capability switches can delegate indicators, settlement, history and finishing. The API restricts delegated changes to their operation and preserves game identity, rules and player identities.
@@ -116,24 +116,25 @@ headers, or share URLs. Share links are bearer access to private game/player dat
 
 ## HTTP contracts
 
-| Method | Path                             | Access                                                   |
-| ------ | -------------------------------- | -------------------------------------------------------- |
-| POST   | `/api/shares`                    | JSON archive body; returns ID, expiry, deletion secret   |
-| GET    | `/api/shares/{id}`               | Random share ID; downloads JSON                          |
-| DELETE | `/api/shares/{id}`               | `X-Deletion-Secret`                                      |
-| POST   | `/api/rooms`                     | `{ playerCount: 3 or 4 }`; returns code, PIN, host token |
-| POST   | `/api/rooms/{code}/join`         | `{ pin, seat }`; zero-based seat; returns seat token     |
-| GET    | `/api/rooms/{code}`              | Bearer host or current seat token                        |
-| DELETE | `/api/rooms/{code}/seats/{seat}` | Bearer host token                                        |
-| DELETE | `/api/rooms/{code}`              | Bearer host token                                        |
+| Method | Path                             | Access                                                                       |
+| ------ | -------------------------------- | ---------------------------------------------------------------------------- |
+| POST   | `/api/shares`                    | JSON archive body; returns ID, expiry, deletion secret                       |
+| GET    | `/api/shares/{id}`               | Random share ID; downloads JSON                                              |
+| DELETE | `/api/shares/{id}`               | `X-Deletion-Secret`                                                          |
+| POST   | `/api/rooms`                     | `{ playerCount: 3 or 4 }`; returns code, PIN, host token                     |
+| POST   | `/api/rooms/{code}/join`         | `{ pin }`; optional zero-based seat for API clients, auto-assigned by the UI |
+| GET    | `/api/rooms/{code}`              | Bearer host or current seat token                                            |
+| DELETE | `/api/rooms/{code}/seats/{seat}` | Bearer host token                                                            |
+| DELETE | `/api/rooms/{code}`              | Bearer host token                                                            |
 
 Game endpoints use the same room credentials:
 
 - `GET /api/rooms/{code}/game`: snapshot plus pending and recent action receipts.
 - `POST /api/rooms/{code}/game/actions`: seat action `{ id, handKey, kind, payload }`; host may specify a seat.
-- `PUT /api/rooms/{code}/game`: host-only expected revision, snapshot and action decisions.
+- `PUT /api/rooms/{code}/game`: expected revision, snapshot and action decisions; host or explicitly authorized delegate, with operation-specific validation.
+- `PUT /api/rooms/{code}/permissions`: host-only independent capability switches.
 
-`/hubs/rooms` accepts `Join(code, token)` once per connection and emits `Changed` without payload.
+`/hubs/rooms` accepts `Join(code, token)` once per connection and emits `Changed` without payload. Hosts also receive `{ version, seats }` through the Join return value and `Presence` events; participants receive no other-player presence roster.
 Clients reauthorize on each state fetch. Released connections may receive non-sensitive invalidation
 notifications until disconnected but cannot retrieve room data. There is no arbitrary broadcast method.
 Rate limits are per server-process IP: 120 requests/minute generally and 10/minute for room creation/join.

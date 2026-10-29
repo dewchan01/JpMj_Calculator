@@ -1,6 +1,6 @@
 ﻿# Historical pre-deployment verification — 23 October 2026
 
-This is the 2026-10-23 report, not the current release state. Subsequent changes include records/analysis, JSON transfer, dialogs, diagnostics and component/spec reorganization. See [current feature coverage](feature-coverage.md) and rerun [maintenance checks](maintenance.md#verification) for a new deployment.
+This is the 2026-10-23 report, not the current release state. Subsequent changes include records/analysis, JSON transfer, dialogs, diagnostics and component/spec reorganization. See [current feature coverage](../planning/feature-coverage.md) and rerun [maintenance checks](../development/maintenance.md#verification) for a new deployment.
 
 No blocking issues were found in the checks below at that time. This is local verification; nothing was committed, pushed, or deployed.
 

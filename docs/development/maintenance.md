@@ -1,6 +1,6 @@
 # Maintenance conventions
 
-Follow `instructions.md` and `best-practices.md` at the repository root. Keep component logic,
+Follow the root `instructions.md` and local `docs/development/best-practices.md`. Keep component logic,
 templates and styles in their respective TypeScript, HTML and CSS files.
 
 ## Responsibilities
@@ -29,7 +29,7 @@ Mobile sheets support downward drag dismissal from the top, short-drag snap-back
 preferences. Content scrolling, interactive controls, Done and Escape remain separate from dragging.
 The separate Add meld form is removed; use collection assignments instead.
 The hand toolbar's Delete a tile mode removes individual tiles and supports Undo.
-Undo and Redo appear inside Enter tiles, keeping the main hand toolbar focused on Delete and Clear.
+Undo/Redo buttons are omitted from Enter tiles; keyboard shortcuts remain outside text fields.
 Enter tiles sits inside the green hand tray. Winning-tile, Delete and Clear controls appear in an
 attached footer only when hand tiles exist. Assigned groups remain in the hand workspace. There is
 no separate verification checkbox: edits invalidate results, and structure/claim validation runs
@@ -49,6 +49,7 @@ component specs just to fill out a folder; test meaningful behavior.
 ```text
 apps/web/src/app/
   app.ts / app.html / app.routes.ts       Shell and lazy route definitions
+  app-router.ts / app-router.pages.ts     Router scrolling and Pages hash-location providers
   core/i18n/                             App-wide locale service, catalog and tests
   features/
     matches/                             Match setup and saved tables
@@ -116,11 +117,19 @@ controls share the top-gutter treatment in `styles.css`. Use `action-cancel` for
 cancellation and `action-delete` for destructive controls; cancellation precedes confirmation.
 The global ripple service respects `data-no-ripple`, used only on the developer-brand hidden trigger.
 
-`core/diagnostic-log.ts` holds up to 200 session navigation/error entries. ErrorNotice reports UI
-errors to it. Triple-clicking the developer brand opens the log sheet. Logs are not uploaded or
-persisted; detailed recognition Console messages remain separate.
+`core/diagnostic-log.ts` holds up to 200 categorized/redacted session entries. Expected validation
+does not become a system error. Triple-clicking the developer brand opens the log sheet. Logs are
+not uploaded or persisted; detailed recognition Console output is development-only. See the
+[diagnostic policy](frontend-diagnostics.md).
 
 ## Verification
+
+Backend configuration tests use an isolated content root and the tracked
+`apps/api/appsettings.Development.example.json` template. They never require an ignored local
+Development file. Cases cover Development overrides, Production ignoring that file, and fallback
+to base settings when it is absent. GitHub Actions uploads TRX results as `backend-test-results`,
+including failed runs. `A total of 1 test files matched...` means one test assembly was discovered;
+the failing test name and assertion below it identify the actual failure.
 
 Run `npm.cmd run format`, then `npm.cmd run format:check`, `npm.cmd run lint`,
 `npm.cmd run typecheck`, `npm.cmd test` and `npm.cmd run build`.

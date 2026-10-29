@@ -221,14 +221,6 @@
         }
         @case ('menu') {
           <div class="menu-list">
-            @if (roomCode && room.access()?.host) {
-              <button (click)="navigatePanel('permissions')">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M12 3 3 7v5c0 5 9 9 9 9s9-4 9-9V7ZM8 12l3 3 5-6" />
-                </svg>
-                {{ 'Player permissions' | t }}
-              </button>
-            }
             @if (!m.ended) {
               <button
                 [hidden]="remotePlayer()"
@@ -296,6 +288,14 @@
               </svg>
               {{ 'Adjust view' | t }}
             </button>
+            @if (roomCode && room.access()?.host) {
+              <button (click)="navigatePanel('permissions')">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3 3 7v5c0 5 9 9 9 9s9-4 9-9V7ZM8 12l3 3 5-6" />
+                </svg>
+                {{ 'Player permissions' | t }}
+              </button>
+            }
             <button (click)="navigatePanel('settings')">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M4 7h16M4 17h16M8 4v6m8 4v6" />
@@ -638,25 +638,26 @@
           <button class="primary" (click)="nextWinners()">{{ 'Next' | t }}</button>
         }
         @case ('hand') {
-          <section class="winning-recorded" [attr.aria-label]="'Recorded calls' | t">
-            @for (meld of winnerState.melds; track meld.id) {
-              <div class="winning-recorded-group">
-                <span>{{ meld.type | t }}</span>
-                @for (tile of meld.tiles; track tile.id) {
-                  <app-tile-art [tile]="tile" [decorative]="true" />
-                }
-              </div>
-            }
-            @if (winnerState.kita.length) {
-              <div class="winning-recorded-group">
-                <span>{{ 'North extraction' | t }}</span>
-                @for (tile of winnerState.kita; track tile.id) {
-                  <app-tile-art [tile]="tile" [decorative]="true" />
-                }
-              </div>
-            }
-          </section>
           @if (manualEntry()) {
+            <section class="winning-recorded" [attr.aria-label]="'Recorded calls' | t">
+              @for (meld of winnerState.melds; track meld.id) {
+                <div class="winning-recorded-group">
+                  <span>{{ meld.type | t }}</span>
+                  @for (tile of meld.tiles; track tile.id) {
+                    <app-tile-art [tile]="tile" [decorative]="true" />
+                  }
+                </div>
+              }
+              @if (winnerState.kita.length) {
+                <div class="winning-recorded-group">
+                  <span>{{ 'North extraction' | t }}</span>
+                  @for (tile of winnerState.kita; track tile.id) {
+                    <app-tile-art [tile]="tile" [decorative]="true" />
+                  }
+                </div>
+              }
+            </section>
+
             <p>
               <strong>{{ name(activeWinner) }}</strong>
               · {{ 'Manual Han entry' | t }}
@@ -747,19 +748,43 @@
               [playerCount]="m.playerCount"
               [redFives]="settings?.redFives ?? true"
             />
-            <button
-              class="winning-tile-button"
-              [attr.aria-label]="'Winning tile' | t"
-              (click)="chooseWinningTile()"
-              [disabled]="!tiles.length"
-            >
-              <span>{{ 'Winning tile' | t }}</span>
-              @if (winningTile; as tile) {
-                <app-tile-art [tile]="tile" [decorative]="true" />
-              } @else {
-                <span>{{ 'Choose winning tile' | t }}</span>
+            <section class="winning-tile-field" [attr.aria-label]="'Winning tile' | t">
+              <h3>{{ 'Winning tile' | t }}</h3>
+              <div class="winning-tile-editor">
+                @if (winningTile; as tile) {
+                  <span class="tile"><app-tile-art [tile]="tile" [decorative]="true" /></span>
+                } @else {
+                  <p class="input-empty">{{ 'No tiles selected' | t }}</p>
+                }
+                <button
+                  class="secondary"
+                  [attr.aria-label]="'Winning tile' | t"
+                  (click)="chooseWinningTile()"
+                  [disabled]="!tiles.length"
+                >
+                  {{ 'Select' | t }}
+                </button>
+              </div>
+            </section>
+            <section class="winning-recorded" [attr.aria-label]="'Recorded calls' | t">
+              @for (meld of winnerState.melds; track meld.id) {
+                <div class="winning-recorded-group">
+                  <span>{{ meld.type | t }}</span>
+                  @for (tile of meld.tiles; track tile.id) {
+                    <app-tile-art [tile]="tile" [decorative]="true" />
+                  }
+                </div>
               }
-            </button>
+              @if (winnerState.kita.length) {
+                <div class="winning-recorded-group">
+                  <span>{{ 'North extraction' | t }}</span>
+                  @for (tile of winnerState.kita; track tile.id) {
+                    <app-tile-art [tile]="tile" [decorative]="true" />
+                  }
+                </div>
+              }
+            </section>
+
             <button class="primary" (click)="nextHand()">{{ 'Next' | t }}</button>
           }
         }

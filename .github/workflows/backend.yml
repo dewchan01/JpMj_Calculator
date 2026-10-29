@@ -12,7 +12,13 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-      - run: dotnet test apps/api.tests/Riichi.Api.Tests.csproj --configuration Release
+      - run: dotnet test apps/api.tests/Riichi.Api.Tests.csproj --configuration Release --logger "trx;LogFileName=backend-tests.trx" --results-directory artifacts/test-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-results
+          path: artifacts/test-results/*.trx
+          if-no-files-found: ignore
       - run: dotnet publish apps/api/Riichi.Api.csproj --configuration Release --output artifacts/api
       - uses: actions/upload-artifact@v4
         with:

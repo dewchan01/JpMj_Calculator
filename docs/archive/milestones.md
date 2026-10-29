@@ -1,6 +1,10 @@
 # Working notes and historical milestones
 
-## Current implementation snapshot - 2026-10-27
+This file preserves historical milestones. Names, transfer formats and test counts below describe
+their recorded dates, not today's interface. See [current coverage](../planning/feature-coverage.md)
+and [verification status](../development/verification.md) for the maintained summaries.
+
+## Historical implementation snapshot - 2026-10-27
 
 The app now includes final table Uma/Oka/chip/money settlement, completed-game records, player
 analytics, JSON import/export under Others > Data, correction prompts, responsive sheets,
@@ -15,8 +19,8 @@ Recent interface updates include compact history rows with right-side chevrons, 
 selectors and shared details, recorded call/Riichi markers below points, and permanent saved-rule
 sections. Settings omits the introductory paragraph and keeps its heading close to the player-count
 selector. Others > Sound effects provides device-voice playback, tone fallback, previews and mute.
-See [feature coverage](feature-coverage.md), [records](records.md), [JSON transfer](data-transfer.md)
-and [maintenance](maintenance.md) for current behavior. Counts and missing features below describe
+See [feature coverage](../planning/feature-coverage.md), [records](../guides/records.md), [JSON transfer](../guides/data-transfer.md)
+and [maintenance](../development/maintenance.md) for current behavior. Counts and missing features below describe
 older milestones, not current validation totals.
 
 ## Historical plan and milestones

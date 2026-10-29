@@ -4,7 +4,7 @@
 
 Open Others > Developer and click the brand name three times consecutively, within 900 ms between
 clicks. The sheet shows up to 200 session entries, newest first: safe route names, operational failures,
-connection transitions and unhandled browser errors/rejections. Expected validation is not logged as a system error. See the [logging policy](frontend-diagnostics.md). Clear logs is beside Close; the
+connection transitions and unhandled browser errors/rejections. Expected validation is not logged as a system error. See the [logging policy](../development/frontend-diagnostics.md). Clear logs is beside Close; the
 explanation is below Logs. The hidden trigger has no ripple. Entries are not uploaded or persisted.
 Detailed recognition logging is a separate browser Console stream described below.
 

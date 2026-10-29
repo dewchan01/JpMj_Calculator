@@ -21,4 +21,4 @@ Callers must pass fixed diagnostic descriptions, never user content. The shared 
 
 Development-only recognition Console messages provide safe timing, provider and count/type details. They exclude image contents, filenames, API keys, raw responses and hand tiles. Production uses the sanitized in-app summaries. Browser DevTools can independently display request details and browser-generated diagnostics; review exports before sharing them.
 
-Backend Serilog/Seq logging is separate; frontend logs are not uploaded to it. See [backend logging](logging.md).
+Backend Serilog/Seq logging is separate; frontend logs are not uploaded to it. See [backend logging](backend-logging.md).

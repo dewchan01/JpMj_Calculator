@@ -40,6 +40,12 @@ test('host and guest synchronize Riichi, Kan and a winning declaration through t
   };
   host.on('request', trackStartup);
   await host.getByRole('button', { name: 'Host game', exact: true }).click();
+  await host
+    .locator('#host-setup-title')
+    .locator('..')
+    .locator('..')
+    .getByRole('button', { name: 'Host game', exact: true })
+    .click();
   await expect(host.locator('.credential-row').first()).toBeVisible({ timeout: 20000 });
   host.off('request', trackStartup);
   expect(startupReads).toBe(0);
@@ -276,10 +282,16 @@ test('host can select three players and room header stays visible', async ({ pag
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
   await page.getByRole('button', { name: 'Start shared game', exact: true }).click();
+  await page.getByRole('button', { name: 'Host game', exact: true }).click();
   await page
     .getByRole('combobox', { name: 'Players', exact: true })
     .selectOption({ label: '3 players' });
-  await page.getByRole('button', { name: 'Host game', exact: true }).click();
+  await page
+    .locator('#host-setup-title')
+    .locator('..')
+    .locator('..')
+    .getByRole('button', { name: 'Host game', exact: true })
+    .click();
   await expect(page.getByRole('link', { name: 'Open room table', exact: true })).toBeVisible();
   const dialog = page.getByRole('dialog', { name: 'Host game', exact: true });
   await expect(dialog.locator('app-player-presence li')).toHaveCount(3);

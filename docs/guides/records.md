@@ -29,7 +29,7 @@ combines those records. A participant filter restricts the aggregate view to tha
 
 ## Saved results
 
-Advanced-mode wins retain their player-confirmed total Han/Fu, explicit Yakuman/Pao/chips and
+Manual Han entry wins retain their player-confirmed total Han/Fu, explicit Yakuman/Pao/chips and
 the usual rule/round snapshot in `scoringInput.manualScore`. No complete concealed hand or inferred
 Yaku/Dora breakdown is invented. History editing uses the stored mode and replays later payments;
 the current device preference does not reinterpret older records. CSV and QR/ID transfer retain these

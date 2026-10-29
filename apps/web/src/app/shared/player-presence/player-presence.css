@@ -6,7 +6,7 @@
 .player-presence {
   display: flex;
   flex-wrap: nowrap;
-  gap: 6px;
+  gap: 4px;
   list-style: none;
   padding: 0;
   margin: 4px 0;
@@ -17,8 +17,8 @@ li {
   align-items: center;
   gap: 4px;
   min-width: 0;
-  font-size: 0.8rem;
-  padding: 6px 8px;
+  font-size: 0.7rem;
+  padding: 4px 6px;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--subtle-surface);

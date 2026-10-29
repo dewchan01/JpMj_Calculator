@@ -127,4 +127,4 @@ Here is a link to the most recent Angular style guide https://angular.dev/style-
 
 ## Repository testing
 
-Use Vitest for application/domain unit tests named `*.spec.ts`, colocated with the code they test. Playwright specs remain under `e2e/` and run separately. Update relative imports and lazy routes when moving a component. See `docs/maintenance.md` for layout and verification commands.
+Use Vitest for application/domain unit tests named `*.spec.ts`, colocated with the code they test. Playwright specs remain under `e2e/` and run separately. Update relative imports and lazy routes when moving a component. See `docs/development/maintenance.md` for layout and verification commands.

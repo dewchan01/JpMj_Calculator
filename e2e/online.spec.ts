@@ -18,14 +18,14 @@ test('start choices stack and close without creating a game', async ({ page }) =
   await page.getByRole('button', { name: /Start match/ }).click();
   await expect(page.getByRole('button', { name: 'Host game', exact: true })).toBeHidden();
   await page.getByRole('button', { name: 'Start shared game', exact: true }).click();
-  await expect(
-    page
-      .getByRole('dialog', { name: 'Start shared game', exact: true })
-      .getByRole('combobox', { name: 'Game length', exact: true }),
-  ).toHaveValue('east');
-  await page.getByRole('button', { name: 'Host game', exact: true }).click();
+  const choice = page.getByRole('dialog', { name: 'Start shared game', exact: true });
+  await expect(choice.getByRole('combobox')).toHaveCount(0);
+  await choice.getByRole('button', { name: 'Host game', exact: true }).click();
   const host = page.getByRole('dialog', { name: 'Host game', exact: true });
   await expect(host).toBeVisible();
+  await expect(host.getByRole('combobox', { name: 'Game length', exact: true })).toHaveValue(
+    'east',
+  );
   await host.getByRole('button', { name: 'Close', exact: true }).click();
   const roles = page.getByRole('dialog', { name: 'Start shared game', exact: true });
   await expect(roles).toBeVisible();
@@ -118,4 +118,47 @@ test('shared data requires preview and imports without duplicating games', async
   await expect(page.getByRole('status')).toHaveText('Games imported.');
   await page.getByRole('button', { name: 'Import selected games', exact: true }).click();
   await expect(page.getByRole('status')).toHaveText('No new games to import.');
+});
+
+test('a new join ignores the previous room credential', async ({ page }) => {
+  await page.route('**/config.json', (route) =>
+    route.fulfill({ json: { backend: { apiUrl: 'https://api.example.test' } } }),
+  );
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      'riichi-room:https://api.example.test',
+      JSON.stringify({
+        id: 'ABCDEF1234',
+        token: 'a'.repeat(64),
+        host: false,
+        seat: 1,
+      }),
+    ),
+  );
+  const reads: string[] = [];
+  page.on('request', (request) => {
+    if (request.url().includes('/api/rooms/')) reads.push(request.url());
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start shared game', exact: true }).click();
+  await page.getByRole('button', { name: 'Join game', exact: true }).click();
+  await expect(page.getByLabel('Room code', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Room code', { exact: true })).toHaveValue('');
+  expect(reads).toEqual([]);
+});
+
+test('rule help opens on a click and dismisses on another click or Escape', async ({ page }) => {
+  await page.goto('/settings');
+  const button = page.locator('.help-button').first();
+  await button.click();
+  await expect(button).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('.setting-help.open .help-bubble')).toBeVisible();
+  await page.locator('h1').click();
+  await expect(button).toHaveAttribute('aria-expanded', 'false');
+  await button.focus();
+  await page.keyboard.press('Enter');
+  await expect(button).toHaveAttribute('aria-expanded', 'true');
+  await page.keyboard.press('Escape');
+  await expect(button).toHaveAttribute('aria-expanded', 'false');
 });

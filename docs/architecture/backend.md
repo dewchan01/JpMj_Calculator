@@ -13,7 +13,7 @@ apps/api/
       ReleaseSeat/
       CloseRoom/
       UpdatePermissions/
-      Notifications/   RoomHub.cs
+      Notifications/   RoomHub.cs, RoomPresence.cs
       IRoomAccess.cs
       RoomAccess.cs
     Games/
@@ -31,6 +31,7 @@ apps/api/
     Persistence/       EF context, entities and design-time factory
     Security/          Credential generation and verification
     Logging/           Serilog, Seq and safe request enrichment
+    OpenApi/           Local OpenAPI and Swagger UI registration
     ApiServices.cs
   Shared/Handlers/     Small command/query contracts and common guards
   Resources/           ErrorMessages and LogMessages resources
@@ -43,19 +44,19 @@ apps/api/
 - **Endpoint:** binds route, body, credential and request cancellation, then dispatches to its handler. Existing routes, JSON fields, status codes and rate-limit policies remain unchanged.
 - **Request / Body:** contains only the input needed by that operation. HTTP bodies are separate from commands that also carry a route identifier or credential.
 - **Handler:** validates inputs, authorizes access, executes database work and returns the result. Commands change state; queries read state. Handlers use scoped EF contexts directly, without a generic repository or mediator dependency.
-- **Shared room access:** checks current host/seat membership for both queries and SignalR subscriptions. The hub publishes invalidations rather than snapshots or credentials.
+- **Shared room access:** checks current host/seat membership for both queries and SignalR subscriptions. The hub publishes game invalidations and host-only presence snapshots, never credentials. Join returns the initial presence snapshot to hosts.
 - **Infrastructure:** configures persistence, logging, credentials and typed options. `Program.cs` keeps middleware ordering and explicit migration/startup behavior visible.
 
 Database calls and upload reads accept the caller's cancellation token. Notifications after a successful commit intentionally continue independently of HTTP cancellation, so other clients can learn about a committed change.
 Transactions, quota checks, action deduplication and revision checks stay within their owning write handlers.
 
-`StorageOptions`, `CorsOptions`, `DatabaseOptions` and `SeqOptions` bind the existing configuration sections. Storage/CORS options and Seq queue limits use data annotations and startup validation; Seq also rejects unsafe endpoint URLs. Configuration precedence remains JSON, environment-specific JSON, environment variables and command-line overrides. See [deployment configuration](../dev.md) and [logging](logging.md).
+`StorageOptions`, `CorsOptions`, `DatabaseOptions` and `SeqOptions` bind the existing configuration sections. Storage/CORS options and Seq queue limits use data annotations and startup validation; Seq also rejects unsafe endpoint URLs. Configuration precedence remains JSON, environment-specific JSON, environment variables and command-line overrides. See [deployment configuration](../deployment/backend.md) and [logging](../development/backend-logging.md).
 
 Public API types have XML documentation, checked during compilation. Shared error and request-log messages use separate `ResourceManager` resources. There are no AI operations in this API, so it does not require an AI SDK.
 
 ## Persistence compatibility
 
-The refactor changes source locations without changing entities, table mappings or migrations. Persistence types retain the `Riichi.Api.Data` namespace to preserve EF model identity. SQL Server remains the production provider; local development and integration tests use SQLite.
+Source-folder refactoring alone does not change entities or require a migration. Persistence types retain the `Riichi.Api.Data` namespace to preserve EF model identity. The separate RoomPermissions feature adds `Rooms.Permissions`; apply its migration once when upgrading an older database. Presence, documentation and UI changes add no database column. SQL Server remains the production provider; local development and integration tests use SQLite.
 
 Check future model changes with:
 

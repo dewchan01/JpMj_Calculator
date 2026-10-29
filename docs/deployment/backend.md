@@ -1,10 +1,12 @@
-Deploy **only `apps/api`** to your MonsterASP website. Your Angular app stays where it is.
+# Backend deployment: MonsterASP and SQL Server
 
-The shared-player permission update adds a database column. For an existing deployment, apply `artifacts/room-permissions-upgrade.sql` before uploading the new backend. See [permissions and deployment steps](docs/shared-room-permissions.md). The matching Angular build is deployed separately to its existing host.
+Run the commands below from the repository root. Deploy **only `apps/api`** to your MonsterASP website. Your Angular app stays where it is.
 
-The API now logs through Serilog to console, with optional Seq shipping. Set `Seq__ServerUrl` and `Seq__ApiKey` in backend hosting settings to enable Seq; otherwise it stays console-only. See [logging and cloud configuration](docs/logging.md).
+The RoomPermissions feature adds `Rooms.Permissions`. Apply that migration once when upgrading an older database; do not rerun schema creation for UI, presence or documentation changes. For AdminNeo, use the [single-command upgrade SQL](../sql/room-permissions-upgrade.adminneo.sql) against the existing SQL Server database. See [permissions and deployment steps](../architecture/room-permissions.md). The matching Angular build is deployed separately to its existing host.
 
-Use [apps/api/.env.example](apps/api/.env.example) as the version-controlled checklist of configuration names. It contains placeholders, not credentials. ASP.NET Core does **not** automatically read `.env` files: enter the values in hosting settings, inject secrets from your hosting secret manager, or set process environment variables. `.env` and `.env.*` files are ignored by Git, while `.env.example` stays tracked.
+The API now logs through Serilog to console, with optional Seq shipping. Set `Seq__ServerUrl` and `Seq__ApiKey` in backend hosting settings to enable Seq; otherwise it stays console-only. See [logging and cloud configuration](../development/backend-logging.md).
+
+Use [apps/api/.env.example](../../apps/api/.env.example) as the version-controlled checklist of configuration names. It contains placeholders, not credentials. ASP.NET Core does **not** automatically read `.env` files: enter the values in hosting settings, inject secrets from your hosting secret manager, or set process environment variables. `.env` and `.env.*` files are ignored by Git, while `.env.example` stays tracked.
 
 For local secrets, enable .NET User Secrets once, then set values outside the repository:
 
@@ -33,7 +35,7 @@ The settings checklist is a reminder; it does not configure MonsterASP or create
    The API now uses two standard configuration files:
 
    - `apps/api/appsettings.json`: shared/production settings, including the production frontend CORS origin.
-   - `apps/api/appsettings.Development.json`: local overrides. An empty database connection uses local SQLite; local Angular origins are allowed here.
+   - `apps/api/appsettings.Development.json`: ignored local overrides. On a fresh checkout, copy `apps/api/appsettings.Development.example.json` to this filename. The example contains no credentials. An empty database connection uses local SQLite; local Angular origins are allowed here. Both the local file and example are excluded from the backend publish output.
 
    `dotnet run --project apps/api` uses the Development launch profile at `http://localhost:5080`. Published applications normally use Production. Use the exact filename `appsettings.Development.json`, including capital `D`.
 
@@ -67,13 +69,13 @@ The settings checklist is a reminder; it does not configure MonsterASP or create
    dotnet ef migrations script --idempotent --project apps/api --output artifacts/online-schema.sql
    ```
 
-   Open your MSSQL database’s query/import tool and execute `artifacts/online-schema.sql` against that database. The API does **not** create production tables automatically.
+   Execute `artifacts/online-schema.sql` against that SQL Server database using a tool that supports SQL Server batches, such as SSMS/sqlcmd. `GO` is a client batch separator, not a SQL statement. For an existing database's permissions-only upgrade in AdminNeo, use the linked single-command script above. The API does **not** create production tables automatically.
 
 4. **Publish only the backend**
 
    ```powershell
-   dotnet publish apps/api -c Release -o artifacts/monster-api
-   Compress-Archive -Path artifacts/monster-api/* -DestinationPath artifacts/monster-api.zip -Force
+   dotnet publish apps/api -c Release -o artifacts/api
+   Compress-Archive -Path artifacts/api/* -DestinationPath artifacts/backend-iis.zip -Force
    ```
 
    This publishes the API only; you don’t need to run the Angular build.
@@ -82,7 +84,7 @@ The settings checklist is a reminder; it does not configure MonsterASP or create
 
    Open **Websites → your website → Files**:
 
-   - Upload `artifacts/monster-api.zip`.
+   - Upload `artifacts/backend-iis.zip`.
    - Click **Unzip**, targeting `/wwwroot`.
    - Enable overwrite and restart application pool when replacing a deployment.
    - Ensure `web.config` and `Riichi.Api.dll` are directly inside `/wwwroot`, without an extra parent folder. [ZIP deployment instructions](https://help.monsterasp.net/websites/deploy/zip-file)
@@ -105,4 +107,4 @@ The settings checklist is a reminder; it does not configure MonsterASP or create
 
 When you’re ready to connect Angular, set `apps/web/config/production/config.json` to your HTTPS API address before building. **No Angular files need uploading to MonsterASP.**
 
-//"apiUrl": "https://jpmj.runasp.net"
+Example public frontend API origin: `https://jpmj.runasp.net`.

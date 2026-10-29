@@ -527,16 +527,33 @@ h1 {
   width: 25px;
   display: block;
 }
-.winning-tile-button {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
+.winning-tile-field {
   margin-block: 12px;
 }
-.winning-tile-button app-tile-art {
-  width: 36px;
+.winning-tile-field h3 {
+  font-size: 0.8rem;
+  margin: 0 0 0.5rem;
+}
+.winning-tile-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  min-height: 78px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--subtle-surface);
+}
+.winning-tile-editor > button {
+  align-self: start;
+  margin-top: 6px;
+  justify-self: end;
+}
+.winning-tile-editor .input-empty {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin: 0;
 }
 .winning-picker {
   width: min(560px, calc(100vw - 24px));

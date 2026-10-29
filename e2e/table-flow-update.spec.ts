@@ -78,12 +78,16 @@ test('selected player is below, rotation is local, and a Kan needs its new indic
   await prompt(page).getByRole('button', { name: 'Tsumo · self draw', exact: true }).click();
   await expect(prompt(page).locator('.winning-recorded')).toContainText('Ankan');
   await enterLiveTiles(page, 'The winning hand', '123m789s234p55s');
+  await expect(prompt(page).getByRole('button', { name: 'Winning tile', exact: true })).toHaveText(
+    'Select',
+  );
   await prompt(page).getByRole('button', { name: 'Winning tile', exact: true }).click();
   await expect(
     page.getByRole('dialog', { name: 'Choose winning tile', exact: true }),
   ).toBeVisible();
   await page.locator('.winning-picker-tiles button').first().click();
   await expect(page.getByRole('dialog', { name: 'Choose winning tile', exact: true })).toBeHidden();
+  await expect(prompt(page).locator('.winning-tile-editor .tile app-tile-art')).toBeVisible();
   await prompt(page).getByRole('button', { name: 'Next', exact: true }).click();
   await expect(prompt(page).locator('app-tile-input[data-label="Ura indicators"]')).toHaveCount(0);
   await prompt(page).getByRole('button', { name: 'Review settlement', exact: true }).click();

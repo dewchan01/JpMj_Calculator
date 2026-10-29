@@ -1328,5 +1328,6 @@
   "Player status": "玩家在线状态",
   "Online": "在线",
   "Offline": "离线",
-  "Checking": "确认中"
+  "Checking": "确认中",
+  "Select": "??"
 }
