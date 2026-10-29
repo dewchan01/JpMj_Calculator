@@ -446,10 +446,49 @@ select {
 input::placeholder {
   color: #869087;
 }
+.date-range-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.date-range-fields > label {
+  min-width: 0;
+}
+input:is([type='date'], [type='time'], [type='datetime-local']) {
+  display: block;
+  min-inline-size: 0;
+  inline-size: 100%;
+  max-inline-size: 100%;
+  min-height: 46px;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: start;
+}
+input::-webkit-date-and-time-value {
+  min-height: 1.3em;
+  text-align: start;
+}
+input::-webkit-datetime-edit {
+  min-width: 0;
+  padding: 0;
+}
+input::-webkit-calendar-picker-indicator {
+  flex-shrink: 0;
+  cursor: pointer;
+}
+@media (max-width: 600px) {
+  .date-range-fields,
+  .dialog-fields.date-range-fields,
+  .filters.date-range-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 select {
   padding-right: 25px;
 }
 .segmented {
+  touch-action: pan-y;
   --segment-count: 2;
   --segment-index: 0;
   --segment-highlight: var(--surface);
@@ -461,6 +500,10 @@ select {
   border-radius: 9px;
   gap: 5px;
   margin-bottom: 22px;
+}
+.tabs,
+.result-layout {
+  touch-action: pan-y;
 }
 .segmented button {
   position: relative;

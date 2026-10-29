@@ -1,5 +1,13 @@
 import { Directive, ElementRef, booleanAttribute, inject, input } from '@angular/core';
 
+/** Dismisses one explicitly grouped prompt flow without affecting unrelated dialogs. */
+export function closeDialogGroup(group: string): void {
+  for (const dialog of document.querySelectorAll<HTMLDialogElement>(
+    'dialog[open][data-dismiss-group]',
+  ))
+    if (dialog.dataset['dismissGroup'] === group) dialog.close();
+}
+
 /** A root prompt can be dismissed by its backdrop; nested prompts retain their parent. */
 @Directive({
   selector: 'dialog[appDialogBackdrop]',
@@ -32,9 +40,13 @@ export class DialogBackdrop {
       this.outside(event) &&
       this.enabled() &&
       (this.canDismiss()?.() ?? true) &&
-      document.querySelectorAll('dialog[open]').length === 1
-    )
-      this.element.nativeElement.close();
+      (this.element.nativeElement.dataset['dismissGroup'] ||
+        document.querySelectorAll('dialog[open]').length === 1)
+    ) {
+      const group = this.element.nativeElement.dataset['dismissGroup'];
+      if (group) closeDialogGroup(group);
+      else this.element.nativeElement.close();
+    }
     this.startedOutside = false;
   }
 }

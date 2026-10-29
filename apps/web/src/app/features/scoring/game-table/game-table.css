@@ -5,6 +5,10 @@
   display: flex;
   justify-content: flex-end;
 }
+.hand-edit-banner > .action-cancel {
+  display: block;
+  margin-inline-start: auto;
+}
 .menu-list .end-match-menu {
   grid-column: 1;
 }

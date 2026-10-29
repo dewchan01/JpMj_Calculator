@@ -14,6 +14,7 @@ import { OnlineApi, type ShareReceipt } from '../../../core/online/online-api';
 import { Repository } from '../../matches/data-access/repository';
 import { TranslatePipe } from '../../../core/i18n/i18n';
 import { LocalDatePipe } from '../../../core/i18n/local-date';
+import { Toast } from '../../../shared/toast/toast';
 import { DialogBackdrop } from '../../../shared/dialog-backdrop';
 import { gameArchive, parseArchive } from './data-archive';
 import { gamesCsv, parseGamesCsv } from './data-csv';
@@ -61,7 +62,7 @@ export class DataTransfer implements OnInit {
   readonly importing = signal(false);
   readonly busy = signal(false);
   readonly error = signal('');
-  readonly status = signal('');
+  readonly toast = inject(Toast);
   readonly from = signal('');
   readonly to = signal('');
   readonly player = signal('');
@@ -96,7 +97,6 @@ export class DataTransfer implements OnInit {
     this.games.set([]);
     this.importing.set(true);
     this.error.set('');
-    this.status.set('');
     this.busy.set(true);
     try {
       if (file.size > 20 * 1024 * 1024) throw new Error('Archive must be smaller than 20 MiB.');
@@ -126,6 +126,7 @@ export class DataTransfer implements OnInit {
     link.href = url;
     link.download = `riichi-games-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
+    this.toast.success('Export complete.');
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   async shareSelected(): Promise<void> {
@@ -174,7 +175,6 @@ export class DataTransfer implements OnInit {
       return;
     }
     this.error.set('');
-    this.status.set('');
     this.shareQr.set('');
     this.share.set(entry);
     dialog.showModal();
@@ -213,7 +213,6 @@ export class DataTransfer implements OnInit {
     if (this.busy()) return;
     this.busy.set(true);
     this.error.set('');
-    this.status.set('');
     try {
       await this.loadTransfer();
     } catch (error) {
@@ -259,7 +258,7 @@ export class DataTransfer implements OnInit {
     this.error.set('');
     try {
       const count = await this.repo.importGames(this.selected());
-      this.status.set(count ? 'Games imported.' : 'No new games to import.');
+      this.toast.success(count ? 'Games imported.' : 'No new games to import.');
       this.changed.emit();
     } catch {
       this.error.set('Could not import games.');

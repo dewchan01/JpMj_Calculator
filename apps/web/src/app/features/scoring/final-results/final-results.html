@@ -344,16 +344,7 @@
     @if (notice()) {
       <p role="alert">{{ notice() | t }}</p>
     }
-    <label>
-      {{ 'Game date' | t }}
-      <input
-        type="datetime-local"
-        required
-        name="gameDate"
-        [ngModel]="dateDraft()"
-        (ngModelChange)="dateDraft.set($event)"
-      />
-    </label>
+    <app-date-time-field [value]="dateDraft()" (valueChange)="dateDraft.set($event)" />
     <div class="dialog-fields">
       @for (player of match().players; track player.id) {
         <label>

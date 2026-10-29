@@ -1,4 +1,5 @@
 import { SignedValue } from '../../../shared/signed-value/signed-value';
+import { DateTimeField } from '../../../shared/date-time-field/date-time-field';
 import {
   Component,
   computed,
@@ -30,7 +31,15 @@ import { tableRules } from '../../../../../../../packages/mahjong-rules/index';
 
 @Component({
   selector: 'app-final-results',
-  imports: [SignedValue, DecimalPipe, TranslatePipe, MatchHistory, FormsModule, DialogBackdrop],
+  imports: [
+    DateTimeField,
+    SignedValue,
+    DecimalPipe,
+    TranslatePipe,
+    MatchHistory,
+    FormsModule,
+    DialogBackdrop,
+  ],
   templateUrl: './final-results.html',
   styleUrl: './final-results.css',
 })

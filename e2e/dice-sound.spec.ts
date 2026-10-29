@@ -20,3 +20,22 @@ test('rolling dice uses the bundled Myinstants recording', async ({ page }) => {
   expect(response.headers()['content-type']).toContain('audio/mpeg');
   expect((await response.body()).byteLength).toBeGreaterThan(1000);
 });
+
+test('table dice identify the second roller from East as one', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: /Start match/ }).click();
+  await page.getByRole('button', { name: 'Start game', exact: true }).click();
+  await page.getByRole('button', { name: 'Dice', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Dice', exact: true });
+  await expect(dialog.locator('.next-roller')).toBeVisible();
+  const dice = await dialog
+    .locator('.die[data-result]')
+    .evaluateAll((elements) =>
+      elements.map((element) => Number(element.getAttribute('data-result'))),
+    );
+  const offset = (dice[0] + dice[1] - 1) % 4;
+  await expect(dialog.locator('.next-roller')).toContainText(`Player ${offset + 1}`);
+  await expect(dialog.locator('.next-roller')).toContainText(
+    ['East', 'South', 'West', 'North'][offset],
+  );
+});

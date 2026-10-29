@@ -23,6 +23,14 @@ Bearer auth uses a room host token or occupied-seat token. Archive revocation us
 
 ## SignalR
 
+Before starting a game, `POST /api/rooms` accepts optional ordered `playerNames` along with
+`playerCount` and `hostSeat`. The authenticated lobby response includes `playerNames` and occupied
+`seats`. A joined guest can `PUT /api/rooms/{id}/player` with `{ "seat": 2 }` and their seat Bearer
+token to choose a free, zero-based player index. It returns 204; invalid indexes return 400,
+invalid credentials return 401, host credentials return 403, and occupied seats or changes after
+game start return 409. Existing credentials remain valid after a move; reconnect the hub to update
+presence. These changes use the existing snapshot storage and require no database migration.
+
 `Join` returns the initial `{ version, seats }` presence snapshot to the host, or null to participants, in addition to subscribing the connection to events.
 
 Use the SignalR client against `/hubs/rooms`, then invoke `Join(roomId, token)`. Rejoin after reconnecting. `Changed` means refetch the versioned room/game state. Host connections also receive `Presence` objects with `{ version, seats }`, containing authenticated online seat indexes only. Presence does not increment the game revision or require polling. A seat stays online while any of its connections remain; abrupt network loss may remain visible until SignalR detects the disconnect. Presence is process-local for the current single-instance hosting model.

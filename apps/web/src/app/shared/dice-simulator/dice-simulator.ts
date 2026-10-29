@@ -1,4 +1,14 @@
-import { Component, DestroyRef, effect, inject, input, signal, untracked } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+  untracked,
+} from '@angular/core';
+import { nextRoller } from './next-roller';
 import { TranslatePipe } from '../../core/i18n/i18n';
 import { GameSounds } from '../../core/sound/game-sounds';
 
@@ -12,7 +22,12 @@ export class DiceSimulator {
   private readonly sounds = inject(GameSounds);
   readonly request = input(0);
   readonly diceRolling = signal(false);
-  dice = [1, 1];
+  readonly dice = signal([1, 1]);
+  readonly players = input<readonly { id: string; name: string }[]>([]);
+  readonly dealer = input('');
+  readonly secondRoller = computed(() =>
+    nextRoller(this.players(), this.dealer(), this.dice()[0] + this.dice()[1]),
+  );
   private diceTimer: ReturnType<typeof setTimeout> | undefined;
   readonly dieDots = [0, 1, 2, 3, 4, 5, 6, 7, 8];
   readonly faces = [1, 2, 3, 4, 5, 6];
@@ -47,7 +62,7 @@ export class DiceSimulator {
       crypto.getRandomValues(bytes);
       for (const value of bytes) if (value < 252 && result.length < 2) result.push((value % 6) + 1);
     }
-    this.dice = result;
+    this.dice.set(result);
     this.diceRolling.set(true);
     this.diceTimer = setTimeout(
       () => this.diceRolling.set(false),

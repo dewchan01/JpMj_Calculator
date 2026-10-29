@@ -7,4 +7,5 @@ namespace Riichi.Api.Features.Rooms.CreateRoom;
 /// <param name="Match">The optional initial game snapshot.</param>
 /// <param name="HandKey">The optional initial hand identity.</param>
 /// <param name="HostSeat">The optional seat reserved for the hosting player.</param>
-public sealed record Request(int PlayerCount, JsonElement? Match = null, string? HandKey = null, int? HostSeat = null);
+/// <param name="PlayerNames">The optional ordered player names displayed before the game starts.</param>
+public sealed record Request(int PlayerCount, JsonElement? Match = null, string? HandKey = null, int? HostSeat = null, string[]? PlayerNames = null);

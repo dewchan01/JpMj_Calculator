@@ -17,6 +17,7 @@ export interface RoomAccess {
   pin?: string;
 }
 export interface RoomState {
+  playerNames?: string[] | null;
   id: string;
   playerCount: number;
   revision: number;
@@ -110,8 +111,10 @@ export class OnlineApi {
     return response.status === 204 ? (undefined as T) : ((await response.json()) as T);
   }
 
-  link(key: 'share' | 'room', id: string): string {
-    const tree = this.router.createUrlTree(['/online'], { queryParams: { [key]: id } });
+  link(key: 'share' | 'room', id: string, pin?: string): string {
+    const tree = this.router.createUrlTree(['/online'], {
+      queryParams: { [key]: id, ...(key === 'room' && pin ? { pin } : {}) },
+    });
     return new URL(
       this.location.prepareExternalUrl(this.router.serializeUrl(tree)),
       document.baseURI,

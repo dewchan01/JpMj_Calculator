@@ -1330,5 +1330,15 @@
   "Offline": "離線",
   "Checking": "確認中",
   "Select": "選擇",
+  "Date": "日期",
+  "Time": "時間",
+  "Second roll": "第二次擲骰",
+  "Check for updates": "檢查更新",
+  "Export complete.": "匯出完成。",
+  "Dismiss notification": "關閉提示",
+  "Checking for updates…": "正在檢查更新…",
+  "You are using the latest version.": "目前已是最新版本。",
+  "Update ready. Reloading…": "更新已就緒，正在重新載入…",
+  "Could not check for updates. Check your connection and try again.": "無法檢查更新，請確認網路連線後重試。",
   "Joined the room. Waiting for the host to start the game.": "已加入房間，等待房主開始對局。"
 }

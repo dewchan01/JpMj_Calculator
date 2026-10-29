@@ -6,9 +6,11 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 import { Theme } from './core/theme/theme';
 import { GameSounds } from './core/sound/game-sounds';
+import { SegmentedSwipe } from './shared/segmented-swipe';
+import { ToastHost } from './shared/toast/toast-host';
 @Component({
   selector: 'app-root',
-  imports: [TranslatePipe, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [ToastHost, TranslatePipe, RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -19,6 +21,7 @@ export class App {
     if (this.sounds.enabled()) this.sounds.unlock();
   }
   private readonly tabScroll = inject(TabScroll);
+  private readonly segmentedSwipe = inject(SegmentedSwipe);
   private readonly diagnosticLog = inject(DiagnosticLog);
   private readonly ripples = inject(ButtonRipples);
   readonly configuration = inject(CaptureConfiguration);

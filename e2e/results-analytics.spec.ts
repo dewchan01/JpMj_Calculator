@@ -165,7 +165,8 @@ test('record results without playing, correct points, persist ranks, and audit t
     .click();
   await page.getByRole('button', { name: 'Record results only', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Record results only', exact: true });
-  await dialog.getByLabel('Game date', { exact: true }).fill('2026-01-02T10:30');
+  await dialog.getByLabel('Date', { exact: true }).fill('2026-01-02');
+  await dialog.getByLabel('Time', { exact: true }).fill('10:30');
   expect(
     await dialog
       .getByRole('button', { name: 'Close', exact: true })
@@ -197,15 +198,21 @@ test('record results without playing, correct points, persist ranks, and audit t
   await page.getByRole('button', { name: 'Edit scores', exact: true }).click();
   const scoreDialog = page.getByRole('dialog', { name: 'Edit scores', exact: true });
   await expect(scoreDialog).toBeVisible();
-  await expect(scoreDialog.getByLabel('Game date', { exact: true })).toHaveValue(
-    '2026-01-02T10:30',
-  );
-  await scoreDialog.getByLabel('Game date', { exact: true }).fill('2026-01-03T11:30');
+  await expect(scoreDialog.getByLabel('Date', { exact: true })).toHaveValue('2026-01-02');
+  await expect(scoreDialog.getByLabel('Time', { exact: true })).toHaveValue('10:30');
+  await scoreDialog.getByLabel('Date', { exact: true }).fill('2026-01-03');
+  await scoreDialog.getByLabel('Time', { exact: true }).fill('11:30');
   await page.screenshot({ path: 'artifacts/edit-score-prompt-390.png' });
   await results.getByLabel('Player 1', { exact: true }).fill('10000');
   await results.getByLabel('Player 4', { exact: true }).fill('40000');
   await results.getByRole('button', { name: 'Save scores', exact: true }).click();
   await expect(results.locator('.score-editor')).not.toBeVisible();
+  await expect(results.locator('.conversion-formula')).toHaveCSS('white-space', 'normal');
+  expect(
+    await results
+      .locator('.conversion-formula')
+      .evaluate((element) => element.scrollWidth <= element.clientWidth),
+  ).toBe(true);
   await expect(results.locator('tbody tr').first()).toContainText('Player 4');
   await page.reload();
   await expect(results.locator('tbody tr').first()).toContainText('Player 4');
@@ -213,8 +220,8 @@ test('record results without playing, correct points, persist ranks, and audit t
   await expect(
     page
       .getByRole('dialog', { name: 'Edit scores', exact: true })
-      .getByLabel('Game date', { exact: true }),
-  ).toHaveValue('2026-01-03T11:30');
+      .getByLabel('Date', { exact: true }),
+  ).toHaveValue('2026-01-03');
   await page
     .getByRole('dialog', { name: 'Edit scores', exact: true })
     .getByRole('button', { name: 'Cancel', exact: true })

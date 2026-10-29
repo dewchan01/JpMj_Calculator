@@ -25,3 +25,11 @@ automatically transferred. Use Others > Data CSV import/export or QR/ID transfer
 from this Pages origin. API URLs are public client-side settings; never put secret keys in them.
 
 See [GitHub's custom workflow documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
+
+## Manual client update
+
+Users can open **Others → Version → Check for updates**. A controlling Angular service worker
+checks and downloads the new build before reloading the page. If no worker controls the page,
+the app compares fresh build metadata and reloads when it differs. A current build and network
+failures are reported on the version page, with retry available. The action does not clear
+IndexedDB games, player names or preferences. A network connection is needed to download a new build.

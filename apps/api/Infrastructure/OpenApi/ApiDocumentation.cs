@@ -34,7 +34,7 @@ public static class ApiDocumentation
                     if (scheme is not null)
                         operation.Security = [new OpenApiSecurityRequirement { [new OpenApiSecuritySchemeReference(scheme, document)] = [] }];
                     operation.Responses ??= new OpenApiResponses();
-                    if (verb == "DELETE" || (verb == "PUT" && path.EndsWith("/permissions")))
+                    if (verb == "DELETE" || (verb == "PUT" && (path.EndsWith("/permissions") || path.EndsWith("/player"))))
                     {
                         operation.Responses.Remove("200");
                         operation.Responses["204"] = new OpenApiResponse { Description = "Operation completed without a response body." };
@@ -54,7 +54,7 @@ public static class ApiDocumentation
                     }
                     operation.Responses.TryAdd("429", new OpenApiResponse { Description = "Request rate limit reached." });
                     if (scheme is not null) operation.Responses.TryAdd("401", new OpenApiResponse { Description = "Missing, expired or incorrect credential." });
-                    if (path.Contains("/game") || path.EndsWith("/permissions"))
+                    if (path.Contains("/game") || path.EndsWith("/permissions") || path.EndsWith("/player"))
                         operation.Responses.TryAdd("403", new OpenApiResponse { Description = "The host has not granted the requested capability." });
                     if (path == "/api/shares" && verb == "POST")
                         operation.RequestBody = new OpenApiRequestBody

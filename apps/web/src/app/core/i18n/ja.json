@@ -1330,5 +1330,15 @@
   "Offline": "オフライン",
   "Checking": "確認中",
   "Select": "選択",
+  "Date": "日付",
+  "Time": "時刻",
+  "Second roll": "2回目のサイコロ",
+  "Check for updates": "更新を確認",
+  "Export complete.": "エクスポートが完了しました。",
+  "Dismiss notification": "通知を閉じる",
+  "Checking for updates…": "更新を確認中…",
+  "You are using the latest version.": "最新バージョンを使用しています。",
+  "Update ready. Reloading…": "更新の準備ができました。再読み込み中…",
+  "Could not check for updates. Check your connection and try again.": "更新を確認できません。接続を確認して再試行してください。",
   "Joined the room. Waiting for the host to start the game.": "入室しました。ホストの対局開始を待っています。"
 }

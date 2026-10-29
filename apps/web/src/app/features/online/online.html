@@ -9,9 +9,6 @@
 } @else if (error()) {
   <p role="alert">{{ error() | t }}</p>
 }
-@if (status()) {
-  <p role="status">{{ status() | t }}</p>
-}
 @if (initializing()) {
   <div class="room-loading" role="status">
     <span class="connection-pulse" aria-hidden="true"></span>
@@ -35,8 +32,23 @@
 } @else if (access() && !access()!.host) {
   <app-connection-status [state]="connectionStatus()" />
   <p role="status">{{ 'Joined the room. Waiting for the host to start the game.' | t }}</p>
+  @if (room(); as lobby) {
+    <label>
+      {{ 'My player' | t }}
+      <select [value]="access()!.seat" (change)="choosePlayer($event)" [disabled]="busy()">
+        @for (seat of [0, 1, 2, 3].slice(0, lobby.playerCount); track seat) {
+          <option [value]="seat" [disabled]="lobby.seats.includes(seat) && access()!.seat !== seat">
+            {{ lobby.playerNames?.[seat] || ('Player ' + (seat + 1) | t) }}
+          </option>
+        }
+      </select>
+    </label>
+  }
   <button class="secondary" (click)="forget()" [disabled]="busy()">{{ 'Leave room' | t }}</button>
 } @else if (access(); as credential) {
+  @if (credential.pin) {
+    <p class="room-qr-hint">{{ 'Scan this QR code to join automatically.' | t }}</p>
+  }
   @if (qr()) {
     <img class="room-qr" [src]="qr()" width="200" height="200" [alt]="'Room QR code' | t" />
   }
@@ -52,7 +64,7 @@
           class="secondary"
           [appCopyButton]="credential.id"
           #copyFeedback="copyButton"
-          (copyFailed)="error.set('Could not copy. Select the room details to copy manually.')"
+          (copyFailed)="toast.error('Could not copy. Select the room details to copy manually.')"
           [attr.aria-label]="'Copy room details' | t"
           [title]="'Copy room details' | t"
         >
@@ -76,7 +88,7 @@
             class="secondary"
             [appCopyButton]="credential.pin"
             #pinCopyFeedback="copyButton"
-            (copyFailed)="error.set('Could not copy. Select the room details to copy manually.')"
+            (copyFailed)="toast.error('Could not copy. Select the room details to copy manually.')"
             [attr.aria-label]="('Copy room details' | t) + ' - ' + ('Room PIN' | t)"
             [title]="'Copy room details' | t"
           >
@@ -96,9 +108,6 @@
     }
   </section>
 
-  @if (credential.pin) {
-    <p>{{ 'Scan this QR code to join automatically.' | t }}</p>
-  }
   @if (room(); as state) {
     @if (credential.host && (game()?.match ?? pendingGame()); as currentMatch) {
       <app-player-presence
@@ -131,8 +140,6 @@
             | t
         }}
       </p>
-    } @else if (!game()?.match?.id) {
-      <p>{{ 'The host has not attached a game yet.' | t }}</p>
     }
     <div class="room-footer-actions">
       @if (credential.host) {

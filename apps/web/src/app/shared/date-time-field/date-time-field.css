@@ -1,0 +1,19 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+fieldset {
+  min-inline-size: 0;
+  border: 0;
+  padding: 0;
+  margin: 0 0 17px;
+}
+legend {
+  padding: 0;
+  margin-bottom: 8px;
+  font-size: 0.76rem;
+  font-weight: 550;
+}
+label {
+  margin-bottom: 0;
+}

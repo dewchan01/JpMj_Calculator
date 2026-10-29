@@ -49,9 +49,23 @@ test('host and guest synchronize Riichi, Kan and a winning declaration through t
   await expect(host.locator('.credential-row').first()).toBeVisible({ timeout: 20000 });
   host.off('request', trackStartup);
   expect(startupReads).toBe(0);
+  await expect(
+    host.getByText('The host has not attached a game yet.', { exact: true }),
+  ).toHaveCount(0);
   const code = await host.getByRole('textbox', { name: 'Room code', exact: true }).inputValue();
   const pin = await host.getByRole('textbox', { name: 'Room PIN', exact: true }).inputValue();
   await expect(host.getByRole('img', { name: 'Room QR code', exact: true })).toBeVisible();
+  const hint = host.locator('.room-qr-hint');
+  expect(
+    await hint.evaluate(
+      (element) =>
+        parseFloat(getComputedStyle(element).fontSize) /
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+    ),
+  ).toBeCloseTo(0.7, 2);
+  expect((await hint.boundingBox())!.y).toBeLessThan(
+    (await host.locator('.room-qr').boundingBox())!.y,
+  );
   await expect(host.getByLabel('Room link', { exact: true })).toHaveCount(0);
   await expect(host.getByRole('button', { name: 'Copy room details', exact: true })).toBeVisible();
   await expect(
@@ -77,6 +91,20 @@ test('host and guest synchronize Riichi, Kan and a winning declaration through t
   await expect(
     guest.getByText('Joined the room. Waiting for the host to start the game.', { exact: true }),
   ).toBeVisible();
+  const cameraContext = await browser.newContext({ serviceWorkers: 'block' });
+  try {
+    const cameraGuest = await cameraContext.newPage();
+    await prepare(cameraGuest);
+    await cameraGuest.goto(`http://localhost:4300/online?room=${code}&pin=${pin}`);
+    await expect(
+      cameraGuest.getByText('Joined the room. Waiting for the host to start the game.', {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(cameraGuest.locator('.game-shell')).toHaveCount(0);
+  } finally {
+    await cameraContext.close();
+  }
   await host.locator('app-online').getByRole('button', { name: 'Start game', exact: true }).click();
   await expect(guest.locator('.game-shell')).toBeVisible();
   const guestSeat = guest.locator('.player-seat').filter({ hasText: 'Player 2' });

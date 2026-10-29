@@ -138,6 +138,7 @@ h1 {
 }
 .filter-dialog-actions {
   position: sticky;
+  justify-content: flex-end;
   bottom: 0;
   border-top: 1px solid var(--border);
 }
@@ -210,6 +211,7 @@ h1 {
 }
 .table-scroll {
   overflow-x: auto;
+  border-radius: 10px;
 }
 table {
   width: 100%;
@@ -329,8 +331,8 @@ thead th {
     font-size: 0.65rem;
     color: var(--muted);
   }
-  .filters {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .filters.date-range-fields {
+    grid-template-columns: minmax(0, 1fr);
     padding: 16px;
     gap: 12px;
   }

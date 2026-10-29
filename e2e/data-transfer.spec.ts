@@ -60,9 +60,9 @@ test('CSV archive filters whole games, round trips and skips duplicate IDs', asy
   await dialog.getByRole('combobox', { name: 'Player', exact: true }).selectOption('Alice');
   await expect(dialog.locator('input[type=checkbox]')).toHaveCount(1);
   await dialog.getByRole('button', { name: 'Import selected games', exact: true }).click();
-  await expect(dialog.getByRole('status')).toHaveText('Games imported.');
+  await expect(page.locator('.toast[role="status"]')).toHaveText('Games imported.');
   await dialog.getByRole('button', { name: 'Import selected games', exact: true }).click();
-  await expect(dialog.getByRole('status')).toHaveText('No new games to import.');
+  await expect(page.locator('.toast[role="status"]')).toHaveText('No new games to import.');
   expect(
     (await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze())
       .violations,

@@ -8,6 +8,7 @@ import { I18n, TranslatePipe } from '../../core/i18n/i18n';
 import { StorageStatus } from '../../shared/storage-status/storage-status';
 import { Theme } from '../../core/theme/theme';
 import { BuildInfo } from '../../core/build-info';
+import { AppUpdates } from '../../core/app-updates/app-updates';
 import { CaptureConfiguration } from '../scoring/capture/capture-config';
 
 @Component({
@@ -16,6 +17,7 @@ import { CaptureConfiguration } from '../scoring/capture/capture-config';
   styleUrl: './others.css',
 })
 export class Others {
+  readonly updates = inject(AppUpdates);
   readonly scoringMode = inject(ScoringMode);
   readonly sounds = inject(GameSounds);
   readonly soundLabels = {

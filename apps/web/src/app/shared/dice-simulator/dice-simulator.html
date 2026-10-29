@@ -11,7 +11,7 @@
     [class.settled]="!diceRolling()"
     aria-hidden="true"
   >
-    @for (face of dice; track $index) {
+    @for (face of dice(); track $index) {
       <div class="die-stage">
         <div
           class="die"
@@ -40,6 +40,13 @@
   @if (diceRolling()) {
     {{ 'Rolling…' | t }}
   } @else {
-    {{ dice[0] }} + {{ dice[1] }} = {{ dice[0] + dice[1] }}
+    {{ dice()[0] }} + {{ dice()[1] }} = {{ dice()[0] + dice()[1] }}
   }
 </p>
+@if (!diceRolling() && secondRoller(); as player) {
+  <p class="next-roller" role="status">
+    {{ 'Second roll' | t }}：
+    <strong>{{ player.name }}</strong>
+    · {{ player.wind | t }}
+  </p>
+}

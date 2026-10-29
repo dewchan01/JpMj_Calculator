@@ -128,10 +128,7 @@
         @if (error()) {
           <p role="alert">{{ error() | t }}</p>
         }
-        @if (status()) {
-          <p role="status">{{ status() | t }}</p>
-        }
-        <div class="dialog-fields">
+        <div class="dialog-fields date-range-fields">
           <label>
             {{ 'From date' | t }}
             <input type="date" [ngModel]="from()" (ngModelChange)="from.set($event)" />
@@ -249,7 +246,7 @@
             #copyTransfer="copyButton"
             [attr.aria-label]="'Copy transfer ID' | t"
             [title]="'Copy transfer ID' | t"
-            (copyFailed)="error.set('Could not copy transfer ID.')"
+            (copyFailed)="toast.error('Could not copy transfer ID.')"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               @if (copyTransfer.copied()) {

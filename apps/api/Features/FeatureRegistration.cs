@@ -18,6 +18,7 @@ public static class FeatureRegistration
         services.AddScoped<ICommandHandler<Rooms.UpdatePermissions.Request>, Rooms.UpdatePermissions.Handler>();
         services.AddScoped<ICommandHandler<Rooms.CreateRoom.Request>, Rooms.CreateRoom.Handler>();
         services.AddScoped<ICommandHandler<Rooms.JoinRoom.Request>, Rooms.JoinRoom.Handler>();
+        services.AddScoped<ICommandHandler<Rooms.ChoosePlayer.Request>, Rooms.ChoosePlayer.Handler>();
         services.AddScoped<IQueryHandler<Rooms.GetRoom.Request>, Rooms.GetRoom.Handler>();
         services.AddScoped<ICommandHandler<Rooms.ReleaseSeat.Request>, Rooms.ReleaseSeat.Handler>();
         services.AddScoped<ICommandHandler<Rooms.CloseRoom.Request>, Rooms.CloseRoom.Handler>();
@@ -40,6 +41,7 @@ public static class FeatureRegistration
         var shares = app.MapGroup("/api/shares").RequireRateLimiting("api");
         Rooms.CreateRoom.Endpoint.Map(rooms);
         Rooms.JoinRoom.Endpoint.Map(rooms);
+        Rooms.ChoosePlayer.Endpoint.Map(rooms);
         Rooms.GetRoom.Endpoint.Map(rooms);
         Rooms.ReleaseSeat.Endpoint.Map(rooms);
         Rooms.CloseRoom.Endpoint.Map(rooms);

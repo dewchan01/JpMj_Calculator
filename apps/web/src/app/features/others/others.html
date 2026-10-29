@@ -123,6 +123,14 @@
             <dd>{{ build().commit }}{{ build().dirty ? ' *' : '' }}</dd>
           </div>
         </dl>
+        <div class="dialog-actions">
+          <button class="primary" (click)="updates.check()" [disabled]="updates.busy()">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20 7v5h-5M4 17v-5h5M5 8a8 8 0 0 1 13-3l2 2M4 17l2 2a8 8 0 0 0 13-3" />
+            </svg>
+            {{ (updates.busy() ? 'Checking for updates…' : 'Check for updates') | t }}
+          </button>
+        </div>
       }
       @case ('developer') {
         <div class="developer-info">

@@ -42,7 +42,7 @@ public sealed class Handler(AppDb db, IRoomAccess access, RoomPresence presence)
             permissions = DelegatedChanges.Permissions(room.Permissions),
             room.Revision,
             room.HandKey,
-            match = JsonSerializer.Deserialize<JsonElement>(room.Snapshot),
+            match = string.IsNullOrEmpty(room.HandKey) ? (JsonElement?)null : JsonSerializer.Deserialize<JsonElement>(room.Snapshot),
             actions = actions.Select(x => new { x.Id, x.Seat, x.HandKey, x.Kind, payload = JsonSerializer.Deserialize<JsonElement>(x.Payload), x.Status, x.Error, x.CreatedAt })
         });
     }

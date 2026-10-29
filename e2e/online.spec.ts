@@ -26,10 +26,12 @@ test('start choices stack and close without creating a game', async ({ page }) =
   await expect(host.getByRole('combobox', { name: 'Game length', exact: true })).toHaveValue(
     'east',
   );
-  await host.getByRole('button', { name: 'Close', exact: true }).click();
+  await host.getByRole('button', { name: 'Back', exact: true }).click();
   const roles = page.getByRole('dialog', { name: 'Start shared game', exact: true });
   await expect(roles).toBeVisible();
   await roles.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(page.locator('dialog[open]')).toHaveCount(0);
+  await page.getByRole('button', { name: /Start match/ }).click();
   await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await expect(page.locator('.game-shell')).toBeVisible();
 });

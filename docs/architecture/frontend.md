@@ -1,5 +1,16 @@
 # Architecture
 
+## Transient notifications
+
+`shared/toast/Toast` is the single application notification service. Inject it and call
+`toast.success(message)`, `toast.error(message)` or `toast.show(message)` for short operation
+results. `ToastHost` is mounted once in `App`, translates catalog keys, and uses a manual native
+popover above the page or active modal without opening another modal. It replaces the previous
+notice, supports manual dismissal, and pauses its timer on hover or focus. Update checks,
+CSV transfers, room-code scan feedback, copy failures and rule-library saves use it.
+Keep validation errors and instructions required to complete a form beside that form; they must
+not disappear on a toast timer. Copy success keeps the existing temporary checkmark feedback.
+
 Route scrolling has one owner: Angular `withInMemoryScrolling` with `scrollPositionRestoration: 'top'`. `TabScroll` only handles in-page tab/filter changes (including independently scrolling dialogs); it does not subscribe to route navigation or restore browser-history positions.
 
 `ScoringMode` stores the device's Assisted scoring / Manual Han entry preference using the existing internal `advanced` boolean. Live-table wins snapshot the entry

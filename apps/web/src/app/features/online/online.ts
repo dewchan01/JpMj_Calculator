@@ -15,6 +15,7 @@ import type { Match } from '../../../../../../packages/mahjong-core/ledger';
 import type { RoomGame } from '../../core/online/room-session';
 import { parsePresence, type PresenceSnapshot } from '../../core/online/presence';
 import { PlayerPresence } from '../../shared/player-presence/player-presence';
+import { Toast } from '../../shared/toast/toast';
 
 @Component({
   selector: 'app-online',
@@ -31,6 +32,7 @@ import { PlayerPresence } from '../../shared/player-presence/player-presence';
   styleUrl: './online.css',
 })
 export class Online implements OnInit {
+  readonly toast = inject(Toast);
   readonly dismissed = output<void>();
   readonly embedded = input(false);
   readonly entryMode = input<'host' | 'join' | ''>('');
@@ -42,7 +44,6 @@ export class Online implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   readonly error = signal('');
-  readonly status = signal('');
   readonly busy = signal(false);
   readonly initializing = signal(true);
   readonly room = signal<RoomState | null>(null);
@@ -72,7 +73,7 @@ export class Online implements OnInit {
       nonNullable: true,
       validators: [Validators.required, Validators.pattern(/^[A-Fa-f0-9]{10}$/)],
     }),
-    pin: new FormControl('', {
+    pin: new FormControl(this.route.snapshot.queryParamMap.get('pin') ?? '', {
       nonNullable: true,
       validators: [Validators.required, Validators.pattern(/^\d{6}$/)],
     }),
@@ -95,6 +96,10 @@ export class Online implements OnInit {
       if (this.destroyed) return;
       if (this.embedded() && this.entryMode() === 'host' && this.api.url()) {
         await this.createRoom();
+        return;
+      }
+      if (!this.embedded() && !this.shareId && this.form.valid) {
+        await this.joinRoom();
         return;
       }
       if (this.shareId) {
@@ -205,6 +210,7 @@ export class Online implements OnInit {
       'POST',
       {
         playerCount: this.form.controls.count.value,
+        playerNames: match?.players.map((player) => player.name),
         match: this.embedded() ? undefined : updated,
         handKey: !this.embedded() && updated ? roomHandKey(updated) : undefined,
         hostSeat,
@@ -232,6 +238,17 @@ export class Online implements OnInit {
       await this.attachSelected();
       if (this.game()?.match?.id) await this.router.navigate(['/room', this.access()!.id]);
     });
+  }
+  choosePlayer(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const seat = Number(select.value);
+    void this.run(async () => {
+      const access = this.access();
+      if (!access || access.host || seat === access.seat) return;
+      await this.api.request(`/api/rooms/${access.id}/player`, 'PUT', { seat }, access.token);
+      this.saveAccess({ ...access, seat });
+      await this.connect();
+    }).finally(() => (select.value = String(this.access()?.seat ?? 0)));
   }
   join(): void {
     void this.run(() => this.joinRoom());
@@ -323,9 +340,7 @@ export class Online implements OnInit {
   private async connect(initialState = false): Promise<void> {
     const access = this.access()!;
     const { default: qr } = await import('qrcode');
-    const invitation = access.pin
-      ? JSON.stringify({ format: 'riichi-room', version: 1, code: access.id, pin: access.pin })
-      : access.id;
+    const invitation = access.pin ? this.api.link('room', access.id, access.pin) : access.id;
     this.qr.set(await qr.toDataURL(invitation, { width: 200, margin: 2 }));
     if (this.destroyed) return;
     await this.connection?.stop();
@@ -427,10 +442,10 @@ export class Online implements OnInit {
         if (!/^[a-f0-9]{10}$/i.test(code)) {
           try {
             const url = new URL(code);
-            code =
-              url.searchParams.get('room') ??
-              new URLSearchParams(url.hash.split('?')[1]).get('room') ??
-              '';
+            const hashParams = new URLSearchParams(url.hash.split('?')[1]);
+            code = url.searchParams.get('room') ?? hashParams.get('room') ?? '';
+            const scannedPin = url.searchParams.get('pin') ?? hashParams.get('pin') ?? '';
+            if (/^\d{6}$/.test(scannedPin)) pin = scannedPin;
           } catch {
             code = '';
           }
@@ -440,10 +455,9 @@ export class Online implements OnInit {
         this.form.controls.code.setValue(code.toUpperCase());
         if (pin) {
           this.form.controls.pin.setValue(pin);
-          this.status.set('');
           await this.joinRoom();
         } else {
-          this.status.set('Room code scanned. Enter the passcode to join.');
+          this.toast.show('Room code scanned. Enter the passcode to join.');
         }
       } finally {
         bitmap.close();
@@ -502,7 +516,7 @@ export class Online implements OnInit {
       const archive = this.archive();
       if (!archive) return;
       const count = await this.repo.importGames(archive.matches);
-      this.status.set(count ? 'Games imported.' : 'No new games to import.');
+      this.toast.success(count ? 'Games imported.' : 'No new games to import.');
     });
   }
 }

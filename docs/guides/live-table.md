@@ -7,6 +7,21 @@ credentials and see a joined/waiting message. The host presses Start game to pub
 match; joined players then enter the table through the room notification. The game clock starts
 at that point, excluding lobby waiting time. Hosting reuses the players selected on the home page;
 the host prompt does not repeat the player selection buttons.
+The room QR contains an invitation URL with the room code and passcode. Phone camera scans open
+the join page and join automatically, including before the game starts. In-app scanning also
+accepts invitation URLs and older JSON invitations.
+After joining the lobby, guests can use My player to choose an unoccupied player from the home-page
+roster. The host's player and other occupied players are unavailable. The API moves only the caller's
+seat credential in a transaction and rejects conflicting choices or changes after the game starts.
+The chosen player becomes the guest's bottom seat and declaration identity when the game starts.
+The QR instruction appears above the image in small text, with compact credentials on phones.
+Closing shared startup with X or its backdrop dismisses the entire startup prompt group; Back
+returns one step. Other nested editing dialogs keep their existing dismissal behavior.
+Segmented controls support left/right touch swipes to select the adjacent option, while vertical
+gestures retain normal page scrolling. Result conversion explanations wrap within the page.
+Table dice also identify who rolls second: count the total from the current East player as one,
+continuing through South, West and North (or the three occupied winds in Sanma). The result shows
+the player's name and wind independently of the local view rotation.
 
 ## Assisted scoring and Manual Han entry
 

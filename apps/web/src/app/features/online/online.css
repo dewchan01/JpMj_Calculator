@@ -141,7 +141,7 @@ form > button.primary {
   display: grid;
   gap: 4px;
   padding: 12px;
-  margin-block: 16px;
+  margin-block: 24px 16px;
   background: var(--hover-surface);
   border-left: 3px solid var(--green);
   border-radius: 6px;
@@ -176,8 +176,47 @@ form > button.primary {
   }
 }
 .room-qr {
-  margin: 16px auto;
+  width: min(180px, 100%);
+  height: auto;
+  margin: 8px auto 12px;
   border-radius: 8px;
+}
+.room-qr-hint {
+  margin: 0 0 6px;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  text-align: center;
+}
+@media (max-width: 600px) {
+  .room-qr {
+    width: 150px;
+  }
+  .room-credentials {
+    padding: 12px;
+  }
+  .credential-row > span {
+    font-size: 0.7rem;
+  }
+  .credential-input input {
+    font-size: 0.85rem;
+  }
+  .connection-row {
+    margin-bottom: 6px;
+  }
+  .credential-row {
+    margin-block: 8px;
+  }
+  .room-expiry {
+    margin-block: 20px 10px;
+    padding: 8px 12px;
+  }
+  .room-expiry time {
+    font-size: 0.8rem;
+  }
+  .room-footer-actions {
+    margin-top: 10px;
+    gap: 8px;
+  }
 }
 .room-loading {
   min-height: 240px;
@@ -191,4 +230,7 @@ form > button.primary {
 :host > p {
   font-size: 0.85rem;
   color: var(--muted);
+}
+:host > .room-qr-hint {
+  font-size: 0.7rem;
 }

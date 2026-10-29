@@ -1,6 +1,16 @@
 :host {
   display: block;
 }
+.dialog-actions > button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  display: inline-block;
+  vertical-align: middle;
+  margin-inline-end: 6px;
+}
 h1 {
   font-size: 2rem;
   margin: 0 0 24px;

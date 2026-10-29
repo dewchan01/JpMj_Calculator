@@ -149,7 +149,6 @@ export class Records {
             (this.gameOrder() === 'oldest' ? 1 : -1) || a.match.id.localeCompare(b.match.id),
       ),
   );
-  readonly completed = computed(() => this.filtered().filter((m) => m.ended).length);
   readonly currencies = computed(() =>
     [
       ...new Set(

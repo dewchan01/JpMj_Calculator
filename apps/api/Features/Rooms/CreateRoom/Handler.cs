@@ -21,6 +21,7 @@ public sealed class Handler(AppDb db, IOptions<StorageOptions> storage) : Comman
     {
         var input = command;
         if (input.PlayerCount is not (3 or 4)) return Results.BadRequest();
+        if (input.PlayerNames is { } names && (names.Length != input.PlayerCount || names.Any(name => string.IsNullOrWhiteSpace(name) || name.Length > 100))) return Results.BadRequest();
         if (input.HostSeat is { } hostSeat && (hostSeat < 0 || hostSeat >= input.PlayerCount)) return Results.BadRequest();
         var snapshot = "null";
         if (input.Match is { } match)
@@ -40,8 +41,11 @@ public sealed class Handler(AppDb db, IOptions<StorageOptions> storage) : Comman
         await using var transaction = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         if (await _db.Rooms.CountAsync(cancellationToken) >= 100) return Results.StatusCode(507);
         await _db.Shares.Where(x => x.ExpiresAt <= now).ExecuteDeleteAsync(cancellationToken);
-        if (await _db.StorageBytes(cancellationToken) + 1024 + snapshot.Length * 2L > _storage.MaxBytes) return Results.StatusCode(507);
+        var storedSnapshot = input.Match is null && input.PlayerNames is not null
+            ? JsonSerializer.Serialize(new { playerNames = input.PlayerNames }) : snapshot;
+        if (await _db.StorageBytes(cancellationToken) + 1024 + storedSnapshot.Length * 2L > _storage.MaxBytes) return Results.StatusCode(507);
         var (room, pin, token) = RoomFactory.Create(input.PlayerCount, snapshot, input.HandKey, now);
+        room.Snapshot = storedSnapshot;
         var id = room.Id;
         _db.Rooms.Add(room);
         if (input.HostSeat is { } reservedSeat)
@@ -55,7 +59,7 @@ public sealed class Handler(AppDb db, IOptions<StorageOptions> storage) : Comman
             token,
             seat = input.HostSeat,
             host = true,
-            room = new { id, room.PlayerCount, room.Revision, seats = input.HostSeat.HasValue ? new[] { input.HostSeat.Value } : Array.Empty<int>(), expiresAt = DateTimeOffset.FromUnixTimeSeconds(room.ExpiresAt) },
+            room = new { id, room.PlayerCount, room.Revision, playerNames = input.PlayerNames, seats = input.HostSeat.HasValue ? new[] { input.HostSeat.Value } : Array.Empty<int>(), expiresAt = DateTimeOffset.FromUnixTimeSeconds(room.ExpiresAt) },
             game = new { room.Revision, room.HandKey, match = JsonSerializer.Deserialize<JsonElement>(snapshot), actions = Array.Empty<object>() }
         });
     }

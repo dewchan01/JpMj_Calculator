@@ -217,10 +217,7 @@
       }}
     </p>
     <app-error-notice [message]="error()" />
-    <label>
-      {{ 'Game date' | t }}
-      <input type="datetime-local" name="gameDate" required [(ngModel)]="resultDate" />
-    </label>
+    <app-date-time-field [(value)]="resultDate" />
     <div class="dialog-fields">
       @for (name of activeNames(); track $index; let index = $index) {
         <label>
@@ -235,7 +232,9 @@
         </label>
       }
     </div>
-    <button class="primary full" type="submit" [disabled]="busy()">{{ 'Save game' | t }}</button>
+    <div class="dialog-actions">
+      <button class="primary" type="submit" [disabled]="busy()">{{ 'Save game' | t }}</button>
+    </div>
   </form>
 </dialog>
 <dialog
@@ -415,12 +414,13 @@
 <dialog
   appDialogBackdrop
   #startDialog
+  data-dismiss-group="start-game"
   class="app-dialog start-game-dialog"
   aria-labelledby="start-game-title"
 >
   <header class="dialog-header">
     <h2 id="start-game-title">{{ 'Start match' | t }}</h2>
-    <button class="icon-button" (click)="startDialog.close()" [attr.aria-label]="'Close' | t">
+    <button class="icon-button" (click)="closeStartFlow()" [attr.aria-label]="'Close' | t">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
     </button>
   </header>
@@ -440,12 +440,13 @@
 <dialog
   appDialogBackdrop
   #sharedRoleDialog
+  data-dismiss-group="start-game"
   class="app-dialog start-game-dialog"
   aria-labelledby="shared-role-title"
 >
   <header class="dialog-header">
     <h2 id="shared-role-title">{{ 'Start shared game' | t }}</h2>
-    <button class="icon-button" (click)="sharedRoleDialog.close()" [attr.aria-label]="'Close' | t">
+    <button class="icon-button" (click)="closeStartFlow()" [attr.aria-label]="'Close' | t">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
     </button>
   </header>
@@ -469,13 +470,19 @@
     </button>
   </div>
 </dialog>
-<dialog appDialogBackdrop #hostSetupDialog class="app-dialog" aria-labelledby="host-setup-title">
+<dialog
+  appDialogBackdrop
+  #hostSetupDialog
+  data-dismiss-group="start-game"
+  class="app-dialog"
+  aria-labelledby="host-setup-title"
+>
   <header class="dialog-header">
     <button class="icon-button" (click)="hostSetupDialog.close()" [attr.aria-label]="'Back' | t">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5-7 7 7 7M7 12h14" /></svg>
     </button>
     <h2 id="host-setup-title">{{ 'Host game' | t }}</h2>
-    <button class="icon-button" (click)="hostSetupDialog.close()" [attr.aria-label]="'Close' | t">
+    <button class="icon-button" (click)="closeStartFlow()" [attr.aria-label]="'Close' | t">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
     </button>
   </header>
@@ -517,13 +524,14 @@
 <dialog
   appDialogBackdrop
   #sharedGameDialog
+  data-dismiss-group="start-game"
   class="app-dialog shared-game-dialog"
   aria-labelledby="shared-game-title"
   (close)="sharedMode.set('')"
 >
   <header class="dialog-header">
     <h2 id="shared-game-title">{{ (sharedMode() === 'host' ? 'Host game' : 'Join game') | t }}</h2>
-    <button class="icon-button" (click)="sharedGameDialog.close()" [attr.aria-label]="'Close' | t">
+    <button class="icon-button" (click)="closeStartFlow()" [attr.aria-label]="'Close' | t">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
     </button>
   </header>
@@ -535,7 +543,7 @@
         [attachGameId]="sharedGameId()"
         [playerCount]="count()"
         [prepareGame]="prepareSharedGame"
-        (dismissed)="sharedGameDialog.close()"
+        (dismissed)="closeStartFlow()"
       />
     }
   </div>

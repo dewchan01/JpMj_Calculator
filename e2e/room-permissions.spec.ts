@@ -54,6 +54,23 @@ test('host permissions synchronize and final choices affect only each local copy
     guest.getByText('Joined the room. Waiting for the host to start the game.', { exact: true }),
   ).toBeVisible();
   await expect(guest.locator('.game-shell')).toHaveCount(0);
+  const myPlayer = guest
+    .locator('app-online')
+    .getByRole('combobox', { name: 'My player', exact: true });
+  await expect(myPlayer.locator('option')).toHaveText([
+    'Player 1',
+    'Player 2',
+    'Player 3',
+    'Player 4',
+  ]);
+  await expect(myPlayer.locator('option[value="2"]')).toHaveAttribute('disabled', '');
+  await myPlayer.selectOption('3');
+  await expect(myPlayer).toBeEnabled();
+  await expect
+    .poll(() =>
+      guest.evaluate((api) => JSON.parse(localStorage.getItem('riichi-room:' + api)!).seat, api),
+    )
+    .toBe(3);
   await host.locator('app-online').getByRole('button', { name: 'Start game', exact: true }).click();
   await expect(guest.locator('.game-shell')).toBeVisible();
 
@@ -63,7 +80,7 @@ test('host permissions synchronize and final choices affect only each local copy
     .getByRole('status', { name: 'Online', exact: true });
   await expect(ownPresence).toHaveClass(/connected/);
   await expect(host.locator('.player-seat h3 .connecting')).toHaveCount(0);
-  await expect(guest.locator('.seat-bottom h3')).toHaveText('Player 1');
+  await expect(guest.locator('.seat-bottom h3')).toHaveText('Player 4');
   const headingBounds = (await host.locator('.game-heading').boundingBox())!;
   const roomBounds = (await host.locator('.room-status').boundingBox())!;
   expect(roomBounds.y).toBeGreaterThanOrEqual(headingBounds.y + headingBounds.height);
@@ -95,7 +112,7 @@ test('host permissions synchronize and final choices affect only each local copy
   await guest.getByRole('button', { name: 'Dora indicators', exact: true }).click();
   await enterLiveTiles(guest, 'Dora indicators', '7z');
   await expect(host.locator('.indicator-preview app-tile-art')).toHaveCount(1);
-  const guestPresence = host.locator('.player-seat h3').filter({ hasText: 'Player 1' });
+  const guestPresence = host.locator('.player-seat h3').filter({ hasText: 'Player 4' });
   await expect(guestPresence.getByRole('status', { name: 'Online', exact: true })).toBeVisible();
   await host.evaluate(() => window.scrollTo(0, 0));
   await host.screenshot({ path: 'artifacts/shared-table-presence.png', fullPage: true });

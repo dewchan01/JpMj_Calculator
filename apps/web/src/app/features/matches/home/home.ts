@@ -1,4 +1,5 @@
-import { DialogBackdrop } from '../../../shared/dialog-backdrop';
+import { DialogBackdrop, closeDialogGroup } from '../../../shared/dialog-backdrop';
+import { DateTimeField } from '../../../shared/date-time-field/date-time-field';
 import { Online } from '../../online/online';
 import { ruleName } from '../../../../../../../packages/mahjong-rules/index';
 import { TileArt } from '../../../shared/tile-art/tile-art';
@@ -24,6 +25,7 @@ import { adjustFinalPoints } from '../../../../../../../packages/mahjong-core/fi
 import { localDateTimeInput } from '../../../core/i18n/date-format';
 @Component({
   imports: [
+    DateTimeField,
     Online,
     TileArt,
     ResponsiveSheet,
@@ -43,6 +45,9 @@ import { localDateTimeInput } from '../../../core/i18n/date-format';
   styleUrl: './home.css',
 })
 export class Home {
+  closeStartFlow(): void {
+    closeDialogGroup('start-game');
+  }
   readonly sharedMode = signal<'host' | 'join' | ''>('');
   readonly sharedGameId = signal('');
   readonly prepareSharedGame = async (): Promise<string> => {

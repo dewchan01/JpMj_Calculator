@@ -79,6 +79,53 @@
         }
       }
     },
+    "/api/rooms/{id}/player": {
+      "put": {
+        "tags": ["Riichi.Api"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Operation completed without a response body."
+          },
+          "400": {
+            "description": "Invalid request input."
+          },
+          "429": {
+            "description": "Request rate limit reached."
+          },
+          "401": {
+            "description": "Missing, expired or incorrect credential."
+          },
+          "403": {
+            "description": "The host has not granted the requested capability."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/api/rooms/{id}": {
       "get": {
         "tags": ["Riichi.Api"],
@@ -96,11 +143,11 @@
           "200": {
             "description": "OK"
           },
-          "401": {
-            "description": "Missing, expired or incorrect credential."
-          },
           "429": {
             "description": "Request rate limit reached."
+          },
+          "401": {
+            "description": "Missing, expired or incorrect credential."
           }
         },
         "security": [
@@ -125,11 +172,11 @@
           "204": {
             "description": "Operation completed without a response body."
           },
-          "401": {
-            "description": "Missing, expired or incorrect credential."
-          },
           "429": {
             "description": "Request rate limit reached."
+          },
+          "401": {
+            "description": "Missing, expired or incorrect credential."
           }
         },
         "security": [
@@ -166,11 +213,11 @@
           "204": {
             "description": "Operation completed without a response body."
           },
-          "401": {
-            "description": "Missing, expired or incorrect credential."
-          },
           "429": {
             "description": "Request rate limit reached."
+          },
+          "401": {
+            "description": "Missing, expired or incorrect credential."
           }
         },
         "security": [
@@ -210,17 +257,17 @@
           "400": {
             "description": "Invalid request input."
           },
-          "401": {
-            "description": "Missing, expired or incorrect credential."
-          },
-          "403": {
-            "description": "The host has not granted the requested capability."
-          },
           "409": {
             "description": "Revision conflict, stale hand or occupied seat. Refresh state before retrying."
           },
           "429": {
             "description": "Request rate limit reached."
+          },
+          "401": {
+            "description": "Missing, expired or incorrect credential."
+          },
+          "403": {
+            "description": "The host has not granted the requested capability."
           }
         },
         "security": [
@@ -259,17 +306,17 @@
           "204": {
             "description": "The requested revision is current; no game payload is returned."
           },
-          "401": {
-            "description": "Missing, expired or incorrect credential."
-          },
-          "403": {
-            "description": "The host has not granted the requested capability."
-          },
           "409": {
             "description": "Revision conflict, stale hand or occupied seat. Refresh state before retrying."
           },
           "429": {
             "description": "Request rate limit reached."
+          },
+          "401": {
+            "description": "Missing, expired or incorrect credential."
+          },
+          "403": {
+            "description": "The host has not granted the requested capability."
           }
         },
         "security": [
@@ -307,17 +354,17 @@
           "400": {
             "description": "Invalid request input."
           },
-          "401": {
-            "description": "Missing, expired or incorrect credential."
-          },
-          "403": {
-            "description": "The host has not granted the requested capability."
-          },
           "409": {
             "description": "Revision conflict, stale hand or occupied seat. Refresh state before retrying."
           },
           "429": {
             "description": "Request rate limit reached."
+          },
+          "401": {
+            "description": "Missing, expired or incorrect credential."
+          },
+          "403": {
+            "description": "The host has not granted the requested capability."
           }
         },
         "security": [
@@ -357,17 +404,17 @@
           "400": {
             "description": "Invalid request input."
           },
-          "401": {
-            "description": "Missing, expired or incorrect credential."
-          },
-          "403": {
-            "description": "The host has not granted the requested capability."
-          },
           "409": {
             "description": "Revision conflict, stale hand or occupied seat. Refresh state before retrying."
           },
           "429": {
             "description": "Request rate limit reached."
+          },
+          "401": {
+            "description": "Missing, expired or incorrect credential."
+          },
+          "403": {
+            "description": "The host has not granted the requested capability."
           }
         },
         "security": [
@@ -401,11 +448,11 @@
           "413": {
             "description": "Archive exceeds the configured upload limit."
           },
-          "429": {
-            "description": "Request rate limit reached."
-          },
           "507": {
             "description": "The shared storage quota has been reached."
+          },
+          "429": {
+            "description": "Request rate limit reached."
           }
         }
       }
@@ -448,11 +495,11 @@
           "204": {
             "description": "Operation completed without a response body."
           },
-          "401": {
-            "description": "Missing, expired or incorrect credential."
-          },
           "429": {
             "description": "Request rate limit reached."
+          },
+          "401": {
+            "description": "Missing, expired or incorrect credential."
           }
         },
         "security": [
@@ -517,6 +564,13 @@
             "type": ["null", "integer", "string"],
             "description": "The optional seat reserved for the hosting player.",
             "format": "int32"
+          },
+          "playerNames": {
+            "type": ["null", "array"],
+            "items": {
+              "type": "string"
+            },
+            "description": "The optional ordered player names displayed before the game starts."
           }
         },
         "description": "Input for create room."

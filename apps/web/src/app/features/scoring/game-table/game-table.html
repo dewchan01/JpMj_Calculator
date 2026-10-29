@@ -210,13 +210,15 @@
                 }
               </div>
             }
-            <button
-              class="primary"
-              (click)="settleRoomDeclarations()"
-              [disabled]="busy() || !room.wins().length"
-            >
-              {{ 'Settle pending wins' | t }}
-            </button>
+            <div class="dialog-actions">
+              <button
+                class="primary"
+                (click)="settleRoomDeclarations()"
+                [disabled]="busy() || !room.wins().length"
+              >
+                {{ 'Settle pending wins' | t }}
+              </button>
+            </div>
           }
         }
         @case ('menu') {
@@ -517,9 +519,11 @@
               </label>
             }
           }
-          <button class="primary" (click)="saveCall()" [disabled]="busy()">
-            {{ 'Record action' | t }}
-          </button>
+          <div class="dialog-actions">
+            <button class="primary" (click)="saveCall()" [disabled]="busy()">
+              {{ 'Record action' | t }}
+            </button>
+          </div>
           @if (callType === 'ankan') {
             @for (entry of concealedKanEntries; track entry.meld.id) {
               <div class="recorded-call concealed-call">
@@ -569,13 +573,15 @@
           @if (requiredIndicators) {
             <p class="hint">{{ 'Required indicators' | t }}: {{ requiredIndicators }}</p>
           }
-          <button
-            class="primary"
-            (click)="saveIndicators()"
-            [disabled]="busy() || m.ended || !indicatorsComplete"
-          >
-            {{ 'Save indicators' | t }}
-          </button>
+          <div class="dialog-actions">
+            <button
+              class="primary"
+              (click)="saveIndicators()"
+              [disabled]="busy() || m.ended || !indicatorsComplete"
+            >
+              {{ 'Save indicators' | t }}
+            </button>
+          </div>
         }
         @case ('outcome') {
           @if (editingHand()) {
@@ -635,7 +641,9 @@
               </div>
             </fieldset>
           }
-          <button class="primary" (click)="nextWinners()">{{ 'Next' | t }}</button>
+          <div class="dialog-actions">
+            <button class="primary" (click)="nextWinners()">{{ 'Next' | t }}</button>
+          </div>
         }
         @case ('hand') {
           @if (manualEntry()) {
@@ -736,7 +744,9 @@
                 </label>
               }
             </div>
-            <button class="primary" (click)="nextHand()">{{ 'Review settlement' | t }}</button>
+            <div class="dialog-actions">
+              <button class="primary" (click)="nextHand()">{{ 'Review settlement' | t }}</button>
+            </div>
           } @else {
             <p>
               <strong>{{ name(activeWinner) }}</strong>
@@ -785,7 +795,9 @@
               }
             </section>
 
-            <button class="primary" (click)="nextHand()">{{ 'Next' | t }}</button>
+            <div class="dialog-actions">
+              <button class="primary" (click)="nextHand()">{{ 'Next' | t }}</button>
+            </div>
           }
         }
         @case ('details') {
@@ -847,7 +859,11 @@
           }
           <div class="action-row">
             <button class="quiet" (click)="backPanel()">{{ 'Back' | t }}</button>
-            <button class="primary" (click)="reviewWinner()">{{ 'Review settlement' | t }}</button>
+            <div class="dialog-actions">
+              <button class="primary" (click)="reviewWinner()">
+                {{ 'Review settlement' | t }}
+              </button>
+            </div>
           </div>
         }
         @case ('draw') {
@@ -893,7 +909,9 @@
             }
           }
           <p class="hint">{{ 'Continue only after checking the draw circumstances.' | t }}</p>
-          <button class="primary" (click)="reviewDraw()">{{ 'Review settlement' | t }}</button>
+          <div class="dialog-actions">
+            <button class="primary" (click)="reviewDraw()">{{ 'Review settlement' | t }}</button>
+          </div>
         }
         @case ('review') {
           @if (round; as result) {
@@ -926,9 +944,11 @@
                 <p>{{ 'No point transfers.' | t }}</p>
               }
             </div>
-            <button class="primary full" (click)="settle()" [disabled]="busy()">
-              {{ 'Confirm & save settlement' | t }}
-            </button>
+            <div class="dialog-actions">
+              <button class="primary" (click)="settle()" [disabled]="busy()">
+                {{ 'Confirm & save settlement' | t }}
+              </button>
+            </div>
           }
         }
         @case ('finish') {
@@ -977,7 +997,11 @@
               <input [(ngModel)]="editNames[index]" maxlength="40" />
             </label>
           }
-          <button class="primary" (click)="saveInfo()" [disabled]="busy()">{{ 'Save' | t }}</button>
+          <div class="dialog-actions">
+            <button class="primary" (click)="saveInfo()" [disabled]="busy()">
+              {{ 'Save' | t }}
+            </button>
+          </div>
         }
         @case ('settings') {
           <p>
@@ -1037,7 +1061,11 @@
           </p>
         }
         @case ('dice') {
-          <app-dice-simulator [request]="diceRequest()" />
+          <app-dice-simulator
+            [request]="diceRequest()"
+            [players]="m.players"
+            [dealer]="m.dealerId"
+          />
         }
         @case ('help') {
           <p>

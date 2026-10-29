@@ -88,9 +88,6 @@
 </div>
 <section class="card settings-actions">
   <app-error-notice [messages]="errors()" />
-  @if (notice()) {
-    <p class="banner success" role="status">{{ notice() | t }}</p>
-  }
   <div class="action-row">
     <button class="secondary" (click)="save()">{{ 'Save custom rules' | t }}</button>
     <button class="primary" (click)="apply()">{{ 'Use these rules' | t }}</button>

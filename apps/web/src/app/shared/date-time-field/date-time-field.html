@@ -1,0 +1,13 @@
+<fieldset>
+  <legend>{{ 'Game date' | t }}</legend>
+  <div class="date-range-fields">
+    <label>
+      {{ 'Date' | t }}
+      <input type="date" required [value]="date()" (input)="update('date', $event)" />
+    </label>
+    <label>
+      {{ 'Time' | t }}
+      <input type="time" required step="60" [value]="time()" (input)="update('time', $event)" />
+    </label>
+  </div>
+</fieldset>
