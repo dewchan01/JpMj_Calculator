@@ -6,6 +6,76 @@ import { enterLiveTiles, gameMenu, prompt } from './helpers/game';
 
 test.use({ serviceWorkers: 'block' });
 
+test('autoplay restriction retries on the next interaction without a music error', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    let attempts = 0;
+    Object.defineProperty(window, 'musicAttempts', { get: () => attempts });
+    Object.defineProperty(window, 'Audio', {
+      value: class {
+        paused = true;
+        play() {
+          attempts++;
+          if (attempts === 1)
+            return Promise.reject(new DOMException('User interaction required', 'NotAllowedError'));
+          this.paused = false;
+          return Promise.resolve();
+        }
+        pause() {
+          this.paused = true;
+        }
+      },
+    });
+  });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Music settings', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Music settings', exact: true });
+  await expect.poll(() => page.evaluate(() => Reflect.get(window, 'musicAttempts'))).toBe(1);
+  await expect(
+    dialog.getByText('Could not play background music.', { exact: true }),
+  ).not.toBeVisible();
+  await dialog.getByRole('heading', { name: 'Sound effects', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => Reflect.get(window, 'musicAttempts'))).toBe(2);
+  await expect(
+    dialog.getByText('Could not play background music.', { exact: true }),
+  ).not.toBeVisible();
+});
+
+test('successful retry of the same music clears its previous playback error', async ({ page }) => {
+  await page.addInitScript(() => {
+    let failed = false;
+    Object.defineProperty(window, 'Audio', {
+      value: class {
+        paused = true;
+        volume = 1;
+        loop = false;
+        play() {
+          if (!failed) {
+            failed = true;
+            return Promise.reject(new Error('Temporary playback failure'));
+          }
+          this.paused = false;
+          return Promise.resolve();
+        }
+        pause() {
+          this.paused = true;
+        }
+      },
+    });
+  });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Music settings', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Music settings', exact: true });
+  await expect(dialog.getByText('Could not play background music.', { exact: true })).toBeVisible();
+  await dialog.getByRole('slider', { name: 'Music volume', exact: true }).fill('0.5');
+  await expect(
+    dialog.getByText('Could not play background music.', { exact: true }),
+  ).not.toBeVisible();
+});
+
 test('lobby and game share track choices, volume and mute without leaving the table', async ({
   page,
 }) => {

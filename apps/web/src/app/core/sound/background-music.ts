@@ -36,9 +36,17 @@ export class BackgroundMusic {
   private audio?: HTMLAudioElement;
   private source = '';
   private generation = 0;
+  private pending?: HTMLAudioElement;
 
   constructor() {
-    const unlock = () => this.unlocked.set(true);
+    const unlock = () => {
+      this.unlocked.set(true);
+      // Retry inside the user gesture, where browsers permit media playback.
+      if (this.audio?.paused && !this.pending)
+        untracked(() =>
+          this.play(this.selected(), this.enabled() && this.visible(), this.volume()),
+        );
+    };
     const visibility = () => this.visible.set(!document.hidden);
     document.addEventListener('pointerdown', unlock);
     document.addEventListener('keydown', unlock);
@@ -100,10 +108,14 @@ export class BackgroundMusic {
   private play(track: string, playing: boolean, volume: number): void {
     if (!playing) {
       this.generation++;
+      this.pending = undefined;
       this.audio?.pause();
+      this.error.set('');
       return;
     }
     if (this.source !== track) {
+      this.generation++;
+      this.pending = undefined;
       this.audio?.pause();
       this.source = track;
       this.audio = new Audio(new URL('sounds/music/' + musicFile(track), document.baseURI).href);
@@ -113,19 +125,36 @@ export class BackgroundMusic {
     }
     const audio = this.audio!;
     audio.volume = volume;
-    if (!audio.paused) return;
+    if (this.pending === audio) return;
+    if (!audio.paused) {
+      this.error.set('');
+      return;
+    }
     const generation = ++this.generation;
+    this.pending = audio;
     void audio
       .play()
       .then(() => {
+        if (generation === this.generation && audio === this.audio) {
+          this.pending = undefined;
+          this.error.set('');
+        }
         if (
           generation !== this.generation &&
           (audio !== this.audio || !this.enabled() || !this.visible())
         )
           audio.pause();
       })
-      .catch(() => {
-        if (generation === this.generation) this.error.set('Could not play background music.');
+      .catch((error: unknown) => {
+        if (generation !== this.generation || audio !== this.audio) return;
+        this.pending = undefined;
+        const name = error instanceof Error ? error.name : '';
+        // Pausing/switching and autoplay restrictions are recoverable, not file errors.
+        this.error.set(
+          name === 'AbortError' || name === 'NotAllowedError'
+            ? ''
+            : 'Could not play background music.',
+        );
       });
   }
   private savedVolume(): number {
