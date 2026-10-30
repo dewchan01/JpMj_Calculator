@@ -346,6 +346,14 @@
   height: min(80dvh, 760px);
   overflow: hidden;
 }
+@media (max-width: 700px) {
+  :host dialog.player-sheet[appResponsiveSheet] {
+    inset: 0;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+}
 .player-sheet[open] {
   display: flex;
   flex-direction: column;

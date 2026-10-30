@@ -6,6 +6,49 @@ import { enterLiveTiles, gameMenu, prompt } from './helpers/game';
 
 test.use({ serviceWorkers: 'block' });
 
+test('changing lobby music starts playback during the selection event', async ({ page }) => {
+  await page.addInitScript(() => {
+    const starts: { source: string; event: string }[] = [];
+    Object.defineProperty(window, 'musicStarts', { value: starts });
+    Object.defineProperty(window, 'Audio', {
+      value: class {
+        paused = true;
+        constructor(private source: string) {}
+        play() {
+          starts.push({ source: this.source, event: Reflect.get(window, 'event')?.type ?? '' });
+          this.paused = false;
+          return Promise.resolve();
+        }
+        pause() {
+          this.paused = true;
+        }
+      },
+    });
+  });
+  await page.goto('/others/sound');
+  const select = page.getByRole('combobox', { name: 'Lobby music', exact: true });
+  for (const track of ['Lobby Winter', 'Lobby Autumn', 'Lobby']) {
+    await select.selectOption(track);
+    const latest = await page.evaluate(() => Reflect.get(window, 'musicStarts').at(-1));
+    expect(latest.event).toBe('change');
+    expect(latest.source).toContain(track.toLowerCase().replaceAll(' ', '-') + '.mp3');
+  }
+});
+
+test('saved players and player picker expand to the top of the phone screen', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  for (const name of ['Saved players', 'Choose player East']) {
+    await page.getByRole('button', { name, exact: true }).click();
+    const sheet = page.locator('dialog.player-sheet');
+    await expect(sheet).toBeVisible();
+    await expect.poll(async () => Math.round((await sheet.boundingBox())!.y)).toBe(0);
+    expect(Math.round((await sheet.boundingBox())!.height)).toBe(844);
+    await sheet.getByRole('button', { name: 'Close', exact: true }).click();
+    await expect(sheet).not.toBeVisible();
+  }
+});
+
 test('autoplay restriction retries on the next interaction without a music error', async ({
   page,
 }) => {

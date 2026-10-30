@@ -78,18 +78,21 @@ export class BackgroundMusic {
     this.unlocked.set(true);
     this.lobby.set(track);
     this.save('riichi-lobby-music', track);
+    this.playSelection();
   }
   setGame(track: string): void {
     if (track !== 'random' && !gameTracks.some((value) => value === track)) return;
     this.game.set(track);
     this.save('riichi-game-music', track);
     this.unlocked.set(true);
+    this.playSelection();
   }
   setRiichi(track: string): void {
     if (track !== 'random' && !riichiTracks.some((value) => value === track)) return;
     this.riichi.set(track);
     this.save('riichi-riichi-music', track);
     this.unlocked.set(true);
+    this.playSelection();
   }
   setVolume(value: number): void {
     if (!Number.isFinite(value)) return;
@@ -104,6 +107,17 @@ export class BackgroundMusic {
     this.save('riichi-music-volume', String(volume));
     this.unlocked.set(true);
     if (this.audio) this.audio.volume = volume;
+    this.playSelection();
+  }
+  private playSelection(): void {
+    // Start within the select/input event rather than waiting for the reactive effect.
+    untracked(() =>
+      this.play(
+        this.selected(),
+        this.enabled() && this.unlocked() && this.visible(),
+        this.volume(),
+      ),
+    );
   }
   private play(track: string, playing: boolean, volume: number): void {
     if (!playing) {
