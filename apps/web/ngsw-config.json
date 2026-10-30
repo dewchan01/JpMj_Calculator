@@ -16,9 +16,16 @@
           "/version.json",
           "/icons/**",
           "/sounds/**/*.mp3",
+          "!/sounds/music/**",
           "/tiles/**/*.svg"
         ]
       }
+    },
+    {
+      "name": "music",
+      "installMode": "lazy",
+      "updateMode": "lazy",
+      "resources": { "files": ["/sounds/music/*.mp3"] }
     }
   ]
 }

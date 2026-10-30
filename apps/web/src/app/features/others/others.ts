@@ -1,5 +1,7 @@
 import { DataTransfer } from '../records/data-transfer/data-transfer';
 import { GameSounds } from '../../core/sound/game-sounds';
+import { BackgroundMusic } from '../../core/sound/background-music';
+import { AudioControls } from '../../core/sound/audio-controls';
 import { ScoringMode } from '../../core/scoring-mode';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Repository } from '../matches/data-access/repository';
@@ -55,6 +57,8 @@ export class Others {
   readonly updates = inject(AppUpdates);
   readonly scoringMode = inject(ScoringMode);
   readonly sounds = inject(GameSounds);
+  readonly music = inject(BackgroundMusic);
+  readonly audio = inject(AudioControls);
   readonly soundLabels = {
     pon: 'Pon',
     kita: 'North extraction',

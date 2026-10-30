@@ -2,7 +2,7 @@ import { Service, signal } from '@angular/core';
 
 export const callSounds = {
   pon: 'ポン',
-  kita: 'ペーします',
+  kita: 'カン',
   chi: 'チー',
   daiminkan: 'カン',
   kakan: 'カン',
@@ -14,6 +14,7 @@ export const callSounds = {
 } as const;
 export type CallSound = keyof typeof callSounds;
 export const recordedCalls: Partial<Record<CallSound, string>> = {
+  kita: 'kan',
   pon: 'pon',
   chi: 'chi',
   daiminkan: 'kan',
@@ -51,7 +52,9 @@ export class GameSounds {
     if (!enabled && typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
     if (!enabled) {
       this.playback++;
+      if (this.audio) this.audio.volume = 0;
       this.audio?.pause();
+      if (this.context) void this.context.suspend().catch(() => undefined);
     }
   }
 

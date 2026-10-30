@@ -7,6 +7,7 @@ import { RoomSession } from '../../../core/online/room-session';
 import type { RoomAction } from '../../../../../../../packages/mahjong-core/room-actions';
 import { DialogBackdrop } from '../../../shared/dialog-backdrop';
 import { GameSounds } from '../../../core/sound/game-sounds';
+import { BackgroundMusic } from '../../../core/sound/background-music';
 import { ScoringMode } from '../../../core/scoring-mode';
 import { handEditDraft, finishHandEdit } from './hand-edit';
 import { DiceSimulator } from '../../../shared/dice-simulator/dice-simulator';
@@ -119,6 +120,7 @@ type Panel =
   styleUrl: './game-table.css',
 })
 export class GameTable {
+  private readonly music = inject(BackgroundMusic);
   readonly scoringMode = inject(ScoringMode);
   readonly permissionItems = roomPermissionItems;
   readonly viewOrder = signal<string[]>([]);
@@ -489,8 +491,21 @@ export class GameTable {
     'triple-ron',
   ];
   constructor() {
+    effect(() => {
+      const match = this.match();
+      if (!match || match.ended) {
+        this.music.setScene('lobby');
+        return;
+      }
+      const riichi = match.players.some((player) => livePlayer(match, player.id).riichi !== 'none');
+      this.music.setScene(
+        riichi ? 'riichi' : 'game',
+        `${match.id}:${match.roundWind}:${match.handNumber}:${match.honba}`,
+      );
+    });
     const interval = setInterval(() => this.now.set(Date.now()), 1000);
     inject(DestroyRef).onDestroy(() => {
+      this.music.setScene('lobby');
       clearInterval(interval);
       if (this.roomCode) void this.room.stop();
     });

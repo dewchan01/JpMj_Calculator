@@ -29,21 +29,38 @@ test('M.League shows a locked East + South schedule and creates that game length
 test('desktop speaker control persists and shares the sound preference', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Mute sound effects', exact: true }).click();
-  await expect(
-    page.getByRole('button', { name: 'Unmute sound effects', exact: true }),
-  ).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Mute audio', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Unmute audio', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
   await page.reload();
-  await expect(
-    page.getByRole('button', { name: 'Unmute sound effects', exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Unmute audio', exact: true })).toBeVisible();
   await page.locator('.app-navigation a[href$="/others"]').click();
   await page.getByRole('link', { name: 'Sound effects', exact: true }).click();
+  await expect(page.getByRole('checkbox')).toHaveCount(0);
+  await expect(page.locator('.audio-mute')).toHaveText('Unmute audio');
+  await expect(page.getByRole('slider', { name: /Music volume/ })).toHaveValue('0');
+  await page.locator('.audio-mute').click();
   await expect(
-    page.getByRole('checkbox', { name: 'Sound effects', exact: true }),
-  ).not.toBeChecked();
-  await page.getByRole('button', { name: 'Unmute sound effects', exact: true }).click();
-  await expect(page.getByRole('checkbox', { name: 'Sound effects', exact: true })).toBeChecked();
+    page.locator('.topbar').getByRole('button', { name: 'Mute audio', exact: true }),
+  ).toBeVisible();
+  const volume = page.getByRole('slider', { name: /Music volume/ });
+  await expect(volume).toHaveValue('0.25');
+  await volume.fill('0.6');
+  await page.locator('.topbar').getByRole('button', { name: 'Mute audio', exact: true }).click();
+  await expect(volume).toHaveValue('0');
+  await page.reload();
+  await expect(volume).toHaveValue('0');
+  await page.locator('.audio-mute').click();
+  await expect(volume).toHaveValue('0.6');
+  await expect(page.locator('.audio-mute')).toHaveText('Mute audio');
+  await volume.fill('0');
+  await expect(page.locator('.audio-mute')).toHaveText('Unmute audio');
+  await expect(page.locator('.sound-previews button').first()).toBeDisabled();
+  await volume.fill('0.4');
+  await expect(page.locator('.audio-mute')).toHaveText('Mute audio');
+  await expect(page.locator('.sound-previews button').first()).toBeEnabled();
 });
 
 test('scoring preference uses explicit assisted and manual Han choices', async ({ page }) => {

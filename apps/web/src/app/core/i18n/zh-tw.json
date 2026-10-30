@@ -1,4 +1,11 @@
 {
+  "Mute audio": "靜音",
+  "Unmute audio": "取消靜音",
+  "Background music": "背景音樂",
+  "Lobby music": "大廳音樂",
+  "Music volume": "音樂音量",
+  "Game music changes after a riichi declaration and resets at the next hand.": "有人立直後切換立直音樂，下一局恢復對局音樂。",
+  "Could not play background music.": "無法播放背景音樂。",
   "Remove player?": "移除玩家？",
   "Remove this player from the saved list? Past game records will be kept.": "確定將此玩家從名單中移除？歷史對局紀錄會保留。",
   "Player mapping only affects newly imported games.": "玩家對應僅套用於新增匯入的對局。",

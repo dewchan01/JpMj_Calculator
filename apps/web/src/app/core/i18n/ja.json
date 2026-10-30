@@ -1,4 +1,11 @@
 {
+  "Mute audio": "音声をミュート",
+  "Unmute audio": "音声のミュートを解除",
+  "Background music": "BGM",
+  "Lobby music": "ロビーBGM",
+  "Music volume": "BGM音量",
+  "Game music changes after a riichi declaration and resets at the next hand.": "リーチ宣言後にBGMが切り替わり、次の局で通常の対局BGMに戻ります。",
+  "Could not play background music.": "BGMを再生できませんでした。",
   "Remove player?": "プレイヤーを削除しますか？",
   "Remove this player from the saved list? Past game records will be kept.": "保存済みリストからこのプレイヤーを削除しますか？過去の対局記録は保持されます。",
   "Player mapping only affects newly imported games.": "対応付けは新しくインポートする対局にのみ適用されます。",

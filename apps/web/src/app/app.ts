@@ -5,7 +5,7 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 import { Theme } from './core/theme/theme';
-import { GameSounds } from './core/sound/game-sounds';
+import { AudioControls } from './core/sound/audio-controls';
 import { SegmentedSwipe } from './shared/segmented-swipe';
 import { ToastHost } from './shared/toast/toast-host';
 @Component({
@@ -16,6 +16,7 @@ import { ToastHost } from './shared/toast/toast-host';
   styleUrl: './app.css',
 })
 export class App {
+  readonly audio = inject(AudioControls);
   preventMobileHold(event: MouseEvent): void {
     if (!window.matchMedia('(pointer: coarse)').matches) return;
     const target = event.target;
@@ -26,10 +27,9 @@ export class App {
       return;
     event.preventDefault();
   }
-  readonly sounds = inject(GameSounds);
+  readonly hasSound = this.audio.enabled;
   toggleSound(): void {
-    this.sounds.setEnabled(!this.sounds.enabled());
-    if (this.sounds.enabled()) this.sounds.unlock();
+    this.audio.toggle();
   }
   private readonly tabScroll = inject(TabScroll);
   private readonly segmentedSwipe = inject(SegmentedSwipe);

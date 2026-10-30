@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { finishWin, playerAction, prompt } from './helpers/game';
+import { enterLiveTiles, playerAction, prompt, recordDraw } from './helpers/game';
 
 test('all six downloaded MP3 files load and decode locally', async ({ page }) => {
   await page.goto('/');
@@ -42,7 +42,7 @@ test('sound previews, persistent mute and successful live declarations', async (
         constructor(private src: string) {}
         pause() {}
         play() {
-          calls.push(new URL(this.src).pathname);
+          if (!this.src.includes('/sounds/music/')) calls.push(new URL(this.src).pathname);
           return Promise.resolve();
         }
       },
@@ -70,16 +70,16 @@ test('sound previews, persistent mute and successful live declarations', async (
   await expect(previews).toHaveCount(10);
   for (const button of await previews.all()) await button.click();
   expect(await played()).toHaveLength(10);
-  await page.getByRole('checkbox', { name: 'Sound effects', exact: true }).uncheck();
+  await page.locator('.audio-mute').click();
   await page.reload();
-  await expect(
-    page.getByRole('checkbox', { name: 'Sound effects', exact: true }),
-  ).not.toBeChecked();
+  await expect(page.locator('.audio-mute')).toHaveText('Unmute audio');
   await expect(previews.first()).toBeDisabled();
-  await page.getByRole('checkbox', { name: 'Sound effects', exact: true }).check();
+  await page.locator('.audio-mute').click();
   await page.getByRole('navigation').getByRole('link', { name: 'My table', exact: true }).click();
   await page.getByRole('button', { name: /Start match/ }).click();
   await page.getByRole('button', { name: 'Start game', exact: true }).click();
+  await enterLiveTiles(page, 'Dora indicators', '1m');
+  await prompt(page).getByRole('button', { name: 'Save indicators', exact: true }).click();
   const riichi = page
     .locator('.player-seat')
     .filter({ hasText: 'Player 2' })
@@ -95,7 +95,17 @@ test('sound previews, persistent mute and successful live declarations', async (
     ['Open Kan', 'kan'],
     ['Concealed Kan', 'kan'],
   ]) {
-    await playerAction(page, 'Player 1');
+    if (label === 'Concealed Kan') {
+      await playerAction(page, 'Player 1');
+    } else {
+      if (await prompt(page).isVisible())
+        await prompt(page).getByRole('button', { name: 'Close', exact: true }).click();
+      await page
+        .locator('.player-seat')
+        .filter({ hasText: 'Player 1' })
+        .getByRole('button', { name: 'Call', exact: true })
+        .click();
+    }
     await prompt(page).getByRole('button', { name: label, exact: true }).click();
     expected.push('/sounds/ichihime/' + recording + '.mp3');
     await expect.poll(played).toEqual(expected);
@@ -110,8 +120,8 @@ test('sound previews, persistent mute and successful live declarations', async (
   await prompt(page).getByRole('button', { name: 'Ron · discard', exact: true }).click();
   expected.push('/sounds/ichihime/ron.mp3');
   await expect.poll(played).toEqual(expected);
-  await prompt(page).getByRole('button', { name: 'Next', exact: true }).click();
-  await finishWin(page);
+  await prompt(page).getByRole('button', { name: 'Close', exact: true }).click();
+  await recordDraw(page, ['Player 2']);
   await expect.poll(played).toEqual(expected);
   await page.reload();
   expect(await played()).toEqual([]);

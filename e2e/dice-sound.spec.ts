@@ -1,11 +1,12 @@
 import { expect, test } from '@playwright/test';
+import { enterLiveTiles, prompt } from './helpers/game';
 
 test('rolling dice uses the bundled Myinstants recording', async ({ page }) => {
   await page.addInitScript(() => {
     const state = window as Window & { playedSounds: string[] };
     state.playedSounds = [];
     HTMLMediaElement.prototype.play = function () {
-      state.playedSounds.push(this.src);
+      if (!this.src.includes('/sounds/music/')) state.playedSounds.push(this.src);
       return Promise.resolve();
     };
   });
@@ -25,6 +26,8 @@ test('table dice identify the second roller from East as one', async ({ page }) 
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
   await page.getByRole('button', { name: 'Start game', exact: true }).click();
+  await enterLiveTiles(page, 'Dora indicators', '1m');
+  await prompt(page).getByRole('button', { name: 'Save indicators', exact: true }).click();
   await page.getByRole('button', { name: 'Dice', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Dice', exact: true });
   await expect(dialog.locator('.next-roller')).toBeVisible();
