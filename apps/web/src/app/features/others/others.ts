@@ -161,7 +161,13 @@ export class Others {
   );
   changeLanguage(event: Event): void {
     const value = (event.target as HTMLSelectElement).value;
-    if (value === 'en' || value === 'zh-TW' || value === 'zh-CN' || value === 'ja')
+    if (
+      value === 'en' ||
+      value === 'zh-TW' ||
+      value === 'zh-CN' ||
+      value === 'ja' ||
+      value === 'ko'
+    )
       this.i18n.set(value);
   }
 }

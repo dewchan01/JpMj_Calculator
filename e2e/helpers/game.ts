@@ -1,7 +1,9 @@
 import { expect, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 const catalog = (locale: string): Record<string, string> => {
-  const file = ({ 'zh-TW': 'zh-tw', 'zh-CN': 'zh-cn', ja: 'ja' } as Record<string, string>)[locale];
+  const file = (
+    { 'zh-TW': 'zh-tw', 'zh-CN': 'zh-cn', ja: 'ja', ko: 'ko' } as Record<string, string>
+  )[locale];
   return file
     ? JSON.parse(
         readFileSync(

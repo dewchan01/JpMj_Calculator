@@ -157,7 +157,9 @@
           {{ 'Lobby music' | t }}
           <select [value]="music.lobby()" (change)="music.setLobby($any($event.target).value)">
             @for (track of music.lobbyTracks; track track) {
-              <option [value]="track" [selected]="music.lobby() === track">{{ track }}</option>
+              <option [value]="track" [selected]="music.lobby() === track">
+                {{ music.titles[track] ?? track | t }}
+              </option>
             }
           </select>
         </label>
@@ -277,6 +279,7 @@
             <option value="zh-TW">繁體中文</option>
             <option value="zh-CN">简体中文</option>
             <option value="ja">日本語</option>
+            <option value="ko">한국어</option>
           </select>
         </label>
       }

@@ -1,7 +1,8 @@
 import traditionalChinese from './zh-tw.json';
 import zhCN from './zh-cn.json';
 import ja from './ja.json';
-export type Language = 'en' | 'zh-TW' | 'zh-CN' | 'ja';
+import ko from './ko.json';
+export type Language = 'en' | 'zh-TW' | 'zh-CN' | 'ja' | 'ko';
 export const zhTW: Readonly<Record<string, string>> = traditionalChinese;
 const englishLabels: Readonly<Record<string, string>> = {
   east: 'East',
@@ -45,8 +46,10 @@ export function translate(source: string | null | undefined, language: Language)
   if (!source) return '';
   if (language === 'en') return englishLabels[source] ?? source;
   const catalog: Readonly<Record<string, string>> =
-    language === 'ja' ? ja : language === 'zh-CN' ? zhCN : zhTW;
+    language === 'ko' ? ko : language === 'ja' ? ja : language === 'zh-CN' ? zhCN : zhTW;
   if (catalog[source]) return catalog[source];
+  const label = englishLabels[source];
+  if (label && catalog[label]) return catalog[label];
   for (const { regex, fields, key } of patterns) {
     const match = regex.exec(source);
     if (match)

@@ -6,6 +6,7 @@ describe('automatic date localization', () => {
   it('uses regional date conventions for the selected language', () => {
     expect(localizedDate(date, 'en', 'date')).toBe('2 Jan 2026');
     expect(localizedDate(date, 'ja', 'date')).toBe('2026/01/02');
+    expect(localizedDate(date, 'ko', 'date')).toBe('2026. 1. 2.');
     expect(localizedDate(date, 'zh-TW', 'date')).toBe('2026年1月2日');
     expect(localizedDate(date, 'zh-CN', 'date')).toBe('2026年1月2日');
   });
@@ -13,6 +14,7 @@ describe('automatic date localization', () => {
     expect(localizedDate(date, 'en')).toContain('1:04:05 pm');
     expect(localizedDate(date, 'en', 'time')).toBe('1:04 pm');
     expect(localizedDate(date, 'ja', 'time')).toBe('13:04');
+    expect(localizedDate(date, 'ko', 'time')).toBe('오후 1:04');
     expect(localizedDate(date, 'zh-TW')).toContain('2026年1月2日');
   });
   it('leaves absent or invalid dates empty', () => {

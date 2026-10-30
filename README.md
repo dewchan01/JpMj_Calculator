@@ -42,7 +42,7 @@ See [quick start](docs/guides/quick-start.md) for supported tooling, offline pre
   after 24 hours; JSON is internal to storage and APIs.
 - Shared rooms use code/passcode or QR joining, host-controlled permissions and SignalR updates.
   The host browser processes declarations with the scoring engine and must remain open.
-- English, Traditional Chinese, Simplified Chinese and Japanese are supported, with light/dark
+- English, Traditional Chinese, Simplified Chinese, Japanese and Korean are supported, with light/dark
   themes and saved sound preferences.
 
 ## Documentation

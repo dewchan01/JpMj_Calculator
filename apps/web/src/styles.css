@@ -3,6 +3,9 @@ html {
   touch-action: manipulation;
   background: var(--page);
 }
+html:lang(ko) {
+  word-break: keep-all;
+}
 dialog,
 dialog * {
   scrollbar-width: thin;

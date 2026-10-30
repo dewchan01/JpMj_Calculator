@@ -13,7 +13,7 @@ ledger calculations in the domain layer; this component only displays the curren
 Maintain translations in `core/i18n/zh-tw.json` and `ja.json`. Run `npm run i18n:generate` after
 editing Traditional Chinese to regenerate `zh-cn.json`, then format. English source keys and
 interpolation placeholders must match across catalogs; names and saved domain data stay unchanged.
-Japanese uses `ja`. Translation lookup code belongs in `messages.ts`, not catalog data.
+Japanese uses `ja`; Korean uses `ko` and `ko.json`. Keep every catalog's keys and interpolation fields aligned. Korean music titles use the official `name_kr` values listed in [music titles](../guides/music-titles.md). Translation lookup code belongs in `messages.ts`, not catalog data.
 English labels for internal call, win and ledger keys also live in `messages.ts`; render `ankan`
 as `Ankan` rather than exposing a lowercase domain key. Keep saved enums unchanged.
 

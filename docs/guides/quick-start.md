@@ -56,6 +56,8 @@ See [table flow](live-table.md), [records](records.md), [CSV/QR transfers](data-
 
 ## Background music
 
+See [music titles](music-titles.md) for the verified English, Chinese, Japanese, and Korean names of all bundled tracks.
+
 Open **Others > Sound effects** to choose one of the six lobby themes or adjust music volume. Music and call effects are enabled together. The Mute audio button here and the header speaker button share the same state: muting silences all audio and sets volume to zero; unmuting restores the previous nonzero music volume. Moving the volume slider to zero also mutes all audio, and raising it enables audio again. Playback begins after an interaction with the page. Preferences stay on this device.
 
 During a game, one of Game, Game Master, or 23ex Duiju1–4 plays. Any player's riichi declaration switches to one of the nine Liqi tracks or Yichujifa for the rest of the hand; the next hand restores normal game music. Leaving the table or finishing the match restores the selected lobby theme. Music pauses while the page is hidden. Tracks are cached as played, without downloading the whole music collection during app installation.

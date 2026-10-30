@@ -1,11 +1,12 @@
 import { DestroyRef, Service, computed, effect, inject, signal, untracked } from '@angular/core';
 
-import { gameTracks, lobbyTracks, musicFile, riichiTracks } from './music-catalog';
+import { gameTracks, lobbyTracks, musicFile, musicTitles, riichiTracks } from './music-catalog';
 export type MusicScene = 'lobby' | 'game' | 'riichi';
 
 @Service()
 export class BackgroundMusic {
   readonly lobbyTracks = lobbyTracks;
+  readonly titles = musicTitles;
   readonly enabled = signal(this.read('riichi-music') !== 'off' && this.savedVolume() > 0);
   readonly lobby = signal<string>(this.read('riichi-lobby-music') ?? 'Lobby');
   readonly volume = signal(this.enabled() ? this.savedVolume() : 0);

@@ -68,7 +68,7 @@ editor. API mode uploads the selected image; the optional mock performs no uploa
 suggestions stay in memory and are not stored with matches. Manual tiles are never replaced by an
 API response. See [API configuration](../guides/recognition-and-storage.md).
 
-English, zh-TW, zh-CN and Japanese (ja) use runtime translation catalogs and a Signal-based locale service. The
+English, zh-TW, zh-CN, Japanese (ja) and Korean (ko) use runtime translation catalogs and a Signal-based locale service. The
 translate pipe updates text without reloading or resetting the editor. Domain strings remain
 canonical English in saved results and are translated at display time, including history. User
 names are never run through the catalog. English is the initial default regardless of browser

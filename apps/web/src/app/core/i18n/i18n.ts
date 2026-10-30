@@ -16,7 +16,11 @@ export class I18n {
       /* Language switching also works when browser storage is disabled. */
     }
     this.set(
-      preferred === 'zh-TW' || preferred === 'zh-CN' || preferred === 'ja' || preferred === 'en'
+      preferred === 'zh-TW' ||
+        preferred === 'zh-CN' ||
+        preferred === 'ja' ||
+        preferred === 'ko' ||
+        preferred === 'en'
         ? preferred
         : 'en',
     );
@@ -25,13 +29,15 @@ export class I18n {
     this.locale.set(language);
     this.document.documentElement.lang = language;
     this.document.title =
-      language === 'ja'
-        ? 'Riichi / table — 麻雀点数計算'
-        : language === 'zh-CN'
-          ? 'Riichi / table — 日麻计分'
-          : language === 'zh-TW'
-            ? 'Riichi / table — 日麻計分'
-            : 'Riichi / table — Mahjong scorer';
+      language === 'ko'
+        ? 'Riichi / table — 리치 마작 점수 계산기'
+        : language === 'ja'
+          ? 'Riichi / table — 麻雀点数計算'
+          : language === 'zh-CN'
+            ? 'Riichi / table — 日麻计分'
+            : language === 'zh-TW'
+              ? 'Riichi / table — 日麻計分'
+              : 'Riichi / table — Mahjong scorer';
     try {
       this.document.defaultView?.localStorage.setItem('riichi-language', language);
     } catch {
@@ -44,6 +50,13 @@ export class I18n {
   tile(tile: Tile): string {
     if (this.locale() === 'en') return tileName(tile);
     const kind = tile.kind;
+    if (this.locale() === 'ko') {
+      return kind.type === 'suited'
+        ? `${tile.isRed ? '적' : ''}${kind.rank}${{ man: '만', pin: '통', sou: '삭' }[kind.suit]}`
+        : kind.type === 'wind'
+          ? this.t(kind.wind)
+          : { white: '백', green: '발', red: '중' }[kind.dragon];
+    }
     if (this.locale() === 'ja') {
       return kind.type === 'suited'
         ? `${tile.isRed ? '赤' : ''}${kind.rank}${{ man: '萬', pin: '筒', sou: '索' }[kind.suit]}`

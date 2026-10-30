@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { translate, zhTW } from './messages';
 import zhCN from './zh-cn.json';
 import ja from './ja.json';
+import ko from './ko.json';
 import { readFileSync, readdirSync } from 'node:fs';
 
 describe('zh-TW catalog', () => {
@@ -32,7 +33,7 @@ describe('zh-TW catalog', () => {
     ]);
   });
   it('contains no corrupted translation text', () => {
-    for (const catalog of [zhTW, zhCN, ja]) {
+    for (const catalog of [zhTW, zhCN, ja, ko]) {
       for (const [key, value] of Object.entries(catalog)) {
         expect(value, key).not.toMatch(/\?{2,}|\uFFFD/);
       }
@@ -55,7 +56,7 @@ describe('zh-TW catalog', () => {
       'matchEnd',
       'scoreAdjustment',
     ]) {
-      for (const catalog of [zhTW, zhCN, ja]) {
+      for (const catalog of [zhTW, zhCN, ja, ko]) {
         expect(catalog, key).toHaveProperty(key);
       }
     }
@@ -73,6 +74,22 @@ describe('zh-TW catalog', () => {
       '和了牌を含む手牌は11枚必要です。',
     );
     expect(translate('points to 陳萬發', 'ja')).toBe('陳萬發の受取点');
+  });
+  it('has complete Korean translations and preserves dynamic names and placeholders', () => {
+    expect(Object.keys(ko).sort()).toEqual(Object.keys(zhTW).sort());
+    const fields = (text: string) => [...text.matchAll(/\{\w+\}/g)].map((match) => match[0]).sort();
+    for (const [key, value] of Object.entries(ko)) {
+      expect(fields(value), key).toEqual(fields(key));
+      expect(value.trim(), key).not.toBe('');
+      expect(value, key).not.toMatch(/ZXQ|⟦\d+⟧/);
+    }
+    expect(translate('My table', 'ko')).toBe('내 테이블');
+    expect(translate('riichi', 'ko')).toBe('리치');
+    expect(translate('doubleRiichi', 'ko')).toBe('더블 리치');
+    expect(translate('points to Alice', 'ko')).toBe('Alice 획득 점수');
+    expect(translate('Sakura', 'ko')).toBe('이른 봄의 꽃놀이');
+    expect(translate('On the Edge', 'ko')).toBe('일촉즉발');
+    expect(translate('Unknown message', 'ko')).toBe('Unknown message');
   });
   it('has a matching Simplified Chinese catalog and preserves names', () => {
     expect(Object.keys(zhCN).sort()).toEqual(Object.keys(zhTW).sort());

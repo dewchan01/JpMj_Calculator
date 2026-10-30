@@ -12,6 +12,7 @@ const dateLocales: Record<Language, string> = {
   'zh-TW': 'zh-TW',
   'zh-CN': 'zh-CN',
   ja: 'ja-JP',
+  ko: 'ko-KR',
 };
 export function localizedDate(
   value: string | number | Date | null | undefined,
