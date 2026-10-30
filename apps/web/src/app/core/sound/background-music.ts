@@ -132,9 +132,12 @@ export class BackgroundMusic {
       this.pending = undefined;
       this.audio?.pause();
       this.source = track;
-      this.audio = new Audio(new URL('sounds/music/' + musicFile(track), document.baseURI).href);
+      const url = new URL('sounds/music/' + musicFile(track), document.baseURI).href;
+      // Keep the media element that the user's first interaction unlocked.
+      if (this.audio) this.audio.src = url;
+      else this.audio = new Audio(url);
       this.audio.loop = true;
-      this.audio.preload = 'none';
+      this.audio.preload = 'auto';
       this.error.set('');
     }
     const audio = this.audio!;

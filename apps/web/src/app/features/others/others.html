@@ -86,7 +86,7 @@
   <section class="card other-detail">
     @switch (section()) {
       @case ('data-management') {
-        <div class="action-row">
+        <div class="action-row data-management-actions">
           <button
             class="secondary danger"
             (click)="clearMode.set('records'); clearError.set(''); clearDataDialog.showModal()"

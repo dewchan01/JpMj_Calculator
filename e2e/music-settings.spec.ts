@@ -8,14 +8,20 @@ test.use({ serviceWorkers: 'block' });
 
 test('changing lobby music starts playback during the selection event', async ({ page }) => {
   await page.addInitScript(() => {
-    const starts: { source: string; event: string }[] = [];
+    const starts: { source: string; event: string; player: number }[] = [];
+    let players = 0;
     Object.defineProperty(window, 'musicStarts', { value: starts });
     Object.defineProperty(window, 'Audio', {
       value: class {
         paused = true;
-        constructor(private source: string) {}
+        private player = ++players;
+        constructor(public src: string) {}
         play() {
-          starts.push({ source: this.source, event: Reflect.get(window, 'event')?.type ?? '' });
+          starts.push({
+            source: this.src,
+            event: Reflect.get(window, 'event')?.type ?? '',
+            player: this.player,
+          });
           this.paused = false;
           return Promise.resolve();
         }
@@ -31,6 +37,7 @@ test('changing lobby music starts playback during the selection event', async ({
     await select.selectOption(track);
     const latest = await page.evaluate(() => Reflect.get(window, 'musicStarts').at(-1));
     expect(latest.event).toBe('change');
+    expect(latest.player).toBe(1);
     expect(latest.source).toContain(track.toLowerCase().replaceAll(' ', '-') + '.mp3');
   }
 });
