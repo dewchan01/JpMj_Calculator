@@ -1,0 +1,80 @@
+<button class="audio-mute" (click)="audio.toggle()" [attr.aria-pressed]="!audio.enabled()">
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M11 4 6 8H3v8h3l5 4Z" />
+    @if (audio.enabled()) {
+      <path d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14" />
+    } @else {
+      <path d="m16 9 6 6m0-6-6 6" />
+    }
+  </svg>
+  {{ (audio.enabled() ? 'Mute background music' : 'Unmute background music') | t }}
+</button>
+<label>
+  {{ 'Lobby music' | t }}
+  <select [value]="music.lobby()" (change)="music.setLobby($any($event.target).value)">
+    @for (track of music.lobbyTracks; track track) {
+      <option [value]="track" [selected]="music.lobby() === track">
+        {{ music.titles[track] ?? track | t }}
+      </option>
+    }
+  </select>
+</label>
+<label>
+  {{ 'Game music' | t }}
+  <select [value]="music.game()" (change)="music.setGame($any($event.target).value)">
+    <option value="random" [selected]="music.game() === 'random'">{{ 'Random' | t }}</option>
+    @for (track of music.gameTracks; track track) {
+      <option [value]="track" [selected]="music.game() === track">
+        {{ music.titles[track] ?? track | t }}
+      </option>
+    }
+  </select>
+</label>
+<label>
+  {{ 'Riichi music' | t }}
+  <select [value]="music.riichi()" (change)="music.setRiichi($any($event.target).value)">
+    <option value="random" [selected]="music.riichi() === 'random'">{{ 'Random' | t }}</option>
+    @for (track of music.riichiTracks; track track) {
+      <option [value]="track" [selected]="music.riichi() === track">
+        {{ music.titles[track] ?? track | t }}
+      </option>
+    }
+  </select>
+</label>
+<label class="music-volume">
+  <span class="volume-heading">
+    <span>{{ 'Music volume' | t }}</span>
+    <span aria-hidden="true">{{ (music.volume() * 100).toFixed(0) }}%</span>
+  </span>
+  <input
+    type="range"
+    min="0"
+    max="1"
+    step="0.05"
+    [value]="music.volume()"
+    [style.--volume]="music.volume() * 100 + '%'"
+    (input)="audio.setVolume(+$any($event.target).value)"
+  />
+</label>
+<p class="hint">
+  {{ 'Game music changes after a riichi declaration and resets at the next hand.' | t }}
+</p>
+<app-error-notice [message]="music.error()" />
+<p class="hint">{{ 'Music settings are saved on this device.' | t }}</p>
+<hr class="audio-divider" />
+<h2 class="sound-effects-heading">{{ 'Sound effects' | t }}</h2>
+<button
+  class="audio-mute audio-effects-mute"
+  (click)="audio.toggleSounds()"
+  [attr.aria-pressed]="!audio.sounds.enabled()"
+>
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M11 4 6 8H3v8h3l5 4Z" />
+    @if (audio.sounds.enabled()) {
+      <path d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14" />
+    } @else {
+      <path d="m16 9 6 6m0-6-6 6" />
+    }
+  </svg>
+  {{ (audio.sounds.enabled() ? 'Mute sound effects' : 'Unmute sound effects') | t }}
+</button>

@@ -6,9 +6,13 @@ export type MusicScene = 'lobby' | 'game' | 'riichi';
 @Service()
 export class BackgroundMusic {
   readonly lobbyTracks = lobbyTracks;
+  readonly gameTracks = gameTracks;
+  readonly riichiTracks = riichiTracks;
   readonly titles = musicTitles;
   readonly enabled = signal(this.read('riichi-music') !== 'off' && this.savedVolume() > 0);
   readonly lobby = signal<string>(this.read('riichi-lobby-music') ?? 'Lobby');
+  readonly game = signal(this.savedTrack('riichi-game-music', gameTracks));
+  readonly riichi = signal(this.savedTrack('riichi-riichi-music', riichiTracks));
   readonly volume = signal(this.enabled() ? this.savedVolume() : 0);
   private lastVolume = Math.max(
     0.05,
@@ -24,6 +28,9 @@ export class BackgroundMusic {
     this.hand();
     if (scene === 'lobby') return lobbyTracks.find((track) => track === this.lobby()) ?? 'Lobby';
     const tracks = scene === 'riichi' ? riichiTracks : gameTracks;
+    const chosen = scene === 'riichi' ? this.riichi() : this.game();
+    const fixed = tracks.find((track) => track === chosen);
+    if (fixed) return fixed;
     return tracks[Math.floor(Math.random() * tracks.length)];
   });
   private audio?: HTMLAudioElement;
@@ -63,6 +70,18 @@ export class BackgroundMusic {
     this.unlocked.set(true);
     this.lobby.set(track);
     this.save('riichi-lobby-music', track);
+  }
+  setGame(track: string): void {
+    if (track !== 'random' && !gameTracks.some((value) => value === track)) return;
+    this.game.set(track);
+    this.save('riichi-game-music', track);
+    this.unlocked.set(true);
+  }
+  setRiichi(track: string): void {
+    if (track !== 'random' && !riichiTracks.some((value) => value === track)) return;
+    this.riichi.set(track);
+    this.save('riichi-riichi-music', track);
+    this.unlocked.set(true);
   }
   setVolume(value: number): void {
     if (!Number.isFinite(value)) return;
@@ -113,6 +132,10 @@ export class BackgroundMusic {
     const saved = this.read('riichi-music-volume');
     const value = saved === null ? 0.25 : Number(saved);
     return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0.25;
+  }
+  private savedTrack(key: string, tracks: readonly string[]): string {
+    const saved = this.read(key);
+    return saved && tracks.includes(saved) ? saved : 'random';
   }
   private read(key: string): string | null {
     try {

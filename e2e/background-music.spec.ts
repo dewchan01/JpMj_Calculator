@@ -82,13 +82,13 @@ test('lobby selection persists, gameplay switches after riichi and mute stops mu
   await expect(page.getByRole('combobox', { name: 'Lobby music', exact: true })).toHaveValue(
     'Zhongxialvdong',
   );
-  await page.locator('.audio-mute').click();
+  await page.locator('.audio-mute:not(.audio-effects-mute)').click();
   const muted = (await played()).length;
   await page
     .getByRole('combobox', { name: 'Lobby music', exact: true })
     .selectOption('Lobby Winter');
   expect((await played()).length).toBe(muted);
-  await page.locator('.audio-mute').click();
+  await page.locator('.audio-mute:not(.audio-effects-mute)').click();
   await expect
     .poll(async () => (await played()).at(-1))
     .toBe('play:/sounds/music/lobby-winter.mp3');

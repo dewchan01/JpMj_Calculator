@@ -39,7 +39,7 @@ export async function setLanguage(page: Page, language: string): Promise<void> {
 }
 
 export async function toggleTheme(page: Page): Promise<void> {
-  const header = page.locator('.theme-toggle:not(.sound-toggle)');
+  const header = page.locator('.theme-toggle:not(.music-settings-button)');
   if (await header.isVisible()) {
     await header.click();
     await page.evaluate(async () => {

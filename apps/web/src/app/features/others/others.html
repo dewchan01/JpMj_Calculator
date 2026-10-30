@@ -142,47 +142,7 @@
         </fieldset>
       }
       @case ('sound') {
-        <button class="audio-mute" (click)="audio.toggle()" [attr.aria-pressed]="!audio.enabled()">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M11 4 6 8H3v8h3l5 4Z" />
-            @if (audio.enabled()) {
-              <path d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14" />
-            } @else {
-              <path d="m16 9 6 6m0-6-6 6" />
-            }
-          </svg>
-          {{ (audio.enabled() ? 'Mute audio' : 'Unmute audio') | t }}
-        </button>
-        <label>
-          {{ 'Lobby music' | t }}
-          <select [value]="music.lobby()" (change)="music.setLobby($any($event.target).value)">
-            @for (track of music.lobbyTracks; track track) {
-              <option [value]="track" [selected]="music.lobby() === track">
-                {{ music.titles[track] ?? track | t }}
-              </option>
-            }
-          </select>
-        </label>
-        <label class="music-volume">
-          <span class="volume-heading">
-            <span>{{ 'Music volume' | t }}</span>
-            <span aria-hidden="true">{{ (music.volume() * 100).toFixed(0) }}%</span>
-          </span>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.05"
-            [value]="music.volume()"
-            [style.--volume]="music.volume() * 100 + '%'"
-            (input)="audio.setVolume(+$any($event.target).value)"
-          />
-        </label>
-        <p class="hint">
-          {{ 'Game music changes after a riichi declaration and resets at the next hand.' | t }}
-        </p>
-        <app-error-notice [message]="music.error()" />
-        <h2>{{ 'Sound effects' | t }}</h2>
+        <app-music-settings />
         <p class="hint">
           {{
             'Recorded calls from Myinstants. Unavailable calls use Japanese device speech or a short tone.'

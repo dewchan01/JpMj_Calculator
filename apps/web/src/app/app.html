@@ -1,3 +1,22 @@
+<dialog
+  appDialogBackdrop
+  #musicDialog
+  class="app-dialog"
+  aria-labelledby="app-music-title"
+  (close)="musicOpen.set(false)"
+>
+  <header class="dialog-header">
+    <h2 id="app-music-title">{{ 'Music settings' | t }}</h2>
+    <button class="icon-button" (click)="musicDialog.close()" [attr.aria-label]="'Close' | t">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
+    </button>
+  </header>
+  <section class="dialog-body">
+    @if (musicOpen()) {
+      <app-music-settings />
+    }
+  </section>
+</dialog>
 <div class="sticky-header">
   <header class="topbar">
     <a class="brand" routerLink="/">
@@ -9,11 +28,11 @@
     </a>
     <div class="header-tools">
       <button
-        class="theme-toggle sound-toggle"
-        (click)="toggleSound()"
-        [attr.aria-label]="(hasSound() ? 'Mute audio' : 'Unmute audio') | t"
-        [attr.title]="(hasSound() ? 'Mute audio' : 'Unmute audio') | t"
-        [attr.aria-pressed]="!hasSound()"
+        class="theme-toggle music-settings-button"
+        (click)="musicOpen.set(true); musicDialog.showModal()"
+        [attr.aria-label]="'Music settings' | t"
+        [attr.title]="'Music settings' | t"
+        aria-haspopup="dialog"
       >
         <svg
           width="22"
@@ -24,12 +43,9 @@
           stroke-width="2"
           aria-hidden="true"
         >
-          <path d="M11 4 6 8H3v8h3l5 4Z" />
-          @if (hasSound()) {
-            <path d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14" />
-          } @else {
-            <path d="m16 9 6 6m0-6-6 6" />
-          }
+          <path d="M9 18V5l12-2v13M9 8l12-2" />
+          <ellipse cx="6" cy="18" rx="3" ry="2" />
+          <ellipse cx="18" cy="16" rx="3" ry="2" />
         </svg>
       </button>
       <button

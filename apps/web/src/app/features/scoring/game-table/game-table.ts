@@ -8,6 +8,7 @@ import type { RoomAction } from '../../../../../../../packages/mahjong-core/room
 import { DialogBackdrop } from '../../../shared/dialog-backdrop';
 import { GameSounds } from '../../../core/sound/game-sounds';
 import { BackgroundMusic } from '../../../core/sound/background-music';
+import { MusicSettings } from '../../../shared/music-settings/music-settings';
 import { ScoringMode } from '../../../core/scoring-mode';
 import { handEditDraft, finishHandEdit } from './hand-edit';
 import { DiceSimulator } from '../../../shared/dice-simulator/dice-simulator';
@@ -78,6 +79,7 @@ import {
 import { handChips } from '../../../../../../../packages/mahjong-scoring/chips';
 
 type Panel =
+  | 'music'
   | 'menu'
   | 'perspective'
   | 'player'
@@ -102,6 +104,7 @@ type Panel =
   | 'notice';
 @Component({
   imports: [
+    MusicSettings,
     ConnectionStatus,
     DialogBackdrop,
     FormsModule,
@@ -596,6 +599,7 @@ export class GameTable {
       return this.indicatorKind() === 'dora' ? 'Dora indicators' : 'Ura indicators';
     if (this.panel() === 'player' && this.playerMode() === 'riichi') return 'Riichi';
     const titles: Record<Panel, string> = {
+      music: 'Music settings',
       menu: 'Game menu',
       player: 'Player actions',
       call: 'Record call',

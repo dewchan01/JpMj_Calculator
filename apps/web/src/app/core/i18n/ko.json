@@ -1,4 +1,9 @@
 {
+  "Music settings": "음악 설정",
+  "Game music": "대국 음악",
+  "Riichi music": "리치 음악",
+  "Random": "무작위",
+  "Music settings are saved on this device.": "음악 설정은 이 기기에 저장됩니다.",
   "Mute audio": "음소거",
   "Unmute audio": "음소거 해제",
   "Background music": "배경 음악",
@@ -1426,5 +1431,7 @@
   "Blazing Moment": "뜨거운 순간",
   "Over the Clouds": "높은 구름",
   "Path to Victory": "승리의 길",
-  "On the Edge": "일촉즉발"
+  "On the Edge": "일촉즉발",
+  "Mute background music": "배경 음악 음소거",
+  "Unmute background music": "배경 음악 음소거 해제"
 }

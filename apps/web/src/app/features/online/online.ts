@@ -1,4 +1,5 @@
 import { Component, DestroyRef, inject, signal, input, output, type OnInit } from '@angular/core';
+import { MusicSettings } from '../../shared/music-settings/music-settings';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HubConnectionBuilder, LogLevel, type HubConnection } from '@microsoft/signalr';
@@ -22,6 +23,7 @@ import { LoadingSpinner } from '../../shared/loading-spinner/loading-spinner';
   selector: 'app-online',
   host: { '[class.embedded]': 'embedded()' },
   imports: [
+    MusicSettings,
     LoadingSpinner,
     QrScanner,
     ConnectionStatus,

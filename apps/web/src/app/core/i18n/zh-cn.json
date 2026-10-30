@@ -1,4 +1,9 @@
 {
+  "Music settings": "音乐设置",
+  "Game music": "对局音乐",
+  "Riichi music": "立直音乐",
+  "Random": "随机",
+  "Music settings are saved on this device.": "音乐设置保存在当前设备。",
   "Mute audio": "静音",
   "Unmute audio": "取消静音",
   "Background music": "背景音乐",
@@ -1387,8 +1392,8 @@
   "Assisted scoring": "辅助算分",
   "Manual Han entry": "手填番数",
   "Enter tiles to calculate Han, Fu and payments automatically.": "输入牌张，自动计算番数、符数与支付点数。",
-  "Mute sound effects": "静音",
-  "Unmute sound effects": "取消静音",
+  "Mute sound effects": "静音音效",
+  "Unmute sound effects": "取消音效静音",
   "Player status": "玩家在线状态",
   "Online": "在线",
   "Offline": "离线",
@@ -1426,5 +1431,7 @@
   "Blazing Moment": "炽热时刻",
   "Over the Clouds": "凌云",
   "Path to Victory": "胜途",
-  "On the Edge": "一触即发"
+  "On the Edge": "一触即发",
+  "Mute background music": "静音背景音乐",
+  "Unmute background music": "取消背景音乐静音"
 }

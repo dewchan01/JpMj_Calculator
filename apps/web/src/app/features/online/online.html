@@ -2,6 +2,12 @@
   <a routerLink="/">{{ 'My table' | t }}</a>
   <h1>{{ (roomInvitation ? 'Join game' : 'Online sharing and rooms') | t }}</h1>
 }
+@if (access()) {
+  <details>
+    <summary>{{ 'Music settings' | t }}</summary>
+    <app-music-settings />
+  </details>
+}
 @if (error() === 'Could not connect to the online service.') {
   @if (!access()) {
     <app-connection-status state="Disconnected" />

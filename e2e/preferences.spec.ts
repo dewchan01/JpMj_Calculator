@@ -26,40 +26,53 @@ test('M.League shows a locked East + South schedule and creates that game length
   await expect(prompt(page)).toContainText('East and South game');
 });
 
-test('desktop speaker control persists and shares the sound preference', async ({ page }) => {
+test('desktop music settings persist and share the sound preference', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Mute audio', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Unmute audio', exact: true })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+  const open = () =>
+    page.locator('.topbar').getByRole('button', { name: 'Music settings', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Music settings', exact: true });
+  await open();
+  await dialog.locator('.audio-mute:not(.audio-effects-mute)').click();
+  await expect(dialog.getByRole('slider')).toHaveValue('0');
+  await dialog.getByRole('button', { name: 'Close', exact: true }).click();
   await page.reload();
-  await expect(page.getByRole('button', { name: 'Unmute audio', exact: true })).toBeVisible();
+  await open();
+  await expect(dialog.locator('.audio-mute:not(.audio-effects-mute)')).toHaveText(
+    'Unmute background music',
+  );
+  await dialog.locator('.audio-mute:not(.audio-effects-mute)').click();
+  await expect(dialog.getByRole('slider')).toHaveValue('0.25');
+  await dialog.getByRole('slider').fill('0.6');
+  await dialog.getByRole('button', { name: 'Close', exact: true }).click();
   await page.locator('.app-navigation a[href$="/others"]').click();
   await page.getByRole('link', { name: 'Sound effects', exact: true }).click();
-  await expect(page.getByRole('checkbox')).toHaveCount(0);
-  await expect(page.locator('.audio-mute')).toHaveText('Unmute audio');
-  await expect(page.getByRole('slider', { name: /Music volume/ })).toHaveValue('0');
-  await page.locator('.audio-mute').click();
-  await expect(
-    page.locator('.topbar').getByRole('button', { name: 'Mute audio', exact: true }),
-  ).toBeVisible();
   const volume = page.getByRole('slider', { name: /Music volume/ });
-  await expect(volume).toHaveValue('0.25');
-  await volume.fill('0.6');
-  await page.locator('.topbar').getByRole('button', { name: 'Mute audio', exact: true }).click();
+  await expect(volume).toHaveValue('0.6');
+  await open();
+  await dialog.locator('.audio-mute:not(.audio-effects-mute)').click();
+  await dialog.getByRole('button', { name: 'Close', exact: true }).click();
   await expect(volume).toHaveValue('0');
   await page.reload();
   await expect(volume).toHaveValue('0');
-  await page.locator('.audio-mute').click();
+  await page.locator('.audio-mute:not(.audio-effects-mute)').click();
   await expect(volume).toHaveValue('0.6');
-  await expect(page.locator('.audio-mute')).toHaveText('Mute audio');
   await volume.fill('0');
-  await expect(page.locator('.audio-mute')).toHaveText('Unmute audio');
+  await expect(page.locator('.audio-mute:not(.audio-effects-mute)')).toHaveText(
+    'Unmute background music',
+  );
+  await expect(page.locator('.sound-previews button').first()).toBeEnabled();
+  await page.locator('.audio-effects-mute').click();
   await expect(page.locator('.sound-previews button').first()).toBeDisabled();
   await volume.fill('0.4');
-  await expect(page.locator('.audio-mute')).toHaveText('Mute audio');
+  await expect(page.locator('.audio-mute:not(.audio-effects-mute)')).toHaveText(
+    'Mute background music',
+  );
+  await expect(page.locator('.sound-previews button').first()).toBeDisabled();
+  await page.reload();
+  await expect(volume).toHaveValue('0.4');
+  await expect(page.locator('.audio-effects-mute')).toHaveText('Unmute sound effects');
+  await page.locator('.audio-effects-mute').click();
   await expect(page.locator('.sound-previews button').first()).toBeEnabled();
 });
 

@@ -70,11 +70,11 @@ test('sound previews, persistent mute and successful live declarations', async (
   await expect(previews).toHaveCount(10);
   for (const button of await previews.all()) await button.click();
   expect(await played()).toHaveLength(10);
-  await page.locator('.audio-mute').click();
+  await page.locator('.audio-effects-mute').click();
   await page.reload();
-  await expect(page.locator('.audio-mute')).toHaveText('Unmute audio');
+  await expect(page.locator('.audio-effects-mute')).toHaveText('Unmute sound effects');
   await expect(previews.first()).toBeDisabled();
-  await page.locator('.audio-mute').click();
+  await page.locator('.audio-effects-mute').click();
   await page.getByRole('navigation').getByRole('link', { name: 'My table', exact: true }).click();
   await page.getByRole('button', { name: /Start match/ }).click();
   await page.getByRole('button', { name: 'Start game', exact: true }).click();

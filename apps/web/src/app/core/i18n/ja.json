@@ -1,4 +1,9 @@
 {
+  "Music settings": "音楽設定",
+  "Game music": "対局BGM",
+  "Riichi music": "リーチBGM",
+  "Random": "ランダム",
+  "Music settings are saved on this device.": "音楽設定はこの端末に保存されます。",
   "Mute audio": "音声をミュート",
   "Unmute audio": "音声のミュートを解除",
   "Background music": "BGM",
@@ -1426,5 +1431,7 @@
   "Blazing Moment": "灼熱の刻",
   "Over the Clouds": "凌雲の志",
   "Path to Victory": "勝利への道",
-  "On the Edge": "一触即発"
+  "On the Edge": "一触即発",
+  "Mute background music": "BGMをミュート",
+  "Unmute background music": "BGMのミュートを解除"
 }
