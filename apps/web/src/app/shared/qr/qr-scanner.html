@@ -15,7 +15,9 @@
     </button>
   </header>
   <div class="dialog-body">
-    <p>{{ instruction() | t }}</p>
+    @if (!error()) {
+      <p>{{ instruction() | t }}</p>
+    }
     <video
       #preview
       autoplay

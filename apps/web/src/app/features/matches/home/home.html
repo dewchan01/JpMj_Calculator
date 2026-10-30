@@ -210,12 +210,14 @@
     </button>
   </header>
   <form class="dialog-body" (ngSubmit)="create(true)">
-    <p class="hint">
-      {{
-        'Use the players and rules selected on My table. Enter final points without recording individual hands.'
-          | t
-      }}
-    </p>
+    @if (!error()) {
+      <p class="hint">
+        {{
+          'Use the players and rules selected on My table. Enter final points without recording individual hands.'
+            | t
+        }}
+      </p>
+    }
     <app-error-notice [message]="error()" />
     <app-date-time-field [(value)]="resultDate" />
     <div class="dialog-fields">

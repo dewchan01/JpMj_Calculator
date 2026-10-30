@@ -154,19 +154,25 @@
               </span>
             </label>
           } @empty {
-            <p class="hint">{{ 'No games found.' | t }}</p>
+            @if (!error()) {
+              <p class="hint">{{ 'No games found.' | t }}</p>
+            }
           }
         </fieldset>
         @if (importing() && incomingPlayers().length) {
           <fieldset class="player-mapping" [disabled]="busy()">
             <legend>{{ 'Match imported players' | t }}</legend>
-            <p class="hint">
-              {{
-                'Same IDs refer to the same player. Different IDs stay separate unless you choose an existing player. Names alone are never merged.'
-                  | t
-              }}
-            </p>
-            <p class="hint">{{ 'Player mapping only affects newly imported games.' | t }}</p>
+            @if (!error()) {
+              <p class="hint">
+                {{
+                  'Same IDs refer to the same player. Different IDs stay separate unless you choose an existing player. Names alone are never merged.'
+                    | t
+                }}
+              </p>
+            }
+            @if (!error()) {
+              <p class="hint">{{ 'Player mapping only affects newly imported games.' | t }}</p>
+            }
             @for (person of incomingPlayers(); track person.id) {
               <label>
                 {{ identityLabel(person) }}
@@ -248,9 +254,11 @@
       <p role="alert">{{ error() | t }}</p>
     }
     @if (share(); as receipt) {
-      <p class="hint">
-        {{ 'Scan this QR code or enter the transfer ID to import. Available for 24 hours.' | t }}
-      </p>
+      @if (!error()) {
+        <p class="hint">
+          {{ 'Scan this QR code or enter the transfer ID to import. Available for 24 hours.' | t }}
+        </p>
+      }
       @if (shareQr()) {
         <img
           class="share-qr"

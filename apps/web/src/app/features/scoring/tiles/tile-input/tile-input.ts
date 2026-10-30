@@ -58,7 +58,26 @@ export class TileInput {
   readonly redFives = input(true);
   readonly meldType = input<MeldEntryType>();
   readonly upgradeKind = input<number>();
+  readonly requiredCount = input<number>();
+  readonly maximumCount = input<number>();
+  readonly countHint = computed(() => {
+    const required = this.requiredCount();
+    const maximum = this.maximumCount();
+    return required !== undefined
+      ? `${this.i18n.t('Required tiles')}: ${required}`
+      : maximum !== undefined
+        ? `${this.i18n.t('Maximum tiles')}: ${maximum}`
+        : '';
+  });
   readonly entryError = computed(() => {
+    const count = this.tiles().length;
+    const required = this.requiredCount();
+    const maximum = this.maximumCount();
+    if (
+      (required !== undefined && count !== required) ||
+      (maximum !== undefined && count > maximum)
+    )
+      return `${this.countHint()} (${this.i18n.t('Selected tiles')}: ${count})`;
     const type = this.meldType();
     return type ? meldTileError(this.tiles(), type, this.upgradeKind()) : '';
   });
@@ -98,6 +117,7 @@ export class TileInput {
     if (!tile) return;
     tiles.splice(event.to, 0, tile);
     this.value.set(this.notation(tiles));
+    this.error.set('');
   }
   applyPhoto(tiles: Tile[]): void {
     this.value.set(this.notation(tiles));
@@ -105,6 +125,7 @@ export class TileInput {
   }
   remove(index: number): void {
     this.value.set(this.notation(this.tiles().filter((_, position) => position !== index)));
+    this.error.set('');
   }
   removeLabel(tile: Tile): string {
     return this.i18n.t('Remove ' + this.i18n.tile(tile));

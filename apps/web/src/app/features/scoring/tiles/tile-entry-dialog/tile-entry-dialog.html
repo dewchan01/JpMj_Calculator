@@ -19,6 +19,15 @@
   <div class="sheet-header">
     <div class="sheet-grip" aria-hidden="true"><span></span></div>
     <header>
+      <button
+        type="button"
+        class="back-button"
+        (click)="close()"
+        [attr.aria-label]="'Back' | t"
+        [title]="'Back' | t"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m7-7-7 7 7 7" /></svg>
+      </button>
       <h2>{{ label() | t }}</h2>
       <button class="secondary" (click)="finish()" [disabled]="!canFinish()">
         {{ 'Done' | t }}

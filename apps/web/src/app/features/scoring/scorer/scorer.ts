@@ -267,6 +267,11 @@ export class Scorer {
   handNumber = 1;
   quickRules = this.library.active(this.count);
   otherKans = 0;
+  get requiredIndicatorCount(): number {
+    return (
+      1 + this.otherKans + this.melds.filter((meld) => !['chi', 'pon'].includes(meld.type)).length
+    );
+  }
   replacement: 'kan' | 'kita' = 'kan';
   robbed: 'kakan' | 'ankan' | 'kita' = 'kakan';
   firstTurn = false;

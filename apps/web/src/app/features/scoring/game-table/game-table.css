@@ -260,12 +260,6 @@ h1 {
   gap: 8px;
   margin-block: 12px;
 }
-.double-riichi-action {
-  grid-column: 1;
-}
-.sanma > .double-riichi-action {
-  grid-column: 1;
-}
 .check {
   display: flex;
   align-items: center;
@@ -457,6 +451,14 @@ h1 {
 @media (max-width: 700px), (max-height: 800px) {
   .room-game .live-table {
     min-height: 420px;
+  }
+}
+@media (min-width: 701px) {
+  .game-shell {
+    height: calc(100dvh - var(--app-header-height, 0px) - 32px);
+  }
+  .room-game .live-table {
+    min-height: 0;
   }
 }
 .pending-win {

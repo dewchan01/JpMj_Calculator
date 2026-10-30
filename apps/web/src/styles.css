@@ -1869,7 +1869,15 @@ select {
 .prompt-heading > .close-prompt:focus-visible,
 .players-heading > .icon-button:last-child:focus-visible {
   outline: none;
-  box-shadow: inset 0 0 0 2px var(--green);
+  box-shadow: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .dialog-header > .icon-button:last-child:not(.back-button):focus-visible,
+  .prompt-heading > .close-prompt:focus-visible,
+  .players-heading > .icon-button:last-child:focus-visible {
+    outline: 1px solid var(--green);
+    outline-offset: 2px;
+  }
 }
 
 .back-link.back-button,

@@ -21,24 +21,27 @@
       (closed)="entryClosed.emit($event)"
       [label]="'Enter ' + label()"
       buttonText="Enter"
-      [canFinish]="!entryError()"
+      [canFinish]="!entryError() && !error()"
     >
       <ng-template>
-        @if (meldType()) {
-          <p class="hint" role="status">
-            @if (meldType() === 'chi') {
-              {{ 'Chi requires three consecutive suited tiles.' | t }}
-            } @else if (meldType() === 'kakan') {
-              {{ 'Choose a Pon and its matching fourth tile.' | t }}
-            } @else {
-              {{
-                'Choose one tile; matching tiles are filled automatically. Select a red five if the set contains one.'
-                  | t
-              }}
-            }
-          </p>
-          @if (entryError()) {
+        @if ((meldType() || countHint()) && !error()) {
+          @if (entryError() && value().trim()) {
             <app-error-notice [message]="entryError()" />
+          } @else {
+            <p class="hint" role="status">
+              @if (countHint()) {
+                {{ countHint() }}
+              } @else if (meldType() === 'chi') {
+                {{ 'Chi requires three consecutive suited tiles.' | t }}
+              } @else if (meldType() === 'kakan') {
+                {{ 'Choose a Pon and its matching fourth tile.' | t }}
+              } @else {
+                {{
+                  'Choose one tile; matching tiles are filled automatically. Select a red five if the set contains one.'
+                    | t
+                }}
+              }
+            </p>
           }
         }
         <div appTileReorder (tileDropped)="dropTile($event)">
@@ -90,19 +93,20 @@
               <input
                 [formField]="editForm.notation"
                 placeholder="4p 1z"
-                [attr.aria-describedby]="notationHintId"
+                [attr.aria-describedby]="error() ? null : notationHintId"
               />
             </label>
-            <p class="hint" [id]="notationHintId">
-              {{
-                'Use m for characters, p for circles, s for bamboo, and z for honors (1–7: East, South, West, North, white, green, red). Example: 4p 1z = 4 circles and East. Enter the indicators shown on the table, not the bonus tiles.'
-                  | t
-              }}
-            </p>
-            <button class="secondary" (click)="edit()">{{ 'Apply notation' | t }}</button>
             @if (error()) {
               <app-error-notice [message]="error()" />
+            } @else {
+              <p class="hint" [id]="notationHintId">
+                {{
+                  'Use m for characters, p for circles, s for bamboo, and z for honors (1–7: East, South, West, North, white, green, red). Example: 4p 1z = 4 circles and East. Enter the indicators shown on the table, not the bonus tiles.'
+                    | t
+                }}
+              </p>
             }
+            <button class="secondary" (click)="edit()">{{ 'Apply notation' | t }}</button>
           </details>
           <app-photo-capture [playerCount]="playerCount()" (tilesConfirmed)="applyPhoto($event)" />
         </div>

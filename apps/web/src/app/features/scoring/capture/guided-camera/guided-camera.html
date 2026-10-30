@@ -15,12 +15,14 @@
     </button>
   </header>
   <div class="dialog-body">
-    <p class="hint">
-      {{
-        'Photograph one winning hand. Place one group in each meld area and choose its source relative to the winner. Lay the called tile sideways. Show all four faces for concealed Kan.'
-          | t
-      }}
-    </p>
+    @if (!error()) {
+      <p class="hint">
+        {{
+          'Photograph one winning hand. Place one group in each meld area and choose its source relative to the winner. Lay the called tile sideways. Show all four faces for concealed Kan.'
+            | t
+        }}
+      </p>
+    }
     <app-error-notice [message]="error()" />
     <div class="camera-frame" [style.aspect-ratio]="aspect()">
       <video

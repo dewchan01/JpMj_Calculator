@@ -54,7 +54,12 @@ test('selected player is below, rotation is local, and a Kan needs its new indic
     .getByRole('button', { name: 'Concealed Kan', exact: true })
     .boundingBox())!;
   expect(doubleBounds.y).toBeGreaterThanOrEqual(ankanBounds.y + ankanBounds.height);
-  expect(Math.abs(doubleBounds.x - ankanBounds.x)).toBeLessThan(1);
+  const drawBounds = (await prompt(page)
+    .getByRole('button', { name: 'Record draw', exact: true })
+    .boundingBox())!;
+  expect(Math.abs(drawBounds.y - ankanBounds.y)).toBeLessThan(1);
+  expect(ankanBounds.x).toBeGreaterThan(drawBounds.x);
+  expect(Math.abs(doubleBounds.x - drawBounds.x)).toBeLessThan(1);
   await expect(
     prompt(page).locator('p.hint').filter({ hasText: 'Confirm Double Riichi' }),
   ).toHaveCount(0);

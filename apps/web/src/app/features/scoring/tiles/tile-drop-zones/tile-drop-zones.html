@@ -1,9 +1,11 @@
-﻿<p class="hint">
-  {{
-    'Drag a matching tile or select tiles first. Open melds ask for call details; concealed Kan and North are assigned immediately.'
-      | t
-  }}
-</p>
+@if (!(errorTarget().startsWith('drop:') && error())) {
+  <p class="hint">
+    {{
+      'Drag a matching tile or select tiles first. Open melds ask for call details; concealed Kan and North are assigned immediately.'
+        | t
+    }}
+  </p>
+}
 <div class="drop-zones">
   @for (zone of zones(); track zone.target) {
     <section

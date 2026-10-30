@@ -69,12 +69,14 @@
         <h2>{{ 'Multiple Ron winners' | t }}</h2>
         <span class="pill">{{ queued.length }}</span>
       </div>
-      <p class="hint">
-        {{
-          'Verify each Ron hand, add it to this list, then review all winners together. All winners must share the same discard and round context.'
-            | t
-        }}
-      </p>
+      @if (!errorAt('queued')) {
+        <p class="hint">
+          {{
+            'Verify each Ron hand, add it to this list, then review all winners together. All winners must share the same discard and round context.'
+              | t
+          }}
+        </p>
+      }
       @for (entry of queued; track entry.win.winnerId) {
         <div class="explain-row">
           <strong>{{ name(entry.win.winnerId) }}</strong>
@@ -112,12 +114,14 @@
         @if (scoringMode.advanced()) {
           <section class="card manual-score-entry">
             <h2>{{ 'Manual Han entry' | t }}</h2>
-            <p class="hint">
-              {{
-                'Enter the final total Han, including Riichi and bonuses. These are not added again.'
-                  | t
-              }}
-            </p>
+            @if (!errorAt('score')) {
+              <p class="hint">
+                {{
+                  'Enter the final total Han, including Riichi and bonuses. These are not added again.'
+                    | t
+                }}
+              </p>
+            }
             <div class="form-grid">
               <label>
                 {{ 'Winner' | t }}
@@ -241,12 +245,14 @@
             <p class="hand-count">
               {{ tiles.length + ' concealed · expected ' + (14 - 3 * melds.length) | t }}
             </p>
-            <p class="hint">
-              {{
-                'Enter or upload all tiles first. Then select tiles below to assign them to melds or North. Unassigned tiles stay in the concealed hand.'
-                  | t
-              }}
-            </p>
+            @if (!errorAt('assignment')) {
+              <p class="hint">
+                {{
+                  'Enter or upload all tiles first. Then select tiles below to assign them to melds or North. Unassigned tiles stay in the concealed hand.'
+                    | t
+                }}
+              </p>
+            }
             <div class="hand-workspace">
               <div
                 class="hand-tray"
@@ -290,12 +296,14 @@
                         {{ 'All tiles, including melds and North' | t }}
                         <input [(ngModel)]="notation" placeholder="123m456m789p234s55p" />
                       </label>
-                      <p class="hint">
-                        {{
-                          'm = characters, p = circles, s = bamboo, z = honors (East–red dragon = 1–7). 0 = red five. Last tile is initially the winning tile.'
-                            | t
-                        }}
-                      </p>
+                      @if (!errorAt('tiles')) {
+                        <p class="hint">
+                          {{
+                            'm = characters, p = circles, s = bamboo, z = honors (East–red dragon = 1–7). 0 = red five. Last tile is initially the winning tile.'
+                              | t
+                          }}
+                        </p>
+                      }
                       <button class="secondary" (click)="applyNotation()">
                         {{ 'Replace tile collection' | t }}
                       </button>
@@ -644,6 +652,7 @@
               <div>
                 <app-tile-input
                   label="Dora indicators"
+                  [requiredCount]="requiredIndicatorCount"
                   [value]="doraText"
                   (valueChange)="doraText = $event; editStatus()"
                   [playerCount]="rules.playerCount"
@@ -654,6 +663,7 @@
                 <div>
                   <app-tile-input
                     label="Ura indicators"
+                    [requiredCount]="requiredIndicatorCount"
                     [value]="uraText"
                     (valueChange)="uraText = $event; editStatus()"
                     [playerCount]="rules.playerCount"
@@ -662,12 +672,14 @@
                 </div>
               }
             </div>
-            <p class="hint">
-              {{
-                'Enter revealed indicator tiles, including revealed Kan indicators. Declare other-player Kans separately.'
-                  | t
-              }}
-            </p>
+            @if (!errorAt('score')) {
+              <p class="hint">
+                {{
+                  'Enter revealed indicator tiles, including revealed Kan indicators. Declare other-player Kans separately.'
+                    | t
+                }}
+              </p>
+            }
           }
           <div class="claims">
             @for (flag of visibleFlags; track flag.key) {
@@ -714,21 +726,25 @@
               {{ 'I confirm this was the first draw with no calls, Kans or Kita.' | t }}
             </label>
           }
-          <p class="hint">
-            {{
-              'You confirm these circumstances. Tile structure alone cannot establish Furiten, legal Riichi, or event timing.'
-                | t
-            }}
-          </p>
+          @if (!errorAt('score')) {
+            <p class="hint">
+              {{
+                'You confirm these circumstances. Tile structure alone cannot establish Furiten, legal Riichi, or event timing.'
+                  | t
+              }}
+            </p>
+          }
           @if (match()) {
             <details class="escrow">
               <summary>{{ 'Record a Riichi deposit · pot ' + (book?.table | number) | t }}</summary>
-              <p class="hint">
-                {{
-                  'Declare before settlement. This moves 1,000 points from a player into escrow once.'
-                    | t
-                }}
-              </p>
+              @if (!errorAt('escrow')) {
+                <p class="hint">
+                  {{
+                    'Declare before settlement. This moves 1,000 points from a player into escrow once.'
+                      | t
+                  }}
+                </p>
+              }
               <div class="action-row">
                 <select [(ngModel)]="depositPlayer" [attr.aria-label]="'Riichi declarer' | t">
                   @for (p of players; track p.id) {
@@ -766,12 +782,14 @@
   } @else if (tab === 'draw') {
     <section class="card">
       <h2>{{ 'Record draw' | t }}</h2>
-      <p class="hint">
-        {{
-          'Declare the actual draw circumstances. The app calculates transfers and progression; it does not infer the wall or discard history.'
-            | t
-        }}
-      </p>
+      @if (!errorAt('draw')) {
+        <p class="hint">
+          {{
+            'Declare the actual draw circumstances. The app calculates transfers and progression; it does not infer the wall or discard history.'
+              | t
+          }}
+        </p>
+      }
       <label>
         {{ 'Draw type' | t }}
         <select [(ngModel)]="drawType" (ngModelChange)="changed()">
@@ -793,12 +811,14 @@
             }
           </select>
         </label>
-        <p class="hint">
-          {{
-            'Nine terminals: first uninterrupted draw and at least nine distinct terminals/honors. Four winds: identical first wind discards without calls. Four Kans: multiple players, after the win opportunity passes.'
-              | t
-          }}
-        </p>
+        @if (!errorAt('draw')) {
+          <p class="hint">
+            {{
+              'Nine terminals: first uninterrupted draw and at least nine distinct terminals/honors. Four winds: identical first wind discards without calls. Four Kans: multiple players, after the win opportunity passes.'
+                | t
+            }}
+          </p>
+        }
       } @else {
         <h3>{{ 'Tenpai players' | t }}</h3>
         <div class="claims">
@@ -809,9 +829,11 @@
             </label>
           }
         </div>
-        <p class="hint">
-          {{ 'Dealer continuation on a draw follows Tenpai, including Nagashi Mangan.' | t }}
-        </p>
+        @if (!errorAt('draw')) {
+          <p class="hint">
+            {{ 'Dealer continuation on a draw follows Tenpai, including Nagashi Mangan.' | t }}
+          </p>
+        }
       }
       @if (drawType === 'nagashi') {
         <h3>{{ 'Nagashi Mangan players' | t }}</h3>
@@ -823,12 +845,14 @@
             </label>
           }
         </div>
-        <p class="hint">
-          {{
-            'Confirm that each selected player discarded only terminals/honors and none of those discards was called. Multiple qualifying players settle against one another; Riichi escrow carries forward.'
-              | t
-          }}
-        </p>
+        @if (!errorAt('draw')) {
+          <p class="hint">
+            {{
+              'Confirm that each selected player discarded only terminals/honors and none of those discards was called. Multiple qualifying players settle against one another; Riichi escrow carries forward.'
+                | t
+            }}
+          </p>
+        }
       }
       <label class="check">
         <input type="checkbox" [(ngModel)]="drawConfirmed" (ngModelChange)="changed()" />

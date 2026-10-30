@@ -29,6 +29,7 @@ export class TileEntryDialog {
   readonly closed = output<boolean>();
   private confirmed = false;
   finish(): void {
+    if (!this.canFinish()) return;
     this.confirmed = true;
     this.close();
   }

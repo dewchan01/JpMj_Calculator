@@ -6,7 +6,7 @@ export const callSounds = {
   chi: 'チー',
   daiminkan: 'カン',
   kakan: 'カン',
-  ankan: '暗槓',
+  ankan: 'カン',
   riichi: 'リーチ',
   doubleRiichi: 'ダブルリーチ',
   ron: 'ロン',

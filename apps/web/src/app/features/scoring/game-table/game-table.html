@@ -163,9 +163,11 @@
     @if (editingHand()) {
       <div class="hand-edit-banner">
         <strong>{{ 'Edit hand' | t }}</strong>
-        <p class="hint">
-          {{ 'Saving recalculates later hands. Cancel keeps the original record.' | t }}
-        </p>
+        @if (!error()) {
+          <p class="hint">
+            {{ 'Saving recalculates later hands. Cancel keeps the original record.' | t }}
+          </p>
+        }
         <button class="action-cancel" (click)="close()" [disabled]="busy()">
           {{ 'Cancel' | t }}
         </button>
@@ -373,7 +375,12 @@
                 </div>
               </section>
             }
-            <div class="button-grid" [class.sanma]="m.playerCount === 3">
+            <div class="button-grid">
+              @if (playerMode() === 'all' && can('draw')) {
+                <button (click)="startDraw()" [disabled]="paused() || busy()">
+                  {{ 'Record draw' | t }}
+                </button>
+              }
               @if (playerMode() === 'calls') {
                 @if (m.playerCount === 4) {
                   <button (click)="startCall('chi')" [disabled]="paused()">{{ 'Chi' | t }}</button>
@@ -396,7 +403,6 @@
               }
               @if (playerMode() === 'all' && currentPlayer.riichi === 'none') {
                 <button
-                  class="double-riichi-action"
                   (click)="declarePlayerRiichi(true)"
                   [disabled]="!can('riichi') || paused() || busy() || !canDeclareDoubleRiichi()"
                   [title]="
@@ -413,11 +419,6 @@
                 </button>
               }
             </div>
-            @if (playerMode() === 'all' && can('draw')) {
-              <button (click)="startDraw()" [disabled]="paused() || busy()">
-                {{ 'Record draw' | t }}
-              </button>
-            }
           }
           @if (playerMode() === 'calls') {
             @for (group of playerMeldGroups; track group.label) {
@@ -556,17 +557,21 @@
           }
         }
         @case ('indicators') {
-          <p class="hint">
-            {{
-              (requiredIndicators
-                ? 'Fill every required indicator before saving.'
-                : 'After a Kan, add the newly revealed indicator here.'
-              ) | t
-            }}
-          </p>
+          @if (!error()) {
+            <p class="hint">
+              {{
+                (requiredIndicators
+                  ? 'Fill every required indicator before saving.'
+                  : 'After a Kan, add the newly revealed indicator here.'
+                ) | t
+              }}
+            </p>
+          }
           @if (indicatorKind() === 'dora') {
             <app-tile-input
               label="Dora indicators"
+              [requiredCount]="requiredIndicators || undefined"
+              [maximumCount]="requiredDoraCount"
               [(value)]="dora"
               [playerCount]="m.playerCount"
               [redFives]="settings?.redFives ?? true"
@@ -574,13 +579,17 @@
           } @else {
             <app-tile-input
               label="Ura indicators"
+              [requiredCount]="requiredIndicators || undefined"
+              [maximumCount]="requiredDoraCount"
               [(value)]="ura"
               [playerCount]="m.playerCount"
               [redFives]="settings?.redFives ?? true"
             />
           }
           @if (requiredIndicators) {
-            <p class="hint">{{ 'Required indicators' | t }}: {{ requiredIndicators }}</p>
+            @if (!error()) {
+              <p class="hint">{{ 'Required indicators' | t }}: {{ requiredIndicators }}</p>
+            }
           }
           <div class="dialog-actions">
             <button
@@ -681,12 +690,14 @@
               <strong>{{ name(activeWinner) }}</strong>
               · {{ 'Manual Han entry' | t }}
             </p>
-            <p class="hint">
-              {{
-                'Enter the final total Han, including Riichi and bonuses. These are not added again.'
-                  | t
-              }}
-            </p>
+            @if (!error()) {
+              <p class="hint">
+                {{
+                  'Enter the final total Han, including Riichi and bonuses. These are not added again.'
+                    | t
+                }}
+              </p>
+            }
             <div class="form-grid">
               <label>
                 {{ 'Scoring type' | t }}
@@ -765,6 +776,7 @@
             </p>
             <app-tile-input
               label="The winning hand"
+              [requiredCount]="14 - 3 * winnerState.melds.length"
               [(value)]="handText"
               [playerCount]="m.playerCount"
               [redFives]="settings?.redFives ?? true"
@@ -840,6 +852,7 @@
           @if (winnerState.riichi !== 'none') {
             <app-tile-input
               label="Ura indicators"
+              [requiredCount]="requiredDoraCount"
               [(value)]="ura"
               [playerCount]="m.playerCount"
               [redFives]="settings?.redFives ?? true"
@@ -907,7 +920,9 @@
               </label>
             }
           }
-          <p class="hint">{{ 'Continue only after checking the draw circumstances.' | t }}</p>
+          @if (!error()) {
+            <p class="hint">{{ 'Continue only after checking the draw circumstances.' | t }}</p>
+          }
           <div class="dialog-actions">
             <button class="primary" (click)="reviewDraw()">{{ 'Review settlement' | t }}</button>
           </div>
@@ -1008,12 +1023,14 @@
               m.rules.preset === 'custom' && m.rules.name ? m.rules.name : (ruleName(m.rules) | t)
             }}
           </p>
-          <p class="hint">
-            {{
-              'This match keeps its saved rule snapshot. Start a new match to use different rules.'
-                | t
-            }}
-          </p>
+          @if (!error()) {
+            <p class="hint">
+              {{
+                'This match keeps its saved rule snapshot. Start a new match to use different rules.'
+                  | t
+              }}
+            </p>
+          }
           <p>
             {{ 'Game length' | t }}:
             {{ (m.gameLength === 'east' ? 'East-only game' : 'East and South game') | t }} ·
@@ -1055,9 +1072,11 @@
               </div>
             }
           }
-          <p class="hint">
-            {{ 'Positive means the selected player is ahead; negative means behind.' | t }}
-          </p>
+          @if (!error()) {
+            <p class="hint">
+              {{ 'Positive means the selected player is ahead; negative means behind.' | t }}
+            </p>
+          }
         }
         @case ('dice') {
           <app-dice-simulator
@@ -1081,6 +1100,8 @@
 @if (directIndicator(); as kind) {
   <app-tile-input
     [directEntry]="true"
+    [requiredCount]="kind === 'dora' ? requiredDoraCount : undefined"
+    [maximumCount]="requiredDoraCount"
     [label]="kind === 'dora' ? 'Dora indicators' : 'Ura indicators'"
     [value]="kind === 'dora' ? dora : ura"
     (valueChange)="kind === 'dora' ? (dora = $event) : (ura = $event)"

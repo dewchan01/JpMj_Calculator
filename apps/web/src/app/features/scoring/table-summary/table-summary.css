@@ -237,11 +237,25 @@
   margin-left: 3px;
   font-weight: 750;
 }
+@media (min-width: 701px) {
+  :host(.room-table.compact) .table-layout {
+    --hub-width: 120px;
+    --hub-height: 120px;
+    --card-depth: 76px;
+    --seat-gap: 36px;
+  }
+}
 @media (min-width: 701px) and (max-height: 800px) {
   :host(.compact) .table-layout {
     --hub-width: 104px;
     --hub-height: 104px;
     --card-width: 190px;
+    --card-depth: 60px;
+    --seat-gap: 24px;
+  }
+  :host(.room-table.compact) .table-layout {
+    --hub-width: 104px;
+    --hub-height: 104px;
     --card-depth: 60px;
     --seat-gap: 24px;
   }

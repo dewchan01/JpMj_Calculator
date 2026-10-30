@@ -1,17 +1,23 @@
-<p class="hint">
-  {{ 'Photo recognition requires internet access. Manual tile entry works offline.' | t }}
-</p>
+@if (!error() && !configuration.error()) {
+  <p class="hint">
+    {{ 'Photo recognition requires internet access. Manual tile entry works offline.' | t }}
+  </p>
+}
 @if (configuration.value()?.provider === 'roboflow') {
-  <p class="hint">
-    {{ 'Roboflow browser recognition selected. Model downloads require internet access.' | t }}
-  </p>
+  @if (!error() && !configuration.error()) {
+    <p class="hint">
+      {{ 'Roboflow browser recognition selected. Model downloads require internet access.' | t }}
+    </p>
+  }
 } @else if (configuration.value()?.provider === 'api') {
-  <p class="hint">
-    {{
-      'Photo recognition uploads your selected image to the configured service. Review and edit tiles before applying them.'
-        | t
-    }}
-  </p>
+  @if (!error() && !configuration.error()) {
+    <p class="hint">
+      {{
+        'Photo recognition uploads your selected image to the configured service. Review and edit tiles before applying them.'
+          | t
+      }}
+    </p>
+  }
 }
 <label class="choose-image">
   {{ 'Choose an image' | t }}
@@ -31,7 +37,9 @@
     (captured)="captureGuided($event)"
   />
 }
-<p class="hint">{{ 'Choose a saved photo. The preview opens automatically for editing.' | t }}</p>
+@if (!error() && !configuration.error()) {
+  <p class="hint">{{ 'Choose a saved photo. The preview opens automatically for editing.' | t }}</p>
+}
 <details
   #reviewPanel
   class="photo-card"
@@ -41,7 +49,11 @@
 >
   <summary>{{ title() | t }}</summary>
   @if (configuration.value()?.provider === 'mock') {
-    <p class="hint">{{ 'Mock mode uses fixed suggestions and does not upload the photo.' | t }}</p>
+    @if (!error() && !configuration.error()) {
+      <p class="hint">
+        {{ 'Mock mode uses fixed suggestions and does not upload the photo.' | t }}
+      </p>
+    }
   }
   @if (photoUrl()) {
     <img class="photo-preview" [src]="photoUrl()" [attr.alt]="'Your selected hand photo' | t" />
@@ -79,20 +91,24 @@
           }
         </div>
       } @empty {
-        <p class="hint">
-          {{ 'Your detected tiles will appear here. You can also type tiles below.' | t }}
-        </p>
+        @if (!error() && !configuration.error()) {
+          <p class="hint">
+            {{ 'Your detected tiles will appear here. You can also type tiles below.' | t }}
+          </p>
+        }
       }
     </div>
     @if (groups().length || guided().kita.length) {
       <section class="layout-review" [attr.aria-label]="'Suggested tile groups' | t">
         <h3>{{ 'Suggested tile groups' | t }}</h3>
-        <p class="hint">
-          {{
-            'Uncertain groups stay concealed. Confirm the caller and called tile before applying.'
-              | t
-          }}
-        </p>
+        @if (!error() && !configuration.error()) {
+          <p class="hint">
+            {{
+              'Uncertain groups stay concealed. Confirm the caller and called tile before applying.'
+                | t
+            }}
+          </p>
+        }
         @for (group of groups(); track group.id) {
           @let choice = groupSelection(group);
           <div class="layout-group">
@@ -111,9 +127,11 @@
               }
             </div>
             @if (!group.confident) {
-              <p class="hint">
-                {{ 'This group may be concealed or stacked. Check its type manually.' | t }}
-              </p>
+              @if (!error() && !configuration.error()) {
+                <p class="hint">
+                  {{ 'This group may be concealed or stacked. Check its type manually.' | t }}
+                </p>
+              }
             }
             @if (choice.included) {
               @if (group.tiles.length === 4) {

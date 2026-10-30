@@ -38,6 +38,8 @@ header {
   gap: 1rem;
 }
 header h2 {
+  flex: 1;
+  min-width: 0;
   margin: 0;
 }
 @media (max-width: 600px) {
