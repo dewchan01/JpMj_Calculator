@@ -261,7 +261,7 @@ export class Home {
       const players = setup.names.slice(0, this.count()).map((n, i) => ({
         id: `p${i}`,
         name: n.trim() || this.i18n.t(`Player ${i + 1}`),
-        profileId: this.playerLibrary.players().find((p) => p.name === n.trim())?.id,
+        profileId: this.playerLibrary.players().find((p) => p.name === n.trim())?.id ?? newId(),
       }));
       if (new Set(players.map((p) => p.name)).size !== players.length)
         throw new Error('Choose a different player for each seat.');

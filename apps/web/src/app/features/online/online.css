@@ -3,6 +3,43 @@
   max-width: 42rem;
   margin-inline: auto;
 }
+:host(.embedded) {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+}
+.room-lobby {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.room-lobby-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 16px;
+}
+.room-lobby > app-player-presence {
+  flex-shrink: 0;
+}
+.room-bottom {
+  flex-shrink: 0;
+  width: 100%;
+  max-width: none;
+  margin: 24px 0 0;
+  padding: 0;
+  border: 0;
+  font-size: inherit;
+  color: inherit;
+  background: var(--surface);
+}
+.room-bottom .room-expiry {
+  margin-block: 0 12px;
+}
 form,
 label {
   display: grid;

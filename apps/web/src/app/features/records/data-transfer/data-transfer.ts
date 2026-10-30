@@ -18,18 +18,30 @@ import { Toast } from '../../../shared/toast/toast';
 import { DialogBackdrop } from '../../../shared/dialog-backdrop';
 import { gameArchive, parseArchive } from './data-archive';
 import { gamesCsv, parseGamesCsv } from './data-csv';
-import { scanQrImage, transferId } from '../../../shared/qr/scan-qr';
+import { transferId } from '../../../shared/qr/scan-qr';
+import { QrScanner } from '../../../shared/qr/qr-scanner';
 import { CopyButton } from '../../../shared/copy-button/copy-button';
 import { filterMatches } from '../record-stats';
 import type { Match } from '../../../../../../../packages/mahjong-core/ledger';
+import { PlayerLibrary } from '../../matches/data-access/player-library';
+import { playerIdentities, identityLabel, mapImportedPlayers } from '../player-identity';
 
 @Component({
   selector: 'app-data-transfer',
-  imports: [RouterLink, CopyButton, FormsModule, TranslatePipe, LocalDatePipe, DialogBackdrop],
+  imports: [
+    RouterLink,
+    CopyButton,
+    FormsModule,
+    TranslatePipe,
+    LocalDatePipe,
+    DialogBackdrop,
+    QrScanner,
+  ],
   templateUrl: './data-transfer.html',
   styleUrl: './data-transfer.css',
 })
 export class DataTransfer implements OnInit {
+  private readonly route = inject(ActivatedRoute);
   readonly history = inject(ShareHistory);
   readonly mode: 'menu' | 'import' | 'export' | 'share-history' =
     inject(ActivatedRoute).snapshot.data['transferMode'] ?? 'menu';
@@ -41,7 +53,13 @@ export class DataTransfer implements OnInit {
     try {
       await this.online.ready;
       this.history.load();
-      if (this.mode === 'export') this.games.set(await this.repo.list());
+      this.localMatches.set(await this.repo.list());
+      if (this.mode === 'export') this.games.set(this.localMatches());
+      const shared = this.route.snapshot.queryParamMap.get('share');
+      if (this.mode === 'import' && shared) {
+        this.transferCode.set(shared);
+        await this.loadTransfer();
+      }
     } catch {
       this.error.set('Could not load match.');
     } finally {
@@ -59,6 +77,36 @@ export class DataTransfer implements OnInit {
   private readonly repo = inject(Repository);
   readonly changed = output<void>();
   readonly games = signal<Match[]>([]);
+  private readonly library = inject(PlayerLibrary);
+  private readonly localMatches = signal<Match[]>([]);
+  readonly identityLabel = identityLabel;
+  readonly existingPlayers = computed(() =>
+    playerIdentities(this.localMatches(), this.library.players()),
+  );
+  readonly incomingPlayers = computed(() => playerIdentities(this.newGames()));
+  private newGames(): Match[] {
+    const existing = new Set(this.localMatches().map((match) => match.id));
+    return this.selected().filter((match) => !existing.has(match.id));
+  }
+  readonly playerMapping = signal<Record<string, string>>({});
+  readonly mergeTargets = computed(() => [
+    ...new Map(
+      [...this.incomingPlayers(), ...this.existingPlayers()].map((person) => [person.id, person]),
+    ).values(),
+  ]);
+  mappingTarget(id: string): string {
+    const value = this.playerMapping();
+    return Object.hasOwn(value, id) && this.mergeTargets().some((person) => person.id === value[id])
+      ? value[id]
+      : id;
+  }
+  existingIdentity(id: string): boolean {
+    return this.existingPlayers().some((player) => player.id === id);
+  }
+  mapPlayer(id: string, target: string): void {
+    if (target !== id && !this.mergeTargets().some((person) => person.id === target)) return;
+    this.playerMapping.update((value) => ({ ...value, [id]: target }));
+  }
   readonly importing = signal(false);
   readonly busy = signal(false);
   readonly error = signal('');
@@ -68,9 +116,7 @@ export class DataTransfer implements OnInit {
   readonly player = signal('');
   readonly excluded = signal(new Set<string>());
   readonly invalidDates = computed(() => !!this.from() && !!this.to() && this.from() > this.to());
-  readonly players = computed(() =>
-    [...new Set(this.games().flatMap((game) => game.players.map((player) => player.name)))].sort(),
-  );
+  readonly players = computed(() => playerIdentities(this.games()));
   readonly filtered = computed(() =>
     filterMatches(this.games(), {
       from: this.from(),
@@ -102,6 +148,7 @@ export class DataTransfer implements OnInit {
       if (file.size > 20 * 1024 * 1024) throw new Error('Archive must be smaller than 20 MiB.');
       if (!file.name.toLowerCase().endsWith('.csv')) throw new Error('Invalid CSV file.');
       const archive = parseGamesCsv(await file.text());
+      this.playerMapping.set({});
       this.games.set(archive.matches);
       this.importing.set(true);
       this.excluded.set(new Set());
@@ -193,15 +240,13 @@ export class DataTransfer implements OnInit {
       this.busy.set(false);
     }
   }
-  async scanTransfer(input: HTMLInputElement): Promise<void> {
-    const file = input.files?.[0];
-    input.value = '';
-    if (!file || this.busy()) return;
+  async scanTransfer(value: string): Promise<void> {
+    if (this.busy()) return;
     this.games.set([]);
     this.busy.set(true);
     this.error.set('');
     try {
-      this.transferCode.set(transferId(await scanQrImage(file)));
+      this.transferCode.set(transferId(value));
       await this.loadTransfer();
     } catch (error) {
       this.toast.error(error instanceof Error ? error.message : 'Invalid transfer code.');
@@ -223,6 +268,7 @@ export class DataTransfer implements OnInit {
   }
   private async loadTransfer(): Promise<void> {
     this.games.set([]);
+    this.playerMapping.set({});
     const id = transferId(this.transferCode());
     const archive = parseArchive(
       JSON.stringify(await this.online.request<unknown>(`/api/shares/${id}`)),
@@ -233,7 +279,7 @@ export class DataTransfer implements OnInit {
     this.to.set('');
     this.player.set('');
   }
-  async revokeShare(): Promise<void> {
+  async revokeShare(dialog: HTMLDialogElement): Promise<void> {
     const receipt = this.share();
     if (!receipt || this.busy()) return;
     this.busy.set(true);
@@ -241,6 +287,7 @@ export class DataTransfer implements OnInit {
       await this.online.request(`/api/shares/${receipt.id}`, 'DELETE', undefined, undefined, {
         'X-Deletion-Secret': receipt.deletionSecret,
       });
+      dialog.close();
       this.share.set(null);
       this.shareQr.set('');
       this.history.remove(receipt.id);
@@ -257,11 +304,16 @@ export class DataTransfer implements OnInit {
     this.busy.set(true);
     this.error.set('');
     try {
-      const count = await this.repo.importGames(this.selected());
+      const mapping = Object.fromEntries(
+        this.incomingPlayers().map((person) => [person.id, this.mappingTarget(person.id)]),
+      );
+      const mapped = mapImportedPlayers(this.newGames(), mapping);
+      const count = await this.repo.importGames(mapped);
+      this.localMatches.set(await this.repo.list());
       this.toast.success(count ? 'Games imported.' : 'No new games to import.');
       this.changed.emit();
-    } catch {
-      this.error.set('Could not import games.');
+    } catch (error) {
+      this.error.set(error instanceof Error ? error.message : 'Could not import games.');
     } finally {
       this.busy.set(false);
     }

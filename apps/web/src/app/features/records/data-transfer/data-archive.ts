@@ -37,17 +37,25 @@ function validMatch(value: unknown): value is Match {
   )
     return false;
   const ids = new Set<string>();
+  const profiles = new Set<string>();
   for (const player of value.players) {
     if (
       !object(player) ||
       !text(player.id) ||
       ['__proto__', 'constructor', 'prototype', 'table'].includes(player.id) ||
       !text(player.name) ||
+      (player.profileId !== undefined &&
+        (typeof player.profileId !== 'string' ||
+          !player.profileId.length ||
+          ['__proto__', 'constructor', 'prototype'].includes(player.profileId) ||
+          player.profileId.length > 4096)) ||
       ids.has(player.id) ||
+      (typeof player.profileId === 'string' && profiles.has(player.profileId)) ||
       !Number.isSafeInteger(value.initialBalances[player.id])
     )
       return false;
     ids.add(player.id);
+    if (typeof player.profileId === 'string') profiles.add(player.profileId);
   }
   if (
     Object.keys(value.initialBalances).length !== ids.size ||

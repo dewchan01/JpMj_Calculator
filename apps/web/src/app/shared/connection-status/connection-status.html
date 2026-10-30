@@ -8,7 +8,11 @@
   [attr.aria-label]="label() || state() | t"
   [title]="label() || state() | t"
 >
-  <span class="connection-pulse" aria-hidden="true"></span>
+  @if (state() === 'Connecting' || state() === 'Reconnecting') {
+    <app-loading-spinner />
+  } @else {
+    <span class="connection-pulse" aria-hidden="true"></span>
+  }
   @if (!compact()) {
     <span aria-hidden="true">{{ label() || state() | t }}</span>
   }

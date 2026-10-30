@@ -9,26 +9,15 @@
 } @else if (error()) {
   <p role="alert">{{ error() | t }}</p>
 }
-@if (initializing()) {
+@if (initializing() || (busy() && !access() && !shareId)) {
   <div class="room-loading" role="status">
-    <span class="connection-pulse" aria-hidden="true"></span>
+    <app-loading-spinner />
     {{ 'Connecting' | t }}
   </div>
 } @else if (!api.url()) {
   <p>{{ 'Online service is not configured.' | t }}</p>
 } @else if (shareId) {
-  @if (archive(); as data) {
-    <h2>{{ 'Import data' | t }}</h2>
-    <p>{{ 'Review these games before importing. Existing game IDs are skipped.' | t }}</p>
-    <ul>
-      @for (match of data.matches; track match.id) {
-        <li>{{ match.name }} · {{ match.createdAt | localDate: 'date' }}</li>
-      }
-    </ul>
-    <button class="primary" (click)="import()" [disabled]="busy()">
-      {{ 'Import selected games' | t }}
-    </button>
-  }
+  <app-loading-spinner />
 } @else if (access() && !access()!.host) {
   <app-connection-status [state]="connectionStatus()" />
   <p role="status">{{ 'Joined the room. Waiting for the host to start the game.' | t }}</p>
@@ -46,120 +35,135 @@
   }
   <button class="secondary" (click)="leave()" [disabled]="busy()">{{ 'Leave room' | t }}</button>
 } @else if (access(); as credential) {
-  @if (credential.pin) {
-    <p class="room-qr-hint">{{ 'Scan this QR code to join automatically.' | t }}</p>
-  }
-  @if (qr()) {
-    <img class="room-qr" [src]="qr()" width="200" height="200" [alt]="'Room QR code' | t" />
-  }
-  <section class="room-credentials">
-    <div class="connection-row">
-      <app-connection-status [state]="connectionStatus()" />
-    </div>
-    <div class="credential-row">
-      <span>{{ 'Room code' | t }}</span>
-      <div class="credential-input">
-        <input readonly [value]="credential.id" [attr.aria-label]="'Room code' | t" />
-        <button
-          class="secondary"
-          [appCopyButton]="credential.id"
-          #copyFeedback="copyButton"
-          (copyFailed)="toast.error('Could not copy. Select the room details to copy manually.')"
-          [attr.aria-label]="'Copy room details' | t"
-          [title]="'Copy room details' | t"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            @if (copyFeedback.copied()) {
-              <path d="m5 12 4 4L19 6" />
-            } @else {
-              <rect x="8" y="8" width="12" height="13" rx="2" />
-              <path d="M16 8V3H3v13h5" />
-            }
-          </svg>
-        </button>
-      </div>
-    </div>
-    @if (credential.pin) {
-      <div class="credential-row">
-        <span>{{ 'Room PIN' | t }}</span>
-        <div class="credential-input">
-          <input readonly [value]="credential.pin" [attr.aria-label]="'Room PIN' | t" />
-          <button
-            class="secondary"
-            [appCopyButton]="credential.pin"
-            #pinCopyFeedback="copyButton"
-            (copyFailed)="toast.error('Could not copy. Select the room details to copy manually.')"
-            [attr.aria-label]="('Copy room details' | t) + ' - ' + ('Room PIN' | t)"
-            [title]="'Copy room details' | t"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              @if (pinCopyFeedback.copied()) {
-                <path d="m5 12 4 4L19 6" />
-              } @else {
-                <rect x="8" y="8" width="12" height="13" rx="2" />
-                <path d="M16 8V3H3v13h5" />
-              }
-            </svg>
-          </button>
+  <section class="room-lobby">
+    <div class="room-lobby-content">
+      @if (credential.pin) {
+        <p class="room-qr-hint">{{ 'Scan this QR code to join automatically.' | t }}</p>
+      }
+      @if (qr()) {
+        <img class="room-qr" [src]="qr()" width="200" height="200" [alt]="'Room QR code' | t" />
+      }
+      <section class="room-credentials">
+        <div class="connection-row">
+          <app-connection-status [state]="connectionStatus()" />
         </div>
-      </div>
-    } @else if (credential.host) {
-      <p class="hint">{{ 'Passcode is available on the device that created this room.' | t }}</p>
+        <div class="credential-row">
+          <span>{{ 'Room code' | t }}</span>
+          <div class="credential-input">
+            <input readonly [value]="credential.id" [attr.aria-label]="'Room code' | t" />
+            <button
+              class="secondary"
+              [appCopyButton]="credential.id"
+              #copyFeedback="copyButton"
+              (copyFailed)="
+                toast.error('Could not copy. Select the room details to copy manually.')
+              "
+              [attr.aria-label]="'Copy room details' | t"
+              [title]="'Copy room details' | t"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                @if (copyFeedback.copied()) {
+                  <path d="m5 12 4 4L19 6" />
+                } @else {
+                  <rect x="8" y="8" width="12" height="13" rx="2" />
+                  <path d="M16 8V3H3v13h5" />
+                }
+              </svg>
+            </button>
+          </div>
+        </div>
+        @if (credential.pin) {
+          <div class="credential-row">
+            <span>{{ 'Room PIN' | t }}</span>
+            <div class="credential-input">
+              <input readonly [value]="credential.pin" [attr.aria-label]="'Room PIN' | t" />
+              <button
+                class="secondary"
+                [appCopyButton]="credential.pin"
+                #pinCopyFeedback="copyButton"
+                (copyFailed)="
+                  toast.error('Could not copy. Select the room details to copy manually.')
+                "
+                [attr.aria-label]="('Copy room details' | t) + ' - ' + ('Room PIN' | t)"
+                [title]="'Copy room details' | t"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  @if (pinCopyFeedback.copied()) {
+                    <path d="m5 12 4 4L19 6" />
+                  } @else {
+                    <rect x="8" y="8" width="12" height="13" rx="2" />
+                    <path d="M16 8V3H3v13h5" />
+                  }
+                </svg>
+              </button>
+            </div>
+          </div>
+        } @else if (credential.host) {
+          <p class="hint">
+            {{ 'Passcode is available on the device that created this room.' | t }}
+          </p>
+        }
+      </section>
+    </div>
+    @if (room(); as state) {
+      @if (credential.host && (game()?.match ?? pendingGame()); as currentMatch) {
+        <app-player-presence
+          [players]="currentMatch.players"
+          [onlineSeats]="presence()?.seats ?? null"
+          [ownSeat]="credential.seat"
+          [connection]="connectionStatus()"
+        />
+      }
+      <footer class="room-bottom">
+        <div class="room-expiry">
+          <span>{{ 'Expires' | t }}</span>
+          <time [attr.datetime]="state.expiresAt">
+            {{ state.expiresAt | localDate: 'dateTime' }}
+          </time>
+        </div>
+        @if (!game()?.match?.id && credential.host && !pendingGame()) {
+          <label>
+            {{ 'Game' | t }}
+            <select [formControl]="selectedGame">
+              <option value="">{{ 'Select a game' | t }}</option>
+              @for (match of games(); track match.id) {
+                <option [value]="match.id">{{ match.name }}</option>
+              }
+            </select>
+          </label>
+          <button (click)="attach()" [disabled]="busy() || !selectedGame.value">
+            {{ 'Attach game' | t }}
+          </button>
+          <p>
+            {{
+              'Create a local game with the same player count first. Seat numbers follow its player order.'
+                | t
+            }}
+          </p>
+        }
+        <div class="room-footer-actions">
+          @if (credential.host) {
+            <button class="secondary action-delete" (click)="close()" [disabled]="busy()">
+              {{ 'Close room' | t }}
+            </button>
+          } @else {
+            <button class="secondary" (click)="leave()" [disabled]="busy()">
+              {{ 'Leave room' | t }}
+            </button>
+          }
+          @if (game()?.match?.id) {
+            <a class="primary" [routerLink]="['/room', credential.id]">
+              {{ 'Open room table' | t }}
+            </a>
+          } @else if (credential.host && pendingGame()) {
+            <button class="secondary" (click)="startGame()" [disabled]="busy()">
+              {{ 'Start game' | t }}
+            </button>
+          }
+        </div>
+      </footer>
     }
   </section>
-
-  @if (room(); as state) {
-    @if (credential.host && (game()?.match ?? pendingGame()); as currentMatch) {
-      <app-player-presence
-        [players]="currentMatch.players"
-        [onlineSeats]="presence()?.seats ?? null"
-        [ownSeat]="credential.seat"
-        [connection]="connectionStatus()"
-      />
-    }
-    <div class="room-expiry">
-      <span>{{ 'Expires' | t }}</span>
-      <time [attr.datetime]="state.expiresAt">{{ state.expiresAt | localDate: 'dateTime' }}</time>
-    </div>
-    @if (!game()?.match?.id && credential.host && !pendingGame()) {
-      <label>
-        {{ 'Game' | t }}
-        <select [formControl]="selectedGame">
-          <option value="">{{ 'Select a game' | t }}</option>
-          @for (match of games(); track match.id) {
-            <option [value]="match.id">{{ match.name }}</option>
-          }
-        </select>
-      </label>
-      <button (click)="attach()" [disabled]="busy() || !selectedGame.value">
-        {{ 'Attach game' | t }}
-      </button>
-      <p>
-        {{
-          'Create a local game with the same player count first. Seat numbers follow its player order.'
-            | t
-        }}
-      </p>
-    }
-    <div class="room-footer-actions">
-      @if (credential.host) {
-        <button class="secondary action-delete" (click)="close()" [disabled]="busy()">
-          {{ 'Close room' | t }}
-        </button>
-      } @else {
-        <button class="secondary" (click)="leave()" [disabled]="busy()">
-          {{ 'Leave room' | t }}
-        </button>
-      }
-      @if (game()?.match?.id) {
-        <a class="primary" [routerLink]="['/room', credential.id]">{{ 'Open room table' | t }}</a>
-      } @else if (credential.host && pendingGame()) {
-        <button class="primary" (click)="startGame()" [disabled]="busy()">
-          {{ 'Start game' | t }}
-        </button>
-      }
-    </div>
-  }
 } @else {
   <form [formGroup]="form" (ngSubmit)="join()">
     @if (entryMode() !== 'host') {

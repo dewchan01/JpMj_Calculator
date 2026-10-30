@@ -1,6 +1,7 @@
 import { finalStandings } from '../../../../../../../packages/mahjong-core/final-results';
 import type { Match, LedgerEvent } from '../../../../../../../packages/mahjong-core/ledger';
 import { tableRules } from '../../../../../../../packages/mahjong-rules/index';
+import { playerIdentities, playerIdentity } from '../player-identity';
 
 export type HandState = 'dama' | 'riichi' | 'open';
 export interface HandSample {
@@ -292,7 +293,9 @@ export function handSamples(match: Match, id: string): HandSample[] {
   return samples;
 }
 
-export function analyzePlayer(matches: Match[], name: string, count: 3 | 4) {
+export function analyzePlayer(matches: Match[], identity: string, count: 3 | 4) {
+  const identities = playerIdentities(matches);
+  const name = identities.find((player) => player.id === identity)?.name ?? identity;
   const games: GameSample[] = [];
   const hands: HandSample[] = [];
   for (const match of matches
@@ -300,7 +303,7 @@ export function analyzePlayer(matches: Match[], name: string, count: 3 | 4) {
     .sort(
       (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt) || a.id.localeCompare(b.id),
     )) {
-    const player = match.players.find((player) => player.name.trim() === name);
+    const player = match.players.find((player) => playerIdentity(match, player) === identity);
     if (!player) continue;
     const standing = finalStandings(match).find((row) => row.id === player.id)!;
     games.push({
@@ -444,22 +447,33 @@ export function analyzePlayer(matches: Match[], name: string, count: 3 | 4) {
     };
   });
   const chemistry = [
-    ...new Set(games.flatMap((game) => game.match.players.map((player) => player.name.trim()))),
+    ...new Set(
+      games.flatMap((game) =>
+        game.match.players.map((player) => playerIdentity(game.match, player)),
+      ),
+    ),
   ]
-    .filter((other) => other !== name)
+    .filter((other) => other !== identity)
     .map((other) => {
       const shared = games.filter((game) =>
-        game.match.players.some((player) => player.name.trim() === other),
+        game.match.players.some((player) => playerIdentity(game.match, player) === other),
       );
       return {
-        name: other,
+        id: other,
+        name: identities.find((player) => player.id === other)?.name ?? other,
         games: shared.length,
         averageRank: mean(shared.map((game) => game.rank)),
         averageScore: mean(shared.map((game) => game.score)),
         ahead: rate(
           shared.map(
             (game) =>
-              game.rank < finalStandings(game.match).find((row) => row.name.trim() === other)!.rank,
+              game.rank <
+              finalStandings(game.match).find(
+                (row) =>
+                  row.id ===
+                  game.match.players.find((player) => playerIdentity(game.match, player) === other)!
+                    .id,
+              )!.rank,
           ),
         ),
       };

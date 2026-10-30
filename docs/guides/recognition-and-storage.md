@@ -130,7 +130,9 @@ accuracy on physical photographs.
 ### Guided quick-score camera
 
 Quick score's **Guided photo** opens a rear-camera preview with normalized areas: concealed hand,
-four single-meld slots labeled Meld 1–4, a concealed-Kan area and (only in Sanma) a North area.
+four single-meld slots labeled Meld 1–4 in two horizontal rows of two, a concealed-Kan area and
+(only in Sanma) a North area. Slot height adapts to the camera aspect ratio to retain horizontal
+space for three/four tiles even with a portrait camera frame.
 Source selectors use Previous/Opposite/Next relative to the winning player, without displaying
 other player names in the camera grid. Sanma offers only Previous/Next. These labels map back to
 the actual player IDs for scoring. Change the source before arranging the tiles, or select Concealed Kan for an

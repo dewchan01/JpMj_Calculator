@@ -1,4 +1,13 @@
 {
+  "Player mapping only affects newly imported games.": "玩家对应仅应用于新增导入的对局。",
+  "Use matching player ID": "使用相同身份 ID 的玩家",
+  "Player mappings contain a cycle.": "玩家对应形成循环，请选择同一个最终目标玩家。",
+  "Only completed games count. Players are grouped by identity, not name. Total points means net points won or lost; total score includes Uma and Oka. Currencies are kept separate.": "仅统计已完成对局，按玩家身份分组，不按姓名合并。总点数为持点净增减，总成绩包含顺位马与头名赏；不同币别分开统计。",
+  "Match imported players": "对应导入玩家",
+  "Same IDs refer to the same player. Different IDs stay separate unless you choose an existing player. Names alone are never merged.": "相同身份 ID 视为同一人；不同 ID 默认分开，也可选择合并到现有玩家，不会只因同名就合并。",
+  "Keep as a separate player": "保留为独立玩家",
+  "Two players in one game cannot share an identity.": "同一对局内的两位玩家不能合并为同一身份。",
+  "Several players share this name. Select a player from Records.": "有多位同名玩家，请从对局记录选择正确的玩家。",
   "Previous player": "上家",
   "Opposite player": "对家",
   "Next player": "下家",

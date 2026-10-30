@@ -22,6 +22,18 @@ function inside(notation: string, zone: CaptureZone, sideways = -1): LocatedTile
 }
 
 describe('guided photo zones', () => {
+  it('keeps all four meld areas horizontal in landscape and portrait camera frames', () => {
+    for (const aspect of [16 / 9, 4 / 3, 9 / 16]) {
+      const melds = captureZones(['left', 'across', 'right', 'left'], false, aspect).filter(
+        (zone) => zone.id.startsWith('meld-'),
+      );
+      expect(melds).toHaveLength(4);
+      for (const zone of melds)
+        expect((zone.box.width * aspect) / zone.box.height).toBeGreaterThanOrEqual(3.19);
+      expect(melds[0].box.y).toBe(melds[1].box.y);
+      expect(melds[2].box.y).toBeGreaterThan(melds[0].box.y);
+    }
+  });
   const zones = captureZones(['left', 'across', 'right', 'ankan'], true);
   it('uses explicit areas with a short hand, preserving source and red called tile', () => {
     const hand = inside('55p', zones[0]);

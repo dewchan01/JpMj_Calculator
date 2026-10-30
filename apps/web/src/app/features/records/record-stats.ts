@@ -1,6 +1,7 @@
 import { finalStandings } from '../../../../../../packages/mahjong-core/final-results';
 import type { Match } from '../../../../../../packages/mahjong-core/ledger';
 import { tableRules } from '../../../../../../packages/mahjong-rules/index';
+import { playerIdentities, playerIdentity } from './player-identity';
 
 export interface RecordFilter {
   from: string;
@@ -17,7 +18,8 @@ export function filterMatches(matches: Match[], filter: RecordFilter): Match[] {
       (!filter.from || day >= filter.from) &&
       (!filter.to || day <= filter.to) &&
       (!filter.mode || mode === filter.mode) &&
-      (!filter.participant || match.players.some((p) => p.name.trim() === filter.participant))
+      (!filter.participant ||
+        match.players.some((p) => playerIdentity(match, p) === filter.participant))
     );
   });
 }
@@ -34,6 +36,7 @@ export function durationMinutes(match: Match): number {
   return Math.max(0, Math.round((Date.parse(last) - Date.parse(match.createdAt)) / 60000));
 }
 export interface PlayerRecord {
+  id: string;
   name: string;
   games: number;
   averageRank: number;
@@ -41,15 +44,21 @@ export interface PlayerRecord {
   score: number;
   money: Record<string, number>;
 }
-/** Names are the existing local player identity; unfinished tables never count as final results. */
+/** Stable player identities; unfinished tables never count as final results. */
 export function playerRecords(matches: Match[]): PlayerRecord[] {
+  const names = new Map(playerIdentities(matches).map((player) => [player.id, player.name]));
   const people = new Map<string, PlayerRecord & { rankSum: number }>();
   for (const match of matches.filter((game) => game.ended)) {
     const currency = tableRules(match.rules).currency;
     for (const row of finalStandings(match)) {
       const name = row.name.trim();
-      const record = people.get(name) ?? {
-        name,
+      const id = playerIdentity(
+        match,
+        match.players.find((player) => player.id === row.id)!,
+      );
+      const record = people.get(id) ?? {
+        id,
+        name: names.get(id) ?? name,
         games: 0,
         averageRank: 0,
         rankSum: 0,
@@ -64,7 +73,7 @@ export function playerRecords(matches: Match[]): PlayerRecord[] {
       record.score += row.finalScore;
       record.money[currency] =
         Math.round(((record.money[currency] ?? 0) + row.totalMoney) * 100) / 100;
-      people.set(name, record);
+      people.set(id, record);
     }
   }
   return [...people.values()];

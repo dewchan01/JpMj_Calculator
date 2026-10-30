@@ -1,4 +1,13 @@
 {
+  "Player mapping only affects newly imported games.": "対応付けは新しくインポートする対局にのみ適用されます。",
+  "Use matching player ID": "同じIDのプレイヤーを使用",
+  "Player mappings contain a cycle.": "対応付けが循環しています。同じ最終プレイヤーを選択してください。",
+  "Only completed games count. Players are grouped by identity, not name. Total points means net points won or lost; total score includes Uma and Oka. Currencies are kept separate.": "終了した対局のみを集計し、名前ではなくプレイヤーIDでまとめます。総点数は持ち点の純増減、総成績はウマとオカを含みます。通貨は別々に集計します。",
+  "Match imported players": "インポートするプレイヤーの対応付け",
+  "Same IDs refer to the same player. Different IDs stay separate unless you choose an existing player. Names alone are never merged.": "同じIDは同一人物として扱います。異なるIDは別人のままにするか、既存のプレイヤーに対応付けられます。同名だけでは統合しません。",
+  "Keep as a separate player": "別のプレイヤーとして保持",
+  "Two players in one game cannot share an identity.": "同じ対局の2人を同一人物に統合できません。",
+  "Several players share this name. Select a player from Records.": "同名のプレイヤーが複数います。対局記録から選択してください。",
   "Previous player": "上家",
   "Opposite player": "対面",
   "Next player": "下家",

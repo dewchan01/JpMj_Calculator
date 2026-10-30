@@ -1,10 +1,10 @@
 # Verification status
 
-Last recorded local runs: **2026-10-29**. These results describe the tested working tree, not a successful production deployment or a new full-browser-suite certification.
+Last recorded local runs: **2026-10-30**. These results describe the tested working tree, not a successful production deployment or a new full-browser-suite certification.
 
 | Check                                 | Latest recorded result                                                                                                                                |
 | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Vitest application/domain tests       | 293 passed in 29 spec files                                                                                                                           |
+| Vitest application/domain tests       | 316 passed in 33 spec files                                                                                                                           |
 | ASP.NET Core tests                    | 37 passed; includes configuration, lobby selection, concurrent-seat protection and draw-only authorization                                            |
 | Angular production build              | Passed                                                                                                                                                |
 | TypeScript typecheck                  | Passed                                                                                                                                                |
@@ -15,6 +15,12 @@ Last recorded local runs: **2026-10-29**. These results describe the tested work
 | Real phones and production SQL Server | Separate deployment/device verification is still needed                                                                                               |
 
 Historical test numbers remain in [archived reports](../archive/2026-10-23-verification.md). Do not use them as current release evidence.
+
+Player identity/import matching passed the full 316-test unit suite, typecheck, production build
+and targeted lint. Three focused browser checks cover separate same-name players, explicit mapping,
+same-game identity collision rejection, CSV filtering/roundtrip and legacy share-URL import preview.
+Player analysis also passed at 390px and 1280px, including comparisons, opponent chemistry, filters,
+charts and accessibility. These are focused checks, not a full Playwright-suite run.
 
 Room QR scanner checks cover continuous camera frames (blank frames followed by an actual QR),
 automatic join submission, camera-track cleanup, denied-permission fallback and QR-image selection.
@@ -27,6 +33,20 @@ notation invalidation and existing target inputs/themes. Build, typecheck and ta
 passed. Guided-camera checks cover 3P/4P caller presets, full-frame dimensions, an overlay-free
 upload, track cleanup, red called tiles, concealed Kan, North and accessibility at phone width.
 Fixtures use synthetic detector boxes/video; physical-photo grouping is unverified.
+
+The connection/loading and camera-layout follow-up passed 13 focused layout unit tests and
+five browser checks: join-request spinner, centered QR action, camera scan/fallback and 3P/4P
+horizontal meld slots. Portrait/landscape slot geometry and phone-width accessibility are covered.
+
+Direct hosting reuses the home setup. Three focused browser checks passed for host/join/start
+flows, including a real-API 3P room. The host check also verifies at least 24px between player
+presence and expiry, stable full-width bottom actions while credentials scroll, and the
+mobile Close styling. Build, typecheck and targeted ESLint passed. The current Close style retains
+its border and uses a rounded inset theme-color focus indicator instead of an outer brown outline.
+
+Four focused browser checks passed for share revocation/dialog closure, CSV round-trip and
+duplicate-ID import, transparent Start-game actions, and host/join prompt navigation. Typecheck,
+build and targeted ESLint passed. Share API mocks disable service workers so requests are intercepted.
 
 Shared-toast checks passed for update results, CSV transfers, online notices, modal layering,
 dismissal and rule-save feedback. The older full `e2e/settings.spec.ts` run still fails on legacy

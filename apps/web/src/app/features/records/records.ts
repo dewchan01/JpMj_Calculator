@@ -14,6 +14,7 @@ import { finalStandings } from '../../../../../../packages/mahjong-core/final-re
 import type { Match } from '../../../../../../packages/mahjong-core/ledger';
 import { ruleName, tableRules } from '../../../../../../packages/mahjong-rules/index';
 import { durationMinutes, filterMatches, playerRecords } from './record-stats';
+import { playerIdentities, identityLabel } from './player-identity';
 
 @Component({
   imports: [
@@ -87,11 +88,13 @@ export class Records {
   private readonly playerOrder = toSignal(this.playerSort.valueChanges, { initialValue: 'name' });
   readonly currency = new FormControl('', { nonNullable: true });
   private readonly moneyCurrency = toSignal(this.currency.valueChanges, { initialValue: '' });
-  readonly participants = computed(() =>
-    [...new Set(this.matches().flatMap((m) => m.players.map((p) => p.name.trim())))].sort((a, b) =>
-      a.localeCompare(b),
-    ),
-  );
+  readonly participants = computed(() => playerIdentities(this.matches()));
+  readonly identityLabel = identityLabel;
+  playerLabel(player: { id: string; name: string }): string {
+    return this.players().filter((other) => other.name === player.name).length > 1
+      ? identityLabel(player)
+      : player.name;
+  }
   readonly invalidDates = computed(() => {
     const { from, to } = this.changes();
     return !!from && !!to && from > to;
@@ -161,7 +164,7 @@ export class Records {
   readonly players = computed(() => {
     const f = this.changes();
     const rows = playerRecords(this.filtered()).filter(
-      (p) => !f.participant || p.name === f.participant,
+      (p) => !f.participant || p.id === f.participant,
     );
     const selected = this.moneyCurrency();
     const currency = this.currencies().includes(selected) ? selected : (this.currencies()[0] ?? '');

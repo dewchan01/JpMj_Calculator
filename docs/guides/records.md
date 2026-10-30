@@ -14,7 +14,7 @@ player statistics. Removing a saved player name does not delete that person's hi
 
 ## Filters and sorting
 
-Filters use inclusive local creation dates, player count/game length and an exact participant name.
+Filters use inclusive local creation dates, player count/game length and a participant identity.
 Game mode chips form one horizontally scrollable row with the filtered game count fixed on its right.
 The long duration-estimation description is omitted. Sort is beside Filter records. Filter prompts
 use draft values: Apply commits them, Close/Escape discards unapplied changes, Reset in the prompt
@@ -24,8 +24,11 @@ retain the page gutter, and new tabs/filter chips reset scrolling.
 
 Games sort by creation date. Cards show final standings, raw points and recorded duration. Timed
 games exclude pauses; legacy games estimate duration from creation to the last recorded event.
-Players aggregate completed games using trimmed, case-sensitive names across tables. Reusing a name
-combines those records. A participant filter restricts the aggregate view to that person.
+Players aggregate completed games by `profileId`, retaining identity across display-name changes.
+Matching names with different IDs remain separate; short ID labels distinguish them. Legacy games
+without a profile ID use a game-and-seat identity rather than silently merging names. Selecting a
+saved player in setup reuses their profile; new unsaved participants receive fresh identities.
+A participant filter restricts the aggregate view to that person.
 
 ## Saved results
 
@@ -63,7 +66,8 @@ pencil, which adjusts final points/date only.
 
 ## Player pages
 
-Click a player row to open /records/player/:name. Overview, Statistics and Explore share dates and
+Click a player row to open /records/player/:identity. Old name-only links resolve only when the name
+identifies exactly one person. Overview, Statistics and Explore share dates and
 player-count filters. Three-player and four-player samples remain separate.
 
 Overview includes the last 16 chronological ranks, rank distribution, recent trend, winning-receipt

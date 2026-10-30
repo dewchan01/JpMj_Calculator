@@ -83,8 +83,8 @@
         {{ 'Participant' | t }}
         <select formControlName="participant">
           <option value="">{{ 'All participants' | t }}</option>
-          @for (name of participants(); track name) {
-            <option [value]="name">{{ name }}</option>
+          @for (person of participants(); track person.id) {
+            <option [value]="person.id">{{ identityLabel(person) }}</option>
           }
         </select>
       </label>
@@ -241,7 +241,7 @@
 } @else {
   <p class="hint">
     {{
-      'Only completed games count. Matching player names are combined. Total points means net points won or lost; total score includes Uma and Oka. Currencies are kept separate.'
+      'Only completed games count. Players are grouped by identity, not name. Total points means net points won or lost; total score includes Uma and Oka. Currencies are kept separate.'
         | t
     }}
   </p>
@@ -259,12 +259,12 @@
           </tr>
         </thead>
         <tbody>
-          @for (player of players(); track player.name) {
+          @for (player of players(); track player.id) {
             <tr class="player-record-row">
               <th scope="row" class="player-identity" [attr.aria-label]="player.name">
                 <a
                   class="player-profile-link player-display-name"
-                  [routerLink]="['/records/player', player.name]"
+                  [routerLink]="['/records/player', player.id]"
                   [queryParams]="{
                     from: filters.controls.from.value,
                     to: filters.controls.to.value,
@@ -272,7 +272,7 @@
                   }"
                   [title]="player.name"
                 >
-                  {{ player.name }}
+                  {{ playerLabel(player) }}
                 </a>
                 <span class="player-game-count">
                   <span>{{ 'Game count' | t }}</span>

@@ -1865,6 +1865,12 @@ select {
   border: 1px solid var(--border);
   border-radius: 10px;
 }
+.dialog-header > .icon-button:last-child:not(.back-button):focus-visible,
+.prompt-heading > .close-prompt:focus-visible,
+.players-heading > .icon-button:last-child:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--green);
+}
 
 .back-link.back-button,
 .quick-score-back {

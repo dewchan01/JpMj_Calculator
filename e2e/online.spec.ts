@@ -10,6 +10,51 @@ test.beforeEach(async ({ page }) => {
   );
 });
 
+test('joining shows a spinner while waiting and centers the QR scan action', async ({ page }) => {
+  await page.route('**/config.json', (route) =>
+    route.fulfill({
+      json: {
+        backend: { apiUrl: 'https://api.example.test' },
+      },
+    }),
+  );
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route('**/api/rooms/ABCDEF1234/join', async (route) => {
+    await gate;
+    await route.fulfill({ status: 401 });
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.getByRole('button', { name: /Start match/ }).click();
+  await expect(
+    page
+      .getByRole('dialog', { name: 'Start match', exact: true })
+      .getByRole('button', { name: 'Start game', exact: true }),
+  ).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await page.getByRole('button', { name: 'Start shared game', exact: true }).click();
+  await page.getByRole('button', { name: 'Join game', exact: true }).click();
+  const scanner = page.locator('app-qr-scanner');
+  const outer = (await scanner.boundingBox())!;
+  const button = (await scanner
+    .getByRole('button', { name: 'Scan room QR code', exact: true })
+    .boundingBox())!;
+  expect(Math.abs(button.x + button.width / 2 - (outer.x + outer.width / 2))).toBeLessThan(1);
+  await page.getByLabel('Room code', { exact: true }).fill('ABCDEF1234');
+  await page.getByLabel('Room PIN', { exact: true }).fill('123456');
+  await page.getByRole('button', { name: 'Join room', exact: true }).click();
+  try {
+    await expect(page.locator('.room-loading app-loading-spinner')).toBeVisible();
+    await expect(page.locator('.room-loading .connection-pulse')).toHaveCount(0);
+  } finally {
+    release();
+  }
+  await expect(page.getByRole('alert')).toHaveText('Room credentials are incorrect or expired.');
+  await expect(page.locator('.room-loading')).toHaveCount(0);
+});
+
 test('start choices stack and close without creating a game', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('combobox', { name: 'Game length', exact: true })).toHaveValue(
@@ -23,13 +68,9 @@ test('start choices stack and close without creating a game', async ({ page }) =
   await choice.getByRole('button', { name: 'Host game', exact: true }).click();
   const host = page.getByRole('dialog', { name: 'Host game', exact: true });
   await expect(host).toBeVisible();
-  await expect(host.getByRole('combobox', { name: 'Game length', exact: true })).toHaveValue(
-    'east',
-  );
-  await host.getByRole('button', { name: 'Back', exact: true }).click();
-  const roles = page.getByRole('dialog', { name: 'Start shared game', exact: true });
-  await expect(roles).toBeVisible();
-  await roles.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(host.getByRole('combobox')).toHaveCount(0);
+  await expect(host.getByText('Online service is not configured.', { exact: true })).toBeVisible();
+  await host.getByRole('button', { name: 'Close', exact: true }).click();
   await expect(page.locator('dialog[open]')).toHaveCount(0);
   await page.getByRole('button', { name: /Start match/ }).click();
   await page.getByRole('button', { name: 'Start game', exact: true }).click();

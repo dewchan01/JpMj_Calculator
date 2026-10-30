@@ -3,6 +3,22 @@
   top: 0;
   z-index: 2;
 }
+.player-mapping {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  min-width: 0;
+}
+.player-mapping label,
+.player-mapping select {
+  min-width: 0;
+  width: 100%;
+}
+.player-mapping label {
+  overflow-wrap: anywhere;
+}
 .share-qr {
   display: block;
   margin-inline: auto;

@@ -23,6 +23,10 @@ import { scanQrImage } from './scan-qr';
 export class QrScanner {
   private readonly toast = inject(Toast);
   readonly disabled = input(false);
+  readonly label = input('Scan room QR code');
+  readonly instruction = input(
+    'Keep the QR code in view. It will join automatically when recognized.',
+  );
   readonly scanned = output<string>();
   readonly error = signal('');
   readonly active = signal(false);

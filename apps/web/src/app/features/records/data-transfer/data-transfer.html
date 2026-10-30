@@ -79,20 +79,14 @@
       </div>
     } @else {
       <div class="dialog-body">
-        <p class="hint">{{ 'CSV format' | t }}</p>
         @if (importing()) {
           @if (online.url()) {
-            <input
-              #transferScan
-              hidden
-              type="file"
-              accept="image/*"
-              capture="environment"
-              (change)="scanTransfer(transferScan)"
+            <app-qr-scanner
+              label="Scan transfer QR code"
+              instruction="Scan this QR code or enter the transfer ID to import. Available for 24 hours."
+              [disabled]="busy()"
+              (scanned)="scanTransfer($event)"
             />
-            <button class="secondary" (click)="transferScan.click()" [disabled]="busy()">
-              {{ 'Scan transfer QR code' | t }}
-            </button>
             <label>
               {{ 'Transfer ID' | t }}
               <input
@@ -120,11 +114,6 @@
             />
           </label>
         }
-        <p class="hint">
-          {{
-            'Choose whole games by player and date. Existing game IDs are skipped on import.' | t
-          }}
-        </p>
         @if (error()) {
           <p role="alert">{{ error() | t }}</p>
         }
@@ -142,8 +131,8 @@
           {{ 'Player' | t }}
           <select [ngModel]="player()" (ngModelChange)="player.set($event)">
             <option value="">{{ 'All players' | t }}</option>
-            @for (name of players(); track name) {
-              <option [value]="name">{{ name }}</option>
+            @for (person of players(); track person.id) {
+              <option [value]="person.id">{{ identityLabel(person) }}</option>
             }
           </select>
         </label>
@@ -168,6 +157,41 @@
             <p class="hint">{{ 'No games found.' | t }}</p>
           }
         </fieldset>
+        @if (importing() && incomingPlayers().length) {
+          <fieldset class="player-mapping" [disabled]="busy()">
+            <legend>{{ 'Match imported players' | t }}</legend>
+            <p class="hint">
+              {{
+                'Same IDs refer to the same player. Different IDs stay separate unless you choose an existing player. Names alone are never merged.'
+                  | t
+              }}
+            </p>
+            <p class="hint">{{ 'Player mapping only affects newly imported games.' | t }}</p>
+            @for (person of incomingPlayers(); track person.id) {
+              <label>
+                {{ identityLabel(person) }}
+                <select
+                  [ngModel]="mappingTarget(person.id)"
+                  (ngModelChange)="mapPlayer(person.id, $event)"
+                >
+                  <option [ngValue]="person.id">
+                    {{
+                      (existingIdentity(person.id)
+                        ? 'Use matching player ID'
+                        : 'Keep as a separate player'
+                      ) | t
+                    }}
+                  </option>
+                  @for (existing of mergeTargets(); track existing.id) {
+                    @if (existing.id !== person.id) {
+                      <option [ngValue]="existing.id">{{ identityLabel(existing) }}</option>
+                    }
+                  }
+                </select>
+              </label>
+            }
+          </fieldset>
+        }
         <div class="dialog-actions transfer-actions">
           @if (importing()) {
             <button
@@ -265,7 +289,11 @@
           {{ receipt.expiresAt | localDate: 'dateTime' }}
         </time>
       </div>
-      <button class="secondary action-delete" (click)="revokeShare()" [disabled]="busy()">
+      <button
+        class="secondary action-delete"
+        (click)="revokeShare(shareDialog)"
+        [disabled]="busy()"
+      >
         {{ 'Revoke share' | t }}
       </button>
     }

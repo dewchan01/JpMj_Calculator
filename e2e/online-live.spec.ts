@@ -88,12 +88,6 @@ test('host and guest synchronize Riichi, Kan and a winning declaration through t
   };
   host.on('request', trackStartup);
   await host.getByRole('button', { name: 'Host game', exact: true }).click();
-  await host
-    .locator('#host-setup-title')
-    .locator('..')
-    .locator('..')
-    .getByRole('button', { name: 'Host game', exact: true })
-    .click();
   await expect(host.locator('.credential-row').first()).toBeVisible({ timeout: 20000 });
   host.off('request', trackStartup);
   expect(startupReads).toBe(0);
@@ -321,7 +315,7 @@ test('host and guest synchronize Riichi, Kan and a winning declaration through t
     .getByRole('img', { name: 'Share QR code', exact: true })
     .getAttribute('src');
   const shareId = await shareDialog.getByRole('textbox').inputValue();
-  await shareDialog.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(shareDialog).not.toBeVisible();
   await exportDialog.getByRole('link', { name: 'Back', exact: true }).click();
   // A full reload must retain this device's active share and regenerate its QR.
   await host.goto('/');
@@ -371,23 +365,33 @@ test('host can select three players and room header stays visible', async ({ pag
   );
   await page.setViewportSize({ width: 390, height: 700 });
   await page.goto('/');
+  await page.getByRole('button', { name: '3 players', exact: true }).click();
   await page.getByRole('button', { name: /Start match/ }).click();
   await page.getByRole('button', { name: 'Start shared game', exact: true }).click();
   await page.getByRole('button', { name: 'Host game', exact: true }).click();
-  await page
-    .getByRole('combobox', { name: 'Players', exact: true })
-    .selectOption({ label: '3 players' });
-  await page
-    .locator('#host-setup-title')
-    .locator('..')
-    .locator('..')
-    .getByRole('button', { name: 'Host game', exact: true })
-    .click();
   await expect(
     page.locator('app-online').getByRole('button', { name: 'Start game', exact: true }),
   ).toBeVisible();
   const dialog = page.locator('dialog.shared-game-dialog');
   await expect(dialog.locator('app-player-presence li')).toHaveCount(3);
+  await expect(dialog.getByRole('combobox', { name: 'Game length', exact: true })).toHaveCount(0);
+  await expect(dialog.getByRole('button', { name: 'Close', exact: true })).toHaveCSS(
+    'border-top-color',
+    'rgb(222, 223, 213)',
+  );
+  const expiry = (await dialog.locator('.room-expiry').boundingBox())!;
+  const presence = (await dialog.locator('app-player-presence').boundingBox())!;
+  expect(expiry.y - presence.y - presence.height).toBeGreaterThanOrEqual(23);
+  const footer = (await dialog.locator('.room-bottom').boundingBox())!;
+  const promptBox = (await dialog.boundingBox())!;
+  expect(promptBox.y + promptBox.height - footer.y - footer.height).toBeLessThanOrEqual(20);
+  const actions = (await dialog.locator('.room-footer-actions').boundingBox())!;
+  expect(promptBox.y + promptBox.height - actions.y - actions.height).toBeLessThanOrEqual(20);
+  expect(actions.width).toBeGreaterThan(promptBox.width - 40);
+  await dialog
+    .locator('.room-lobby-content')
+    .evaluate((element) => (element.scrollTop = element.scrollHeight));
+  expect((await dialog.locator('.room-bottom').boundingBox())!.y).toBeCloseTo(footer.y, 0);
   await expect(dialog.locator('.connection-row .connection-chip')).toHaveAttribute(
     'aria-label',
     'Connected',

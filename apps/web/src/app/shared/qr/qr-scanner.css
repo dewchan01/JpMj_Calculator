@@ -1,6 +1,10 @@
 :host {
   display: block;
 }
+:host > button {
+  display: block;
+  margin-inline: auto;
+}
 video {
   display: block;
   width: 100%;

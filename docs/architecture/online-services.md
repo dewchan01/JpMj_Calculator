@@ -29,8 +29,8 @@ Backend logs use Serilog with optional Seq shipping, configured by `Seq__ServerU
 
 See [shared table permissions and scoring flow](room-permissions.md) for host-only capability switches, per-device viewing angles, mandatory normal-mode indicators and local final-result choices. This update requires the `RoomPermissions` database migration.
 
-1. Choose players and rules on My table, then Start match > Start shared game. Select 3 or 4 players, rule preset and game length before Host game. Joined games use the host settings.
-2. **Host game** creates the room and attaches its initial game atomically in one request; the response contains lobby and game state, avoiding initial room/game GETs and a separate attach PUT. Seat numbers follow the player order.
+1. Choose players, your player, rules and game length on My table, then Start match > Start shared game > Host game. Hosting reuses those choices without another setup prompt. Joined games use the host settings.
+2. **Host game** creates the waiting room with its player names and host seat, then shows its QR invitation. **Start game** attaches the prepared game and opens the table. The invitation panel scrolls QR/credentials separately while keeping expiry/actions at the bottom with space after the player chips. Seat numbers follow the player order.
 3. Other devices enter the room code and PIN, receive a free seat automatically, and enter the table directly. Guests waiting for the host see a waiting message rather than host invitation controls.
 4. Keep the host's room table open. Players can declare their own Riichi/Double Riichi, cancel their
    own Riichi, record Chi/Pon/Kan/Kita, and submit Ron/Tsumo using the Assisted scoring or Manual Han entry.

@@ -16,9 +16,9 @@ export function sample(id = 'first', currency = 'USD'): Match {
     rules,
     playerCount: 3,
     players: [
-      { id: 'a', name: 'Alice' },
-      { id: 'b', name: 'Bob' },
-      { id: 'c', name: 'Carol' },
+      { id: 'a', name: 'Alice', profileId: 'Alice' },
+      { id: 'b', name: 'Bob', profileId: 'Bob' },
+      { id: 'c', name: 'Carol', profileId: 'Carol' },
     ],
     initialBalances: { a: 35000, b: 35000, c: 35000 },
     initialDealerId: 'a',
@@ -51,7 +51,7 @@ describe('record statistics', () => {
     expect(durationMinutes(sample())).toBe(90);
     expect(durationMinutes({ ...sample(), events: [] })).toBe(0);
   });
-  it('excludes unfinished tables, combines names across games and separates currencies', () => {
+  it('excludes unfinished tables, combines profile IDs across seats and separates currencies', () => {
     const second = sample('second', 'JPY');
     second.players[0].id = 'different-local-id';
     second.initialBalances = { 'different-local-id': 35000, b: 35000, c: 35000 };

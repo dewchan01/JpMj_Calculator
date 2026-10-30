@@ -27,7 +27,9 @@ export class GuidedCamera {
   readonly disabled = input(false);
   readonly captured = output<GuidedPhoto>();
   readonly sources = signal<string[]>([]);
-  readonly zones = computed(() => captureZones(this.sources(), this.playerCount() === 3));
+  readonly zones = computed(() =>
+    captureZones(this.sources(), this.playerCount() === 3, this.aspect()),
+  );
   readonly active = signal(false);
   readonly busy = signal(false);
   readonly error = signal('');

@@ -6,10 +6,63 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { presetRules } from '../packages/mahjong-rules/index';
 import type { Match } from '../packages/mahjong-core/ledger';
+test.use({ serviceWorkers: 'block' });
 test.beforeEach(async ({ page }) => {
   await page.route('**/config.json', (route) =>
     route.fulfill({ json: { backend: { apiUrl: '' } } }),
   );
+});
+
+test('revoking a saved share closes its prompt and restores mobile Close styling', async ({
+  page,
+}) => {
+  const api = 'http://localhost:4300';
+  const id = 'b'.repeat(64);
+  await page.route('**/config.json', (route) =>
+    route.fulfill({ json: { backend: { apiUrl: api } } }),
+  );
+  await page.addInitScript(
+    ({ api, id }) =>
+      localStorage.setItem(
+        `riichi-share-history:${api}`,
+        JSON.stringify([
+          {
+            id,
+            deletionSecret: 'c'.repeat(64),
+            title: 'Saved transfer',
+            gameCount: 1,
+            createdAt: new Date().toISOString(),
+            expiresAt: new Date(Date.now() + 3600000).toISOString(),
+          },
+        ]),
+      ),
+    { api, id },
+  );
+  let revoked = false;
+  await page.route(`${api}/api/shares/${id}`, (route) => {
+    if (route.request().method() === 'DELETE') revoked = true;
+    return route.fulfill({
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'X-Deletion-Secret',
+      },
+    });
+  });
+  await page.setViewportSize({ width: 390, height: 740 });
+  await page.goto('/others/data/share-history');
+  await page.locator('.history-entry').click();
+  const share = page.getByRole('dialog', { name: 'Share selected games', exact: true });
+  await expect(share.getByRole('img', { name: 'Share QR code', exact: true })).toBeVisible();
+  const close = share.getByRole('button', { name: 'Close', exact: true });
+  await expect(close).toHaveCSS('border-top-color', 'rgb(222, 223, 213)');
+  await close.focus();
+  await expect(close).toHaveCSS('outline-style', 'none');
+  await share.getByRole('button', { name: 'Revoke share', exact: true }).click();
+  await expect(share).not.toBeVisible();
+  await expect(page.locator('.history-entry')).toHaveCount(0);
+  expect(revoked).toBe(true);
 });
 
 function game(id: string, day: string, player = 'Alice'): Match {
@@ -22,9 +75,9 @@ function game(id: string, day: string, player = 'Alice'): Match {
     playerCount: 3,
     rules: presetRules('custom', 3),
     players: [
-      { id: 'a', name: player },
-      { id: 'b', name: 'Bob' },
-      { id: 'c', name: 'Carol' },
+      { id: 'a', name: player, profileId: player },
+      { id: 'b', name: 'Bob', profileId: 'Bob' },
+      { id: 'c', name: 'Carol', profileId: 'Carol' },
     ],
     initialBalances: { a: 35000, b: 35000, c: 35000 },
     initialDealerId: 'a',

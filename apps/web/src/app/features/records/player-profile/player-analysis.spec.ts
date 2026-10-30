@@ -21,7 +21,11 @@ function game(events: LedgerEvent[] = []): Match {
     playerCount: 4,
     rules: presetRules('custom', 4),
     ended: true,
-    players: ids.map((id, index) => ({ id, name: ['Alice', 'Bob', 'Carol', 'Dana'][index] })),
+    players: ids.map((id, index) => ({
+      id,
+      name: ['Alice', 'Bob', 'Carol', 'Dana'][index],
+      profileId: ['Alice', 'Bob', 'Carol', 'Dana'][index],
+    })),
     initialBalances: Object.fromEntries(ids.map((id) => [id, 25000])),
     initialDealerId: 'a',
     dealerId: 'a',

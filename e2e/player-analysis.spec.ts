@@ -99,6 +99,7 @@ function fixtures(): Match[] {
       players: ids.map((id, i) => ({
         id,
         name: [name, 'Bob', 'Carol with a very long player name', 'Dana'][i],
+        profileId: ['Alice', 'Bob', 'Carol', 'Dana'][i],
       })),
       initialBalances: { a: 25000, b: 25000, c: 25000, d: 25000 },
       initialDealerId: ids[index % 4],
@@ -241,7 +242,7 @@ for (const width of [390, 1280]) {
       .filter({ has: page.getByRole('heading', { name: 'Rank stats', exact: true }) });
     await expect(rank.locator('dl > div').filter({ hasText: '4th rate' })).toContainText('—');
     if (width > 700) {
-      await page.locator('.theme-toggle').click();
+      await page.getByRole('button', { name: 'Dark mode', exact: true }).click();
       await page.locator('.language-select').selectOption('zh-TW');
       await expect(page.getByRole('heading', { name: '基本統計', exact: true })).toBeVisible();
       expect(
@@ -250,7 +251,7 @@ for (const width of [390, 1280]) {
       ).toEqual([]);
       await page.screenshot({ path: 'artifacts/player-stats-dark-zh-tw.png', fullPage: true });
       await page.locator('.language-select').selectOption('en');
-      await page.locator('.theme-toggle').click();
+      await page.getByRole('button', { name: 'Dark mode', exact: true }).click();
     }
     await page.getByRole('link', { name: 'Back', exact: true }).click();
     await expect(page).toHaveURL(/\/records\?/);

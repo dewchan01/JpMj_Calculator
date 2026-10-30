@@ -232,8 +232,8 @@
       {{ 'Compare with' | t }}
       <select [value]="compare()" (change)="setValue($event, 'compare')">
         <option value="">{{ 'No comparison' | t }}</option>
-        @for (peer of peers(); track peer) {
-          <option [value]="peer">{{ peer }}</option>
+        @for (peer of peers(); track peer.id) {
+          <option [value]="peer.id">{{ identityLabel(peer) }}</option>
         }
       </select>
     </label>
@@ -371,8 +371,8 @@
         {{ 'Shared opponent' | t }}
         <select [value]="opponent()" (change)="setValue($event, 'opponent')">
           <option value="">{{ 'All players' | t }}</option>
-          @for (row of analysis().chemistry; track row.name) {
-            <option [value]="row.name">{{ row.name }}</option>
+          @for (row of analysis().chemistry; track row.id) {
+            <option [value]="row.id">{{ identityLabel(row) }}</option>
           }
         </select>
       </label>
@@ -382,9 +382,9 @@
             | t
         }}
       </p>
-      @for (row of chemistry(); track row.name) {
+      @for (row of chemistry(); track row.id) {
         <article class="chemistry-card">
-          <button (click)="opponent.set(row.name)">{{ row.name }}</button>
+          <button (click)="opponent.set(row.id)">{{ identityLabel(row) }}</button>
           <dl class="metric-grid">
             <div>
               <dt>{{ 'Shared games' | t }}</dt>

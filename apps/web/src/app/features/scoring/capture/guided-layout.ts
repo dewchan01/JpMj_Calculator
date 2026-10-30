@@ -13,14 +13,19 @@ export interface GuidedPhoto {
 }
 
 /** Coordinates refer to the uncropped video frame, exactly as used for detection. */
-export function captureZones(sources: string[], sanma: boolean): CaptureZone[] {
+export function captureZones(sources: string[], sanma: boolean, aspect = 4 / 3): CaptureZone[] {
   return [
     { id: 'hand', kind: 'hand', box: { x: 0.02, y: 0.04, width: 0.96, height: 0.3 } },
     ...sources.slice(0, 4).map((source, index): CaptureZone => ({
       id: `meld-${index}`,
       kind: source === 'ankan' ? 'ankan' : 'meld',
       ...(source === 'ankan' ? {} : { fromPlayerId: source }),
-      box: { x: 0.02 + index * 0.245, y: 0.4, width: 0.225, height: 0.3 },
+      box: {
+        x: 0.02 + (index % 2) * 0.49,
+        y: 0.4 + Math.floor(index / 2) * 0.18,
+        width: 0.47,
+        height: Math.min(0.16, (0.47 * aspect) / 3.2),
+      },
     })),
     {
       id: 'ankan',

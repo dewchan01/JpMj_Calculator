@@ -399,7 +399,20 @@
   width: min(600px, calc(100vw - 24px));
   height: min(760px, calc(100dvh - 32px));
 }
+.shared-game-dialog[open] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.shared-game-dialog > .dialog-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
 .shared-game-dialog > .dialog-header {
+  flex-shrink: 0;
   position: sticky;
   top: 0;
   z-index: 3;

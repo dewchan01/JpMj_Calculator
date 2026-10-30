@@ -8,7 +8,6 @@ import { LocalDatePipe } from '../../core/i18n/local-date';
 import { CopyButton } from '../../shared/copy-button/copy-button';
 import { ConnectionStatus } from '../../shared/connection-status/connection-status';
 import { Repository } from '../matches/data-access/repository';
-import { parseArchive, type GameArchive } from '../records/data-transfer/data-archive';
 import { roomHandKey } from '../../../../../../packages/mahjong-core/room-actions';
 import { initialLive, clockAt } from '../../../../../../packages/mahjong-core/live';
 import type { Match } from '../../../../../../packages/mahjong-core/ledger';
@@ -17,10 +16,13 @@ import { parsePresence, type PresenceSnapshot } from '../../core/online/presence
 import { PlayerPresence } from '../../shared/player-presence/player-presence';
 import { Toast } from '../../shared/toast/toast';
 import { QrScanner } from '../../shared/qr/qr-scanner';
+import { LoadingSpinner } from '../../shared/loading-spinner/loading-spinner';
 
 @Component({
   selector: 'app-online',
+  host: { '[class.embedded]': 'embedded()' },
   imports: [
+    LoadingSpinner,
     QrScanner,
     ConnectionStatus,
     PlayerPresence,
@@ -51,7 +53,6 @@ export class Online implements OnInit {
   readonly room = signal<RoomState | null>(null);
   readonly access = signal<RoomAccess | null>(null);
   readonly qr = signal('');
-  readonly archive = signal<GameArchive | null>(null);
   readonly games = signal<Match[]>([]);
   readonly game = signal<RoomGame | null>(null);
   readonly pendingGame = signal<Match | null>(null);
@@ -107,8 +108,10 @@ export class Online implements OnInit {
       }
       if (this.shareId) {
         if (!/^[a-f0-9]{64}$/.test(this.shareId)) throw new Error('Invalid game archive.');
-        const data = await this.api.request<unknown>(`/api/shares/${this.shareId}`);
-        this.archive.set(parseArchive(JSON.stringify(data)));
+        await this.router.navigate(['/others/data/import'], {
+          queryParams: { share: this.shareId },
+          replaceUrl: true,
+        });
       } else {
         const access = this.entryMode() ? null : this.savedAccess();
         if (
@@ -505,13 +508,5 @@ export class Online implements OnInit {
     } catch {
       /* Storage unavailable. */
     }
-  }
-  import(): void {
-    void this.run(async () => {
-      const archive = this.archive();
-      if (!archive) return;
-      const count = await this.repo.importGames(archive.matches);
-      this.toast.success(count ? 'Games imported.' : 'No new games to import.');
-    });
   }
 }

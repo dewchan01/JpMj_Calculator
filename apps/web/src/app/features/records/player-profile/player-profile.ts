@@ -15,6 +15,7 @@ import {
   type GameSample,
 } from './player-analysis';
 import { leagueResemblance, mLeagueReference } from './m-league-reference';
+import { playerIdentities, playerIdentity, identityLabel } from '../player-identity';
 
 @Component({
   imports: [ResponsiveSheet, RouterLink, TranslatePipe, LocalDatePipe, ErrorNotice, DialogBackdrop],
@@ -28,7 +29,20 @@ export class PlayerProfile {
   private readonly params = toSignal(this.route.paramMap, {
     initialValue: this.route.snapshot.paramMap,
   });
-  readonly name = computed(() => this.params().get('name') ?? '');
+  readonly identities = computed(() => playerIdentities(this.matches()));
+  readonly identity = computed(() => {
+    const value = this.params().get('name') ?? '';
+    if (this.identities().some((player) => player.id === value)) return value;
+    const legacy = this.identities().filter((player) => player.name === value);
+    return legacy.length === 1 ? legacy[0].id : value;
+  });
+  readonly name = computed(
+    () =>
+      this.identities().find((player) => player.id === this.identity())?.name ??
+      this.params().get('name') ??
+      '',
+  );
+  readonly identityLabel = identityLabel;
   readonly matches = signal<Match[]>([]);
   readonly error = signal('');
   readonly loading = signal(true);
@@ -88,30 +102,26 @@ export class PlayerProfile {
           );
         }),
   );
-  readonly analysis = computed(() => analyzePlayer(this.scoped(), this.name(), this.count()));
+  readonly analysis = computed(() => analyzePlayer(this.scoped(), this.identity(), this.count()));
   readonly comparison = computed(() =>
     this.compare() ? analyzePlayer(this.scoped(), this.compare(), this.count()) : null,
   );
   readonly peers = computed(() =>
-    [
-      ...new Set(
-        this.scoped()
-          .filter((match) => match.playerCount === this.count())
-          .flatMap((match) => match.players.map((player) => player.name.trim())),
-      ),
-    ]
-      .filter((name) => name !== this.name())
-      .sort((a, b) => a.localeCompare(b, this.i18n.locale())),
+    playerIdentities(this.scoped().filter((match) => match.playerCount === this.count())).filter(
+      (player) => player.id !== this.identity(),
+    ),
   );
   readonly chemistry = computed(() =>
-    this.analysis().chemistry.filter((row) => !this.opponent() || row.name === this.opponent()),
+    this.analysis().chemistry.filter((row) => !this.opponent() || row.id === this.opponent()),
   );
   readonly sharedGames = computed(() =>
     this.analysis()
       .games.filter(
         (game) =>
           !this.opponent() ||
-          game.match.players.some((player) => player.name.trim() === this.opponent()),
+          game.match.players.some(
+            (player) => playerIdentity(game.match, player) === this.opponent(),
+          ),
       )
       .slice()
       .reverse(),
@@ -145,9 +155,15 @@ export class PlayerProfile {
     try {
       const matches = (await this.repo.list()).filter((match) => match.ended);
       this.matches.set(matches);
+      const requested = this.params().get('name') ?? '';
+      if (
+        !this.identities().some((player) => player.id === requested) &&
+        this.identities().filter((player) => player.name === requested).length > 1
+      )
+        this.error.set('Several players share this name. Select a player from Records.');
       if (!this.route.snapshot.queryParamMap.get('mode')) {
         const own = matches.filter((match) =>
-          match.players.some((player) => player.name.trim() === this.name()),
+          match.players.some((player) => playerIdentity(match, player) === this.identity()),
         );
         this.count.set(
           own.some((match) => match.playerCount === 4)

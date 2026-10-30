@@ -30,9 +30,9 @@ for (const count of [3, 4]) {
     ['1p', '2p', '3p', '7s', '8s', '9s', '1z', '1z'].forEach((label, i) =>
       add(label, 0.08 + i * 0.09, 0.18),
     );
-    add('0p', 0.075, 0.55, 0.075, 0.05);
-    add('5p', 0.145, 0.55, 0.035);
-    add('5p', 0.195, 0.55, 0.035);
+    add('0p', 0.075, 0.48, 0.075, 0.05);
+    add('5p', 0.145, 0.48, 0.035, 0.1);
+    add('5p', 0.195, 0.48, 0.035, 0.1);
     [0.08, 0.17, 0.26, 0.35].forEach((x) => add('4s', x, 0.86, 0.06));
     if (count === 3) [0.8, 0.9].forEach((x) => add('4z', x, 0.86, 0.06));
     let uploaded = '';
@@ -82,6 +82,8 @@ for (const count of [3, 4]) {
     const camera = page.getByRole('dialog', { name: 'Guided photo', exact: true });
     await expect(camera.locator('.camera-zone')).toHaveCount(count === 3 ? 7 : 6);
     await expect(camera.locator('.camera-frame')).toHaveCSS('aspect-ratio', '1.33333 / 1');
+    const meldArea = await camera.locator('.camera-zone').nth(1).boundingBox();
+    expect(meldArea!.width / meldArea!.height).toBeGreaterThan(3);
     await expect(camera.getByRole('combobox', { name: 'Meld area 2', exact: true })).toHaveValue(
       count === 3 ? 'p2' : 'p3',
     );
