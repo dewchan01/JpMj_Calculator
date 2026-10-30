@@ -10,11 +10,22 @@ import { SegmentedSwipe } from './shared/segmented-swipe';
 import { ToastHost } from './shared/toast/toast-host';
 @Component({
   selector: 'app-root',
+  host: { '(contextmenu)': 'preventMobileHold($event)' },
   imports: [ToastHost, TranslatePipe, RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
 export class App {
+  preventMobileHold(event: MouseEvent): void {
+    if (!window.matchMedia('(pointer: coarse)').matches) return;
+    const target = event.target;
+    if (
+      target instanceof Element &&
+      target.closest('input, textarea, select, [contenteditable="true"]')
+    )
+      return;
+    event.preventDefault();
+  }
   readonly sounds = inject(GameSounds);
   toggleSound(): void {
     this.sounds.setEnabled(!this.sounds.enabled());

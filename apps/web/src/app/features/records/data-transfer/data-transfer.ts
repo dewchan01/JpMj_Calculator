@@ -24,7 +24,13 @@ import { CopyButton } from '../../../shared/copy-button/copy-button';
 import { filterMatches } from '../record-stats';
 import type { Match } from '../../../../../../../packages/mahjong-core/ledger';
 import { PlayerLibrary } from '../../matches/data-access/player-library';
-import { playerIdentities, identityLabel, mapImportedPlayers } from '../player-identity';
+import {
+  playerIdentities,
+  identityLabel,
+  mapImportedPlayers,
+  mergePlayersByName,
+  type PlayerIdentity,
+} from '../player-identity';
 
 @Component({
   selector: 'app-data-transfer',
@@ -79,7 +85,13 @@ export class DataTransfer implements OnInit {
   readonly games = signal<Match[]>([]);
   private readonly library = inject(PlayerLibrary);
   private readonly localMatches = signal<Match[]>([]);
-  readonly identityLabel = identityLabel;
+  identityLabel(person: PlayerIdentity): string {
+    return identityLabel(person, this.mergeTargets());
+  }
+  autoMergeByName(): void {
+    this.playerMapping.set(mergePlayersByName(this.newGames(), this.existingPlayers()));
+    this.error.set('');
+  }
   readonly existingPlayers = computed(() =>
     playerIdentities(this.localMatches(), this.library.players()),
   );
@@ -89,11 +101,13 @@ export class DataTransfer implements OnInit {
     return this.selected().filter((match) => !existing.has(match.id));
   }
   readonly playerMapping = signal<Record<string, string>>({});
-  readonly mergeTargets = computed(() => [
-    ...new Map(
-      [...this.incomingPlayers(), ...this.existingPlayers()].map((person) => [person.id, person]),
-    ).values(),
-  ]);
+  readonly mergeTargets = computed(() =>
+    [
+      ...new Map(
+        [...this.incomingPlayers(), ...this.existingPlayers()].map((person) => [person.id, person]),
+      ).values(),
+    ].sort((a, b) => Number(!this.existingIdentity(a.id)) - Number(!this.existingIdentity(b.id))),
+  );
   mappingTarget(id: string): string {
     const value = this.playerMapping();
     return Object.hasOwn(value, id) && this.mergeTargets().some((person) => person.id === value[id])
@@ -106,6 +120,7 @@ export class DataTransfer implements OnInit {
   mapPlayer(id: string, target: string): void {
     if (target !== id && !this.mergeTargets().some((person) => person.id === target)) return;
     this.playerMapping.update((value) => ({ ...value, [id]: target }));
+    this.error.set('');
   }
   readonly importing = signal(false);
   readonly busy = signal(false);
@@ -308,7 +323,22 @@ export class DataTransfer implements OnInit {
         this.incomingPlayers().map((person) => [person.id, this.mappingTarget(person.id)]),
       );
       const mapped = mapImportedPlayers(this.newGames(), mapping);
-      const count = await this.repo.importGames(mapped);
+      const previousPlayers = this.library.players();
+      const selectedIds = new Set(this.selected().map((game) => game.id));
+      const retained = this.localMatches().filter((game) => selectedIds.has(game.id));
+      this.library.importPlayers(
+        playerIdentities([...mapped, ...retained]).map(
+          (person) =>
+            this.existingPlayers().find((existing) => existing.id === person.id) ?? person,
+        ),
+      );
+      let count: number;
+      try {
+        count = await this.repo.importGames(mapped);
+      } catch (error) {
+        this.library.replace(previousPlayers);
+        throw error;
+      }
       this.localMatches.set(await this.repo.list());
       this.toast.success(count ? 'Games imported.' : 'No new games to import.');
       this.changed.emit();

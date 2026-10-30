@@ -3,7 +3,7 @@
   margin-block: 8px;
 }
 .guided-camera {
-  width: min(1000px, calc(100vw - 24px));
+  width: min(1440px, calc(100vw - 24px));
   max-height: calc(100dvh - 24px);
   padding: 0;
 }
@@ -15,6 +15,63 @@
 .dialog-body {
   min-height: 0;
   overflow-y: auto;
+}
+.rotate-hint {
+  display: none;
+}
+@media (orientation: portrait) and (pointer: coarse) {
+  .rotate-hint {
+    display: block;
+    font-weight: 650;
+    margin-bottom: 8px;
+  }
+}
+@media (orientation: landscape) and (min-width: 601px) {
+  .guided-camera {
+    height: calc(100dvh - 24px);
+  }
+  .dialog-body {
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 220px;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 10px 16px;
+    padding: 12px;
+  }
+  .dialog-body .camera-frame {
+    grid-column: 1;
+    grid-row: 1 / 4;
+    width: min(100%, calc((100dvh - 110px) * var(--camera-aspect)));
+    align-self: center;
+    justify-self: center;
+  }
+  .camera-feedback,
+  .zone-settings,
+  .dialog-actions {
+    grid-column: 2;
+  }
+  .camera-feedback {
+    font-size: 0.75rem;
+  }
+  .dialog-body .zone-settings {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    overflow-y: auto;
+    margin: 0;
+  }
+  .dialog-body .dialog-actions {
+    margin: 0;
+  }
+}
+@media (orientation: landscape) and (pointer: coarse) {
+  .guided-camera {
+    width: 100dvw;
+    max-width: 100dvw;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+  }
 }
 .camera-frame {
   position: relative;

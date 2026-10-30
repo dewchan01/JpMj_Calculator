@@ -1,29 +1,39 @@
 <button type="button" class="secondary" (click)="open()" [disabled]="disabled()">
-  {{ 'Guided photo' | t }}
+  {{ title() | t }}
 </button>
 <dialog
   appDialogBackdrop
   #camera
   class="app-dialog guided-camera"
-  aria-labelledby="guided-camera-title"
+  [attr.aria-labelledby]="titleId"
   (close)="stop()"
 >
   <header class="dialog-header">
-    <h2 id="guided-camera-title">{{ 'Guided photo' | t }}</h2>
+    <h2 [id]="titleId">{{ title() | t }}</h2>
     <button type="button" class="icon-button" (click)="close()" [attr.aria-label]="'Close' | t">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
     </button>
   </header>
-  <div class="dialog-body">
-    @if (!error()) {
-      <p class="hint">
-        {{
-          'Photograph one winning hand. Place one group in each meld area and choose its source relative to the winner. Lay the called tile sideways. Show all four faces for concealed Kan.'
-            | t
-        }}
-      </p>
-    }
-    <app-error-notice [message]="error()" />
+  <div class="dialog-body" [style.--camera-aspect]="aspect()">
+    <div class="camera-feedback">
+      @if (!error()) {
+        <p class="hint rotate-hint" role="status">
+          {{ 'Turn your phone sideways for a larger camera view.' | t }}
+        </p>
+        <details class="camera-instructions">
+          <summary>{{ 'Photo guidance' | t }}</summary>
+          <p class="hint">
+            {{
+              (guided()
+                ? 'Photograph one winning hand. Place one group in each meld area and choose its source relative to the winner. Lay the called tile sideways. Show all four faces for concealed Kan.'
+                : 'Keep the tiles in view. Review the recognized tiles before applying.'
+              ) | t
+            }}
+          </p>
+        </details>
+      }
+      <app-error-notice [message]="error()" />
+    </div>
     <div class="camera-frame" [style.aspect-ratio]="aspect()">
       <video
         #video
@@ -33,7 +43,7 @@
         (resize)="updateAspect()"
         [attr.aria-label]="'Camera preview' | t"
       ></video>
-      @if (active()) {
+      @if (active() && guided()) {
         <div class="camera-grid" aria-hidden="true">
           @for (zone of zones(); track zone.id; let index = $index) {
             <div
@@ -57,21 +67,25 @@
         </div>
       }
     </div>
-    <div class="zone-settings">
-      @for (source of sources(); track $index; let index = $index) {
-        <label>
-          {{ 'Meld area' | t }} {{ index + 1 }}
-          <select [value]="source" (change)="changeSource(index, $event)" [disabled]="busy()">
-            @for (player of otherPlayers; track player.id) {
-              <option [value]="player.id" [selected]="source === player.id">
-                {{ player.position | t }}
+    @if (guided()) {
+      <div class="zone-settings">
+        @for (source of sources(); track $index; let index = $index) {
+          <label>
+            {{ 'Meld area' | t }} {{ index + 1 }}
+            <select [value]="source" (change)="changeSource(index, $event)" [disabled]="busy()">
+              @for (player of otherPlayers; track player.id) {
+                <option [value]="player.id" [selected]="source === player.id">
+                  {{ player.position | t }}
+                </option>
+              }
+              <option value="ankan" [selected]="source === 'ankan'">
+                {{ 'Concealed Kan' | t }}
               </option>
-            }
-            <option value="ankan" [selected]="source === 'ankan'">{{ 'Concealed Kan' | t }}</option>
-          </select>
-        </label>
-      }
-    </div>
+            </select>
+          </label>
+        }
+      </div>
+    }
     <div class="dialog-actions">
       <button type="button" class="primary" (click)="takePhoto()" [disabled]="!active() || busy()">
         {{ 'Take a photo' | t }}

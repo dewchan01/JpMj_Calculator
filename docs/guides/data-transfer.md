@@ -4,7 +4,7 @@ Open Others > Data, then choose Import data, Export data or Share history. Impor
 
 CSV transfers retain complete rules, players, hand history, tiles and manual Han/Fu metadata. Each row describes a typed field with `game_id`, `game_name`, `created_at`, `path`, `type` and `value` columns. Paths use JSON Pointer escaping; cell values are CSV rather than embedded JSON documents. Container rows preserve arrays and empty objects. Import expects this application's CSV schema, not arbitrary spreadsheet score sheets. UTF-8 BOM, quoted multiline cells and spreadsheet formula escaping preserve text safely. Files are limited to 20 MiB and 10,000 games. Malformed, duplicate and unsafe paths are rejected. Imports validate and reconcile payments before inserting selected new IDs transactionally; existing IDs are skipped without replacing local changes.
 
-Import accepts a camera photo/QR image, a transfer ID or a CSV file. QR/ID lookup opens the game-selection preview. Share selected games opens a separate prompt above the Export page, with Back navigation, a QR, copyable transfer ID and expiry; no URL is shown. Share history lists this device's active transfers and regenerates their QR codes after navigation or reload. The QR contains a versioned ID, not the full game data. Older share URLs remain readable internally for compatibility. Importing does not populate the independent saved-player library.
+Import accepts a camera photo/QR image, a transfer ID or a CSV file. QR/ID lookup opens the game-selection preview. Share selected games opens a separate prompt above the Export page, with Back navigation, a QR, copyable transfer ID and expiry; no URL is shown. Share history lists this device's active transfers and regenerates their QR codes after navigation or reload. The QR contains a versioned ID, not the full game data. Older share URLs remain readable internally for compatibility. Importing also saves players in the player library, preserving their identity.
 
 The import QR action opens the shared live-camera scanner, with an image-selection fallback.
 Recognition opens the transfer preview; it does not import games without review. Camera access
@@ -17,10 +17,17 @@ Imports deduplicate games by game ID; existing games are skipped and never rewri
 lets users match each incoming player to an existing or another incoming identity. Matching
 `profileId` values refer to the same person; different IDs remain separate by default even when names
 match. Explicit matching also supports different names. Mapping affects only newly imported games,
-preserves historical names, seat IDs, payments and hand history, and does not populate the saved-player
-library. Cycles and assigning two seats in one game to the same person are rejected.
+preserves historical names, seat IDs, payments and hand history, and automatically saves players in the player
+library. Duplicate saved names receive numeric suffixes, such as Alice (1). Choices show names rather than IDs.
+Auto merge by name is an explicit preview action; ambiguous existing names and same-game seat conflicts
+are skipped. Cycles and assigning two seats in one game to the same person are rejected.
 
 Analytics, comparisons and participant filters use identity IDs. Legacy records without `profileId`
 receive a stable game-and-seat identity, so unrelated `p0` seats or matching names are not silently
 combined. Users can explicitly match these identities during import. Older share URLs redirect to
 the same import preview and matching controls.
+
+Others > Manage local data offers two confirmed actions. Clear all records deletes local games
+(including ongoing games) and drafts while retaining saved players and preferences. Clear all data
+also removes this app's local preferences, players, room credentials and share history, then reloads.
+Neither action deletes backend rooms or shared archives. Cancel leaves stored data unchanged.

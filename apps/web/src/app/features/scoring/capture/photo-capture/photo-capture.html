@@ -28,6 +28,14 @@
     [disabled]="busy() || !configuration.value()"
   />
 </label>
+<app-guided-camera
+  [guided]="false"
+  [players]="players()"
+  [winnerId]="winnerId()"
+  [playerCount]="playerCount()"
+  [disabled]="busy() || !configuration.value()"
+  (captured)="captureGuided($event)"
+/>
 @if (autoAssign()) {
   <app-guided-camera
     [players]="players()"

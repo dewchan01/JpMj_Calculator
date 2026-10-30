@@ -36,4 +36,30 @@ export class PlayerLibrary {
     localStorage.setItem('riichi-players-v1', JSON.stringify(updated));
     this.players.set(updated);
   }
+  replace(players: SavedPlayer[]): void {
+    localStorage.setItem('riichi-players-v1', JSON.stringify(players));
+    this.players.set(players);
+  }
+  importPlayers(players: SavedPlayer[]): void {
+    const updated = [...this.players()];
+    for (const player of players) {
+      if (updated.some((other) => other.id === player.id)) continue;
+      const base = player.name.trim().slice(0, 40) || 'Player';
+      let name = base,
+        index = 0;
+      while (updated.some((other) => other.name === name)) {
+        const suffix = ` (${++index})`;
+        name = base.slice(0, 40 - suffix.length) + suffix;
+      }
+      updated.push({ id: player.id, name });
+    }
+    this.replace(updated);
+  }
+  rename(id: string, name: string): void {
+    name = name.trim();
+    if (!name || name.length > 40) throw new Error('Enter a player name of 1 to 40 characters.');
+    if (this.players().some((player) => player.id !== id && player.name === name))
+      throw new Error('A player with this name already exists.');
+    this.replace(this.players().map((player) => (player.id === id ? { ...player, name } : player)));
+  }
 }

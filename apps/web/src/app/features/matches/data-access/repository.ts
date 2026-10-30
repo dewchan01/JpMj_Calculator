@@ -77,4 +77,13 @@ export class Repository {
     await this.db.drafts.delete(id).catch(this.storageFailure('Could not delete draft.'));
     void this.storage.refresh();
   }
+  async clearRecords(): Promise<void> {
+    await this.db
+      .transaction('rw', this.db.matches, this.db.drafts, async () => {
+        await this.db.matches.clear();
+        await this.db.drafts.clear();
+      })
+      .catch(this.storageFailure('Could not delete match.'));
+    void this.storage.refresh();
+  }
 }

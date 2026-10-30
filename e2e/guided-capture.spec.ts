@@ -4,6 +4,56 @@ import { openQuickScore } from './helpers/navigation';
 
 test.use({ serviceWorkers: 'block', viewport: { width: 390, height: 844 } });
 
+test('ordinary photo capture uses a camera prompt without zones and opens the recognition review', async ({
+  page,
+}) => {
+  await page.route('**/config.json', (route) =>
+    route.fulfill({ json: { recognition: { provider: 'mock' } } }),
+  );
+  await page.goto('/');
+  await openQuickScore(page);
+  await page.evaluate(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1280;
+    canvas.height = 720;
+    const context = canvas.getContext('2d')!;
+    const draw = () => {
+      context.fillStyle = '#164632';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+    };
+    draw();
+    const timer = setInterval(draw, 100);
+    const stream = canvas.captureStream(10);
+    for (const track of stream.getTracks()) {
+      const stop = track.stop.bind(track);
+      track.stop = () => {
+        clearInterval(timer);
+        stop();
+      };
+    }
+    Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
+      configurable: true,
+      value: async () => stream,
+    });
+  });
+  await page.getByRole('button', { name: 'Enter tiles', exact: true }).click();
+  const capture = page.locator('app-photo-capture').first();
+  await capture.getByRole('button', { name: 'Take a photo', exact: true }).click();
+  const camera = page.getByRole('dialog', { name: 'Take a photo', exact: true });
+  await expect(camera).toBeVisible();
+  await expect(camera.locator('.camera-grid, .zone-settings')).toHaveCount(0);
+  await expect(camera.locator('.camera-frame')).toHaveCSS('aspect-ratio', '1.77778 / 1');
+  await page.setViewportSize({ width: 844, height: 390 });
+  await expect(camera.getByRole('button', { name: 'Take a photo', exact: true })).toBeInViewport();
+  await camera.getByRole('button', { name: 'Take a photo', exact: true }).click();
+  await expect(camera).not.toBeVisible();
+  await expect(capture.locator('.photo-preview')).toBeVisible();
+  await expect(
+    capture.getByRole('button', { name: 'Apply reviewed tiles', exact: true }),
+  ).toBeEnabled();
+  await expect(capture.locator('.layout-group')).toHaveCount(0);
+});
+
 for (const count of [3, 4]) {
   test(`guided camera uses the full frame and assigns source, Kan and North at ${count}P`, async ({
     page,
@@ -102,6 +152,16 @@ for (const count of [3, 4]) {
         .violations,
     ).toEqual([]);
     await page.screenshot({ path: `artifacts/guided-camera-${count}p-390.png` });
+    await page.setViewportSize({ width: 844, height: 390 });
+    const frame = (await camera.locator('.camera-frame').boundingBox())!;
+    const controls = (await camera.locator('.zone-settings').boundingBox())!;
+    expect(frame.x + frame.width).toBeLessThanOrEqual(controls.x);
+    expect(frame.y).toBeGreaterThanOrEqual(0);
+    expect(frame.y + frame.height).toBeLessThanOrEqual(390);
+    await expect(
+      camera.getByRole('button', { name: 'Take a photo', exact: true }),
+    ).toBeInViewport();
+    await page.screenshot({ path: `artifacts/guided-camera-${count}p-landscape.png` });
     await camera.getByRole('button', { name: 'Take a photo', exact: true }).click();
     await expect(camera).not.toBeVisible();
     await expect(capture.locator('.layout-group')).toHaveCount(count === 3 ? 3 : 2);

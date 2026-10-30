@@ -12,6 +12,7 @@ import {
 import { TranslatePipe } from '../../../../core/i18n/i18n';
 import { DialogBackdrop } from '../../../../shared/dialog-backdrop';
 import { ErrorNotice } from '../../../../shared/error-notice/error-notice';
+import { newId } from '../../../../core/id/new-id';
 import { captureZones, type CaptureZone, type GuidedPhoto } from '../guided-layout';
 
 @Component({
@@ -21,6 +22,9 @@ import { captureZones, type CaptureZone, type GuidedPhoto } from '../guided-layo
   styleUrl: './guided-camera.css',
 })
 export class GuidedCamera {
+  readonly guided = input(true);
+  readonly title = computed(() => (this.guided() ? 'Guided photo' : 'Take a photo'));
+  readonly titleId = `camera-title-${newId()}`;
   readonly players = input.required<readonly { id: string; name: string }[]>();
   readonly winnerId = input.required<string>();
   readonly playerCount = input.required<3 | 4>();
@@ -38,6 +42,37 @@ export class GuidedCamera {
   private readonly video = viewChild.required<ElementRef<HTMLVideoElement>>('video');
   private stream?: MediaStream;
   private generation = 0;
+  private ownsFullscreen = false;
+  private ownsOrientation = false;
+  private async landscape(generation: number): Promise<void> {
+    if (!window.matchMedia('(pointer: coarse)').matches) return;
+    const orientation = screen.orientation as ScreenOrientation & {
+      lock?: (orientation: 'landscape') => Promise<void>;
+    };
+    if (!orientation?.lock) return;
+    try {
+      if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen();
+        this.ownsFullscreen = true;
+      }
+      if (generation !== this.generation) {
+        this.releaseLandscape();
+        return;
+      }
+      await orientation.lock('landscape');
+      this.ownsOrientation = true;
+      if (generation !== this.generation) this.releaseLandscape();
+    } catch {
+      // Rotation remains available manually when the browser cannot lock orientation.
+    }
+  }
+  private releaseLandscape(): void {
+    if (this.ownsOrientation) screen.orientation.unlock();
+    this.ownsOrientation = false;
+    if (this.ownsFullscreen && document.fullscreenElement)
+      void document.exitFullscreen().catch(() => undefined);
+    this.ownsFullscreen = false;
+  }
   constructor() {
     inject(DestroyRef).onDestroy(() => this.stop());
   }
@@ -85,6 +120,7 @@ export class GuidedCamera {
       ),
     );
     this.dialog().nativeElement.showModal();
+    void this.landscape(generation);
     try {
       if (!navigator.mediaDevices?.getUserMedia) throw new Error('Camera unavailable');
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -117,7 +153,7 @@ export class GuidedCamera {
     this.busy.set(true);
     const generation = this.generation;
     const video = this.video().nativeElement;
-    const zones = structuredClone(this.zones());
+    const zones = this.guided() ? structuredClone(this.zones()) : [];
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -146,6 +182,7 @@ export class GuidedCamera {
   }
   stop(): void {
     this.generation++;
+    this.releaseLandscape();
     this.stream?.getTracks().forEach((track) => track.stop());
     this.stream = undefined;
     this.active.set(false);

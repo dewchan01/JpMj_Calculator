@@ -16,6 +16,7 @@ import {
 } from './player-analysis';
 import { leagueResemblance, mLeagueReference } from './m-league-reference';
 import { playerIdentities, playerIdentity, identityLabel } from '../player-identity';
+import { PlayerLibrary } from '../../matches/data-access/player-library';
 
 @Component({
   imports: [ResponsiveSheet, RouterLink, TranslatePipe, LocalDatePipe, ErrorNotice, DialogBackdrop],
@@ -29,7 +30,10 @@ export class PlayerProfile {
   private readonly params = toSignal(this.route.paramMap, {
     initialValue: this.route.snapshot.paramMap,
   });
-  readonly identities = computed(() => playerIdentities(this.matches()));
+  private readonly playerLibrary = inject(PlayerLibrary);
+  readonly identities = computed(() =>
+    playerIdentities(this.matches(), this.playerLibrary.players()),
+  );
   readonly identity = computed(() => {
     const value = this.params().get('name') ?? '';
     if (this.identities().some((player) => player.id === value)) return value;
@@ -42,7 +46,10 @@ export class PlayerProfile {
       this.params().get('name') ??
       '',
   );
-  readonly identityLabel = identityLabel;
+  identityLabel(player: { id: string; name: string }): string {
+    const current = this.identities().find((person) => person.id === player.id) ?? player;
+    return identityLabel(current, this.identities());
+  }
   readonly matches = signal<Match[]>([]);
   readonly error = signal('');
   readonly loading = signal(true);

@@ -1,7 +1,9 @@
 import { DataTransfer } from '../records/data-transfer/data-transfer';
 import { GameSounds } from '../../core/sound/game-sounds';
 import { ScoringMode } from '../../core/scoring-mode';
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
+import { Repository } from '../matches/data-access/repository';
+import { ErrorNotice } from '../../shared/error-notice/error-notice';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { I18n, TranslatePipe } from '../../core/i18n/i18n';
@@ -12,11 +14,44 @@ import { AppUpdates } from '../../core/app-updates/app-updates';
 import { CaptureConfiguration } from '../scoring/capture/capture-config';
 
 @Component({
-  imports: [DataTransfer, RouterLink, TranslatePipe, StorageStatus, DialogBackdrop, LocalDatePipe],
+  imports: [
+    DataTransfer,
+    RouterLink,
+    TranslatePipe,
+    StorageStatus,
+    DialogBackdrop,
+    LocalDatePipe,
+    ErrorNotice,
+  ],
   templateUrl: './others.html',
   styleUrl: './others.css',
 })
 export class Others {
+  private readonly repo = inject(Repository);
+  readonly clearMode = signal<'records' | 'all'>('records');
+  readonly clearing = signal(false);
+  readonly clearError = signal('');
+  readonly canDismissClear = () => !this.clearing();
+  async clearLocalData(): Promise<void> {
+    if (this.clearing()) return;
+    this.clearing.set(true);
+    this.clearError.set('');
+    try {
+      await this.repo.clearRecords();
+      for (const storage of [localStorage, sessionStorage]) {
+        for (const key of Object.keys(storage)) {
+          if (
+            this.clearMode() === 'all' ? key.startsWith('riichi-') : key.startsWith('riichi-view:')
+          )
+            storage.removeItem(key);
+        }
+      }
+      window.location.reload();
+    } catch {
+      this.clearError.set('Could not clear local data. Try again.');
+      this.clearing.set(false);
+    }
+  }
   readonly updates = inject(AppUpdates);
   readonly scoringMode = inject(ScoringMode);
   readonly sounds = inject(GameSounds);
@@ -74,6 +109,12 @@ export class Others {
       title: 'Scoring mode',
       group: 'Preferences',
       icon: 'M5 3h14v18H5ZM8 6h8v4H8Zm0 8h2m4 0h2m-8 4h2m4 0h2',
+    },
+    {
+      path: '/others/data-management',
+      title: 'Manage local data',
+      group: 'Preferences',
+      icon: 'M4 5h16v14H4zM4 9h16M8 13h8m-8 3h5',
     },
     {
       path: '/others/rules',

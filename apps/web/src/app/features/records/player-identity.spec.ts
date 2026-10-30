@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { presetRules } from '../../../../../../packages/mahjong-rules/index';
 import type { Match } from '../../../../../../packages/mahjong-core/ledger';
-import { mapImportedPlayers, playerIdentity } from './player-identity';
+import {
+  mapImportedPlayers,
+  playerIdentity,
+  mergePlayersByName,
+  identityLabel,
+} from './player-identity';
 import { playerRecords } from './record-stats';
 import { analyzePlayer } from './player-profile/player-analysis';
 
@@ -37,6 +42,36 @@ function game(id: string, profileId?: string, name = 'Alice'): Match {
   };
 }
 describe('player identity and explicit import mapping', () => {
+  it('uses names and ordinals without exposing identity values', () => {
+    const people = [
+      { id: 'secret-one', name: 'Alice' },
+      { id: 'secret-two', name: 'Alice' },
+    ];
+    expect(identityLabel(people[0], people)).toBe('Alice');
+    expect(identityLabel(people[1], people)).toBe('Alice (1)');
+  });
+  it('merges unambiguous matching names and preserves people seated together', () => {
+    const source = game('one', 'incoming');
+    const mapping = mergePlayersByName([source], [{ id: 'saved', name: 'alice' }]);
+    expect(mapImportedPlayers([source], mapping)[0].players[0].profileId).toBe('saved');
+    source.players[1].name = 'Alice';
+    const separate = mergePlayersByName([source], []);
+    expect(
+      new Set(mapImportedPlayers([source], separate)[0].players.map((player) => player.profileId))
+        .size,
+    ).toBe(3);
+  });
+  it('does not guess between multiple existing players with the same name', () => {
+    expect(
+      mergePlayersByName(
+        [game('one', 'new')],
+        [
+          { id: 'a', name: 'Alice' },
+          { id: 'b', name: 'Alice' },
+        ],
+      ),
+    ).toEqual({});
+  });
   it('separates legacy players even when their names and table seat IDs match', () => {
     const a = game('a'),
       b = game('b');

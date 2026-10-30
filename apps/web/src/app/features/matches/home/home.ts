@@ -71,6 +71,7 @@ export class Home {
   resultPoints: number[] = [];
   resultDate = '';
   constructor() {
+    this.fillSavedPlayers();
     void this.loadOngoing();
   }
   async loadOngoing(): Promise<void> {
@@ -202,6 +203,27 @@ export class Home {
   readonly playerError = signal('');
   readonly playerLibrary = inject(PlayerLibrary);
   readonly playerName = new FormControl('', { nonNullable: true });
+  readonly renameName = new FormControl('', { nonNullable: true });
+  readonly editingPlayer = signal('');
+  renamePlayer(dialog: HTMLDialogElement): void {
+    this.playerError.set('');
+    try {
+      const previous = this.playerLibrary
+        .players()
+        .find((player) => player.id === this.editingPlayer());
+      if (!previous) return;
+      this.playerLibrary.rename(previous.id, this.renameName.value);
+      this.setup.update((setup) => ({
+        ...setup,
+        names: setup.names.map((name) =>
+          name === previous.name ? this.renameName.value.trim() : name,
+        ),
+      }));
+      dialog.close();
+    } catch (error) {
+      this.playerError.set(error instanceof Error ? error.message : 'Could not save player.');
+    }
+  }
   addPlayer(dialog?: HTMLDialogElement): void {
     this.playerError.set('');
     try {
@@ -217,9 +239,15 @@ export class Home {
       this.playerError.set(e instanceof Error ? e.message : 'Could not save player.');
     }
   }
-  removePlayer(id: string): void {
+  readonly removingPlayer = signal<{ id: string; name: string } | null>(null);
+  removePlayer(dialog: HTMLDialogElement): void {
+    const player = this.removingPlayer();
+    if (!player) return;
+    this.playerError.set('');
     try {
-      this.playerLibrary.remove(id);
+      this.playerLibrary.remove(player.id);
+      this.removingPlayer.set(null);
+      dialog.close();
     } catch {
       this.playerError.set('Could not save player.');
     }
@@ -240,10 +268,23 @@ export class Home {
   });
   setCount(count: 3 | 4): void {
     this.count.set(count);
+    this.fillSavedPlayers();
     if (+this.setup().mySeat >= count) this.setup.update((value) => ({ ...value, mySeat: '0' }));
     this.swapA = 0;
     this.swapB = 1;
     this.seatNotice.set('');
+  }
+  private fillSavedPlayers(): void {
+    const players = this.playerLibrary.players();
+    this.setup.update((setup) => {
+      const names = [...setup.names];
+      const used = new Set(names.map((name) => name.trim()).filter(Boolean));
+      const available = players.filter((player) => !used.has(player.name));
+      for (let seat = 0; seat < this.count(); seat++) {
+        if (!names[seat].trim() && available.length) names[seat] = available.shift()!.name;
+      }
+      return { ...setup, names };
+    });
   }
   async create(resultsOnly = false, shared = false): Promise<void> {
     if (this.busy()) return;

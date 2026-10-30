@@ -15,6 +15,7 @@ import type { Match } from '../../../../../../packages/mahjong-core/ledger';
 import { ruleName, tableRules } from '../../../../../../packages/mahjong-rules/index';
 import { durationMinutes, filterMatches, playerRecords } from './record-stats';
 import { playerIdentities, identityLabel } from './player-identity';
+import { PlayerLibrary } from '../matches/data-access/player-library';
 
 @Component({
   imports: [
@@ -88,12 +89,16 @@ export class Records {
   private readonly playerOrder = toSignal(this.playerSort.valueChanges, { initialValue: 'name' });
   readonly currency = new FormControl('', { nonNullable: true });
   private readonly moneyCurrency = toSignal(this.currency.valueChanges, { initialValue: '' });
-  readonly participants = computed(() => playerIdentities(this.matches()));
-  readonly identityLabel = identityLabel;
+  private readonly playerLibrary = inject(PlayerLibrary);
+  readonly participants = computed(() =>
+    playerIdentities(this.matches(), this.playerLibrary.players()),
+  );
+  identityLabel(player: { id: string; name: string }): string {
+    return identityLabel(player, this.participants());
+  }
   playerLabel(player: { id: string; name: string }): string {
-    return this.players().filter((other) => other.name === player.name).length > 1
-      ? identityLabel(player)
-      : player.name;
+    const current = this.participants().find((person) => person.id === player.id) ?? player;
+    return this.identityLabel(current);
   }
   readonly invalidDates = computed(() => {
     const { from, to } = this.changes();

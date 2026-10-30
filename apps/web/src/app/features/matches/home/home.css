@@ -186,6 +186,8 @@
   border-bottom: 1px solid var(--border);
 }
 .player-result > span {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

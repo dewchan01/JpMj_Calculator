@@ -233,6 +233,21 @@ button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
+@media (pointer: coarse) {
+  body {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  input,
+  textarea,
+  select,
+  [contenteditable='true'] {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+  }
+}
 a {
   color: inherit;
   text-underline-offset: 4px;

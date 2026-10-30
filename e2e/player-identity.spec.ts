@@ -55,16 +55,16 @@ test('import keeps same-name IDs separate and explicitly merges a renamed player
   await expect(
     page
       .getByRole('combobox', {
-        name: identityLabel({ id: 'incoming-a', name: 'Alice' }),
+        name: 'Alice (1)',
         exact: true,
       })
       .locator('option:checked'),
-  ).toHaveText('Keep as a separate player');
+  ).toHaveText('Do not merge · create player');
   await expect(
     page
       .getByRole('combobox', { name: identityLabel({ id: 'bob', name: 'Bob' }), exact: true })
       .locator('option:checked'),
-  ).toHaveText('Use matching player ID');
+  ).toHaveText('Use existing player');
   await commit();
   await expect(page.locator('.player-mapping')).toHaveCount(0);
   await page.goto('/records');
@@ -95,4 +95,140 @@ test('import keeps same-name IDs separate and explicitly merges a renamed player
   await expect(page.locator('.profile-sample')).toContainText('2 completed games');
   await page.goto('/records/player/incoming-a');
   await expect(page.locator('.profile-sample')).toContainText('1 completed games');
+});
+
+test('auto merge by name saves players and rename preserves their identity and records', async ({
+  page,
+}) => {
+  await page.goto('/others/data/import');
+  await page.evaluate(() =>
+    localStorage.setItem('riichi-players-v1', JSON.stringify([{ id: 'existing', name: 'Alice' }])),
+  );
+  await page.reload();
+  await page.getByLabel('Import CSV file', { exact: true }).setInputFiles({
+    name: 'game.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from(gamesCsv([game('merged', 'new-alice', 'Alice')])),
+  });
+  await page.getByRole('button', { name: 'Auto merge by name', exact: true }).click();
+  await expect(
+    page.getByRole('combobox', { name: 'Alice (1)', exact: true }).locator('option:checked'),
+  ).toHaveText('Alice');
+  await page.getByRole('button', { name: 'Import selected games', exact: true }).click();
+  await expect(page.locator('.player-mapping')).toHaveCount(0);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('riichi-players-v1')!))).toEqual(
+    expect.arrayContaining([
+      { id: 'existing', name: 'Alice' },
+      { id: 'bob', name: 'Bob' },
+      { id: 'carol', name: 'Carol' },
+    ]),
+  );
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Saved players', exact: true }).click();
+  await page.getByRole('button', { name: 'Rename player Alice', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Rename player', exact: true });
+  await dialog.getByRole('textbox', { name: 'Player name', exact: true }).fill('Alicia');
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  expect(
+    await page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem('riichi-players-v1')!).find(
+          (player: { id: string }) => player.id === 'existing',
+        ).name,
+    ),
+  ).toBe('Alicia');
+  await page.goto('/records/player/existing');
+  await expect(page.getByRole('heading', { name: 'Alicia', exact: true })).toBeVisible();
+  await expect(page.locator('.profile-sample')).toContainText('1 completed games');
+});
+
+for (const mode of ['records', 'all']) {
+  test(`clearing ${mode} needs confirmation and deletes only the selected local data`, async ({
+    page,
+  }) => {
+    await page.goto('/others/data/import');
+    await page.getByLabel('Import CSV file', { exact: true }).setInputFiles({
+      name: 'game.csv',
+      mimeType: 'text/csv',
+      buffer: Buffer.from(gamesCsv([game('clear-me', 'alice', 'Alice')])),
+    });
+    await page.getByRole('button', { name: 'Import selected games', exact: true }).click();
+    await expect(page.locator('.player-mapping')).toHaveCount(0);
+    await page.evaluate(() => {
+      localStorage.setItem('riichi-sound', 'off');
+      localStorage.setItem('unrelated-app', 'keep');
+      sessionStorage.setItem('riichi-room:test:pin', '1234');
+    });
+    await page.goto('/others');
+    await page.getByRole('link', { name: 'Manage local data', exact: true }).click();
+    const label = mode === 'all' ? 'Clear all data' : 'Clear all records';
+    await page.getByRole('button', { name: label, exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: label, exact: true });
+    await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+    expect(await page.evaluate(() => localStorage.getItem('riichi-players-v1'))).not.toBeNull();
+    await page.getByRole('button', { name: label, exact: true }).click();
+    await Promise.all([
+      page.waitForEvent('load'),
+      dialog.getByRole('button', { name: 'Confirm delete', exact: true }).click(),
+    ]);
+    const stored = await page.evaluate(() => ({
+      players: localStorage.getItem('riichi-players-v1'),
+      sound: localStorage.getItem('riichi-sound'),
+      other: localStorage.getItem('unrelated-app'),
+      pin: sessionStorage.getItem('riichi-room:test:pin'),
+    }));
+    expect(stored.other).toBe('keep');
+    if (mode === 'all') {
+      expect(stored.players).toBeNull();
+      expect(stored.sound).toBeNull();
+      expect(stored.pin).toBeNull();
+    } else {
+      expect(stored.players).not.toBeNull();
+      expect(stored.sound).toBe('off');
+      expect(stored.pin).toBe('1234');
+    }
+    await page.goto('/records');
+    await expect(page.locator('.game-card-link')).toHaveCount(0);
+    expect(
+      await page.evaluate(
+        () =>
+          new Promise<number>((resolve, reject) => {
+            const request = indexedDB.open('riichi-table');
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => {
+              const db = request.result;
+              const count = db.transaction('matches').objectStore('matches').count();
+              count.onsuccess = () => {
+                db.close();
+                resolve(count.result);
+              };
+            };
+          }),
+      ),
+    ).toBe(0);
+  });
+}
+
+test.describe('mobile long press', () => {
+  test.use({ hasTouch: true });
+  test('suppresses long-press menus on the interface and keeps input editing available', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    const contextAllowed = await page
+      .locator('h1')
+      .first()
+      .evaluate((element) =>
+        element.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true })),
+      );
+    expect(contextAllowed).toBe(false);
+    const input = page.locator('input').first();
+    expect(
+      await input.evaluate((element) =>
+        element.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true })),
+      ),
+    ).toBe(true);
+    await expect(input).toHaveCSS('user-select', 'text');
+  });
 });

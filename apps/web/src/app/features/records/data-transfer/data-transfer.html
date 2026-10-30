@@ -162,10 +162,13 @@
         @if (importing() && incomingPlayers().length) {
           <fieldset class="player-mapping" [disabled]="busy()">
             <legend>{{ 'Match imported players' | t }}</legend>
+            <button type="button" class="secondary" (click)="autoMergeByName()">
+              {{ 'Auto merge by name' | t }}
+            </button>
             @if (!error()) {
               <p class="hint">
                 {{
-                  'Same IDs refer to the same player. Different IDs stay separate unless you choose an existing player. Names alone are never merged.'
+                  'Imported players are saved automatically. Keep them separate or choose who to merge with.'
                     | t
                 }}
               </p>
@@ -183,8 +186,8 @@
                   <option [ngValue]="person.id">
                     {{
                       (existingIdentity(person.id)
-                        ? 'Use matching player ID'
-                        : 'Keep as a separate player'
+                        ? 'Use existing player'
+                        : 'Do not merge · create player'
                       ) | t
                     }}
                   </option>

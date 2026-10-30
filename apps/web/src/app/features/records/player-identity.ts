@@ -25,11 +25,34 @@ export function playerIdentities(matches: Match[], saved: PlayerIdentity[] = [])
     (a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id),
   );
 }
-/** Short discriminator for same-name choices; the full ID remains the identity key. */
-export function identityLabel(player: PlayerIdentity): string {
-  let hash = 2166136261;
-  for (const char of player.id) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
-  return `${player.name} · ${(hash >>> 0).toString(16).padStart(8, '0')}`;
+/** Names are presentation only; duplicate choices use a local ordinal, never an ID. */
+export function identityLabel(player: PlayerIdentity, peers: PlayerIdentity[] = []): string {
+  const same = peers.filter((other) => other.name === player.name);
+  const index = same.findIndex((other) => other.id === player.id);
+  return index > 0 ? `${player.name} (${index})` : player.name;
+}
+export function mergePlayersByName(
+  matches: Match[],
+  existing: PlayerIdentity[],
+): Record<string, string> {
+  const key = (name: string) => name.normalize('NFKC').trim().toLowerCase();
+  const incoming = playerIdentities(matches);
+  const mapping: Record<string, string> = {};
+  for (const person of incoming) {
+    if (existing.some((other) => other.id === person.id)) continue;
+    const candidates = existing.filter((other) => key(other.name) === key(person.name));
+    if (candidates.length > 1) continue;
+    const target = candidates[0] ?? incoming.find((other) => key(other.name) === key(person.name));
+    if (!target || target.id === person.id) continue;
+    const next = { ...mapping, [person.id]: target.id };
+    try {
+      mapImportedPlayers(matches, next);
+      mapping[person.id] = target.id;
+    } catch {
+      // Same-name people seated together must remain different players.
+    }
+  }
+  return mapping;
 }
 export function mapImportedPlayers(
   matches: Match[],

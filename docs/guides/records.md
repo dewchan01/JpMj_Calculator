@@ -25,7 +25,7 @@ retain the page gutter, and new tabs/filter chips reset scrolling.
 Games sort by creation date. Cards show final standings, raw points and recorded duration. Timed
 games exclude pauses; legacy games estimate duration from creation to the last recorded event.
 Players aggregate completed games by `profileId`, retaining identity across display-name changes.
-Matching names with different IDs remain separate; short ID labels distinguish them. Legacy games
+Matching names with different IDs remain separate; numbered names distinguish them without exposing IDs. Legacy games
 without a profile ID use a game-and-seat identity rather than silently merging names. Selecting a
 saved player in setup reuses their profile; new unsaved participants receive fresh identities.
 A participant filter restricts the aggregate view to that person.
@@ -86,8 +86,9 @@ draws. See [live-table metric definitions](live-table.md) for state, stability a
 ## Transfer and limitations
 
 CSV and QR/ID import/export is **under Others > Data**, with separate entries and game/player/date
-selection; see [archive behavior](data-transfer.md). Imported games do not automatically populate
-the independent saved-player name library. No account, cloud synchronization or user-ID QR lookup
+selection; see [archive behavior](data-transfer.md). Imports automatically save players in the player library.
+Saved players can be renamed from My table > Saved players without changing identity or historical snapshots.
+No account, cloud synchronization or user-ID QR lookup
 is implemented. Historical hand editing and a general existing-table name/seat editor remain absent.
 
 Game-list metadata includes the latest completed hand's recorded round and Honba, using its before
