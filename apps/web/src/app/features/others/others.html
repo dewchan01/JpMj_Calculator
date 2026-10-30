@@ -204,7 +204,50 @@
         </div>
       }
       @case ('terms') {
-        <p>{{ 'Terms and conditions have not been published for this build.' | t }}</p>
+        <div class="license-content">
+          <section>
+            <h2>{{ 'Use of this application' | t }}</h2>
+            <p>
+              {{
+                'This is an independent Mahjong scoring tool, not an official Mahjong Soul service. Check the selected rules and results with your table before relying on them.'
+                  | t
+              }}
+            </p>
+          </section>
+          <section>
+            <h2>{{ 'Local data and settings' | t }}</h2>
+            <p>
+              {{
+                'Saved games, players and preferences are stored in this browser. Export a backup before clearing data, changing devices or removing browser storage. Deleted local data cannot be restored by this application.'
+                  | t
+              }}
+            </p>
+            <p>
+              {{
+                'Music volume controls background music only. Music and sound effects have separate mute settings saved on this device.'
+                  | t
+              }}
+            </p>
+          </section>
+          <section>
+            <h2>{{ 'Online rooms and sharing' | t }}</h2>
+            <p>
+              {{
+                'Online rooms and share links send the relevant game and player information to the configured server. Share room credentials and links only with intended recipients, and obtain permission before sharing other players’ information. Clearing local data does not delete server copies.'
+                  | t
+              }}
+            </p>
+          </section>
+          <section>
+            <h2>{{ 'Third-party content' | t }}</h2>
+            <p>
+              {{
+                'Third-party artwork, music and recordings remain subject to their respective owners’ rights. Source attribution does not grant permission to copy or redistribute them. See the license information for sources and notices.'
+                  | t
+              }}
+            </p>
+          </section>
+        </div>
       }
       @case ('license') {
         <div class="license-content">
@@ -220,6 +263,37 @@
               </a>
             </p>
             <a href="tiles/LICENSE.md">{{ 'Read tile artwork license' | t }}</a>
+          </section>
+          <section>
+            <h2>{{ 'Music and sound effects' | t }}</h2>
+            <p>
+              {{
+                'Mahjong Soul music and character recordings belong to their respective rights holders, including Cat Food Studio and Yostar. No redistribution permission is documented in this repository.'
+                  | t
+              }}
+            </p>
+            <p>
+              {{
+                'The dice recording comes from Myinstants; an open redistribution license has not been documented. Download availability is not a license grant.'
+                  | t
+              }}
+            </p>
+            <p>
+              <a href="sounds/music/SOURCES.md">{{ 'Background music sources' | t }}</a>
+            </p>
+            <p>
+              <a href="sounds/ichihime/SOURCES.md">{{ 'Character recording sources' | t }}</a>
+            </p>
+            <p>
+              <a href="sounds/SOURCES.md">{{ 'Dice recording source' | t }}</a>
+            </p>
+          </section>
+          <section>
+            <h2>{{ 'Icons' | t }}</h2>
+            <p><a href="icons/lucide-LICENSE.txt">Lucide — ISC</a></p>
+            <p>
+              <a href="icons/yakitori-LICENSE.txt">{{ 'Yakitori marker license' | t }}</a>
+            </p>
           </section>
           <section>
             <h2>{{ 'Third-party software' | t }}</h2>

@@ -1433,5 +1433,22 @@
   "Path to Victory": "勝利への道",
   "On the Edge": "一触即発",
   "Mute background music": "BGMをミュート",
-  "Unmute background music": "BGMのミュートを解除"
+  "Unmute background music": "BGMのミュートを解除",
+  "Use of this application": "本アプリの利用について",
+  "Local data and settings": "端末内のデータと設定",
+  "Online rooms and sharing": "オンラインルームと共有",
+  "Third-party content": "第三者のコンテンツ",
+  "This is an independent Mahjong scoring tool, not an official Mahjong Soul service. Check the selected rules and results with your table before relying on them.": "本アプリは独立した麻雀点数計算ツールであり、雀魂の公式サービスではありません。結果を利用する前に、選択したルールと計算結果を同卓者と確認してください。",
+  "Saved games, players and preferences are stored in this browser. Export a backup before clearing data, changing devices or removing browser storage. Deleted local data cannot be restored by this application.": "保存した対局、プレイヤー、設定はこのブラウザーに保存されます。データの消去、端末の変更、ブラウザーのストレージ削除の前にバックアップをエクスポートしてください。削除した端末内データは本アプリでは復元できません。",
+  "Music volume controls background music only. Music and sound effects have separate mute settings saved on this device.": "音量スライダーはBGMのみを調整します。BGMと効果音のミュート設定は別々にこの端末に保存されます。",
+  "Online rooms and share links send the relevant game and player information to the configured server. Share room credentials and links only with intended recipients, and obtain permission before sharing other players’ information. Clearing local data does not delete server copies.": "オンラインルームと共有リンクでは、関連する対局・プレイヤー情報が設定されたサーバーに送信されます。ルームの認証情報やリンクは意図した相手にのみ伝え、他のプレイヤーの情報は同意を得て共有してください。端末内データの消去ではサーバーのコピーは削除されません。",
+  "Third-party artwork, music and recordings remain subject to their respective owners’ rights. Source attribution does not grant permission to copy or redistribute them. See the license information for sources and notices.": "第三者の画像、音楽、録音の権利は各権利者に帰属します。出典の記載は複製や再配布の許可を意味しません。出典と通知はライセンス情報をご確認ください。",
+  "Music and sound effects": "音楽と効果音",
+  "Mahjong Soul music and character recordings belong to their respective rights holders, including Cat Food Studio and Yostar. No redistribution permission is documented in this repository.": "雀魂の音楽とキャラクター音声の権利は、Cat Food Studio、Yostarなど各権利者に帰属します。このリポジトリには再配布許可の記録がありません。",
+  "The dice recording comes from Myinstants; an open redistribution license has not been documented. Download availability is not a license grant.": "サイコロの録音はMyinstantsから取得したもので、オープンな再配布ライセンスは確認されていません。ダウンロード可能であることは許諾を意味しません。",
+  "Background music sources": "BGMの出典",
+  "Character recording sources": "キャラクター音声の出典",
+  "Dice recording source": "サイコロ録音の出典",
+  "Icons": "アイコン",
+  "Yakitori marker license": "焼き鳥マーカーのライセンス"
 }

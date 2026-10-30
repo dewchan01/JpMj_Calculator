@@ -364,7 +364,7 @@ export class GameTable {
   readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('prompt');
   readonly panel = signal<Panel>('menu');
   readonly panelParents = signal<Panel[]>([]);
-  readonly canDismissPrompt = () => !this.busy() && this.panelParents().length === 0;
+  readonly canDismissPrompt = () => !this.busy();
   navigatePanel(panel: Panel): void {
     if (panel === 'permissions' && !this.room.access()?.host) return;
     if (panel === this.panel()) return;

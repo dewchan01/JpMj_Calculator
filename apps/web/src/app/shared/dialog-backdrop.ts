@@ -8,7 +8,7 @@ export function closeDialogGroup(group: string): void {
     if (dialog.dataset['dismissGroup'] === group) dialog.close();
 }
 
-/** A root prompt can be dismissed by its backdrop; nested prompts retain their parent. */
+/** Backdrops dismiss the active prompt unless it explicitly prevents dismissal. */
 @Directive({
   selector: 'dialog[appDialogBackdrop]',
   host: { '(pointerdown)': 'start($event)', '(pointerup)': 'finish($event)' },
@@ -39,9 +39,7 @@ export class DialogBackdrop {
       this.startedOutside &&
       this.outside(event) &&
       this.enabled() &&
-      (this.canDismiss()?.() ?? true) &&
-      (this.element.nativeElement.dataset['dismissGroup'] ||
-        document.querySelectorAll('dialog[open]').length === 1)
+      (this.canDismiss()?.() ?? true)
     ) {
       const group = this.element.nativeElement.dataset['dismissGroup'];
       if (group) closeDialogGroup(group);

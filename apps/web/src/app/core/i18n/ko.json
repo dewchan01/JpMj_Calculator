@@ -1433,5 +1433,22 @@
   "Path to Victory": "승리의 길",
   "On the Edge": "일촉즉발",
   "Mute background music": "배경 음악 음소거",
-  "Unmute background music": "배경 음악 음소거 해제"
+  "Unmute background music": "배경 음악 음소거 해제",
+  "Use of this application": "앱 이용 안내",
+  "Local data and settings": "기기 내 데이터 및 설정",
+  "Online rooms and sharing": "온라인 방 및 공유",
+  "Third-party content": "타사 콘텐츠",
+  "This is an independent Mahjong scoring tool, not an official Mahjong Soul service. Check the selected rules and results with your table before relying on them.": "이 앱은 독립적인 마작 점수 계산 도구이며 작혼의 공식 서비스가 아닙니다. 결과를 이용하기 전에 함께하는 플레이어와 선택한 규칙 및 계산 결과를 확인하세요.",
+  "Saved games, players and preferences are stored in this browser. Export a backup before clearing data, changing devices or removing browser storage. Deleted local data cannot be restored by this application.": "저장한 대국, 플레이어 및 환경설정은 이 브라우저에 저장됩니다. 데이터 삭제, 기기 변경 또는 브라우저 저장소 삭제 전에 백업을 내보내세요. 삭제한 기기 내 데이터는 이 앱에서 복구할 수 없습니다.",
+  "Music volume controls background music only. Music and sound effects have separate mute settings saved on this device.": "음악 음량은 배경 음악에만 적용됩니다. 음악과 효과음의 음소거 설정은 이 기기에 각각 저장됩니다.",
+  "Online rooms and share links send the relevant game and player information to the configured server. Share room credentials and links only with intended recipients, and obtain permission before sharing other players’ information. Clearing local data does not delete server copies.": "온라인 방과 공유 링크는 관련 대국 및 플레이어 정보를 설정된 서버로 전송합니다. 방 접속 정보와 링크는 의도한 수신자에게만 공유하고 다른 플레이어의 정보는 동의를 받은 후 공유하세요. 기기 내 데이터를 삭제해도 서버의 사본은 삭제되지 않습니다.",
+  "Third-party artwork, music and recordings remain subject to their respective owners’ rights. Source attribution does not grant permission to copy or redistribute them. See the license information for sources and notices.": "타사 그림, 음악 및 녹음의 권리는 각 권리자에게 있습니다. 출처 표시는 복제나 재배포 허가를 의미하지 않습니다. 출처와 고지는 라이선스 정보를 확인하세요.",
+  "Music and sound effects": "음악 및 효과음",
+  "Mahjong Soul music and character recordings belong to their respective rights holders, including Cat Food Studio and Yostar. No redistribution permission is documented in this repository.": "작혼 음악과 캐릭터 음성의 권리는 Cat Food Studio, Yostar 등 각 권리자에게 있습니다. 이 저장소에는 재배포 허가가 기록되어 있지 않습니다.",
+  "The dice recording comes from Myinstants; an open redistribution license has not been documented. Download availability is not a license grant.": "주사위 녹음은 Myinstants에서 가져왔으며 공개 재배포 라이선스는 기록되어 있지 않습니다. 다운로드 가능 여부는 이용 허가를 의미하지 않습니다.",
+  "Background music sources": "배경 음악 출처",
+  "Character recording sources": "캐릭터 음성 출처",
+  "Dice recording source": "주사위 녹음 출처",
+  "Icons": "아이콘",
+  "Yakitori marker license": "야키토리 표시 라이선스"
 }

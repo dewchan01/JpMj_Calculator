@@ -5,6 +5,7 @@ export interface ToastMessage {
   id: number;
   message: string;
   kind: ToastKind;
+  dismissOnOutside: boolean;
 }
 
 /** One replaceable transient notice, shared across pages and modal dialogs. */
@@ -18,9 +19,14 @@ export class Toast {
   constructor() {
     inject(DestroyRef).onDestroy(() => clearTimeout(this.timer));
   }
-  show(message: string, kind: ToastKind = 'info', duration = kind === 'error' ? 8000 : 5000): void {
+  show(
+    message: string,
+    kind: ToastKind = 'info',
+    duration = kind === 'error' ? 8000 : 5000,
+    dismissOnOutside = true,
+  ): void {
     clearTimeout(this.timer);
-    this.current.set({ id: ++this.sequence, message, kind });
+    this.current.set({ id: ++this.sequence, message, kind, dismissOnOutside });
     this.remaining = duration;
     this.resume();
   }

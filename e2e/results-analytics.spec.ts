@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { beginWin, finishWin, gameMenu, prompt } from './helpers/game';
+import { beginWin, enterLiveTiles, finishWin, gameMenu, prompt } from './helpers/game';
 
 test('final results offer table, list, history, statistics, PNG export, keep and discard', async ({
   page,
@@ -253,30 +253,22 @@ test('record results without playing, correct points, persist ranks, and audit t
   await expect(results.locator('.result-table')).toBeVisible();
 });
 
-test('root backdrops close, nested prompts stay open, and reopening resumes the game', async ({
-  page,
-}) => {
+test('root and nested backdrops close, and reopening resumes the game', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 740 });
   await page.goto('/');
   await page.getByRole('button', { name: /Start match/ }).click();
   await page.getByRole('button', { name: 'Start game', exact: true }).click();
-  await page
-    .locator('.indicator-bar')
-    .getByRole('button', { name: 'Dora indicators', exact: true })
-    .click();
-  await expect(
-    page.getByRole('dialog', { name: 'Enter Dora indicators', exact: true }),
-  ).toBeVisible();
+  await enterLiveTiles(page, 'Dora indicators', '1m');
+  await prompt(page).getByRole('button', { name: 'Save indicators', exact: true }).click();
+  await page.locator('.floating-menu').click();
+  await expect(prompt(page)).toBeVisible();
   await page.mouse.click(2, 2);
-  await expect(
-    page.getByRole('dialog', { name: 'Enter Dora indicators', exact: true }),
-  ).not.toBeVisible();
   await expect(prompt(page)).not.toBeVisible();
   await page.locator('.floating-menu').click();
   await prompt(page).getByRole('button', { name: 'Help', exact: true }).click();
   await page.mouse.click(2, 2);
-  await expect(prompt(page)).toBeVisible();
-  await prompt(page).locator('.menu-back').click();
+  await expect(prompt(page)).not.toBeVisible();
+  await page.locator('.floating-menu').click();
   await prompt(page).getByRole('button', { name: 'My table', exact: true }).click();
   await page.getByRole('button', { name: /Ongoing games/ }).click();
   await page.getByRole('link', { name: /Resume game/ }).click();

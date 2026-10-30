@@ -60,6 +60,10 @@ See [music titles](music-titles.md) for the verified English, Chinese, Japanese,
 
 Open **Music settings** from the desktop header, the room waiting area, or the in-game menu. The same controls are also available under **Others > Sound effects**. Choose a lobby theme, a game track, and a riichi track; game and riichi selections also support Random. Background music and sound effects have independent mute buttons. The volume slider controls music only: zero mutes music, and unmuting restores its previous nonzero volume. Action sounds keep their own saved setting. Playback begins after an interaction with the page. Preferences stay on this device and do not change other room members' audio or require host permission.
 
+Review **Others > Terms and conditions** for local storage and online sharing information, and **Others > License** for asset sources and notices. Export a backup before clearing local records or all local data. Clearing browser data does not delete copies already sent to a room server or share link. Obtain other players' permission before sharing their information.
+
+The repository does not specify an application license or document redistribution permission for the included Mahjong Soul music, character recordings or dice recording. Source notices record provenance; they do not grant permission. Confirm the necessary rights before distributing these assets. Tile artwork and icon licenses are listed separately in the app.
+
 During a game, the selected game track plays, or Random chooses from Game, Game Master, and 23ex Duiju1–4. Any player's riichi declaration switches to the selected riichi track (or a random choice from the nine Liqi tracks and Yichujifa) for the rest of the hand; the next hand restores normal game music. Changing the current scene's track takes effect immediately. Leaving the table or finishing the match restores the selected lobby theme. Music pauses while the page is hidden. Tracks are cached as played, without downloading the whole music collection during app installation.
 
 ## Development checks

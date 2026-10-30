@@ -1433,5 +1433,22 @@
   "Path to Victory": "胜途",
   "On the Edge": "一触即发",
   "Mute background music": "静音背景音乐",
-  "Unmute background music": "取消背景音乐静音"
+  "Unmute background music": "取消背景音乐静音",
+  "Use of this application": "应用使用说明",
+  "Local data and settings": "本机资料与设置",
+  "Online rooms and sharing": "线上房间与分享",
+  "Third-party content": "第三方内容",
+  "This is an independent Mahjong scoring tool, not an official Mahjong Soul service. Check the selected rules and results with your table before relying on them.": "本应用是独立的麻将计分工具，并非雀魂官方服务。使用结果前，请与同桌玩家核对所选规则及计分结果。",
+  "Saved games, players and preferences are stored in this browser. Export a backup before clearing data, changing devices or removing browser storage. Deleted local data cannot be restored by this application.": "保存的对局、玩家及偏好设置储存在此浏览器中。清除资料、更换设备或删除浏览器储存前，请先导出备份。本应用无法恢复已删除的本机资料。",
+  "Music volume controls background music only. Music and sound effects have separate mute settings saved on this device.": "音乐音量仅控制背景音乐。音乐与音效的静音设置分别保存在此设备。",
+  "Online rooms and share links send the relevant game and player information to the configured server. Share room credentials and links only with intended recipients, and obtain permission before sharing other players’ information. Clearing local data does not delete server copies.": "线上房间及分享链接会将相关对局和玩家资料传送至配置的服务器。请仅向预期接收者提供房间凭证及链接，并在分享其他玩家资料前取得同意。清除本机资料不会删除服务器上的副本。",
+  "Third-party artwork, music and recordings remain subject to their respective owners’ rights. Source attribution does not grant permission to copy or redistribute them. See the license information for sources and notices.": "第三方美术、音乐及录音的权利属于各自权利人。注明来源不代表取得复制或再分发许可。来源及声明请参阅授权资讯。",
+  "Music and sound effects": "音乐与音效",
+  "Mahjong Soul music and character recordings belong to their respective rights holders, including Cat Food Studio and Yostar. No redistribution permission is documented in this repository.": "雀魂音乐及角色录音的权利属于包括 Cat Food Studio、Yostar 在内的相应权利人。本仓库未记录再分发许可。",
+  "The dice recording comes from Myinstants; an open redistribution license has not been documented. Download availability is not a license grant.": "骰子录音来自 Myinstants，尚未记录开放再分发许可证。提供下载不代表授予使用许可。",
+  "Background music sources": "背景音乐来源",
+  "Character recording sources": "角色录音来源",
+  "Dice recording source": "骰子录音来源",
+  "Icons": "图标",
+  "Yakitori marker license": "烧鸟标记授权"
 }

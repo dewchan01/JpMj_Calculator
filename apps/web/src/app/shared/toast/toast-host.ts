@@ -29,6 +29,15 @@ export class ToastHost {
     const destroy = inject(DestroyRef);
     afterNextRender(() => {
       const element = this.surface().nativeElement;
+      const dismissOutside = (event: MouseEvent) => {
+        if (
+          this.toast.current()?.dismissOnOutside &&
+          event.target instanceof Node &&
+          !element.contains(event.target)
+        )
+          this.toast.dismiss();
+      };
+      document.addEventListener('click', dismissOutside, true);
       // A toast must belong to the active modal to remain operable and accessible.
       const observer = new MutationObserver(() => {
         if (this.toast.current()) this.place();
@@ -40,6 +49,7 @@ export class ToastHost {
         attributeFilter: ['open'],
       });
       destroy.onDestroy(() => {
+        document.removeEventListener('click', dismissOutside, true);
         observer.disconnect();
         element.remove();
       });

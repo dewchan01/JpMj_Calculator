@@ -13,7 +13,7 @@ Mahjong Soul / Ichihime, uploaded by happyh0rse.
 | tsumo.mp3  | https://www.myinstants.com/en/instant/mahjong-soul-tsumo-ichihime-28885/  | https://www.myinstants.com/media/sounds/act_tumo.mp3 |
 
 Open, added and concealed Kan share the Kan clip. Double Riichi uses the Riichi recording.
-North retains device-speech/tone fallback because this set has no corresponding recording.
+North extraction also uses the Kan recording.
 
 The pages provide MP3 downloads but state no open redistribution license. These files are not CC0;
 rights remain with their respective owners. This provenance record does not grant rights.
