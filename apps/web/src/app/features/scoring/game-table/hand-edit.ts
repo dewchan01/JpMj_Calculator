@@ -1,3 +1,4 @@
+import { recordChombo } from '../../../../../../../packages/mahjong-core/chombo';
 import {
   appendEvent,
   balances,
@@ -120,7 +121,8 @@ export function finishHandEdit(
   ];
   let current = edited;
   for (const event of original.events.slice(index + 1)) {
-    if (editableHand(event)) current = replayHand(current, event);
+    if (event.chombo) current = recordChombo(current, event.chombo, event.id, event.timestamp);
+    else if (editableHand(event)) current = replayHand(current, event);
     else if (event.type === 'matchEnd') {
       current = current.ended
         ? appendEvent(current, {

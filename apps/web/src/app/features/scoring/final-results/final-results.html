@@ -309,6 +309,11 @@
   </p>
   @if (match().ended && offerGameActions()) {
     <div class="result-actions">
+      @if (offerReplay()) {
+        <button class="primary extend-game" (click)="replayRequested.emit()" [disabled]="busy()">
+          {{ 'Replay last hand' | t }}
+        </button>
+      }
       @if (offerExtension()) {
         <button class="primary extend-game" (click)="extendRequested.emit()" [disabled]="busy()">
           {{ 'Extend to East and South' | t }}
@@ -317,7 +322,7 @@
       <button class="primary" (click)="keepGame()" [disabled]="busy()">
         {{ 'Save game' | t }}
       </button>
-      <button class="action-delete danger" (click)="discardGame()" [disabled]="busy()">
+      <button class="action-delete danger" (click)="requestDiscard()" [disabled]="busy()">
         {{ 'Discard game' | t }}
       </button>
     </div>
@@ -331,6 +336,47 @@
     </p>
   }
 </section>
+<dialog
+  appDialogBackdrop
+  #discardDialog
+  class="app-dialog"
+  aria-labelledby="discard-game-title"
+  [dialogCanDismiss]="canDismissDiscard"
+  (cancel)="busy() && $event.preventDefault()"
+>
+  <header class="dialog-header">
+    <h2 id="discard-game-title">{{ 'Discard game' | t }}</h2>
+    <button
+      class="icon-button"
+      (click)="discardDialog.close()"
+      [disabled]="busy()"
+      [attr.aria-label]="'Close' | t"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
+    </button>
+  </header>
+  <div class="dialog-body">
+    <p>
+      {{
+        (discardLocal()
+          ? 'Delete this device’s copy of the game and its history? Other players and the room are unaffected.'
+          : 'Delete this game and its history? This cannot be undone.'
+        ) | t
+      }}
+    </p>
+    @if (notice()) {
+      <p class="danger" role="alert">{{ notice() | t }}</p>
+    }
+    <div class="room-exit-actions">
+      <button class="secondary" (click)="discardDialog.close()" [disabled]="busy()" autofocus>
+        {{ 'Cancel' | t }}
+      </button>
+      <button class="primary exit-room-button" (click)="discardGame()" [disabled]="busy()">
+        {{ 'Confirm delete' | t }}
+      </button>
+    </div>
+  </div>
+</dialog>
 <dialog
   appDialogBackdrop
   #scoreDialog

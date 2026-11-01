@@ -142,6 +142,7 @@ export class MatchHistory {
       : (this.match()?.players.find((player) => player.id === id)?.name ?? id);
   }
   eventLabel(event: LedgerEvent): string {
+    if (event.chombo) return this.i18n.t('Chombo');
     if (event.type === 'riichiDeposit') return this.i18n.t('Current hand');
     if (event.type === 'win' || event.type === 'multipleRon') return this.i18n.t('Win');
     return (

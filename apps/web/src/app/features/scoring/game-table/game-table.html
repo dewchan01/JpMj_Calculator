@@ -521,6 +521,18 @@
                   {{ 'North extraction' | t }}
                 </button>
               }
+              @if (playerMode() === 'all' && !editingHand() && !m.ended) {
+                @if (can('draw') && m.rules.preset !== 'm-league') {
+                  <button (click)="startPlayerNagashi()" [disabled]="paused() || busy()">
+                    {{ 'Nagashi Mangan' | t }}
+                  </button>
+                }
+                @if (!remotePlayer()) {
+                  <button (click)="startChombo(selected)" [disabled]="paused() || busy()">
+                    {{ 'Chombo' | t }}
+                  </button>
+                }
+              }
             </div>
           }
           @if (playerMode() === 'calls') {
@@ -713,18 +725,28 @@
                 </button>
               }
               <button (click)="openIndicators('dora')">{{ 'Dora indicators' | t }}</button>
+              <button (click)="navigatePanel('win')">{{ 'Win' | t }}</button>
+              @if (can('draw')) {
+                <button
+                  (click)="
+                    drawType = 'exhaustive'; tenpai = {}; nagashi = {}; navigatePanel('draw')
+                  "
+                >
+                  {{ 'Record draw' | t }}
+                </button>
+                @if (m.rules.preset !== 'm-league') {
+                  <button
+                    (click)="drawType = 'nagashi'; tenpai = {}; nagashi = {}; navigatePanel('draw')"
+                  >
+                    {{ 'Nagashi Mangan' | t }}
+                  </button>
+                }
+              }
+              @if (!remotePlayer() && !editingHand()) {
+                <button (click)="startChombo()">{{ 'Chombo' | t }}</button>
+              }
             </div>
           }
-          <div class="menu-list">
-            <button (click)="navigatePanel('win')">{{ 'Win' | t }}</button>
-            @if (can('draw')) {
-              <button
-                (click)="drawType = 'exhaustive'; tenpai = {}; nagashi = {}; navigatePanel('draw')"
-              >
-                {{ 'Record draw' | t }}
-              </button>
-            }
-          </div>
         }
         @case ('win') {
           <label>
@@ -985,6 +1007,83 @@
             </div>
           </div>
         }
+        @case ('chombo') {
+          <label>
+            {{ 'Penalty payer' | t }}
+            <select [(ngModel)]="chomboPayer">
+              @for (player of players; track player.id) {
+                <option [value]="player.id">{{ player.name }}</option>
+              }
+            </select>
+          </label>
+          <fieldset>
+            <legend>{{ 'Penalty recipients' | t }}</legend>
+            @for (player of players; track player.id) {
+              @if (player.id !== chomboPayer) {
+                <label class="check">
+                  <input type="checkbox" [(ngModel)]="chomboRecipients[player.id]" />
+                  {{ player.name }}
+                </label>
+              }
+            }
+          </fieldset>
+          <label>
+            {{ 'Penalty payment' | t }}
+            <select [(ngModel)]="chomboPayment">
+              <option value="mangan">{{ 'Mangan' | t }}</option>
+              <option value="baiman">{{ 'Baiman' | t }}</option>
+              <option value="other">{{ 'Other amount' | t }}</option>
+            </select>
+          </label>
+          @if (chomboPayment === 'other') {
+            <label>
+              {{ 'Amount per recipient' | t }}
+              <input type="number" min="0" max="100000" step="100" [(ngModel)]="chomboAmount" />
+            </label>
+          } @else {
+            <p class="hint">
+              {{
+                'Mangan and Baiman reverse Tsumo payments from the payer to the selected recipients, without Honba.'
+                  | t
+              }}
+            </p>
+          }
+          <label>
+            {{ 'Hand progression' | t }}
+            <select [(ngModel)]="chomboProgression">
+              <option value="continue">{{ 'Continue current hand' | t }}</option>
+              <option value="draw">{{ 'Treat as exhaustive draw' | t }}</option>
+              <option value="repeat">{{ 'Replay current hand' | t }}</option>
+            </select>
+          </label>
+          @if (chomboProgression === 'repeat') {
+            <p class="hint">
+              {{
+                'Keep the dealer and Honba, refund this hand’s Riichi deposits and start the hand again.'
+                  | t
+              }}
+            </p>
+          }
+          @if (chomboProgression === 'draw') {
+            <fieldset>
+              <legend>{{ 'Select Tenpai players' | t }}</legend>
+              @for (player of players; track player.id) {
+                <label class="check">
+                  <input type="checkbox" [(ngModel)]="tenpai[player.id]" />
+                  {{ player.name }}
+                </label>
+              }
+            </fieldset>
+          }
+          <div class="dialog-actions">
+            <button class="secondary" (click)="backPanel()" [disabled]="busy()">
+              {{ 'Cancel' | t }}
+            </button>
+            <button class="primary" (click)="settleChombo()" [disabled]="busy()">
+              {{ 'Confirm penalty' | t }}
+            </button>
+          </div>
+        }
         @case ('draw') {
           <label>
             {{ 'Draw type' | t }}
@@ -1090,12 +1189,30 @@
             [match]="m"
             [offerGameActions]="true"
             [offerExtension]="canExtend() && !busy()"
+            [offerReplay]="canReplay() && !busy()"
+            (replayRequested)="navigatePanel('restart-hand')"
             (extendRequested)="navigatePanel('extend-south')"
             [showEditAction]="!roomCode"
             [saveLocal]="roomCode ? saveLocalResult : null"
             [discardLocal]="roomCode ? discardLocalResult : null"
             (matchChanged)="match.set($event)"
           />
+        }
+        @case ('restart-hand') {
+          <p>
+            {{
+              'Undo the last hand and final settlement, refund that hand’s Riichi deposits, and restore its starting points, dealer and Honba?'
+                | t
+            }}
+          </p>
+          <div class="dialog-actions">
+            <button class="secondary" (click)="navigatePanel('results')" [disabled]="busy()">
+              {{ 'Cancel' | t }}
+            </button>
+            <button class="primary" (click)="replayLastHand()" [disabled]="busy() || !canReplay()">
+              {{ 'Replay last hand' | t }}
+            </button>
+          </div>
         }
         @case ('extend-south') {
           <p>

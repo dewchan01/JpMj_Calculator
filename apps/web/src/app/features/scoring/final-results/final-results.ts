@@ -52,8 +52,18 @@ export class FinalResults {
   readonly offerGameActions = input(false);
   readonly offerExtension = input(false);
   readonly extendRequested = output<void>();
+  readonly offerReplay = input(false);
+  readonly replayRequested = output<void>();
   readonly showEditAction = input(true);
   private readonly scoreDialog = viewChild.required<ElementRef<HTMLDialogElement>>('scoreDialog');
+  private readonly discardDialog =
+    viewChild.required<ElementRef<HTMLDialogElement>>('discardDialog');
+  readonly canDismissDiscard = () => !this.busy();
+  requestDiscard(): void {
+    if (this.busy()) return;
+    this.notice.set('');
+    this.discardDialog().nativeElement.showModal();
+  }
   readonly tab = signal<'result' | 'history' | 'details'>('result');
   readonly tabs = ['result', 'history', 'details'] as const;
   readonly tabLabels = { result: 'Result', history: 'History', details: 'Details' };
@@ -191,11 +201,14 @@ export class FinalResults {
     }
   }
   async discardGame(): Promise<void> {
+    if (this.busy() || !this.discardDialog().nativeElement.open) return;
     this.busy.set(true);
+    this.notice.set('');
     try {
       const discard = this.discardLocal();
       if (discard) await discard(this.match());
       else await this.repo.remove(this.match().id);
+      this.discardDialog().nativeElement.close();
       await this.router.navigateByUrl('/');
     } catch {
       this.notice.set('Could not delete match.');

@@ -1,5 +1,10 @@
 import { CopyButton } from '../../../shared/copy-button/copy-button';
 import {
+  canRestartLastHand,
+  restartLastHand,
+} from '../../../../../../../packages/mahjong-core/restart-hand';
+import { recordChombo, type ChomboInput } from '../../../../../../../packages/mahjong-core/chombo';
+import {
   canExtendToSouth,
   extendToSouth,
 } from '../../../../../../../packages/mahjong-core/extend-match';
@@ -110,6 +115,8 @@ type Panel =
   | 'declarations'
   | 'leave-room'
   | 'extend-south'
+  | 'chombo'
+  | 'restart-hand'
   | 'notice';
 @Component({
   imports: [
@@ -509,6 +516,54 @@ export class GameTable {
   nagashi: Record<string, boolean> = {};
   abortive: AbortiveReason = 'nine-terminals';
   drawInput?: DrawInput;
+  chomboPayer = '';
+  chomboRecipients: Record<string, boolean> = {};
+  chomboPayment: ChomboInput['payment'] = 'mangan';
+  chomboAmount = 1000;
+  chomboProgression: ChomboInput['progression'] = 'repeat';
+  startChombo(payerId?: string): void {
+    if (this.remotePlayer() || this.editingHand()) return;
+    this.chomboPayer = payerId ?? this.match()!.players[0].id;
+    this.chomboRecipients = Object.fromEntries(
+      this.match()!.players.map((player) => [player.id, true]),
+    );
+    this.chomboPayment = 'mangan';
+    this.chomboProgression = 'repeat';
+    this.chomboAmount = 1000;
+    this.tenpai = {};
+    this.navigatePanel('chombo');
+  }
+  async settleChombo(): Promise<void> {
+    if (this.remotePlayer() || this.editingHand()) return;
+    await this.act(async () => {
+      const match = this.match()!;
+      const updated = recordChombo(
+        match,
+        {
+          payerId: this.chomboPayer,
+          recipientIds: match.players
+            .filter((player) => player.id !== this.chomboPayer && this.chomboRecipients[player.id])
+            .map((player) => player.id),
+          payment: this.chomboPayment,
+          amount: this.chomboAmount,
+          progression: this.chomboProgression,
+          tenpaiIds: match.players
+            .filter((player) => this.tenpai[player.id])
+            .map((player) => player.id),
+        },
+        newId(),
+        new Date().toISOString(),
+      );
+      const clock = clockAt(
+        match.clock ?? { elapsedMs: 0, runningSince: null, handStartMs: 0 },
+        !updated.ended,
+      );
+      if (this.chomboProgression !== 'continue') clock.handStartMs = clock.elapsedMs;
+      await this.persist({ ...updated, clock });
+      this.close();
+      if (updated.ended) this.open('results');
+    });
+  }
   editName = '';
   editNames: string[] = [];
   readonly diceRequest = signal(0);
@@ -667,6 +722,8 @@ export class GameTable {
       draw: 'Record draw',
       history: 'History',
       finish: 'End entire match',
+      chombo: 'Chombo',
+      'restart-hand': 'Replay last hand',
       'extend-south': 'Extend to East and South',
       info: 'Information',
       settings: 'In-game settings',
@@ -1174,12 +1231,12 @@ export class GameTable {
     }
     const edited = this.originalMatch?.events.find((event) => event.id === this.editingHand());
     this.manualEntry.set(
-      this.editingHand()
-        ? !!(
-            edited?.scoringInput?.manualScore ||
-            edited?.scoringInputs?.some((input) => input.manualScore)
-          )
-        : this.scoringMode.advanced(),
+      this.scoringMode.advanced() ||
+        !!(
+          this.editingHand() &&
+          (edited?.scoringInput?.manualScore ||
+            edited?.scoringInputs?.some((input) => input.manualScore))
+        ),
     );
     this.winSoundPlayed = false;
     this.playerWinSelected = false;
@@ -1313,7 +1370,7 @@ export class GameTable {
           if (kan) kan.tiles.pop();
         }
       }
-      validateRevealed(m, revealed, this.tiles);
+      if (!this.manualEntry()) validateRevealed(m, revealed, this.tiles);
       const win: WinEvent = {
         winnerId: this.activeWinner,
         method: this.method,
@@ -1357,13 +1414,16 @@ export class GameTable {
         riichiSticks: this.book().table / 1000,
         hand: {
           playerId: this.activeWinner,
-          concealedTiles: this.tiles,
+          concealedTiles: this.manualEntry() ? [] : this.tiles,
           melds: state.melds,
           extractedNorthTiles: state.kita,
         },
         win,
-        doraIndicators: parseTiles(this.dora || m.live?.dora || '', 'dora'),
-        uraIndicators: state.riichi !== 'none' ? parseTiles(this.ura, 'ura') : [],
+        doraIndicators: this.manualEntry()
+          ? []
+          : parseTiles(this.dora || m.live?.dora || '', 'dora'),
+        uraIndicators:
+          !this.manualEntry() && state.riichi !== 'none' ? parseTiles(this.ura, 'ura') : [],
         otherPlayerKans: Object.entries(m.live?.players ?? {})
           .filter(([id]) => id !== this.activeWinner)
           .flatMap(([, p]) => p.melds)
@@ -1430,6 +1490,20 @@ export class GameTable {
     this.tenpai = {};
     this.nagashi = {};
     this.panel.set('draw');
+  }
+  startPlayerNagashi(): void {
+    if (
+      !this.can('draw') ||
+      this.busy() ||
+      this.paused() ||
+      this.match()?.ended ||
+      this.match()?.rules.preset === 'm-league'
+    )
+      return;
+    const player = this.remotePlayer() ? this.roomPlayerId() : this.selected;
+    this.startDraw();
+    this.drawType = 'nagashi';
+    this.nagashi = { [player]: true };
   }
   async settle(): Promise<void> {
     await this.act(async () => {
@@ -1550,6 +1624,17 @@ export class GameTable {
     const match = this.match();
     return !!match && !this.remotePlayer() && canExtendToSouth(match);
   });
+  readonly canReplay = computed(() => {
+    const match = this.match();
+    return !!match && !this.remotePlayer() && canRestartLastHand(match);
+  });
+  async replayLastHand(): Promise<void> {
+    if (!this.canReplay() || this.busy()) return;
+    await this.act(async () => {
+      await this.persist(restartLastHand(this.match()!));
+      this.close();
+    });
+  }
   async extendMatch(): Promise<void> {
     if (!this.canExtend() || this.busy()) return;
     await this.act(async () => {

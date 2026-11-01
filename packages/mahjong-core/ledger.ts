@@ -12,6 +12,14 @@ export interface RoundState {
   endReason?: string;
 }
 export interface LedgerEvent {
+  chombo?: {
+    payerId: string;
+    recipientIds: string[];
+    payment: 'mangan' | 'baiman' | 'other';
+    amount: number;
+    progression: 'continue' | 'draw' | 'repeat';
+    tenpaiIds: string[];
+  };
   revisions?: { timestamp: string; event: Omit<LedgerEvent, 'revisions'> }[];
   id: string;
   timestamp: string;
