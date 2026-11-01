@@ -99,16 +99,15 @@ test('final results offer table, list, history, statistics, PNG export, keep and
   await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'));
   await page.screenshot({ path: 'artifacts/results-statistics.png' });
   await results.getByRole('button', { name: 'History', exact: true }).click();
-  await expect(results.locator('.history-event')).toHaveCount(2);
-  await expect(results.locator('.history-event > summary .event-mode')).toContainText([
-    'Mahjong Soul',
-    'Mahjong Soul',
-  ]);
-  await expect(results.locator('.history-event > summary .outcome-mark')).toContainText(['Ron']);
+  await expect(results.locator('.history-event')).toHaveCount(1);
+  await expect(results.locator('.history-end')).toContainText('Match ended');
+  await expect(results.locator('.history-event > summary')).not.toContainText('Mahjong Soul');
+  await expect(results.locator('.history-event > summary .outcome-mark')).not.toContainText('Ron');
   await expect(results.locator('app-match-history > .card')).toHaveCount(0);
-  await results.locator('.history-event > summary').last().click();
+  await results.locator('.history-event > summary').first().click();
   await expect(results.locator('.history-event[open]')).toContainText('Player 2');
   await expect(results.locator('.history-event[open] .hand-score-summary')).toHaveCount(1);
+  await expect(results.locator('.history-event[open] .hand-score-summary')).toContainText('Ron');
   await expect(results.locator('.history-event[open] .hand-player')).toHaveCount(4);
   await expect(
     results.locator('.history-event[open] .hand-player[aria-expanded="true"]'),

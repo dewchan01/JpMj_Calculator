@@ -478,6 +478,7 @@ thead th {
 .game-card th:first-child,
 .game-card td:first-child {
   padding-inline: 2px;
+  text-align: center;
 }
 .game-card thead th:first-child {
   white-space: nowrap;

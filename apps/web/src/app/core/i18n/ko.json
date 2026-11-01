@@ -1,4 +1,10 @@
 {
+  "Point transfers": "점수 지급",
+  "Game started": "대국 시작",
+  "Current hand": "진행 중인 국",
+  "Extend to East and South": "동남전으로 연장",
+  "This match cannot be extended to South.": "이 대국은 동남전으로 연장할 수 없습니다.",
+  "Keep the East-round history and continue as an East-and-South game. Final escrow awards and end-of-match penalties will be reversed.": "동장 기록을 유지하고 동남전으로 계속합니다. 종료 시 공탁금 배분과 벌점은 취소됩니다.",
   "Loading shared games…": "불러오는 중…",
   "Already saved on this device": "이 기기에 이미 저장됨",
   "Update existing games": "기존 대국 업데이트",

@@ -241,7 +241,7 @@ for (const width of [320, 390, 1280]) {
       .locator('app-final-results')
       .getByRole('button', { name: 'History', exact: true })
       .click();
-    await expect(page.locator('.history-event > summary .event-mode')).toContainText(['Tenhou']);
+    await expect(page.locator('.history-event > summary')).not.toContainText(['Tenhou']);
     await expect(page.locator('app-game-table')).toHaveCount(0);
     await page
       .locator('.record-management')

@@ -1,4 +1,10 @@
 {
+  "Point transfers": "点数の支払い",
+  "Game started": "対局開始",
+  "Current hand": "進行中の局",
+  "Extend to East and South": "東南戦に延長",
+  "This match cannot be extended to South.": "この対局は東南戦に延長できません。",
+  "Keep the East-round history and continue as an East-and-South game. Final escrow awards and end-of-match penalties will be reversed.": "東場の記録を残して東南戦を続行します。終局時の供託分配と罰点を取り消します。",
   "Loading shared games…": "読み込み中…",
   "Already saved on this device": "この端末に保存済み",
   "Update existing games": "保存済み対局を更新",

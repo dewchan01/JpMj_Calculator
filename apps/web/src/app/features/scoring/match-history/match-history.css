@@ -67,7 +67,52 @@
   transform: rotate(225deg);
 }
 .event-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
   font-size: 0.85rem;
+}
+.event-type-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: calc(4em + 20px);
+  box-sizing: border-box;
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--subtle-surface);
+  color: var(--text);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+.event-type-chip.win {
+  background: #e3efe5;
+  color: #235137;
+}
+.event-type-chip.draw {
+  background: #fff0cc;
+  color: #75520c;
+}
+:host-context([data-theme='dark']) .event-type-chip.win {
+  background: #284737;
+  color: #c0e4cd;
+}
+:host-context([data-theme='dark']) .event-type-chip.draw {
+  background: #4b3e24;
+  color: #ffe0a0;
+}
+.history-start,
+.history-end {
+  display: grid;
+  gap: 6px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.history-start small,
+.history-end small {
+  color: var(--muted);
 }
 .history-list .history-event > summary > small {
   font-size: 0.65rem;
@@ -159,6 +204,76 @@
 .player-marks {
   color: var(--text);
 }
-:host .undo-last-event {
+.history-actions {
+  display: flex;
+  justify-content: flex-end;
   margin-top: 20px;
+}
+.hand-detail-sections {
+  display: grid;
+  gap: 12px;
+  padding: 12px 0 8px;
+}
+.hand-detail-section {
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.hand-detail-section h3 {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+}
+.hand-detail-section p {
+  margin: 0;
+  line-height: 1.6;
+}
+.hand-detail-section p + p {
+  margin-top: 6px;
+}
+.hand-time {
+  background: var(--subtle-surface);
+}
+.hand-action-list {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.hand-action-list li {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.hand-action-list time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.hand-detail-section .explain-row {
+  margin: 0;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 16px;
+}
+.hand-detail-section .explain-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.hand-detail-section .explain-row strong {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+.hand-detail-sections > .hand-next-round {
+  margin: 0;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--border);
+}
+.history-actions > .undo-last-event {
+  flex: 0 1 auto;
+  width: auto;
+  max-width: 100%;
+  margin: 0;
 }

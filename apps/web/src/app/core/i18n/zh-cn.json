@@ -1,4 +1,10 @@
 {
+  "Point transfers": "点数支付",
+  "Game started": "游戏开始",
+  "Current hand": "本局进行中",
+  "Extend to East and South": "延长为东南战",
+  "This match cannot be extended to South.": "此对局无法延长为东南战。",
+  "Keep the East-round history and continue as an East-and-South game. Final escrow awards and end-of-match penalties will be reversed.": "保留东场记录并改为东南战继续。终局供托分配及终局罚分将会撤回。",
   "Loading shared games…": "读取中…",
   "Already saved on this device": "本机已有此对局",
   "Update existing games": "更新已有对局",

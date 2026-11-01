@@ -166,13 +166,7 @@
           </h2>
           <div class="game-meta">
             <p class="hint">
-              {{ game.match.createdAt | localDate }} · {{ game.minutes }} {{ 'minutes' | t }} ·
-              {{ game.match.events.length }}
-              {{ 'events' | t }}
-              @if (game.latestRound; as round) {
-                · {{ 'Latest hand' | t }}: {{ round.roundWind | t }} {{ round.handNumber }} ·
-                {{ 'Honba' | t }} {{ round.honba }}
-              }
+              {{ game.match.createdAt | localDate }} · {{ game.minutes }} {{ 'minutes' | t }}
             </p>
           </div>
         </div>
@@ -221,17 +215,6 @@
               </tr>
             }
           </tbody>
-          <tfoot>
-            <tr>
-              <th scope="row" colspan="2">{{ 'Total' | t }}</th>
-              <td>{{ game.totals.points | number }}</td>
-              <td><app-signed-value [value]="game.totals.score" /></td>
-              <td>
-                <app-signed-value [value]="game.totals.money" digits="1.2-2" />
-                {{ game.currency }}
-              </td>
-            </tr>
-          </tfoot>
         </table>
       </div>
     </article>

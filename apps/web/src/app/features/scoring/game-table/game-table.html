@@ -341,16 +341,6 @@
                 </svg>
                 {{ 'End entire match' | t }}
               </button>
-              <button
-                [hidden]="!can('history')"
-                (click)="undo()"
-                [disabled]="busy() || !m.events.length"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M9 5 3 11l6 6M3 11h11a6 6 0 0 1 6 6v3" />
-                </svg>
-                {{ 'Undo last ledger event' | t }}
-              </button>
             } @else {
               <button (click)="navigatePanel('results')">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1099,11 +1089,29 @@
           <app-final-results
             [match]="m"
             [offerGameActions]="true"
+            [offerExtension]="canExtend() && !busy()"
+            (extendRequested)="navigatePanel('extend-south')"
             [showEditAction]="!roomCode"
             [saveLocal]="roomCode ? saveLocalResult : null"
             [discardLocal]="roomCode ? discardLocalResult : null"
             (matchChanged)="match.set($event)"
           />
+        }
+        @case ('extend-south') {
+          <p>
+            {{
+              'Keep the East-round history and continue as an East-and-South game. Final escrow awards and end-of-match penalties will be reversed.'
+                | t
+            }}
+          </p>
+          <div class="dialog-actions">
+            <button class="secondary" (click)="navigatePanel('results')" [disabled]="busy()">
+              {{ 'Cancel' | t }}
+            </button>
+            <button class="primary" (click)="extendMatch()" [disabled]="busy() || !canExtend()">
+              {{ 'Extend to East and South' | t }}
+            </button>
+          </div>
         }
         @case ('history') {
           <app-match-history

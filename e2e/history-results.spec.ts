@@ -28,9 +28,17 @@ test('saved history shows a legacy Haneman once when single and multi-result fie
     ended: true,
     events: [
       {
+        id: 'deposit',
+        timestamp: '2026-10-29T10:30:00Z',
+        type: 'riichiDeposit',
+        payments: [{ from: 'b', to: 'table', amount: 1000, reason: 'Riichi deposit' }],
+      },
+      {
         id: 'win',
         timestamp: '2026-10-29T11:00:00Z',
         type: 'win',
+        before: { dealerId: 'a', roundWind: 'east', handNumber: 1, honba: 0 },
+        durationMs: 60000,
         payments: result.payments,
         hand: input.hand,
         win: input.win,
@@ -39,6 +47,13 @@ test('saved history shows a legacy Haneman once when single and multi-result fie
         scoringInput: input,
         scoringInputs: [input],
         winnerIds: ['b'],
+      },
+      {
+        id: 'draw',
+        timestamp: '2026-10-29T11:30:00Z',
+        type: 'exhaustiveDraw',
+        payments: [],
+        before: { dealerId: 'b', roundWind: 'east', handNumber: 2, honba: 0 },
       },
     ],
   };
@@ -61,10 +76,29 @@ test('saved history shows a legacy Haneman once when single and multi-result fie
   await page.goto('/records/history-regression');
   const results = page.locator('app-final-results');
   await results.getByRole('button', { name: 'History', exact: true }).click();
-  const hand = results.locator('.history-event');
+  await expect(results.locator('.history-event')).toHaveCount(2);
+  await expect(results.locator('.event-type-chip')).toHaveText(['Win', 'Exhaustive draw']);
+  await expect(results.locator('.event-type-chip.win')).toHaveCount(1);
+  await expect(results.locator('.event-type-chip.draw')).toHaveCount(1);
+  await expect(results.locator('.event-title > span:last-child')).toContainText([
+    'East 1 · Honba 0',
+    'East 2 · Honba 0',
+  ]);
+  await expect(results.locator('.history-start')).toContainText('Game started');
+  await expect(results.locator('summary')).not.toContainText(['Mahjong Soul', 'Riichi deposit']);
+  const hand = results.locator('.history-event').first();
   await expect(hand.locator('.outcome-mark')).toContainText('Haneman');
   await hand.locator('summary').click();
   await expect(hand.locator('.hand-score-summary')).toHaveCount(1);
   await expect(hand.locator('.hand-score-summary')).toContainText('Haneman');
   await expect(hand.locator('.mini-tiles')).toHaveCount(1);
+  const player = hand
+    .locator('.hand-player')
+    .filter({ hasText: input.players.find((player) => player.id === 'b')!.name });
+  await expect(player.locator('.player-marks')).toContainText('Riichi');
+  expect(
+    await hand
+      .locator('.event-timestamp')
+      .evaluate((element) => element.nextElementSibling?.textContent),
+  ).toContain('Recorded play time');
 });

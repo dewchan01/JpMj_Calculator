@@ -1,4 +1,8 @@
 import { CopyButton } from '../../../shared/copy-button/copy-button';
+import {
+  canExtendToSouth,
+  extendToSouth,
+} from '../../../../../../../packages/mahjong-core/extend-match';
 import { roomPermissionItems, type RoomPermission } from '../../../core/online/room-permissions';
 import { gamesCsv } from '../../records/data-transfer/data-csv';
 import { ConnectionStatus } from '../../../shared/connection-status/connection-status';
@@ -105,6 +109,7 @@ type Panel =
   | 'permissions'
   | 'declarations'
   | 'leave-room'
+  | 'extend-south'
   | 'notice';
 @Component({
   imports: [
@@ -662,6 +667,7 @@ export class GameTable {
       draw: 'Record draw',
       history: 'History',
       finish: 'End entire match',
+      'extend-south': 'Extend to East and South',
       info: 'Information',
       settings: 'In-game settings',
       perspective: 'Adjust view',
@@ -1538,6 +1544,24 @@ export class GameTable {
       clock.handStartMs = Math.max(0, clock.handStartMs - (last.durationMs ?? 0));
       await this.persist({ ...updated, live, clock }, false, 'history');
       this.navigatePanel('history');
+    });
+  }
+  readonly canExtend = computed(() => {
+    const match = this.match();
+    return !!match && !this.remotePlayer() && canExtendToSouth(match);
+  });
+  async extendMatch(): Promise<void> {
+    if (!this.canExtend() || this.busy()) return;
+    await this.act(async () => {
+      const match = this.match()!;
+      const updated = extendToSouth(match);
+      const clock = clockAt(
+        match.clock ?? { elapsedMs: 0, runningSince: null, handStartMs: 0 },
+        true,
+      );
+      clock.handStartMs = clock.elapsedMs;
+      await this.persist({ ...updated, clock });
+      this.close();
     });
   }
   async saveInfo(): Promise<void> {

@@ -9,6 +9,7 @@ import { ruleName, type RuleProfile } from '../../../../../../../packages/mahjon
 import { I18n, TranslatePipe } from '../../../core/i18n/i18n';
 import { editableHand } from '../game-table/hand-edit';
 import { historyResults } from './history-results';
+import { historyEvents } from './history-events';
 @Component({
   selector: 'app-match-history',
   imports: [SignedValue, TileArt, LocalDatePipe, DecimalPipe, TranslatePipe],
@@ -32,7 +33,13 @@ export class MatchHistory {
   readonly allowHandEditing = input(false);
   readonly editRequested = output<string>();
   readonly editableHand = editableHand;
-  readonly events = computed(() => [...(this.match()?.events ?? [])].reverse());
+  readonly events = computed(() => historyEvents(this.match()));
+  readonly endingEvent = computed(() =>
+    [...(this.match()?.events ?? [])].reverse().find((event) => event.after?.ended),
+  );
+  readonly finalSettlement = computed(() =>
+    [...this.events()].reverse().find((event) => event.type === 'matchEnd'),
+  );
   readonly handPlayers = computed(() => {
     const match = this.match();
     const result = new Map<
@@ -53,7 +60,7 @@ export class MatchHistory {
     if (!match) return result;
     const points = { ...match.initialBalances };
     const winds = ['East', 'South', 'West', 'North'];
-    for (const event of match.events) {
+    for (const event of this.events()) {
       const before = { ...points };
       for (const payment of event.payments) {
         if (payment.from !== 'table') points[payment.from] -= payment.amount;
@@ -82,30 +89,29 @@ export class MatchHistory {
                 ? this.i18n.t('Double Riichi')
                 : live?.riichi === 'riichi' ||
                     win?.riichi ||
-                    (event.type === 'riichiDeposit' &&
-                      event.payments.some(
-                        (payment) => payment.from === player.id && payment.to === 'table',
-                      ))
+                    event.payments.some(
+                      (payment) => payment.from === player.id && payment.to === 'table',
+                    )
                   ? this.i18n.t('Riichi')
                   : '',
               ...(melds ?? []).map((meld) => this.i18n.t(meld.type)),
               live?.kita.length ? this.i18n.t('North') + ' × ' + live.kita.length : '',
             ].filter(Boolean),
-            riichi:
-              event.type === 'riichiDeposit' &&
-              event.payments.some((payment) => payment.from === player.id && payment.to === 'table')
-                ? 'Yes'
-                : live
-                  ? live.riichi === 'none'
+            riichi: event.payments.some(
+              (payment) => payment.from === player.id && payment.to === 'table',
+            )
+              ? 'Yes'
+              : live
+                ? live.riichi === 'none'
+                  ? 'No'
+                  : 'Yes'
+                : win
+                  ? win.riichi || win.doubleRiichi
+                    ? 'Yes'
+                    : 'No'
+                  : event.liveBefore
                     ? 'No'
-                    : 'Yes'
-                  : win
-                    ? win.riichi || win.doubleRiichi
-                      ? 'Yes'
-                      : 'No'
-                    : event.liveBefore
-                      ? 'No'
-                      : '\u2014',
+                    : '\u2014',
             calls: melds
               ? melds
                   .filter((meld) => meld.type !== 'ankan')
@@ -136,11 +142,33 @@ export class MatchHistory {
       : (this.match()?.players.find((player) => player.id === id)?.name ?? id);
   }
   eventLabel(event: LedgerEvent): string {
-    if (event.type === 'win') return this.i18n.t('Win · ' + this.name(event.win?.winnerId ?? ''));
+    if (event.type === 'riichiDeposit') return this.i18n.t('Current hand');
+    if (event.type === 'win' || event.type === 'multipleRon') return this.i18n.t('Win');
     return (
       this.i18n.t(event.type) +
       (event.winnerIds?.length ? ' · ' + event.winnerIds.map((id) => this.name(id)).join(', ') : '')
     );
+  }
+  roundLabel(event: LedgerEvent): string {
+    const before = event.before;
+    if (!before) return '';
+    const locale = this.i18n.locale();
+    const wind = this.i18n.t(before.roundWind);
+    return locale.startsWith('zh') || locale === 'ja'
+      ? wind + (['', '一', '二', '三', '四'][before.handNumber] ?? before.handNumber)
+      : wind + ' ' + before.handNumber;
+  }
+  riichiCount(event: LedgerEvent): number {
+    return new Set(
+      event.payments
+        .filter(
+          (payment) =>
+            payment.to === 'table' &&
+            payment.from !== 'table' &&
+            payment.reason === 'Riichi deposit',
+        )
+        .map((payment) => payment.from),
+    ).size;
   }
   eventRules(event: LedgerEvent): RuleProfile {
     const index = this.match()?.events.findIndex((entry) => entry.id === event.id) ?? -1;
@@ -168,9 +196,8 @@ export class MatchHistory {
       : this.i18n.t(ruleName(profile));
   }
   outcomeMarks(event: LedgerEvent): string[] {
-    return this.scoredHands(event).map(({ result, win, limitName }) => {
+    return this.scoredHands(event).map(({ result, limitName }) => {
       return [
-        win ? this.i18n.t(win.method === 'ron' ? 'Ron · discard' : 'Tsumo · self draw') : '',
         this.i18n.t(result.han + ' Han · ' + result.fu + ' Fu'),
         limitName ? this.i18n.t(limitName) : '',
         ...result.yaku.map((yaku) => this.i18n.t(yaku.name)),

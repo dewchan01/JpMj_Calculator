@@ -11,6 +11,16 @@
   margin-bottom: 12px;
   background: var(--page);
 }
+.game-time-range {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  text-align: center;
+}
+.game-time-range span {
+  white-space: nowrap;
+}
 .result-controls::before {
   inset: -16px calc(-1 * var(--result-sticky-bleed)) 0;
   height: auto;
@@ -265,6 +275,14 @@ dd {
 }
 .result-actions {
   justify-content: flex-end;
+}
+.result-actions .extend-game {
+  background: #f3c969;
+  border-color: #c29635;
+  color: #33280d;
+}
+.result-actions .extend-game:hover:not(:disabled) {
+  background: #e6b94e;
 }
 .result-actions .danger {
   color: #a03b2f;

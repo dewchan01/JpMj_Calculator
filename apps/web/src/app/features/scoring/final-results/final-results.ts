@@ -28,6 +28,8 @@ import {
   adjustFinalPoints,
 } from '../../../../../../../packages/mahjong-core/final-results';
 import { tableRules } from '../../../../../../../packages/mahjong-rules/index';
+import { LocalDatePipe } from '../../../core/i18n/local-date';
+import { durationMinutes } from '../../records/record-stats';
 
 @Component({
   selector: 'app-final-results',
@@ -39,6 +41,7 @@ import { tableRules } from '../../../../../../../packages/mahjong-rules/index';
     MatchHistory,
     FormsModule,
     DialogBackdrop,
+    LocalDatePipe,
   ],
   templateUrl: './final-results.html',
   styleUrl: './final-results.css',
@@ -47,6 +50,8 @@ export class FinalResults {
   readonly saveLocal = input<((match: Match) => Promise<void>) | null>(null);
   readonly discardLocal = input<((match: Match) => Promise<void>) | null>(null);
   readonly offerGameActions = input(false);
+  readonly offerExtension = input(false);
+  readonly extendRequested = output<void>();
   readonly showEditAction = input(true);
   private readonly scoreDialog = viewChild.required<ElementRef<HTMLDialogElement>>('scoreDialog');
   readonly tab = signal<'result' | 'history' | 'details'>('result');
@@ -201,6 +206,22 @@ export class FinalResults {
   readonly sourceMatch = input.required<Match>({ alias: 'match' });
   private readonly savedMatch = signal<Match | null>(null);
   readonly match = computed(() => this.savedMatch() ?? this.sourceMatch());
+  readonly gameTiming = computed(() => {
+    const match = this.match();
+    const end =
+      [...match.events].reverse().find((event) => event.after?.ended)?.timestamp ??
+      match.events.at(-1)?.timestamp ??
+      match.updatedAt;
+    return {
+      start: match.createdAt,
+      end,
+      endStyle:
+        new Date(match.createdAt).toDateString() === new Date(end).toDateString()
+          ? ('time' as const)
+          : ('dateTime' as const),
+      minutes: durationMinutes(match),
+    };
+  });
   readonly rows = computed(() => finalStandings(this.match()));
   readonly settings = computed(() => tableRules(this.match().rules));
 }

@@ -18,7 +18,7 @@ async function stored(page: Page): Promise<Match> {
 }
 async function editFirst(page: Page) {
   await gameMenu(page, 'History');
-  const row = page.locator('.history-row').last();
+  const row = page.locator('.history-row').first();
   await expect(row.locator('.history-event')).toHaveJSProperty('open', false);
   await expect(
     row.getByRole('button', { name: 'Edit hand', exact: true }).locator('svg'),
