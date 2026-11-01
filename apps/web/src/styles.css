@@ -1873,6 +1873,28 @@ select {
   min-height: 44px;
   padding: 10px 16px;
 }
+.room-exit-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 24px;
+}
+.room-exit-actions > button {
+  min-height: 48px;
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+.room-exit-actions > .exit-room-button {
+  background: #a03b2f;
+  border: 1px solid #a03b2f;
+  color: #fff;
+}
+.room-exit-actions > .exit-room-button:hover:not(:disabled) {
+  background: #842f25;
+  border-color: #842f25;
+}
 .app-dialog .dialog-header .icon-button {
   padding: 0;
   width: 40px;

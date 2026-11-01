@@ -17,16 +17,41 @@ export interface RoomAccess {
   pin?: string;
 }
 export interface RoomState {
+  matchName?: string | null;
+  pendingMatch?: import('../../../../../../packages/mahjong-core/ledger').Match | null;
+  assignment?: string | null;
+  closed?: boolean;
+  started?: boolean;
+  host?: boolean;
+  unassigned?: { id: string; requestedSeat: number | null; decision?: string }[] | null;
+  ruleLabel?: string | null;
+  gameLength?: 'east' | 'south' | null;
   playerNames?: string[] | null;
   id: string;
   playerCount: number;
   revision: number;
   seats: number[];
+  ownSeat?: number | null;
   expiresAt: string;
 }
 
 @Service()
 export class OnlineApi {
+  clearRoomAccess(id: string, token: string): void {
+    const key = `riichi-room:${this.url()}`;
+    for (const name of ['sessionStorage', 'localStorage'] as const) {
+      try {
+        const storage = window[name];
+        const saved = JSON.parse(storage.getItem(key) ?? 'null');
+        if (saved?.id === id && saved?.token === token) {
+          storage.removeItem(key);
+          if (name === 'sessionStorage') storage.removeItem(`${key}:${id}:pin`);
+        }
+      } catch {
+        /* Storage may be unavailable. */
+      }
+    }
+  }
   private readonly location = inject(Location);
   private readonly router = inject(Router);
   private readonly configuration = inject(AppConfiguration);
@@ -88,6 +113,28 @@ export class OnlineApi {
       throw new Error('Could not connect to the online service.');
     }
     if (!response.ok) {
+      const roomRead = /^\/api\/rooms\/([a-f0-9]{10})(?:\/game)?(?:\?.*)?$/i.exec(path);
+      if (method === 'GET' && token && roomRead && [401, 404, 410].includes(response.status))
+        this.clearRoomAccess(roomRead[1], token);
+      if (response.status === 409) {
+        const detail: unknown = await response.json().catch(() => null);
+        if (detail && typeof detail === 'object' && 'code' in detail && detail.code === 'room-full')
+          throw new Error('This room is full.');
+        if (
+          detail &&
+          typeof detail === 'object' &&
+          'code' in detail &&
+          detail.code === 'unassigned-players'
+        )
+          throw new Error('Assign all waiting players before starting the game.');
+        if (
+          detail &&
+          typeof detail === 'object' &&
+          'code' in detail &&
+          detail.code === 'game-started'
+        )
+          throw new Error('The room changed. Refresh before saving.');
+      }
       if (response.status >= 500)
         this.logs.add('error', `Online service returned HTTP ${response.status}.`, 'network');
       else if (response.status === 429)
@@ -99,9 +146,11 @@ export class OnlineApi {
         401: 'Room credentials are incorrect or expired.',
         403: 'This action is not permitted by the host.',
         404: 'This room or share has expired or was removed.',
-        409: path.endsWith('/join')
-          ? 'This seat is already occupied.'
-          : 'The room changed. Refresh before saving.',
+        410: 'This room has ended.',
+        409:
+          path.endsWith('/join') || path.endsWith('/player')
+            ? 'This seat is already occupied.'
+            : 'The room changed. Refresh before saving.',
         413: 'Shared data must be smaller than 5 MiB.',
         429: 'Too many attempts. Try again in a minute.',
         507: 'Online storage is full. Try again later.',

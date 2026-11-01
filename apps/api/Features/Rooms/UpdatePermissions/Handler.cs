@@ -23,6 +23,7 @@ public sealed class Handler(AppDb db, IHubContext<RoomHub> hub) : CommandHandler
         var room = await _db.Rooms.SingleOrDefaultAsync(x => x.Id == command.Id && x.ExpiresAt > now, cancellationToken);
         if (room is null) return Results.NotFound();
         if (!Secrets.Matches(command.Token, room.HostHash)) return Results.Unauthorized();
+        if (room.Closed) return Results.StatusCode(410);
         room.Permissions = JsonSerializer.Serialize(command.Permissions);
         room.Revision++;
         try { await _db.SaveChangesAsync(cancellationToken); }

@@ -1,20 +1,25 @@
-<ul class="player-presence" [attr.aria-label]="'Player status' | t">
-  @for (player of players(); track $index; let seat = $index) {
-    <li>
-      <span class="player-name" [title]="player.name">{{ player.name }}</span>
-      <app-connection-status
-        [compact]="true"
-        [state]="states()[seat]"
-        [label]="
-          states()[seat] === 'Connected'
-            ? 'Online'
-            : states()[seat] === 'Disconnected'
-              ? 'Offline'
-              : states()[seat] === 'Unknown'
-                ? 'Status unavailable'
-                : states()[seat]
-        "
-      />
-    </li>
+<div class="presence-row">
+  @if (unassignedCount() !== null) {
+    <span class="unassigned-count">{{ 'Unseated' | t }} · {{ unassignedCount() }}</span>
   }
-</ul>
+  <ul class="player-presence" [attr.aria-label]="'Player status' | t">
+    @for (player of players(); track $index; let seat = $index) {
+      <li>
+        <span class="player-name" [title]="player.name">{{ player.name }}</span>
+        <app-connection-status
+          [compact]="true"
+          [state]="states()[seat]"
+          [label]="
+            states()[seat] === 'Connected'
+              ? 'Online'
+              : states()[seat] === 'Disconnected'
+                ? 'Offline'
+                : states()[seat] === 'Unknown'
+                  ? 'Status unavailable'
+                  : states()[seat]
+          "
+        />
+      </li>
+    }
+  </ul>
+</div>

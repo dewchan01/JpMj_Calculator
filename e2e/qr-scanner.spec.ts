@@ -18,6 +18,35 @@ async function openJoin(page: import('@playwright/test').Page) {
   await page.getByRole('button', { name: 'Join game', exact: true }).click();
 }
 
+test('stalled native QR detection falls back and closes the scanner', async ({ page }) => {
+  await page.evaluate(() => {
+    Object.defineProperty(window, 'BarcodeDetector', {
+      configurable: true,
+      value: class {
+        detect() {
+          return new Promise(() => {});
+        }
+      },
+    });
+    Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
+      configurable: true,
+      value: async () => {
+        throw new DOMException('Denied', 'NotAllowedError');
+      },
+    });
+  });
+  await openJoin(page);
+  await page.getByRole('button', { name: 'Scan room QR code', exact: true }).click();
+  const scanner = page.getByRole('dialog', { name: 'Scan room QR code', exact: true });
+  await scanner.locator('input[type=file]').setInputFiles({
+    name: 'qr.png',
+    mimeType: 'image/png',
+    buffer: await QRCode.toBuffer('ABCDEF1234'),
+  });
+  await expect(scanner).not.toBeVisible();
+  await expect(page.getByLabel('Room code', { exact: true })).toHaveValue('ABCDEF1234');
+});
+
 test('camera keeps scanning blank frames, joins after QR appears, and stops the camera', async ({
   page,
 }) => {

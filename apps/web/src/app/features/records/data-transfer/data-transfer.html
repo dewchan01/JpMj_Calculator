@@ -23,6 +23,13 @@
         <span>{{ 'Share history' | t }}</span>
         <span aria-hidden="true">&#8250;</span>
       </a>
+      <a routerLink="/others/data-management">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 5h16v14H4zM4 9h16M8 13h8m-8 3h5" />
+        </svg>
+        <span>{{ 'Manage local data' | t }}</span>
+        <span aria-hidden="true">&#8250;</span>
+      </a>
     </div>
   </section>
 } @else {
@@ -51,8 +58,9 @@
     @if (mode === 'share-history') {
       <div class="dialog-body">
         @if (error()) {
-          <p role="alert">{{ error() | t }}</p>
+          <app-error-notice [message]="error()" />
         }
+        <hr class="transfer-error-divider" />
         <ul class="share-history-list">
           @for (entry of history.entries(); track entry.id) {
             <li>
@@ -100,7 +108,7 @@
               (click)="fetchTransfer()"
               [disabled]="busy() || !transferCode().trim()"
             >
-              {{ 'Load shared games' | t }}
+              {{ (loadingShare() ? 'Loading shared games…' : 'Load shared games') | t }}
             </button>
           }
 
@@ -115,8 +123,9 @@
           </label>
         }
         @if (error()) {
-          <p role="alert">{{ error() | t }}</p>
+          <app-error-notice [message]="error()" />
         }
+        <hr class="transfer-error-divider" />
         <div class="dialog-fields date-range-fields">
           <label>
             {{ 'From date' | t }}
@@ -137,12 +146,22 @@
           </select>
         </label>
         @if (invalidDates()) {
-          <p role="alert">{{ 'From date must not be after to date.' | t }}</p>
+          <app-error-notice message="From date must not be after to date." />
         }
         <fieldset class="transfer-games" [disabled]="busy()">
           <legend>{{ 'Games' | t }} · {{ selected().length }} / {{ filtered().length }}</legend>
+          <label>
+            <input
+              type="checkbox"
+              [checked]="allSelected()"
+              [indeterminate]="partiallySelected()"
+              [disabled]="!filtered().length"
+              (change)="toggleAll()"
+            />
+            <span>{{ 'Select all' | t }}</span>
+          </label>
           @for (game of filtered(); track game.id) {
-            <label>
+            <label class="transfer-game">
               <input
                 type="checkbox"
                 [checked]="!excluded().has(game.id)"
@@ -151,6 +170,9 @@
               <span>
                 {{ game.name }}
                 <small>{{ game.createdAt | localDate: 'date' }}</small>
+                @if (isDuplicate(game.id)) {
+                  <small>{{ 'Already saved on this device' | t }}</small>
+                }
               </span>
             </label>
           } @empty {
@@ -159,6 +181,25 @@
             }
           }
         </fieldset>
+        @if (importing() && duplicateCount()) {
+          <label class="update-existing-option">
+            <input
+              type="checkbox"
+              [ngModel]="updateExisting()"
+              (ngModelChange)="setUpdateExisting($event)"
+              [disabled]="busy()"
+            />
+            <span>
+              <strong>{{ 'Update existing games' | t }} · {{ duplicateCount() }}</strong>
+              <small>
+                {{
+                  'Replaces selected saved games with the shared version, including unfinished copies.'
+                    | t
+                }}
+              </small>
+            </span>
+          </label>
+        }
         @if (importing() && incomingPlayers().length) {
           <fieldset class="player-mapping" [disabled]="busy()">
             <legend>{{ 'Match imported players' | t }}</legend>
@@ -174,7 +215,9 @@
               </p>
             }
             @if (!error()) {
-              <p class="hint">{{ 'Player mapping only affects newly imported games.' | t }}</p>
+              <p class="hint">
+                {{ 'Player mapping affects games being imported or updated.' | t }}
+              </p>
             }
             @for (person of incomingPlayers(); track person.id) {
               <label>
@@ -254,8 +297,9 @@
       <p role="status">{{ 'Preparing transfer…' | t }}</p>
     }
     @if (error()) {
-      <p role="alert">{{ error() | t }}</p>
+      <app-error-notice [message]="error()" />
     }
+    <hr class="transfer-error-divider" />
     @if (share(); as receipt) {
       @if (!error()) {
         <p class="hint">

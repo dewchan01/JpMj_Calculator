@@ -1,187 +1,197 @@
 <section class="table-summary" [attr.aria-label]="'Table details' | t">
-  <div class="table-caption">
-    <h2>{{ 'Table details' | t }}</h2>
-    <span>{{ ruleName() | t }} · {{ players().length }}P</span>
-  </div>
-  <div class="table-layout" [class.sanma]="players().length === 3">
-    <div class="table-center" [class.round-control]="liveControls()">
-      @if (liveControls()) {
-        <button
-          class="center-action"
-          (click)="handAction.emit()"
-          [disabled]="actionsDisabled() && !ended()"
-          [attr.aria-label]="(ended() ? 'Final results' : 'End this hand') | t"
-          [title]="(ended() ? 'Final results' : 'End this hand') | t"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12 4 4 8-9" /></svg>
-        </button>
-      } @else {
-        <p class="table-round">
-          {{ roundWind() | t }}
-          <b>{{ handNumber() }}</b>
-        </p>
-        <p class="table-honba">
-          {{ 'Honba' | t }}
-          <strong>{{ honba() }}</strong>
-        </p>
-        <div class="table-pot">
-          <span>{{ 'Riichi pot' | t }}</span>
-          <strong>{{ pot() | number }}</strong>
-        </div>
-      }
+  @if (showCaption()) {
+    <div class="table-caption">
+      <h2>{{ 'Table details' | t }}</h2>
+      <span>
+        {{ ruleName() | t }} ·
+        @if (gameLength()) {
+          {{ (gameLength() === 'east' ? 'East-only game' : 'East and South game') | t }} ·
+        }
+        {{ players().length }}P
+      </span>
     </div>
-    <div class="table-players" [attr.aria-label]="'Player balances' | t" role="group">
-      @for (player of players(); track player.id; let index = $index) {
-        <div [class]="'seat-slot slot-' + position(index)">
-          <article
-            class="player-seat"
-            [class]="'player-seat seat-' + position(index)"
-            [class.selected]="player.id === winner()"
-            [class.dealer]="player.id === dealer()"
-            [class.negative]="balances()[player.id] < 0"
+  }
+  <div #layout class="table-layout" [class.sanma]="players().length === 3">
+    <div class="table-surface">
+      <div class="table-center" [class.round-control]="liveControls()">
+        @if (liveControls()) {
+          <button
+            class="center-action"
+            (click)="handAction.emit()"
+            [disabled]="actionsDisabled() && !ended()"
+            [attr.aria-label]="(ended() ? 'Final results' : 'End this hand') | t"
+            [title]="(ended() ? 'Final results' : 'End this hand') | t"
           >
-            @if (interactive()) {
-              <button
-                class="seat-hit"
-                [disabled]="!!activePlayer() && activePlayer() !== player.id"
-                (click)="playerAction.emit(player.id)"
-                [attr.aria-label]="('Player actions' | t) + ' ' + player.name"
-              ></button>
-            }
-            <div class="seat-label">
-              <abbr [title]="seat(index) | t">{{ windLabel(index) }}</abbr>
-              @if (player.id === dealer()) {
-                <small>{{ 'Dealer' | t }}</small>
-              }
-              @if (!recordedWinners().has(player.id)) {
-                <small
-                  class="yakitori-label"
-                  [title]="
-                    (yakitoriPenalty()
-                      ? 'No recorded wins. The saved Yakitori penalty applies at game end.'
-                      : 'No recorded hand wins yet. Informational only; no penalty is applied.'
-                    ) | t
-                  "
-                >
-                  <img ngSrc="icons/yakitori.svg" width="18" height="10" [alt]="'Yakitori' | t" />
-                </small>
-              }
-            </div>
-            <h3 [title]="player.name">
-              <span class="seat-player-name">{{ player.name }}</span>
-              @if (presence()?.[player.id]; as status) {
-                <app-connection-status
-                  [state]="status"
-                  [label]="
-                    status === 'Connected'
-                      ? 'Online'
-                      : status === 'Disconnected'
-                        ? 'Offline'
-                        : status === 'Unknown'
-                          ? 'Status unavailable'
-                          : status
-                  "
-                  [compact]="true"
-                />
-              }
-            </h3>
-            @if (interactive()) {
-              <p
-                class="player-points"
-                [class.point-difference]="differenceFrom() && differenceFrom() !== player.id"
-              >
-                {{
-                  (differenceFrom() &&
-                  differenceFrom() !== player.id &&
-                  displayPoints(player.id) > 0
-                    ? '+'
-                    : '') + (displayPoints(player.id) | number)
-                }}
-              </p>
-              <button
-                class="difference-button"
-                (pointerdown)="holdComparison($event, player.id)"
-                (pointerup)="releasePointer($event)"
-                (pointercancel)="releasePointer($event)"
-                (lostpointercapture)="releasePointer($event)"
-                (keydown)="holdKeyboard($event, player.id)"
-                (keyup)="releaseKeyboard($event)"
-                (blur)="releaseComparison()"
-                [attr.aria-label]="('Point differences' | t) + ' ' + player.name"
-                [attr.aria-description]="'Hold to compare points; release to show scores.' | t"
-                [title]="'Hold to compare points; release to show scores.' | t"
-                [attr.aria-pressed]="differenceFrom() === player.id"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M5 8h14M12 2v12M5 20h14" />
-                </svg>
-              </button>
-            } @else {
-              <p class="player-points">{{ balances()[player.id] | number }}</p>
-            }
-            <span class="riichi-lane" aria-hidden="true"></span>
-            @if (riichiPlayers()[player.id]) {
-              <span
-                class="riichi-stick"
-                role="img"
-                [attr.aria-label]="riichiPlayers()[player.id]"
-              ></span>
-            }
-            <div class="player-status">
-              @if (player.id === winner()) {
-                <span class="winner-label">{{ 'Selected winner' | t }}</span>
-              }
-            </div>
-            @if (interactive()) {
-              <div class="seat-actions">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12 4 4 8-9" /></svg>
+          </button>
+        } @else {
+          <p class="table-round">
+            {{ roundWind() | t }}
+            <b>{{ handNumber() }}</b>
+          </p>
+          <p class="table-honba">
+            {{ 'Honba' | t }}
+            <strong>{{ honba() }}</strong>
+          </p>
+          <div class="table-pot">
+            <span>{{ 'Riichi pot' | t }}</span>
+            <strong>{{ pot() | number }}</strong>
+          </div>
+        }
+      </div>
+      <div class="table-players" [attr.aria-label]="'Player balances' | t" role="group">
+        @for (player of players(); track player.id; let index = $index) {
+          <div [class]="'seat-slot slot-' + position(index)">
+            <article
+              class="player-seat"
+              [class]="'player-seat seat-' + position(index)"
+              [class.selected]="player.id === winner()"
+              [class.dealer]="player.id === dealer()"
+              [class.negative]="balances()[player.id] < 0"
+            >
+              @if (interactive()) {
                 <button
-                  [class.action-active]="!!riichiPlayers()[player.id]"
-                  [attr.aria-pressed]="!!riichiPlayers()[player.id]"
-                  [disabled]="
-                    !allowRiichi() ||
-                    actionsDisabled() ||
-                    (!!activePlayer() && activePlayer() !== player.id)
-                  "
-                  (click)="quickAction.emit({ player: player.id, type: 'riichi' })"
-                >
-                  {{ 'Riichi' | t }}
-                </button>
-                <button
-                  [class.action-active]="callCounts()[player.id] > 0"
-                  [attr.aria-pressed]="callCounts()[player.id] > 0"
-                  [disabled]="
-                    !allowCalls() ||
-                    actionsDisabled() ||
-                    (!!activePlayer() && activePlayer() !== player.id)
-                  "
-                  (click)="quickAction.emit({ player: player.id, type: 'calls' })"
-                >
-                  {{ 'Call' | t }}
-                  @if (callCounts()[player.id]) {
-                    <span>{{ callCounts()[player.id] }}</span>
-                  }
-                </button>
-                <button
-                  [class.action-active]="concealedKanCounts()[player.id] > 0"
-                  [attr.aria-pressed]="concealedKanCounts()[player.id] > 0"
-                  [disabled]="
-                    !allowCalls() ||
-                    actionsDisabled() ||
-                    (!!activePlayer() && activePlayer() !== player.id)
-                  "
-                  (click)="quickAction.emit({ player: player.id, type: 'ankan' })"
-                  [attr.aria-label]="'Concealed Kan' | t"
-                >
-                  {{ 'ankan' | t }}
-                  @if (concealedKanCounts()[player.id]) {
-                    <span>{{ concealedKanCounts()[player.id] }}</span>
-                  }
-                </button>
+                  class="seat-hit"
+                  [disabled]="!!activePlayer() && activePlayer() !== player.id"
+                  (click)="playerAction.emit(player.id)"
+                  [attr.aria-label]="('Player actions' | t) + ' ' + player.name"
+                ></button>
+              }
+              <div class="seat-label">
+                <abbr [title]="seat(index) | t">{{ windLabel(index) }}</abbr>
+                @if (player.id === dealer()) {
+                  <small>{{ 'Dealer' | t }}</small>
+                }
+                @if (!recordedWinners().has(player.id)) {
+                  <small
+                    class="yakitori-label"
+                    [title]="
+                      (yakitoriPenalty()
+                        ? 'No recorded wins. The saved Yakitori penalty applies at game end.'
+                        : 'No recorded hand wins yet. Informational only; no penalty is applied.'
+                      ) | t
+                    "
+                  >
+                    <img ngSrc="icons/yakitori.svg" width="18" height="10" [alt]="'Yakitori' | t" />
+                  </small>
+                }
               </div>
-            }
-          </article>
-        </div>
-      }
+              <h3 [title]="player.name">
+                <span class="seat-player-name">{{ player.name }}</span>
+                @if (presence()?.[player.id]; as status) {
+                  <app-connection-status
+                    [state]="status"
+                    [label]="
+                      status === 'Connected'
+                        ? 'Online'
+                        : status === 'Disconnected'
+                          ? 'Offline'
+                          : status === 'Unknown'
+                            ? 'Status unavailable'
+                            : status
+                    "
+                    [compact]="true"
+                  />
+                }
+              </h3>
+              @if (interactive()) {
+                <p
+                  class="player-points"
+                  [class.point-difference]="differenceFrom() && differenceFrom() !== player.id"
+                >
+                  {{
+                    (differenceFrom() &&
+                    differenceFrom() !== player.id &&
+                    displayPoints(player.id) > 0
+                      ? '+'
+                      : '') + (displayPoints(player.id) | number)
+                  }}
+                </p>
+                <button
+                  class="difference-button"
+                  (pointerdown)="holdComparison($event, player.id)"
+                  (pointerup)="releasePointer($event)"
+                  (pointercancel)="releasePointer($event)"
+                  (lostpointercapture)="releasePointer($event)"
+                  (keydown)="holdKeyboard($event, player.id)"
+                  (keyup)="releaseKeyboard($event)"
+                  (blur)="releaseComparison()"
+                  [attr.aria-label]="('Point differences' | t) + ' ' + player.name"
+                  [attr.aria-description]="'Hold to compare points; release to show scores.' | t"
+                  [title]="'Hold to compare points; release to show scores.' | t"
+                  [attr.aria-pressed]="differenceFrom() === player.id"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M5 8h14M12 2v12M5 20h14" />
+                  </svg>
+                </button>
+              } @else {
+                <p class="player-points">{{ balances()[player.id] | number }}</p>
+              }
+              <span class="riichi-lane" aria-hidden="true"></span>
+              @if (riichiPlayers()[player.id]) {
+                <span
+                  class="riichi-stick"
+                  role="img"
+                  [attr.aria-label]="riichiPlayers()[player.id]"
+                ></span>
+              }
+              <div class="player-status">
+                @if (player.id === winner()) {
+                  <span class="winner-label">{{ 'Selected winner' | t }}</span>
+                }
+              </div>
+              @if (interactive()) {
+                <div class="seat-actions">
+                  <button
+                    [class.action-active]="!!riichiPlayers()[player.id]"
+                    [attr.aria-pressed]="!!riichiPlayers()[player.id]"
+                    [disabled]="
+                      !allowRiichi() ||
+                      actionsDisabled() ||
+                      (!!activePlayer() && activePlayer() !== player.id)
+                    "
+                    (click)="quickAction.emit({ player: player.id, type: 'riichi' })"
+                  >
+                    {{ 'Riichi' | t }}
+                  </button>
+                  <button
+                    [class.action-active]="callCounts()[player.id] > 0"
+                    [attr.aria-pressed]="callCounts()[player.id] > 0"
+                    [disabled]="
+                      !allowCalls() ||
+                      actionsDisabled() ||
+                      (!!activePlayer() && activePlayer() !== player.id)
+                    "
+                    (click)="quickAction.emit({ player: player.id, type: 'calls' })"
+                  >
+                    {{ 'Call' | t }}
+                    @if (callCounts()[player.id]) {
+                      <span>{{ callCounts()[player.id] }}</span>
+                    }
+                  </button>
+                  <button
+                    [class.action-active]="concealedKanCounts()[player.id] > 0"
+                    [attr.aria-pressed]="concealedKanCounts()[player.id] > 0"
+                    [disabled]="
+                      !allowCalls() ||
+                      actionsDisabled() ||
+                      (!!activePlayer() && activePlayer() !== player.id)
+                    "
+                    (click)="quickAction.emit({ player: player.id, type: 'ankan' })"
+                    [attr.aria-label]="'Concealed Kan' | t"
+                  >
+                    {{ 'ankan' | t }}
+                    @if (concealedKanCounts()[player.id]) {
+                      <span>{{ concealedKanCounts()[player.id] }}</span>
+                    }
+                  </button>
+                </div>
+              }
+            </article>
+          </div>
+        }
+      </div>
     </div>
   </div>
 </section>

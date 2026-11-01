@@ -27,6 +27,9 @@ namespace Riichi.Api.Migrations
                         .HasMaxLength(16)
                         .HasColumnType("nvarchar(16)");
 
+                    b.Property<bool>("Closed")
+                        .HasColumnType("bit");
+
                     b.Property<long>("ExpiresAt")
                         .HasColumnType("bigint");
 
@@ -37,6 +40,9 @@ namespace Riichi.Api.Migrations
                     b.Property<string>("HostHash")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<long?>("HostOfflineSince")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Permissions")
                         .IsRequired()
@@ -116,6 +122,9 @@ namespace Riichi.Api.Migrations
                     b.Property<int>("Number")
                         .HasColumnType("int");
 
+                    b.Property<long?>("OfflineSince")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("TokenHash")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -152,6 +161,37 @@ namespace Riichi.Api.Migrations
                     b.ToTable("Shares");
                 });
 
+            modelBuilder.Entity("Riichi.Api.Data.UnassignedPlayer", b =>
+                {
+                    b.Property<string>("RoomId")
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<string>("Id")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("Decision")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("unassigned");
+
+                    b.Property<int?>("RequestedSeat")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.HasKey("RoomId", "Id");
+
+                    b.HasIndex("RoomId", "TokenHash")
+                        .IsUnique();
+
+                    b.ToTable("Unassigned");
+                });
+
             modelBuilder.Entity("Riichi.Api.Data.RoomAction", b =>
                 {
                     b.HasOne("Riichi.Api.Data.Room", null)
@@ -162,6 +202,15 @@ namespace Riichi.Api.Migrations
                 });
 
             modelBuilder.Entity("Riichi.Api.Data.Seat", b =>
+                {
+                    b.HasOne("Riichi.Api.Data.Room", null)
+                        .WithMany()
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Riichi.Api.Data.UnassignedPlayer", b =>
                 {
                     b.HasOne("Riichi.Api.Data.Room", null)
                         .WithMany()

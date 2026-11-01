@@ -28,9 +28,12 @@ public sealed class Handler(AppDb db, IRoomAccess access, RoomPresence presence)
         if (room is null) return Results.NotFound();
         var token = command.Token;
         if (!await _access.CanReadAsync(room, token, cancellationToken)) return Results.Unauthorized();
-        if (revision == room.Revision) return Results.NoContent();
         var host = Secrets.Matches(token, room.HostHash);
         var hash = Secrets.Hash(token);
+        var assigned = host || await _db.Seats.AnyAsync(x => x.RoomId == id && x.TokenHash == hash, cancellationToken);
+        var seatRequests = host ? await _db.Unassigned.Where(x => x.RoomId == id && x.Decision == "pending" && x.RequestedSeat != null).Select(x => new { x.Id, x.RequestedSeat }).ToArrayAsync(cancellationToken) : null;
+        var occupiedSeats = host ? await _db.Seats.Where(x => x.RoomId == id && x.TokenHash != room.HostHash).Select(x => x.Number).ToArrayAsync(cancellationToken) : null;
+        if (assigned && revision == room.Revision) return Results.NoContent();
         var canSettle = host || DelegatedChanges.Permissions(room.Permissions).Settle;
         var visible = _db.Actions.AsNoTracking().Where(x => x.RoomId == id && (canSettle || x.ActorHash == hash));
         var pending = await visible.Where(x => x.Status == "pending").OrderBy(x => x.CreatedAt).ToArrayAsync(cancellationToken);
@@ -38,11 +41,17 @@ public sealed class Handler(AppDb db, IRoomAccess access, RoomPresence presence)
         var actions = pending.Concat(recent);
         return Results.Ok(new
         {
-            presence = host ? _presence.Get(id) : null,
+            presence = _presence.Get(id),
             permissions = DelegatedChanges.Permissions(room.Permissions),
             room.Revision,
             room.HandKey,
-            match = string.IsNullOrEmpty(room.HandKey) ? (JsonElement?)null : JsonSerializer.Deserialize<JsonElement>(room.Snapshot),
+            host,
+            ownSeat = await _db.Seats.Where(x => x.RoomId == id && x.TokenHash == hash).Select(x => (int?)x.Number).FirstOrDefaultAsync(cancellationToken),
+            room.Closed,
+            seatRequests,
+            occupiedSeats,
+            hasGame = !string.IsNullOrEmpty(room.HandKey),
+            match = !assigned || string.IsNullOrEmpty(room.HandKey) ? (JsonElement?)null : JsonSerializer.Deserialize<JsonElement>(room.Snapshot),
             actions = actions.Select(x => new { x.Id, x.Seat, x.HandKey, x.Kind, payload = JsonSerializer.Deserialize<JsonElement>(x.Payload), x.Status, x.Error, x.CreatedAt })
         });
     }

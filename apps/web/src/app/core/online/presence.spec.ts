@@ -33,8 +33,19 @@ describe('presence snapshots', () => {
       'Unknown',
     ]);
   });
+  it('marks connected members away without treating them as disconnected', () => {
+    expect(playerConnectionStates(3, [0, 1], 0, 'Connected', [1])).toEqual([
+      'Connected',
+      'Away',
+      'Disconnected',
+    ]);
+  });
   it('accepts versions and bounded distinct seat indexes', () => {
-    expect(parsePresence({ version: 4, seats: [0, 1, 1] })).toEqual({ version: 4, seats: [0, 1] });
+    expect(parsePresence({ version: 4, seats: [0, 1, 1] })).toEqual({
+      version: 4,
+      seats: [0, 1],
+      awaySeats: [],
+    });
     for (const value of [
       null,
       { version: -1, seats: [] },

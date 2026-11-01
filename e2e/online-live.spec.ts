@@ -21,7 +21,7 @@ test('QR invitation waits in a join-only lobby and leaving returns home', async 
   try {
     await page.goto(`/online?room=${room.id}&pin=${room.pin}`);
     await expect(
-      page.getByText('Joined the room. Waiting for the host to start the game.', {
+      page.getByText('Waiting for the host to start the game.', {
         exact: true,
       }),
     ).toBeVisible();
@@ -40,7 +40,7 @@ test('QR invitation waits in a join-only lobby and leaving returns home', async 
       buffer: await QRCode.toBuffer(`http://localhost:4300/online?room=${room.id}&pin=${room.pin}`),
     });
     await expect(
-      page.getByText('Joined the room. Waiting for the host to start the game.', {
+      page.getByText('Waiting for the host to start the game.', {
         exact: true,
       }),
     ).toBeVisible();
@@ -88,28 +88,22 @@ test('host and guest synchronize Riichi, Kan and a winning declaration through t
   };
   host.on('request', trackStartup);
   await host.getByRole('button', { name: 'Host game', exact: true }).click();
-  await expect(host.locator('.credential-row').first()).toBeVisible({ timeout: 20000 });
+  await expect(host.locator('app-online .connection-row')).toBeVisible({ timeout: 20000 });
   host.off('request', trackStartup);
   expect(startupReads).toBe(0);
   await expect(
     host.getByText('The host has not attached a game yet.', { exact: true }),
   ).toHaveCount(0);
-  const code = await host.getByRole('textbox', { name: 'Room code', exact: true }).inputValue();
-  const pin = await host.getByRole('textbox', { name: 'Room PIN', exact: true }).inputValue();
+  const { id: code, pin } = await host.evaluate((api) => {
+    const access = JSON.parse(localStorage.getItem('riichi-room:' + api)!);
+    return {
+      id: access.id,
+      pin: sessionStorage.getItem('riichi-room:' + api + ':' + access.id + ':pin')!,
+    };
+  }, api);
   await expect(host.getByRole('img', { name: 'Room QR code', exact: true })).toBeVisible();
-  const hint = host.locator('.room-qr-hint');
-  expect(
-    await hint.evaluate(
-      (element) =>
-        parseFloat(getComputedStyle(element).fontSize) /
-        parseFloat(getComputedStyle(document.documentElement).fontSize),
-    ),
-  ).toBeCloseTo(0.7, 2);
-  expect((await hint.boundingBox())!.y).toBeLessThan(
-    (await host.locator('.room-qr').boundingBox())!.y,
-  );
-  await expect(host.getByLabel('Room link', { exact: true })).toHaveCount(0);
-  await expect(host.getByRole('button', { name: 'Copy room details', exact: true })).toBeVisible();
+  await expect(host.getByRole('textbox', { name: 'Room code', exact: true })).toHaveValue(code);
+  await expect(host.getByRole('textbox', { name: 'Room PIN', exact: true })).toHaveValue(pin);
   await expect(
     host.locator('app-online').getByRole('button', { name: 'Start game', exact: true }),
   ).toBeVisible();
@@ -131,15 +125,17 @@ test('host and guest synchronize Riichi, Kan and a winning declaration through t
     buffer: Buffer.from(roomQR!.split(',')[1], 'base64'),
   });
   await expect(
-    guest.getByText('Joined the room. Waiting for the host to start the game.', { exact: true }),
+    guest.getByText('Waiting for the host to start the game.', { exact: true }),
   ).toBeVisible();
+  await guest.getByRole('combobox', { name: 'My player', exact: true }).selectOption('1');
+  await expect(guest.getByRole('combobox', { name: 'My player', exact: true })).toBeEnabled();
   const cameraContext = await browser.newContext({ serviceWorkers: 'block' });
   try {
     const cameraGuest = await cameraContext.newPage();
     await prepare(cameraGuest);
     await cameraGuest.goto(`http://localhost:4300/online?room=${code}&pin=${pin}`);
     await expect(
-      cameraGuest.getByText('Joined the room. Waiting for the host to start the game.', {
+      cameraGuest.getByText('Waiting for the host to start the game.', {
         exact: true,
       }),
     ).toBeVisible();
@@ -397,23 +393,14 @@ test('host can select three players and room header stays visible', async ({ pag
     'Connected',
   );
   await expect(dialog.locator('.connection-row .connection-chip')).toHaveText('Connected');
-  await page.evaluate(() => {
-    Object.defineProperty(navigator, 'clipboard', {
-      configurable: true,
-      value: { writeText: async () => undefined },
-    });
-  });
-  const copy = dialog.getByRole('button', { name: 'Copy room details', exact: true });
-  await copy.click();
-  await expect(copy).toHaveAttribute('data-copied', 'true');
-  await expect(dialog.getByText('Room details copied.', { exact: true })).toHaveCount(0);
-  await expect(copy).toHaveAttribute('data-copied', 'false');
-  const code = await dialog.getByRole('textbox', { name: 'Room code', exact: true }).inputValue();
+  await expect(dialog.getByRole('img', { name: 'Room QR code', exact: true })).toBeVisible();
+  await expect(dialog.getByRole('textbox', { name: 'Room code', exact: true })).toBeVisible();
+  await expect(dialog.getByRole('textbox', { name: 'Room PIN', exact: true })).toBeVisible();
   const access = await page.evaluate(
     (api) => JSON.parse(localStorage.getItem('riichi-room:' + api)!),
     api,
   );
-  const state = await page.request.get(api + '/api/rooms/' + code, {
+  const state = await page.request.get(api + '/api/rooms/' + access.id, {
     headers: { Authorization: 'Bearer ' + access.token },
   });
   expect((await state.json()).playerCount).toBe(3);

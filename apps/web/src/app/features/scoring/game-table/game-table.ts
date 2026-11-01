@@ -1,6 +1,8 @@
+import { CopyButton } from '../../../shared/copy-button/copy-button';
 import { roomPermissionItems, type RoomPermission } from '../../../core/online/room-permissions';
 import { gamesCsv } from '../../records/data-transfer/data-csv';
 import { ConnectionStatus } from '../../../shared/connection-status/connection-status';
+import { OnlineApi } from '../../../core/online/online-api';
 import { playerConnectionStates } from '../../../core/online/presence';
 import { recordCall } from '../../../../../../../packages/mahjong-core/record-call';
 import { RoomSession } from '../../../core/online/room-session';
@@ -99,11 +101,14 @@ type Panel =
   | 'difference'
   | 'dice'
   | 'results'
+  | 'seat-requests'
   | 'permissions'
   | 'declarations'
+  | 'leave-room'
   | 'notice';
 @Component({
   imports: [
+    CopyButton,
     MusicSettings,
     ConnectionStatus,
     DialogBackdrop,
@@ -123,6 +128,9 @@ type Panel =
   styleUrl: './game-table.css',
 })
 export class GameTable {
+  private readonly onlineApi = inject(OnlineApi);
+  readonly roomQr = signal('');
+  readonly hanOptions = Array.from({ length: 26 }, (_, index) => index + 1);
   private readonly music = inject(BackgroundMusic);
   readonly scoringMode = inject(ScoringMode);
   readonly permissionItems = roomPermissionItems;
@@ -146,6 +154,11 @@ export class GameTable {
   initializeView(match: Match): void {
     if (this.viewOrder().length) return;
     const ids = match.players.map((player) => player.id);
+    if (this.roomCode) {
+      const seat = this.room.access()?.seat ?? 0;
+      this.viewOrder.set([...ids.slice(seat), ...ids.slice(0, seat)]);
+      return;
+    }
     try {
       const stored: unknown = JSON.parse(localStorage.getItem('riichi-view:' + match.id) ?? 'null');
       if (
@@ -160,8 +173,7 @@ export class GameTable {
     } catch {
       /* Use the assigned player as the viewing origin. */
     }
-    const first = this.roomCode ? (this.room.access()?.seat ?? 0) : 0;
-    this.viewOrder.set([...ids.slice(first), ...ids.slice(0, first)]);
+    this.viewOrder.set(ids);
   }
   rotateView(clockwise: boolean): void {
     const order = [...this.viewOrder()];
@@ -169,7 +181,8 @@ export class GameTable {
     if (clockwise) order.push(order.shift()!);
     else order.unshift(order.pop()!);
     this.viewOrder.set(order);
-    localStorage.setItem('riichi-view:' + this.match()!.id, JSON.stringify(order));
+    if (!this.roomCode)
+      localStorage.setItem('riichi-view:' + this.match()!.id, JSON.stringify(order));
   }
   showResultsIfEnded(match: Match): void {
     if (!match.ended || this.resultShown === match.id) return;
@@ -293,13 +306,14 @@ export class GameTable {
   }
   readonly match = signal<Match | null>(null);
   readonly playerPresence = computed(() => {
-    if (!this.roomCode || !this.room.access()?.host) return null;
+    if (!this.roomCode || !this.room.access()) return null;
     const players = this.match()?.players ?? [];
     const states = playerConnectionStates(
       players.length,
       this.room.presence()?.seats ?? null,
       this.room.access()?.seat ?? null,
       this.room.connectionStatus(),
+      this.room.presence()?.awaySeats ?? [],
     );
     return Object.fromEntries(players.map((player, index) => [player.id, states[index]]));
   });
@@ -368,11 +382,20 @@ export class GameTable {
   navigatePanel(panel: Panel): void {
     if (panel === 'permissions' && !this.room.access()?.host) return;
     if (panel === this.panel()) return;
+    if (panel === 'info') {
+      const match = this.match();
+      if (match) {
+        this.editName = match.name;
+        this.editNames = match.players.map((player) => player.name);
+      }
+      void this.prepareRoomQr();
+    }
     this.panelParents.update((parents) => [...parents, this.panel()]);
     this.panel.set(panel);
     this.error.set('');
   }
   backPanel(): void {
+    this.roomQr.set('');
     const parents = this.panelParents();
     if (this.panel() === 'indicators' && this.requiredIndicators) {
       this.pendingKan = null;
@@ -493,7 +516,15 @@ export class GameTable {
     'four-kans',
     'triple-ron',
   ];
+  refreshPage(): void {
+    window.location.reload();
+  }
   constructor() {
+    effect(() => {
+      const state = this.room.state();
+      if (this.roomCode && state?.host === false && state.ownSeat === null && state.hasGame)
+        void this.router.navigateByUrl('/online');
+    });
     effect(() => {
       const match = this.match();
       if (!match || match.ended) {
@@ -506,11 +537,30 @@ export class GameTable {
         `${match.id}:${match.roundWind}:${match.handNumber}:${match.honba}`,
       );
     });
+    effect(() => {
+      const requests = this.room.state()?.seatRequests;
+      if (!requests?.length) this.dismissedSeatRequests = '';
+      const host = this.room.access()?.host;
+      const busy = this.busy();
+      if (
+        host &&
+        requests?.length &&
+        this.seatRequestsKey() !== this.dismissedSeatRequests &&
+        !busy
+      )
+        queueMicrotask(() => {
+          if (!this.dialog().nativeElement.open) this.open('seat-requests');
+        });
+    });
     const interval = setInterval(() => this.now.set(Date.now()), 1000);
     inject(DestroyRef).onDestroy(() => {
       this.music.setScene('lobby');
       clearInterval(interval);
-      if (this.roomCode) void this.room.stop();
+      if (this.roomCode) {
+        void this.room.setAway(true).catch(() => undefined);
+        this.room.changed = () => {};
+        this.room.canProcess = () => false;
+      }
     });
     this.room.canProcess = () => !this.busy() && !this.editingHand();
     this.room.changed = (match) => {
@@ -612,7 +662,7 @@ export class GameTable {
       draw: 'Record draw',
       history: 'History',
       finish: 'End entire match',
-      info: 'Edit game info',
+      info: 'Information',
       settings: 'In-game settings',
       perspective: 'Adjust view',
       help: 'Help',
@@ -620,8 +670,10 @@ export class GameTable {
       dice: 'Dice',
       results: 'Final results',
       permissions: 'Player permissions',
+      'seat-requests': 'Seat requests',
       declarations: 'Winning declarations',
       notice: 'Notice',
+      'leave-room': 'Exit room',
     };
     return titles[this.panel()];
   }
@@ -688,6 +740,11 @@ export class GameTable {
       }
       const match = await this.repo.get(this.route.snapshot.paramMap.get('id') ?? '');
       if (!match) throw new Error('Match not found. Return to My table.');
+      const sharedRoom = await this.repo.roomForMatch(match.id);
+      if (sharedRoom && !match.ended) {
+        await this.router.navigate(['/room', sharedRoom], { replaceUrl: true });
+        return;
+      }
       this.match.set(match);
       this.initializeView(match);
       this.showResultsIfEnded(match);
@@ -774,7 +831,7 @@ export class GameTable {
       ((panel === 'indicators' && !this.can('indicators')) ||
         (panel === 'outcome' && !this.can('settle')) ||
         (panel === 'finish' && !this.can('finish')) ||
-        ['info', 'permissions'].includes(panel))
+        panel === 'permissions')
     ) {
       this.error.set('Only the host can change shared table settings.');
       return;
@@ -806,6 +863,14 @@ export class GameTable {
     if (this.editingHand()) this.cancelHandEdit();
     this.dialog().nativeElement.close();
     this.error.set('');
+    if (
+      this.room.access()?.host &&
+      this.room.state()?.seatRequests?.length &&
+      this.seatRequestsKey() !== this.dismissedSeatRequests
+    )
+      queueMicrotask(() => {
+        if (!this.dialog().nativeElement.open) this.open('seat-requests');
+      });
   }
   openIndicators(kind: 'dora' | 'ura'): void {
     if (!this.can('indicators')) {
@@ -829,8 +894,38 @@ export class GameTable {
       this.close();
     });
   }
+  private seatRequestsKey(): string {
+    return (
+      this.room.state()?.revision +
+      ':' +
+      (this.room.state()?.seatRequests ?? []).map((r) => r.id).join(':')
+    );
+  }
+  private dismissedSeatRequests = '';
+  async decideSeat(id: string, accept: boolean): Promise<void> {
+    await this.act(async () => {
+      await this.room.decideSeat(id, accept);
+      this.dismissedSeatRequests = this.seatRequestsKey();
+      this.close();
+    });
+  }
+  async transferHost(seat: number): Promise<void> {
+    await this.act(async () => {
+      await this.room.transferHost(seat);
+      this.close();
+    });
+  }
+  async backToTables(): Promise<void> {
+    if (this.roomCode) await this.room.setAway(true);
+    await this.router.navigateByUrl('/');
+  }
   async returnToTables(): Promise<void> {
     await this.act(async () => {
+      if (this.roomCode) {
+        const result = await this.room.leave();
+        await this.router.navigateByUrl(result ? '/score/' + result.id : '/');
+        return;
+      }
       const m = this.match()!;
       if (!m.ended && !this.remotePlayer())
         await this.persist({
@@ -1446,6 +1541,7 @@ export class GameTable {
     });
   }
   async saveInfo(): Promise<void> {
+    if (this.remotePlayer()) return;
     await this.act(async () => {
       const m = this.match()!;
       if (
@@ -1465,6 +1561,17 @@ export class GameTable {
   }
   rollDice(): void {
     this.diceRequest.update((value) => value + 1);
+  }
+  private async prepareRoomQr(): Promise<void> {
+    const access = this.room.access();
+    if (!access?.pin) return;
+    const { default: qr } = await import('qrcode');
+    this.roomQr.set(
+      await qr.toDataURL(this.onlineApi.link('room', access.id, access.pin), {
+        width: 512,
+        margin: 4,
+      }),
+    );
   }
   exportMatch(): void {
     const m = this.match();

@@ -26,33 +26,35 @@ public sealed class DrawPermissionsTests
         var joined = await Read(await guest.PostAsJsonAsync(path + "/join", new { pin = room.GetProperty("pin").GetString() }));
         host.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", room.GetProperty("token").GetString());
         guest.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", joined.GetProperty("token").GetString());
+        await RoomTest.Approve(host, guest, path);
+        var initialRevision = (await host.GetFromJsonAsync<JsonElement>(path + "/game")).GetProperty("revision").GetInt64();
         var next = match.DeepClone();
         next["events"]!.AsArray().Add(JsonNode.Parse("""
             {"id":"draw","type":"exhaustiveDraw","payments":[],"drawInput":{"type":"exhaustive",
              "rules":{},"players":[{"id":"a"},{"id":"b"},{"id":"c"}],"dealerId":"a","honba":0}}
             """));
-        (await guest.PutAsJsonAsync(path + "/game", new { revision = 1, handKey = "next", match = next, operation = "draw", decisions = Array.Empty<object>() })).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await guest.PutAsJsonAsync(path + "/game", new { revision = initialRevision + 0, handKey = "next", match = next, operation = "draw", decisions = Array.Empty<object>() })).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await host.PutAsJsonAsync(path + "/permissions", new { draw = true })).EnsureSuccessStatusCode();
         var malicious = next.DeepClone();
         malicious["events"]![0]!["type"] = "win";
-        (await guest.PutAsJsonAsync(path + "/game", new { revision = 2, handKey = "next", match = malicious, operation = "draw", decisions = Array.Empty<object>() })).StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        (await guest.PutAsJsonAsync(path + "/game", new { revision = 2, handKey = "next", match = next, operation = "settle", decisions = Array.Empty<object>() })).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await guest.PutAsJsonAsync(path + "/game", new { revision = initialRevision + 1, handKey = "next", match = malicious, operation = "draw", decisions = Array.Empty<object>() })).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await guest.PutAsJsonAsync(path + "/game", new { revision = initialRevision + 1, handKey = "next", match = next, operation = "settle", decisions = Array.Empty<object>() })).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         var pendingId = Guid.NewGuid().ToString();
         (await guest.PostAsJsonAsync(path + "/game/actions", new { id = pendingId, handKey = "first", kind = "win", payload = new { } })).EnsureSuccessStatusCode();
-        (await guest.PutAsJsonAsync(path + "/game", new { revision = 3, handKey = "next", match = next, operation = "draw", decisions = Array.Empty<object>() })).StatusCode.Should().Be(HttpStatusCode.Conflict);
-        (await host.PutAsJsonAsync(path + "/game", new { revision = 3, handKey = "first", match, decisions = new[] { new { id = pendingId, error = "Rejected" } } })).EnsureSuccessStatusCode();
-        (await guest.PutAsJsonAsync(path + "/game", new { revision = 4, handKey = "next", match = next, operation = "draw", decisions = Array.Empty<object>() })).EnsureSuccessStatusCode();
+        (await guest.PutAsJsonAsync(path + "/game", new { revision = initialRevision + 2, handKey = "next", match = next, operation = "draw", decisions = Array.Empty<object>() })).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await host.PutAsJsonAsync(path + "/game", new { revision = initialRevision + 2, handKey = "first", match, decisions = new[] { new { id = pendingId, error = "Rejected" } } })).EnsureSuccessStatusCode();
+        (await guest.PutAsJsonAsync(path + "/game", new { revision = initialRevision + 3, handKey = "next", match = next, operation = "draw", decisions = Array.Empty<object>() })).EnsureSuccessStatusCode();
         var rewrite = next.DeepClone();
         rewrite["events"]![0]!["id"] = "rewritten";
         rewrite["events"]!.AsArray().Add(next["events"]![0]!.DeepClone());
-        (await guest.PutAsJsonAsync(path + "/game", new { revision = 5, handKey = "third", match = rewrite, operation = "draw", decisions = Array.Empty<object>() })).StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        (await guest.PutAsJsonAsync(path + "/game", new { revision = 5, handKey = "next", match = next, operation = "history", decisions = Array.Empty<object>() })).StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        (await guest.PutAsJsonAsync(path + "/game", new { revision = 5, handKey = "next", match = next, operation = "finish", decisions = Array.Empty<object>() })).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await guest.PutAsJsonAsync(path + "/game", new { revision = initialRevision + 4, handKey = "third", match = rewrite, operation = "draw", decisions = Array.Empty<object>() })).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await guest.PutAsJsonAsync(path + "/game", new { revision = initialRevision + 4, handKey = "next", match = next, operation = "history", decisions = Array.Empty<object>() })).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await guest.PutAsJsonAsync(path + "/game", new { revision = initialRevision + 4, handKey = "next", match = next, operation = "finish", decisions = Array.Empty<object>() })).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await host.PutAsJsonAsync(path + "/permissions", new { draw = false, settle = true })).EnsureSuccessStatusCode();
-        (await guest.PutAsJsonAsync(path + "/game", new { revision = 6, handKey = "third", match = next, operation = "draw", decisions = Array.Empty<object>() })).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await guest.PutAsJsonAsync(path + "/game", new { revision = initialRevision + 5, handKey = "third", match = next, operation = "draw", decisions = Array.Empty<object>() })).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         var another = next.DeepClone();
         another["events"]!.AsArray().Add(next["events"]![0]!.DeepClone());
-        (await guest.PutAsJsonAsync(path + "/game", new { revision = 6, handKey = "third", match = another, operation = "settle", decisions = Array.Empty<object>() })).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await guest.PutAsJsonAsync(path + "/game", new { revision = initialRevision + 5, handKey = "third", match = another, operation = "settle", decisions = Array.Empty<object>() })).StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     private static async Task<JsonElement> Read(HttpResponseMessage response)

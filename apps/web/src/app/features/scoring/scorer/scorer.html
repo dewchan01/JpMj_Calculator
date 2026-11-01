@@ -150,14 +150,11 @@
               @if (!manualYakuman) {
                 <label>
                   {{ 'Han' | t }}
-                  <input
-                    type="number"
-                    min="1"
-                    max="26"
-                    step="1"
-                    [(ngModel)]="manualHan"
-                    (ngModelChange)="changed()"
-                  />
+                  <select [(ngModel)]="manualHan" (ngModelChange)="changed()">
+                    @for (han of hanOptions; track han) {
+                      <option [ngValue]="han">{{ han }}</option>
+                    }
+                  </select>
                 </label>
                 @if (manualHan < 5) {
                   <label>

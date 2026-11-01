@@ -61,7 +61,18 @@
   padding: 0;
 }
 :host(.room-table.compact) .table-layout {
-  min-height: calc(var(--hub-height) + 2 * var(--seat-gap) + 2 * var(--card-depth) + 100px);
+  min-height: 0;
+}
+.table-surface {
+  display: contents;
+}
+:host(.compact) .table-surface {
+  display: block;
+  position: absolute;
+  inset: 0;
+  transform: translate(var(--table-shift-x, 0px), var(--table-shift-y, 0px))
+    scale(var(--table-scale, 1));
+  transform-origin: center;
 }
 :host(.compact) .table-center {
   position: absolute;
@@ -238,11 +249,14 @@
   font-weight: 750;
 }
 @media (min-width: 701px) {
+  :host(.compact) .table-layout {
+    --seat-gap: max(44px, calc((var(--card-width) - var(--hub-width)) / 2 + 12px));
+  }
   :host(.room-table.compact) .table-layout {
     --hub-width: 120px;
     --hub-height: 120px;
     --card-depth: 76px;
-    --seat-gap: 36px;
+    --seat-gap: max(36px, calc((var(--card-width) - var(--hub-width)) / 2 + 12px));
   }
 }
 @media (min-width: 701px) and (max-height: 800px) {
@@ -251,13 +265,13 @@
     --hub-height: 104px;
     --card-width: 190px;
     --card-depth: 60px;
-    --seat-gap: 24px;
+    --seat-gap: max(24px, calc((var(--card-width) - var(--hub-width)) / 2 + 12px));
   }
   :host(.room-table.compact) .table-layout {
     --hub-width: 104px;
     --hub-height: 104px;
     --card-depth: 60px;
-    --seat-gap: 24px;
+    --seat-gap: max(24px, calc((var(--card-width) - var(--hub-width)) / 2 + 12px));
   }
   :host(.compact) .player-seat {
     padding: 4px;

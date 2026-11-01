@@ -17,6 +17,9 @@ public sealed class RoomAccess(AppDb db) : IRoomAccess
         cancellationToken.ThrowIfCancellationRequested();
         if (Secrets.Matches(token, room.HostHash)) return Task.FromResult(true);
         var hash = Secrets.Hash(token);
-        return _db.Seats.AnyAsync(x => x.RoomId == room.Id && x.TokenHash == hash, cancellationToken);
+        return CanReadMemberAsync(room.Id, hash, cancellationToken);
     }
+    private async Task<bool> CanReadMemberAsync(string id, string hash, CancellationToken ct) =>
+        await _db.Seats.AnyAsync(x => x.RoomId == id && x.TokenHash == hash, ct) ||
+        await _db.Unassigned.AnyAsync(x => x.RoomId == id && x.TokenHash == hash, ct);
 }

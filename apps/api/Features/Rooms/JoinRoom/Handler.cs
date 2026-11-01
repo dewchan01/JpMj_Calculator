@@ -26,13 +26,17 @@ public sealed class Handler(AppDb db, IHubContext<RoomHub> hub) : CommandHandler
         var room = await _db.Rooms.SingleOrDefaultAsync(x => x.Id == id && x.ExpiresAt > now, cancellationToken);
         // Deliberately identical errors for unknown code and incorrect PIN.
         if (room is null || !Secrets.PinMatches(input.Pin ?? "", id, room.PinHash)) return Results.Unauthorized();
+        if (room.Closed) return Results.StatusCode(410);
         var occupied = await _db.Seats.Where(x => x.RoomId == id).Select(x => x.Number).ToListAsync(cancellationToken);
-        var seat = input.Seat ?? Enumerable.Range(0, room.PlayerCount).FirstOrDefault(x => !occupied.Contains(x), -1);
-        if (seat == -1 && input.Seat is null) return Results.Conflict();
-        if (seat < 0 || seat >= room.PlayerCount) return Results.BadRequest();
-        if (occupied.Contains(seat)) return Results.Conflict();
+        if (occupied.Count >= room.PlayerCount) return Results.Conflict(new { code = "room-full" });
+        var seat = string.IsNullOrEmpty(room.HandKey) ? input.Seat : null;
+        if (seat is < 0 || seat >= room.PlayerCount) return Results.BadRequest();
+        if (seat.HasValue && occupied.Contains(seat.Value)) return Results.Conflict();
+        if (await _db.Unassigned.CountAsync(x => x.RoomId == id, cancellationToken) >= 20) return Results.Conflict();
         var token = Secrets.Create();
-        _db.Seats.Add(new Seat { RoomId = id, Number = seat, TokenHash = Secrets.Hash(token) });
+        if (seat.HasValue) _db.Seats.Add(new Seat { RoomId = id, Number = seat.Value, TokenHash = Secrets.Hash(token) });
+        else _db.Unassigned.Add(new UnassignedPlayer { RoomId = id, TokenHash = Secrets.Hash(token) });
+        room.Revision++;
         try
         {
             await _db.SaveChangesAsync(cancellationToken);

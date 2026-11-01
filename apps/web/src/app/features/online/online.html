@@ -1,19 +1,17 @@
 @if (!embedded()) {
-  <a routerLink="/">{{ 'My table' | t }}</a>
-  <h1>{{ (roomInvitation ? 'Join game' : 'Online sharing and rooms') | t }}</h1>
-}
-@if (access()) {
-  <details>
-    <summary>{{ 'Music settings' | t }}</summary>
-    <app-music-settings />
-  </details>
+  <button class="primary online-back" routerLink="/">
+    <span aria-hidden="true">←</span>
+    {{ 'Return home' | t }}
+  </button>
 }
 @if (error() === 'Could not connect to the online service.') {
   @if (!access()) {
     <app-connection-status state="Disconnected" />
   }
 } @else if (error()) {
-  <p role="alert">{{ error() | t }}</p>
+  <div class="online-error">
+    <app-error-notice [message]="error()" />
+  </div>
 }
 @if (initializing() || (busy() && !access() && !shareId)) {
   <div class="room-loading" role="status">
@@ -25,32 +23,83 @@
 } @else if (shareId) {
   <app-loading-spinner />
 } @else if (access() && !access()!.host) {
-  <app-connection-status [state]="connectionStatus()" />
-  <p role="status">{{ 'Joined the room. Waiting for the host to start the game.' | t }}</p>
+  <div class="guest-connection" role="status">
+    <app-connection-status [state]="connectionStatus()" />
+    @if (connectionStatus() === 'Connected' && !gameStarted()) {
+      <span class="waiting-message">{{ 'Waiting for the host to start the game.' | t }}</span>
+    }
+    @if (lobbyFormat(); as format) {
+      @if (format.playerCount) {
+        <span class="lobby-format">
+          @if (format.ruleLabel) {
+            {{ format.ruleLabel | t }} ·
+          }
+          @if (format.gameLength) {
+            {{ (format.gameLength === 'east' ? 'East-only game' : 'East and South game') | t }} ·
+          }
+          {{ format.playerCount }}P
+        </span>
+      }
+    }
+  </div>
   @if (room(); as lobby) {
     <label>
       {{ 'My player' | t }}
-      <select [value]="access()!.seat" (change)="choosePlayer($event)" [disabled]="busy()">
+      <select [formControl]="form.controls.seat" (change)="choosePlayer($event)">
+        <option [value]="-1" disabled>{{ 'Unassigned' | t }}</option>
         @for (seat of [0, 1, 2, 3].slice(0, lobby.playerCount); track seat) {
-          <option [value]="seat" [disabled]="lobby.seats.includes(seat) && access()!.seat !== seat">
+          <option [value]="seat">
             {{ lobby.playerNames?.[seat] || ('Player ' + (seat + 1) | t) }}
           </option>
         }
       </select>
     </label>
   }
-  <button class="secondary" (click)="leave()" [disabled]="busy()">{{ 'Leave room' | t }}</button>
+  @if (gameStarted()) {
+    <button
+      class="primary"
+      (click)="enterTable()"
+      [disabled]="busy() || room()?.assignment === 'pending'"
+    >
+      {{
+        (room()?.assignment === 'pending'
+          ? 'Waiting for the host to approve your seat.'
+          : 'Open room table'
+        ) | t
+      }}
+    </button>
+  }
+  <button class="secondary" (click)="leaveConfirmation.showModal()" [disabled]="busy()">
+    {{ 'Leave room' | t }}
+  </button>
 } @else if (access(); as credential) {
   <section class="room-lobby">
     <div class="room-lobby-content">
-      @if (credential.pin) {
-        <p class="room-qr-hint">{{ 'Scan this QR code to join automatically.' | t }}</p>
-      }
       @if (qr()) {
         <img class="room-qr" [src]="qr()" width="200" height="200" [alt]="'Room QR code' | t" />
+        @if (credential.pin) {
+          <p class="room-qr-hint">{{ 'Scan this QR code to join automatically.' | t }}</p>
+        }
       }
       <section class="room-credentials">
         <div class="connection-row">
+          @if (lobbyFormat(); as format) {
+            @if (format.playerCount) {
+              <span class="lobby-format">
+                @if (format.ruleLabel) {
+                  {{ format.ruleLabel | t }} ·
+                }
+                @if (format.gameLength) {
+                  {{
+                    (format.gameLength === 'east' ? 'East-only game' : 'East and South game') | t
+                  }}
+                  ·
+                }
+                {{ format.playerCount }}P
+              </span>
+            }
+          }
+
           <app-connection-status [state]="connectionStatus()" />
         </div>
         <div class="credential-row">
@@ -112,14 +161,14 @@
       </section>
     </div>
     @if (room(); as state) {
-      @if (credential.host && (game()?.match ?? pendingGame()); as currentMatch) {
-        <app-player-presence
-          [players]="currentMatch.players"
-          [onlineSeats]="presence()?.seats ?? null"
-          [ownSeat]="credential.seat"
-          [connection]="connectionStatus()"
-        />
-      }
+      <app-player-presence
+        [players]="lobbyPlayers()"
+        [unassignedCount]="state.unassigned?.length ?? 0"
+        [onlineSeats]="presence()?.seats ?? null"
+        [awaySeats]="presence()?.awaySeats ?? []"
+        [ownSeat]="credential.seat"
+        [connection]="connectionStatus()"
+      />
       <footer class="room-bottom">
         <div class="room-expiry">
           <span>{{ 'Expires' | t }}</span>
@@ -127,33 +176,13 @@
             {{ state.expiresAt | localDate: 'dateTime' }}
           </time>
         </div>
-        @if (!game()?.match?.id && credential.host && !pendingGame()) {
-          <label>
-            {{ 'Game' | t }}
-            <select [formControl]="selectedGame">
-              <option value="">{{ 'Select a game' | t }}</option>
-              @for (match of games(); track match.id) {
-                <option [value]="match.id">{{ match.name }}</option>
-              }
-            </select>
-          </label>
-          <button (click)="attach()" [disabled]="busy() || !selectedGame.value">
-            {{ 'Attach game' | t }}
-          </button>
-          <p>
-            {{
-              'Create a local game with the same player count first. Seat numbers follow its player order.'
-                | t
-            }}
-          </p>
-        }
         <div class="room-footer-actions">
           @if (credential.host) {
-            <button class="secondary action-delete" (click)="close()" [disabled]="busy()">
-              {{ 'Close room' | t }}
+            <button class="secondary" (click)="leaveConfirmation.showModal()" [disabled]="busy()">
+              {{ 'Leave room' | t }}
             </button>
           } @else {
-            <button class="secondary" (click)="leave()" [disabled]="busy()">
+            <button class="secondary" (click)="leaveConfirmation.showModal()" [disabled]="busy()">
               {{ 'Leave room' | t }}
             </button>
           }
@@ -223,3 +252,49 @@
     }
   </form>
 }
+
+@if (
+  access()?.host &&
+  game()?.seatRequests?.length &&
+  seatRequestSignature() !== dismissedSeatRequests()
+) {
+  <div class="assignment-backdrop">
+    <section
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="'Seat requests' | t"
+      class="assignment-dialog"
+    >
+      <h2>{{ 'Seat requests' | t }}</h2>
+      @for (request of game()?.seatRequests ?? []; track request.id) {
+        <div class="seat-request-row">
+          <span>
+            {{
+              room()?.playerNames?.[request.requestedSeat] ||
+                ('Player ' + (request.requestedSeat + 1) | t)
+            }}
+          </span>
+          <div class="seat-request-actions">
+            <button class="danger" (click)="decideSeat(request.id, false)" [disabled]="busy()">
+              {{ 'Reject' | t }}
+            </button>
+            <button class="primary" (click)="decideSeat(request.id, true)" [disabled]="busy()">
+              {{ 'Accept' | t }}
+            </button>
+          </div>
+        </div>
+      }
+    </section>
+  </div>
+}
+
+<dialog #leaveConfirmation class="app-dialog leave-confirmation">
+  <h2>{{ 'Exit room' | t }}</h2>
+  <p>{{ 'Leave this room?' | t }}</p>
+  <div class="room-exit-actions">
+    <button class="secondary" (click)="leaveConfirmation.close()">{{ 'Cancel' | t }}</button>
+    <button class="primary exit-room-button" (click)="leaveConfirmation.close(); leave()">
+      {{ 'Exit room' | t }}
+    </button>
+  </div>
+</dialog>

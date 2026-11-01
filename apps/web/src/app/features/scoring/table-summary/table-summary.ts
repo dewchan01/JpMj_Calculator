@@ -1,4 +1,13 @@
-import { Component, computed, inject, input, output } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  afterRenderEffect,
+  computed,
+  inject,
+  input,
+  output,
+  viewChild,
+} from '@angular/core';
 import { DecimalPipe, NgOptimizedImage } from '@angular/common';
 import { WINDS, type Wind } from '../../../../../../../packages/mahjong-core/index';
 import { I18n, TranslatePipe } from '../../../core/i18n/i18n';
@@ -18,10 +27,73 @@ import type { LedgerEvent } from '../../../../../../../packages/mahjong-core/led
   },
 })
 export class TableSummary {
+  private readonly layout = viewChild<ElementRef<HTMLElement>>('layout');
+  constructor() {
+    afterRenderEffect((cleanup) => {
+      if (!this.compact()) return;
+      const layout = this.layout()?.nativeElement;
+      const surface = layout?.querySelector<HTMLElement>('.table-surface');
+      if (!layout || !surface) return;
+      const desktop = matchMedia('(min-width: 701px)');
+      let frame = 0;
+      let scale = Number(surface.style.getPropertyValue('--table-scale')) || 1;
+      let shiftX = parseFloat(surface.style.getPropertyValue('--table-shift-x')) || 0;
+      let shiftY = parseFloat(surface.style.getPropertyValue('--table-shift-y')) || 0;
+      const fit = () => {
+        if (!desktop.matches) {
+          scale = 1;
+          shiftX = shiftY = 0;
+        } else {
+          const bounds = layout.getBoundingClientRect();
+          if (!bounds.width || !bounds.height) return;
+          const cx = bounds.left + bounds.width / 2;
+          const cy = bounds.top + bounds.height / 2;
+          let left = Infinity;
+          let right = -Infinity;
+          let top = Infinity;
+          let bottom = -Infinity;
+          for (const element of surface.querySelectorAll(
+            '.player-seat, .seat-actions, .seat-label, .table-center',
+          )) {
+            const rect = element.getBoundingClientRect();
+            if (!rect.width || !rect.height) continue;
+            left = Math.min(left, (rect.left - cx - shiftX) / scale);
+            right = Math.max(right, (rect.right - cx - shiftX) / scale);
+            top = Math.min(top, (rect.top - cy - shiftY) / scale);
+            bottom = Math.max(bottom, (rect.bottom - cy - shiftY) / scale);
+          }
+          scale = Math.min(
+            1,
+            (bounds.width - 16) / (right - left),
+            (bounds.height - 16) / (bottom - top),
+          );
+          shiftX = -((left + right) / 2) * scale;
+          shiftY = -((top + bottom) / 2) * scale;
+        }
+        surface.style.setProperty('--table-scale', String(scale));
+        surface.style.setProperty('--table-shift-x', `${shiftX}px`);
+        surface.style.setProperty('--table-shift-y', `${shiftY}px`);
+      };
+      const schedule = () => {
+        cancelAnimationFrame(frame);
+        frame = requestAnimationFrame(fit);
+      };
+      const observer = new ResizeObserver(schedule);
+      observer.observe(layout);
+      window.addEventListener('resize', schedule);
+      schedule();
+      cleanup(() => {
+        observer.disconnect();
+        window.removeEventListener('resize', schedule);
+        cancelAnimationFrame(frame);
+      });
+    });
+  }
   readonly interactive = input(false);
   readonly presence = input<Readonly<Record<string, string>> | null>(null);
   readonly compact = input(false);
   readonly liveControls = input(false);
+  readonly showCaption = input(true);
   readonly ended = input(false);
   readonly handAction = output<void>();
   readonly playerAction = output<string>();
@@ -83,6 +155,7 @@ export class TableSummary {
   readonly honba = input.required<number>();
   readonly pot = input.required<number>();
   readonly ruleName = input.required<string>();
+  readonly gameLength = input<'east' | 'south'>();
   readonly events = input<LedgerEvent[]>([]);
   readonly yakitoriPenalty = input(0);
   readonly recordedWinners = computed(

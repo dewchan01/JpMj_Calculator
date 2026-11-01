@@ -1,3 +1,6 @@
+import { OnlineApi, type RoomAccess, type RoomState } from '../../../core/online/online-api';
+import { RoomTabAccess } from '../../../core/online/room-tab-access';
+import type { RoomGame } from '../../../core/online/room-session';
 import { DialogBackdrop, closeDialogGroup } from '../../../shared/dialog-backdrop';
 import { DateTimeField } from '../../../shared/date-time-field/date-time-field';
 import { Online } from '../../online/online';
@@ -68,15 +71,81 @@ export class Home {
   }
   readonly introTiles = parseTiles('1m6z9s', 'intro');
   readonly ongoing = signal<Match[]>([]);
+  private readonly onlineApi = inject(OnlineApi);
+  private readonly tabAccess = inject(RoomTabAccess);
+  readonly sharedRoom = signal<{
+    id: string;
+    name: string;
+    matchId?: string;
+    route: string[];
+  } | null>(null);
+  readonly ongoingLocal = computed(() =>
+    this.ongoing().filter((match) => match.id !== this.sharedRoom()?.matchId),
+  );
+  readonly ongoingCount = computed(() => this.ongoingLocal().length + (this.sharedRoom() ? 1 : 0));
+  private sharedRoomLoading: Promise<void> | null = null;
+  loadSharedRoom(): Promise<void> {
+    if (this.sharedRoomLoading) return this.sharedRoomLoading;
+    this.sharedRoomLoading = this.readSharedRoom().finally(() => (this.sharedRoomLoading = null));
+    return this.sharedRoomLoading;
+  }
+  private async readSharedRoom(): Promise<void> {
+    this.sharedRoom.set(null);
+    await this.onlineApi.ready;
+    if (!this.onlineApi.url()) return;
+    try {
+      const key = 'riichi-room:' + this.onlineApi.url();
+      const access: RoomAccess | null = JSON.parse(
+        sessionStorage.getItem(key) ?? localStorage.getItem(key) ?? 'null',
+      );
+      if (!access?.id || !access.token || (await this.tabAccess.inUse(access.token))) return;
+      const room = await this.onlineApi.request<RoomState>(
+        '/api/rooms/' + access.id,
+        'GET',
+        undefined,
+        access.token,
+      );
+      if (room.closed) {
+        this.onlineApi.clearRoomAccess(access.id, access.token);
+        return;
+      }
+      const state = await this.onlineApi.request<RoomGame>(
+        '/api/rooms/' + access.id + '/game',
+        'GET',
+        undefined,
+        access.token,
+      );
+      if (state.match?.ended) {
+        this.onlineApi.clearRoomAccess(access.id, access.token);
+        return;
+      }
+      this.sharedRoom.set({
+        id: access.id,
+        name:
+          room.matchName?.trim() ||
+          state.match?.name ||
+          room.pendingMatch?.name ||
+          this.i18n.t('Game'),
+        matchId: state.match?.id ?? room.pendingMatch?.id,
+        route:
+          state.hasGame && (room.host || room.ownSeat != null) ? ['/room', access.id] : ['/online'],
+      });
+    } catch {
+      /* Expired rooms do not offer a resume action. */
+    }
+  }
   resultPoints: number[] = [];
   resultDate = '';
   constructor() {
     this.fillSavedPlayers();
     void this.loadOngoing();
+    void this.loadSharedRoom();
   }
   async loadOngoing(): Promise<void> {
     try {
-      this.ongoing.set((await this.repo.list()).filter((match) => !match.ended));
+      const matches = (await this.repo.list()).filter((match) => !match.ended);
+      const rooms = await Promise.all(matches.map((match) => this.repo.roomForMatch(match.id)));
+      this.ongoing.set(matches.filter((_, index) => !rooms[index]));
     } catch {
       this.error.set('Could not load match.');
     }
@@ -185,6 +254,7 @@ export class Home {
   }
   randomizePlayers(): void {
     const names = this.activeNames();
+    let mySeat = +this.setup().mySeat;
     for (let i = names.length - 1; i > 0; i--) {
       const bytes = new Uint32Array(1),
         limit = Math.floor(0x100000000 / (i + 1)) * (i + 1);
@@ -193,10 +263,13 @@ export class Home {
       } while (bytes[0] >= limit);
       const j = bytes[0] % (i + 1);
       [names[i], names[j]] = [names[j], names[i]];
+      if (mySeat === i) mySeat = j;
+      else if (mySeat === j) mySeat = i;
     }
     this.setup.update((setup) => ({
       ...setup,
       names: [...names, ...setup.names.slice(this.count())],
+      mySeat: String(mySeat),
     }));
     this.seatNotice.set('');
   }

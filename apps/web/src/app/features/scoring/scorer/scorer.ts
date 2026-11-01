@@ -133,6 +133,7 @@ const emptyFlags = (): Flags => ({
   styleUrl: './scorer.css',
 })
 export class Scorer {
+  readonly hanOptions = Array.from({ length: 26 }, (_, index) => index + 1);
   readonly scoringMode = inject(ScoringMode);
   manualHan = 3;
   manualFu = 40;

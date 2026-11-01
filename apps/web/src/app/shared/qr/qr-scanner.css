@@ -3,7 +3,10 @@
 }
 :host > button {
   display: block;
-  margin-inline: auto;
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  box-sizing: border-box;
 }
 video {
   display: block;

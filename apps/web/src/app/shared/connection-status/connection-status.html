@@ -3,7 +3,7 @@
   [class.compact]="compact()"
   role="status"
   [class.connected]="state() === 'Connected'"
-  [class.connecting]="state() === 'Connecting' || state() === 'Reconnecting'"
+  [class.connecting]="state() === 'Connecting' || state() === 'Reconnecting' || state() === 'Away'"
   [class.unknown]="state() === 'Unknown'"
   [attr.aria-label]="label() || state() | t"
   [title]="label() || state() | t"

@@ -3,6 +3,10 @@ namespace Riichi.Api.Data;
 /// <summary>A shared room and its versioned game snapshot.</summary>
 public sealed class Room
 {
+    /// <summary>Gets or sets whether the room is permanently ended.</summary>
+    public bool Closed { get; set; }
+    /// <summary>Gets or sets when the host was first observed disconnected.</summary>
+    public long? HostOfflineSince { get; set; }
     /// <summary>Gets or sets the serialized host-controlled player capabilities.</summary>
     public string Permissions { get; set; } = "{}";
     /// <summary>Gets or sets the persistent identifier.</summary>

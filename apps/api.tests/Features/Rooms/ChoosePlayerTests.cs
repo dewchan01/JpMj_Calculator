@@ -28,13 +28,15 @@ public sealed class ChoosePlayerTests
         (await client.PutAsJsonAsync(path + "/player", new { seat = 4 })).StatusCode.Should().Be(HttpStatusCode.BadRequest);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "invalid");
         (await client.PutAsJsonAsync(path + "/player", new { seat = 2 })).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", joined.GetProperty("token").GetString());
+        (await client.PutAsJsonAsync(path + "/player", new { seat = 3 })).StatusCode.Should().Be(HttpStatusCode.NoContent);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", created.GetProperty("token").GetString());
         (await client.PutAsJsonAsync(path + "/player", new { seat = 2 })).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         var match = new { id = "started", playerCount = 4, players = new[] { new { id = "a" }, new { id = "b" }, new { id = "c" }, new { id = "d" } } };
-        (await client.PutAsJsonAsync(path + "/game", new { revision = 0, handKey = "first-hand", match, decisions = Array.Empty<object>() })).EnsureSuccessStatusCode();
+        (await client.PutAsJsonAsync(path + "/game", new { revision = (await Read(await client.GetAsync(path + "/game"))).GetProperty("revision").GetInt64(), handKey = "first-hand", match, decisions = Array.Empty<object>() })).EnsureSuccessStatusCode();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", joined.GetProperty("token").GetString());
-        (await client.PutAsJsonAsync(path + "/player", new { seat = 2 })).StatusCode.Should().Be(HttpStatusCode.Conflict);
         (await client.PutAsJsonAsync(path + "/player", new { seat = 3 })).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await client.PutAsJsonAsync(path + "/player", new { seat = 2 })).StatusCode.Should().Be(HttpStatusCode.Accepted);
     }
 
     [TestMethod]

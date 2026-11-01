@@ -3,6 +3,12 @@
   top: 0;
   z-index: 2;
 }
+.transfer-error-divider {
+  width: 100%;
+  margin: 16px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
 .player-mapping {
   display: grid;
   gap: 12px;
@@ -94,6 +100,34 @@
   display: block;
   color: var(--muted);
   margin-top: 4px;
+}
+.dialog-body > .update-existing-option {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--subtle-surface);
+  cursor: pointer;
+}
+.update-existing-option input[type='checkbox'] {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  margin: 3px 0 0;
+  accent-color: var(--green);
+}
+.update-existing-option > span {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.update-existing-option small {
+  color: var(--muted);
+  font-weight: 400;
+  line-height: 1.5;
 }
 .data-transfer-section {
   margin-block: 24px;

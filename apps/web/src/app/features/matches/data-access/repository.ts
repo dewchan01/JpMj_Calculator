@@ -37,6 +37,12 @@ export class Repository {
   async get(id: string): Promise<Match | undefined> {
     return this.db.matches.get(id).catch(this.storageFailure('Could not load match.'));
   }
+  async linkRoom(matchId: string, roomId: string): Promise<void> {
+    await this.saveDraft('shared-room:' + matchId, roomId);
+  }
+  async roomForMatch(matchId: string): Promise<string | undefined> {
+    return this.draft('shared-room:' + matchId);
+  }
   async save(match: Match, expectedUpdatedAt?: string): Promise<void> {
     await this.db
       .transaction('rw', this.db.matches, async () => {
@@ -49,16 +55,24 @@ export class Repository {
     void this.storage.refresh();
   }
   async remove(id: string): Promise<void> {
+    await this.db.drafts.delete('shared-room:' + id);
     await this.db.matches.delete(id).catch(this.storageFailure('Could not delete match.'));
     await this.db.drafts.delete(id).catch(this.storageFailure('Could not delete draft.'));
     void this.storage.refresh();
   }
-  async importGames(matches: Match[]): Promise<number> {
+  async importGames(matches: Match[], updateExisting = false): Promise<number> {
     const count = await this.db
       .transaction('rw', this.db.matches, async () => {
-        const existing = new Set(await this.db.matches.toCollection().primaryKeys());
-        const added = matches.filter((match) => !existing.has(match.id));
-        await this.db.matches.bulkAdd(structuredClone(added));
+        const existing = new Map(
+          (await this.db.matches.toArray()).map((match) => [match.id, match]),
+        );
+        const added = matches.filter(
+          (match) =>
+            !existing.has(match.id) ||
+            (updateExisting && JSON.stringify(existing.get(match.id)) !== JSON.stringify(match)),
+        );
+        if (updateExisting) await this.db.matches.bulkPut(structuredClone(added));
+        else await this.db.matches.bulkAdd(structuredClone(added));
         return added.length;
       })
       .catch(this.storageFailure('Could not import games.'));

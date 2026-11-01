@@ -2,7 +2,7 @@ export const defaultRoomPermissions = {
   riichi: true,
   calls: true,
   win: true,
-  indicators: false,
+  indicators: true,
   settle: false,
   draw: false,
   history: false,

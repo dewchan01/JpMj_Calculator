@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+﻿import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { presetRules } from '../packages/mahjong-rules/index';
 import QRCode from 'qrcode';
@@ -160,7 +160,9 @@ test('shared data requires preview and imports without duplicating games', async
   await page.getByRole('button', { name: 'Import selected games', exact: true }).click();
   await expect(page.getByRole('status')).toHaveText('Games imported.');
   await page.getByRole('button', { name: 'Import selected games', exact: true }).click();
-  await expect(page.getByRole('status')).toHaveText('No new games to import.');
+  await expect(page.getByRole('status')).toHaveText(
+    'Selected games already exist on this device, including unfinished games. Enable Update existing games to replace them.',
+  );
 });
 
 test('a new join ignores the previous room credential', async ({ page }) => {

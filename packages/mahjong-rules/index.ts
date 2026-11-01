@@ -34,7 +34,7 @@ export function presetRules(preset: RulePreset, playerCount: PlayerCount): RuleP
   return Object.freeze({
     id: `${preset}-${playerCount}p`,
     preset,
-    version: 2,
+    version: preset === 'mahjong-soul' ? 3 : 2,
     playerCount,
     startingPoints: playerCount === 4 ? 25000 : 35000,
     tsumo: 'loss',

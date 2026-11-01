@@ -1,6 +1,8 @@
+import { LobbyConnection } from './lobby-connection';
 import { Service, computed, inject, signal } from '@angular/core';
 import { HubConnectionBuilder, LogLevel, type HubConnection } from '@microsoft/signalr';
-import { OnlineApi, type RoomAccess } from './online-api';
+import { RoomTabAccess } from './room-tab-access';
+import { OnlineApi, type RoomAccess, type RoomState } from './online-api';
 import { Repository } from '../../features/matches/data-access/repository';
 import { parseArchive, gameArchive } from '../../features/records/data-transfer/data-archive';
 import {
@@ -21,6 +23,12 @@ import {
 } from './room-permissions';
 
 export interface RoomGame {
+  host?: boolean;
+  ownSeat?: number | null;
+  closed?: boolean;
+  seatRequests?: { id: string; requestedSeat: number }[] | null;
+  occupiedSeats?: number[] | null;
+  hasGame?: boolean;
   presence?: PresenceSnapshot | null;
   permissions?: RoomPermissions;
   revision: number;
@@ -32,6 +40,8 @@ export interface RoomGame {
 @Service()
 export class RoomSession {
   private readonly api = inject(OnlineApi);
+  private readonly lobbyConnection = inject(LobbyConnection);
+  private readonly tabAccess = inject(RoomTabAccess);
   private readonly repo = inject(Repository);
   private readonly logs = inject(DiagnosticLog);
   private updateConnection(state: string): void {
@@ -51,7 +61,7 @@ export class RoomSession {
   readonly presence = signal<PresenceSnapshot | null>(null);
   private acceptPresence(value: unknown): void {
     const snapshot = parsePresence(value);
-    if (snapshot && this.access()?.host && snapshot.version >= (this.presence()?.version ?? -1))
+    if (snapshot && this.access() && snapshot.version >= (this.presence()?.version ?? -1))
       this.presence.set(snapshot);
   }
   readonly permissions = computed(() => ({
@@ -99,19 +109,43 @@ export class RoomSession {
   canProcess: () => boolean = () => true;
 
   async start(code: string): Promise<void> {
+    await this.lobbyConnection.stop();
     const generation = this.generation + 1;
     await this.stop();
     await this.api.ready;
     if (generation !== this.generation) return;
     let access: RoomAccess | null = null;
     try {
-      access = JSON.parse(localStorage.getItem(`riichi-room:${this.api.url()}`) ?? 'null');
+      access = JSON.parse(
+        sessionStorage.getItem(`riichi-room:${this.api.url()}`) ??
+          localStorage.getItem(`riichi-room:${this.api.url()}`) ??
+          'null',
+      );
     } catch {
       /* No saved access. */
     }
     if (!access || access.id !== code || typeof access.token !== 'string')
       throw new Error('Join the room before opening its table.');
+    if (await this.tabAccess.inUse(access.token))
+      throw new Error('Join the room before opening its table.');
+    const membership = await this.api.request<RoomState>(
+      `/api/rooms/${code}`,
+      'GET',
+      undefined,
+      access.token,
+    );
+    if (membership.host === false && membership.ownSeat == null)
+      throw new Error('Choose an available player before entering the table.');
+    if (membership.ownSeat !== undefined)
+      access = { ...access, seat: membership.ownSeat, host: membership.host ?? access.host };
+    this.tabAccess.claim(access.token);
     this.access.set(access);
+    try {
+      const pin = sessionStorage.getItem(`riichi-room:${this.api.url()}:${code}:pin`);
+      if (pin && /^\d{6}$/.test(pin)) this.access.set({ ...access, pin });
+    } catch {
+      /* Session storage may be unavailable. */
+    }
     this.updateConnection('Connecting');
     await this.sync();
     if (generation !== this.generation) return;
@@ -173,12 +207,16 @@ export class RoomSession {
       this.status.set('Live connection unavailable. Refreshing periodically.');
     }
   }
+  async setAway(away: boolean): Promise<void> {
+    if (this.connection?.state === 'Connected') await this.connection.invoke('SetAway', away);
+  }
   async stop(): Promise<void> {
     this.generation++;
     this.stopPolling();
     this.syncQueued = false;
     const connection = this.connection;
     this.connection = undefined;
+    this.tabAccess.release(this.access()?.token);
     this.access.set(null);
     this.presence.set(null);
     this.state.set(null);
@@ -194,8 +232,17 @@ export class RoomSession {
   }
   private requestSync(): void {
     const generation = this.generation;
-    void this.sync().catch((error) => {
-      if (generation === this.generation) this.error.set(error.message);
+    void this.sync().catch(async (error) => {
+      if (generation !== this.generation) return;
+      if (
+        [
+          'Room credentials are incorrect or expired.',
+          'This room or share has expired or was removed.',
+          'This room has ended.',
+        ].includes(error.message)
+      )
+        await this.stop();
+      this.error.set(error.message);
     });
   }
   private startPolling(): void {
@@ -215,6 +262,21 @@ export class RoomSession {
       this.access()!.token,
     );
     if (!state) return previous!;
+    if (state.host !== undefined && this.access()?.host !== state.host) {
+      const access = { ...this.access()!, host: state.host };
+      this.access.set(access);
+      try {
+        sessionStorage.setItem(`riichi-room:${this.api.url()}`, JSON.stringify(access));
+      } catch {
+        /* The live role remains authoritative. */
+      }
+      if (this.connection?.state === 'Connected')
+        await this.connection.invoke('RefreshRole', access.id, access.token);
+    }
+    if (state.ownSeat !== undefined)
+      this.access.update((access) => (access ? { ...access, seat: state.ownSeat ?? null } : null));
+    if (state.host === false && state.ownSeat === null && state.hasGame)
+      this.error.set('Choose an available player before entering the table.');
     if (state.match && 'id' in state.match)
       state.match = parseArchive(JSON.stringify(gameArchive([state.match]))).matches[0];
     else state.match = null;
@@ -302,6 +364,7 @@ export class RoomSession {
   private async backup(match: Match): Promise<void> {
     if (this.discardedLocal.has(match.id) || match.ended) return;
     try {
+      if (this.access()) await this.repo.linkRoom(match.id, this.access()!.id);
       const previous = await this.repo.get(match.id);
       await this.repo.save(match, previous?.updatedAt);
     } catch {
@@ -408,5 +471,45 @@ export class RoomSession {
       this.saving = false;
     }
     await this.sync();
+  }
+  async decideSeat(id: string, accept: boolean): Promise<void> {
+    const access = this.access()!;
+    if (!access.host) throw new Error('Only the host can change shared table settings.');
+    await this.api.request(
+      `/api/rooms/${access.id}/assignments/${id}`,
+      'POST',
+      { accept },
+      access.token,
+    );
+    await this.sync();
+  }
+  async transferHost(seat: number): Promise<void> {
+    const access = this.access()!;
+    if (!access.host) throw new Error('Only the host can change shared table settings.');
+    await this.api.request(`/api/rooms/${access.id}/host`, 'POST', { seat }, access.token);
+    await this.sync();
+  }
+  async leave(): Promise<Match | null> {
+    const access = this.access()!;
+    const receipt = await this.api.request<{ closed: boolean; match: Match | null }>(
+      `/api/rooms/${access.id}/leave`,
+      'POST',
+      undefined,
+      access.token,
+    );
+    const match = receipt.match
+      ? parseArchive(JSON.stringify(gameArchive([receipt.match]))).matches[0]
+      : null;
+    if (match) await this.saveLocalResult(match);
+    try {
+      sessionStorage.removeItem(`riichi-room:${this.api.url()}`);
+      sessionStorage.removeItem(`riichi-room:${this.api.url()}:${access.id}:pin`);
+      const saved = JSON.parse(localStorage.getItem(`riichi-room:${this.api.url()}`) ?? 'null');
+      if (saved?.token === access.token) localStorage.removeItem(`riichi-room:${this.api.url()}`);
+    } catch {
+      /* The server has already revoked membership. */
+    }
+    await this.stop();
+    return match;
   }
 }

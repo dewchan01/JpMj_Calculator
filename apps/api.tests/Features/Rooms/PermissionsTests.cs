@@ -12,7 +12,7 @@ namespace Riichi.Api.Tests;
 public sealed class PermissionsTests
 {
     [TestMethod]
-    public async Task HostingReservesTheChosenPlayerAndAutoJoinSkipsIt()
+    public async Task HostingReservesTheChosenPlayerAndJoiningRequiresSelection()
     {
         using var app = new ApiFactory();
         using var client = app.CreateClient();
@@ -25,9 +25,9 @@ public sealed class PermissionsTests
         (await client.PostAsJsonAsync(path, new { pin, seat = 1 })).StatusCode.Should().Be(HttpStatusCode.Conflict);
         var first = await (await client.PostAsJsonAsync(path, new { pin })).Content.ReadFromJsonAsync<JsonElement>();
         var second = await (await client.PostAsJsonAsync(path, new { pin })).Content.ReadFromJsonAsync<JsonElement>();
-        first.GetProperty("seat").GetInt32().Should().Be(0);
-        second.GetProperty("seat").GetInt32().Should().Be(2);
-        (await client.PostAsJsonAsync(path, new { pin })).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        first.GetProperty("seat").ValueKind.Should().Be(JsonValueKind.Null);
+        second.GetProperty("seat").ValueKind.Should().Be(JsonValueKind.Null);
+        (await client.PostAsJsonAsync(path, new { pin })).StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [TestMethod]
@@ -49,6 +49,7 @@ public sealed class PermissionsTests
         var player = await joined.Content.ReadFromJsonAsync<JsonElement>();
         host.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", room.GetProperty("token").GetString());
         guest.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", player.GetProperty("token").GetString());
+        await RoomTest.Approve(host, guest, path);
         var permissions = new { riichi = false, calls = true, win = true, indicators = true, settle = false, history = false, finish = false };
 
         (await guest.PutAsJsonAsync(path + "/permissions", permissions)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);

@@ -115,7 +115,7 @@ export class Others {
     {
       path: '/others/data-management',
       title: 'Manage local data',
-      group: 'Preferences',
+      group: 'Data',
       icon: 'M4 5h16v14H4zM4 9h16M8 13h8m-8 3h5',
     },
     {

@@ -306,7 +306,7 @@ test('room waiting area exposes the same music settings to guests', async ({ pag
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/online?room=ABCDEF1234&pin=123456');
   await expect(
-    page.getByText('Joined the room. Waiting for the host to start the game.', { exact: true }),
+    page.getByText('Waiting for the host to start the game.', { exact: true }),
   ).toBeVisible();
   await page.locator('summary').filter({ hasText: 'Music settings' }).click();
   await page.getByRole('combobox', { name: 'Game music', exact: true }).selectOption('23ex Duiju2');

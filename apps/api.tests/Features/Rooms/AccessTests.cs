@@ -18,6 +18,25 @@ namespace Riichi.Api.Tests;
 public sealed class AccessTests
 {
     [TestMethod]
+    public async Task PendingGameIsStoredForHostWithoutStartingOrExposingItToGuests()
+    {
+        using var app = new ApiFactory(); using var host = app.CreateClient(); using var guest = app.CreateClient();
+        var match = new { id = "pending-game", name = "Friday game", playerCount = 3, players = new[] { new { id = "a" }, new { id = "b" }, new { id = "c" } } };
+        var room = await Json(await host.PostAsJsonAsync("/api/rooms", new { playerCount = 3, match, pending = true, hostSeat = 0 }));
+        var path = "/api/rooms/" + room.GetProperty("id").GetString();
+        room.GetProperty("game").GetProperty("match").ValueKind.Should().Be(JsonValueKind.Null);
+        host.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", room.GetProperty("token").GetString());
+        var state = await Json(await host.GetAsync(path));
+        state.GetProperty("started").GetBoolean().Should().BeFalse();
+        state.GetProperty("pendingMatch").GetProperty("id").GetString().Should().Be("pending-game");
+        var member = await Json(await guest.PostAsJsonAsync(path + "/join", new { pin = room.GetProperty("pin").GetString() }));
+        guest.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", member.GetProperty("token").GetString());
+        var guestState = await Json(await guest.GetAsync(path));
+        guestState.GetProperty("pendingMatch").ValueKind.Should().Be(JsonValueKind.Null);
+        guestState.GetProperty("matchName").GetString().Should().Be("Friday game");
+    }
+
+    [TestMethod]
     public async Task CreateRoomCanAttachGameAndReturnInitialLobbyWithoutExtraReads()
     {
         using var app = new ApiFactory(); using var client = app.CreateClient();
@@ -32,7 +51,7 @@ public sealed class AccessTests
         ((await client.PostAsJsonAsync("/api/rooms", new { playerCount = 4, match, handKey = "first-hand" })).StatusCode).Should().Be(HttpStatusCode.BadRequest);
     }
     [TestMethod]
-    public async Task JoinWithoutSeatAssignsFreeSeatsAndRejectsFullRoom()
+    public async Task JoinWithoutSeatLeavesPlayersUnassigned()
     {
         using var app = new ApiFactory(); using var client = app.CreateClient();
         var room = await Json(await client.PostAsJsonAsync("/api/rooms", new { playerCount = 3 }));
@@ -41,9 +60,24 @@ public sealed class AccessTests
         for (var seat = 0; seat < 3; seat++)
         {
             var joined = await Json(await client.PostAsJsonAsync(path, input));
-            (joined.GetProperty("seat").GetInt32()).Should().Be(seat);
+            joined.GetProperty("seat").ValueKind.Should().Be(JsonValueKind.Null);
         }
-        ((await client.PostAsJsonAsync(path, input)).StatusCode).Should().Be(HttpStatusCode.Conflict);
+        ((await client.PostAsJsonAsync(path, input)).StatusCode).Should().Be(HttpStatusCode.OK);
+    }
+    [TestMethod]
+    public async Task FullRoomRejectsNewMembershipWithoutCreatingAnUnassignedPlayer()
+    {
+        using var app = new ApiFactory(); using var client = app.CreateClient();
+        var room = await Json(await client.PostAsJsonAsync("/api/rooms", new { playerCount = 3, hostSeat = 0 }));
+        var path = "/api/rooms/" + room.GetProperty("id").GetString();
+        var pin = room.GetProperty("pin").GetString();
+        await Json(await client.PostAsJsonAsync(path + "/join", new { pin, seat = 1 }));
+        await Json(await client.PostAsJsonAsync(path + "/join", new { pin, seat = 2 }));
+        var response = await client.PostAsJsonAsync(path + "/join", new { pin });
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("code").GetString().Should().Be("room-full");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", room.GetProperty("token").GetString());
+        (await Json(await client.GetAsync(path))).GetProperty("unassigned").GetArrayLength().Should().Be(0);
     }
     [TestMethod]
     public async Task ConcurrentSeatClaimHasExactlyOneWinner()

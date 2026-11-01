@@ -20,18 +20,18 @@ public sealed class GameTests
         host.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", room.GetProperty("token").GetString());
         guest.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", player.GetProperty("token").GetString());
         var match = new { id = "game", playerCount = 3, players = new[] { new { id = "a" }, new { id = "b" }, new { id = "c" } } };
-        var commit = new { revision = 0, handKey = "first", match, decisions = Array.Empty<object>() };
+        var commit = new { revision = 1, handKey = "first", match, decisions = Array.Empty<object>() };
         ((await guest.PutAsJsonAsync(path + "/game", commit)).StatusCode).Should().Be(HttpStatusCode.Forbidden);
         ((await host.PutAsJsonAsync(path + "/game", commit)).StatusCode).Should().Be(HttpStatusCode.OK);
         var action = new { id = Guid.NewGuid().ToString(), handKey = "first", kind = "riichi", payload = new { }, seat = 0 };
         ((await guest.PostAsJsonAsync(path + "/game/actions", action)).StatusCode).Should().Be(HttpStatusCode.OK);
         ((await guest.PostAsJsonAsync(path + "/game/actions", action)).StatusCode).Should().Be(HttpStatusCode.OK);
         var state = await (await host.GetAsync(path + "/game")).Content.ReadFromJsonAsync<JsonElement>();
-        (state.GetProperty("revision").GetInt32()).Should().Be(2);
+        (state.GetProperty("revision").GetInt32()).Should().Be(3);
         (state.GetProperty("actions").GetArrayLength()).Should().Be(1);
         (state.GetProperty("actions")[0].GetProperty("seat").GetInt32()).Should().Be(1); // ignores guest's forged seat
         ((await host.PutAsJsonAsync(path + "/game", commit)).StatusCode).Should().Be(HttpStatusCode.Conflict);
-        var accepted = new { revision = 2, handKey = "second", match, decisions = new[] { new { id = action.id, error = "" } } };
+        var accepted = new { revision = 3, handKey = "second", match, decisions = new[] { new { id = action.id, error = "" } } };
         ((await host.PutAsJsonAsync(path + "/game", accepted)).StatusCode).Should().Be(HttpStatusCode.OK);
         ((await guest.PostAsJsonAsync(path + "/game/actions", action with { id = Guid.NewGuid().ToString() })).StatusCode).Should().Be(HttpStatusCode.Conflict);
         ((await guest.PostAsJsonAsync(path + "/game/actions", action)).StatusCode).Should().Be(HttpStatusCode.OK); // retry old receipt, no mutation

@@ -15,6 +15,8 @@ public static class FeatureRegistration
         ArgumentNullException.ThrowIfNull(services);
         services.AddScoped<IRoomAccess, RoomAccess>();
         services.AddSingleton<RoomPresence>();
+        services.AddScoped<Rooms.Lifecycle.RoomLifecycle>();
+        services.AddHostedService<Rooms.Lifecycle.RoomLifecycleWorker>();
         services.AddScoped<ICommandHandler<Rooms.UpdatePermissions.Request>, Rooms.UpdatePermissions.Handler>();
         services.AddScoped<ICommandHandler<Rooms.CreateRoom.Request>, Rooms.CreateRoom.Handler>();
         services.AddScoped<ICommandHandler<Rooms.JoinRoom.Request>, Rooms.JoinRoom.Handler>();
@@ -37,6 +39,7 @@ public static class FeatureRegistration
     {
         ArgumentNullException.ThrowIfNull(app);
         var rooms = app.MapGroup("/api/rooms").RequireRateLimiting("api");
+        Rooms.Lifecycle.Endpoint.Map(rooms);
         var games = app.MapGroup("/api/rooms/{id}/game").RequireRateLimiting("api");
         var shares = app.MapGroup("/api/shares").RequireRateLimiting("api");
         Rooms.CreateRoom.Endpoint.Map(rooms);

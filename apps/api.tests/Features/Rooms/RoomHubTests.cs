@@ -37,16 +37,16 @@ public sealed class RoomHubTests
         initial.Seats.Should().BeEmpty();
         await first.StartAsync();
         var participantPresence = await first.InvokeAsync<PresenceSnapshot?>("Join", id, player.GetProperty("token").GetString());
-        participantPresence.Should().BeNull();
+        participantPresence!.Seats.Should().Contain(1);
         await WaitFor(true);
         await second.StartAsync(); await second.InvokeAsync("Join", id, player.GetProperty("token").GetString());
         await first.StopAsync();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", room.GetProperty("token").GetString());
         var state = await client.GetFromJsonAsync<JsonElement>($"/api/rooms/{id}/game");
-        state.GetProperty("revision").GetInt64().Should().Be(0);
+        state.GetProperty("revision").GetInt64().Should().Be(1);
         state.GetProperty("presence").GetProperty("seats")[0].GetInt32().Should().Be(1);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", player.GetProperty("token").GetString());
-        (await client.GetFromJsonAsync<JsonElement>($"/api/rooms/{id}/game")).GetProperty("presence").ValueKind.Should().Be(JsonValueKind.Null);
+        (await client.GetFromJsonAsync<JsonElement>($"/api/rooms/{id}/game")).GetProperty("presence").GetProperty("seats")[0].GetInt32().Should().Be(1);
         await second.StopAsync();
         await WaitFor(false);
     }

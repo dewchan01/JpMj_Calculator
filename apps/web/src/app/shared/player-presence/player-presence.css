@@ -4,12 +4,26 @@
   width: 100%;
 }
 .player-presence {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-wrap: nowrap;
   gap: 4px;
   list-style: none;
   padding: 0;
   margin: 4px 0;
+}
+.presence-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+}
+.unassigned-count {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 0.7rem;
+  color: var(--muted);
 }
 li {
   flex: 1 1 0;

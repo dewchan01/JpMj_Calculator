@@ -161,7 +161,7 @@ export function settleRound(
   const scored = appendEvent(match, pending);
   const book = balances(scored);
   const table = tableRules(match.rules);
-  const target = table.returnPoints;
+  const target = table.endPoints ?? table.returnPoints;
   const repeats = outcome.dealerRepeats && !(table.dealerPassAfterWin && outcome.outcome === 'win');
   const winds: Wind[] = ['east', 'south', 'west', 'north'];
   const index = winds.indexOf(current.roundWind);

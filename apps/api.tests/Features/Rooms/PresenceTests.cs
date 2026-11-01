@@ -8,6 +8,20 @@ namespace Riichi.Api.Tests;
 public sealed class PresenceTests
 {
     [TestMethod]
+    public void AwayConnectionsKeepTheirSeatAndAnActiveTabRestoresGreenStatus()
+    {
+        var presence = new RoomPresence();
+        presence.Connect("first", "room", 1);
+        presence.SetAway("first", true)!.AwaySeats.Should().Equal(1);
+        presence.Get("room").Seats.Should().Equal(1);
+        presence.Connect("second", "room", 1);
+        presence.Get("room").AwaySeats.Should().BeEmpty();
+        presence.Disconnect("second");
+        presence.Get("room").AwaySeats.Should().Equal(1);
+        presence.SetAway("first", false)!.AwaySeats.Should().BeEmpty();
+        presence.SetAway("unknown", true).Should().BeNull();
+    }
+    [TestMethod]
     public void MultipleTabsRemainOnlineUntilLastConnectionLeaves()
     {
         var presence = new RoomPresence();

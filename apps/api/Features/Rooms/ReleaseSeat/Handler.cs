@@ -28,14 +28,26 @@ public sealed class Handler(AppDb db, IHubContext<RoomHub> hub, RoomPresence pre
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var room = await _db.Rooms.SingleOrDefaultAsync(x => x.Id == id && x.ExpiresAt > now, cancellationToken);
         if (room is null) return Results.NotFound();
-        if (!Secrets.Matches(command.Token, room.HostHash)) return Results.Unauthorized();
+        var isHost = Secrets.Matches(command.Token, room.HostHash);
+        var hash = Secrets.Hash(command.Token);
+        if (seat == -1)
+        {
+            if (isHost) return Results.StatusCode(403);
+            var own = await _db.Seats.SingleOrDefaultAsync(x => x.RoomId == id && x.TokenHash == hash, cancellationToken);
+            var waiting = await _db.Unassigned.SingleOrDefaultAsync(x => x.RoomId == id && x.TokenHash == hash, cancellationToken);
+            if (own is null && waiting is null) return Results.Unauthorized();
+            if (waiting is not null) _db.Unassigned.Remove(waiting);
+            seat = own?.Number ?? -1;
+        }
+        else if (!isHost && !await _db.Seats.AnyAsync(x => x.RoomId == id && x.Number == seat && x.TokenHash == hash, cancellationToken)) return Results.Unauthorized();
+        if (await _db.Seats.AnyAsync(x => x.RoomId == id && x.Number == seat && x.TokenHash == room.HostHash, cancellationToken)) return Results.StatusCode(403);
         await _db.Seats.Where(x => x.RoomId == id && x.Number == seat).ExecuteDeleteAsync(cancellationToken);
         await _db.Actions.Where(x => x.RoomId == id && x.Seat == seat && x.Status == "pending")
             .ExecuteUpdateAsync(set => set.SetProperty(x => x.Status, "rejected").SetProperty(x => x.Error, ErrorMessages.Get("RoomCredentialsExpired")), cancellationToken);
         room.Revision++;
         await _db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        await _hub.Clients.Group(id + ":hosts").SendAsync("Presence", _presence.Release(id, seat));
+        await _hub.Clients.Group(id).SendAsync("Presence", _presence.Release(id, seat));
         await _hub.Clients.Group(id).SendAsync("Changed");
         return Results.NoContent();
     }

@@ -12,6 +12,8 @@ public sealed class AppDb(DbContextOptions<AppDb> options) : DbContext(options ?
     public DbSet<Room> Rooms => Set<Room>();
     /// <summary>Gets the seats collection.</summary>
     public DbSet<Seat> Seats => Set<Seat>();
+    /// <summary>Gets room members waiting for a valid player assignment.</summary>
+    public DbSet<UnassignedPlayer> Unassigned => Set<UnassignedPlayer>();
     /// <summary>Gets the actions collection.</summary>
     public DbSet<RoomAction> Actions => Set<RoomAction>();
 
@@ -33,6 +35,12 @@ public sealed class AppDb(DbContextOptions<AppDb> options) : DbContext(options ?
         model.Entity<Room>().Property(x => x.Revision).IsConcurrencyToken();
         model.Entity<Seat>().HasKey(x => new { x.RoomId, x.Number });
         model.Entity<Seat>().HasOne<Room>().WithMany().HasForeignKey(x => x.RoomId).OnDelete(DeleteBehavior.Cascade);
+        model.Entity<UnassignedPlayer>().HasKey(x => new { x.RoomId, x.Id });
+        model.Entity<UnassignedPlayer>().Property(x => x.Id).HasMaxLength(32);
+        model.Entity<UnassignedPlayer>().Property(x => x.Decision).HasDefaultValue("unassigned");
+        model.Entity<UnassignedPlayer>().Property(x => x.TokenHash).HasMaxLength(64);
+        model.Entity<UnassignedPlayer>().HasIndex(x => new { x.RoomId, x.TokenHash }).IsUnique();
+        model.Entity<UnassignedPlayer>().HasOne<Room>().WithMany().HasForeignKey(x => x.RoomId).OnDelete(DeleteBehavior.Cascade);
         model.Entity<RoomAction>().HasKey(x => new { x.RoomId, x.Id });
         model.Entity<RoomAction>().Property(x => x.Id).HasMaxLength(64);
         model.Entity<RoomAction>().HasOne<Room>().WithMany().HasForeignKey(x => x.RoomId).OnDelete(DeleteBehavior.Cascade);

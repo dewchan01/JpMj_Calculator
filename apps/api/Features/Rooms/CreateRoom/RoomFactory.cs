@@ -20,7 +20,7 @@ internal static class RoomFactory
             PlayerCount = playerCount,
             ExpiresAt = now + 86400,
             Snapshot = snapshot,
-            HandKey = snapshot == "null" ? "" : handKey!,
+            HandKey = snapshot == "null" ? "" : handKey ?? "",
             Revision = snapshot == "null" ? 0 : 1
         }, pin, token);
     }

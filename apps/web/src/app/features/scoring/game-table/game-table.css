@@ -471,6 +471,31 @@ h1 {
 .permission-list {
   display: grid;
 }
+.host-transfer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.host-transfer-player {
+  min-width: 0;
+  margin: 0;
+}
+.host-transfer-player select {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+.host-transfer-action {
+  align-self: end;
+  min-height: 48px;
+  margin: 0;
+  padding: 10px 16px;
+  white-space: nowrap;
+  border-radius: 12px;
+}
 .permission-item {
   display: flex;
   flex-direction: row;
@@ -532,4 +557,59 @@ h1 {
 .winning-recorded-group app-tile-art {
   width: 25px;
   display: block;
+}
+.room-invitation-qr {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1rem auto;
+}
+.missing-game-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px;
+  padding: 10px 18px;
+  border-radius: 12px;
+}
+
+.credential-copy {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+.credential-copy input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+.credential-copy button {
+  flex-shrink: 0;
+  width: 48px;
+  display: grid;
+  place-items: center;
+}
+.credential-copy svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+.seat-request-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-block: 8px;
+}
+.seat-request-actions {
+  display: flex;
+  gap: 8px;
+  margin-inline-start: auto;
+}
+.seat-request-actions button {
+  min-width: 72px;
+  padding: 10px 16px;
+  border-radius: 12px;
 }

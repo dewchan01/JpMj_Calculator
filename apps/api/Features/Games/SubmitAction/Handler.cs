@@ -35,6 +35,7 @@ public sealed class Handler(AppDb db, IHubContext<RoomHub> hub, IOptions<Storage
         await using var transaction = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         var room = await _db.Rooms.SingleOrDefaultAsync(x => x.Id == id && x.ExpiresAt > now, cancellationToken);
         if (room is null) return Results.NotFound();
+        if (room.Closed) return Results.StatusCode(410);
         var hash = Secrets.Hash(command.Token);
         var seat = await _db.Seats.SingleOrDefaultAsync(x => x.RoomId == id && x.TokenHash == hash, cancellationToken);
         var host = Secrets.Matches(command.Token, room.HostHash);

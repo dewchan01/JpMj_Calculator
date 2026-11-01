@@ -138,7 +138,7 @@
       >
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4 12 8-12 8Z" /></svg>
         {{ 'Ongoing games' | t }}
-        <span class="pill">{{ ongoing().length }}</span>
+        <span class="pill">{{ ongoingCount() }}</span>
       </button>
     </div>
   </div>
@@ -177,7 +177,14 @@
     </button>
   </header>
   <div class="ongoing-list">
-    @for (game of ongoing(); track game.id) {
+    @if (sharedRoom(); as room) {
+      <a [routerLink]="room.route" (click)="ongoingDialog.close()">
+        <strong>{{ room.name }}</strong>
+        <span>{{ 'Room code' | t }} &#183; {{ room.id }}</span>
+        <span>{{ 'Resume game' | t }} &#8594;</span>
+      </a>
+    }
+    @for (game of ongoingLocal(); track game.id) {
       <a [routerLink]="['/score', game.id]" (click)="ongoingDialog.close()">
         <strong>{{ game.name }}</strong>
         <span>
@@ -188,7 +195,9 @@
         <span>{{ 'Resume game' | t }} →</span>
       </a>
     } @empty {
-      <p class="hint">{{ 'No ongoing games.' | t }}</p>
+      @if (!sharedRoom()) {
+        <p class="hint">{{ 'No ongoing games.' | t }}</p>
+      }
     }
   </div>
 </dialog>
@@ -555,7 +564,7 @@
   data-dismiss-group="start-game"
   class="app-dialog shared-game-dialog"
   aria-labelledby="shared-game-title"
-  (close)="sharedMode.set('')"
+  (close)="sharedMode.set(''); loadOngoing(); loadSharedRoom()"
 >
   <header class="dialog-header">
     <h2 id="shared-game-title">{{ (sharedMode() === 'host' ? 'Host game' : 'Join game') | t }}</h2>

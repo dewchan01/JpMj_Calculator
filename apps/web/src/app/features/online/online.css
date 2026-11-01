@@ -11,6 +11,10 @@
   height: 100%;
   max-width: none;
 }
+.online-error {
+  flex-shrink: 0;
+  padding-bottom: 16px;
+}
 .room-lobby {
   display: flex;
   flex-direction: column;
@@ -270,4 +274,98 @@ form > button.primary {
 }
 :host > .room-qr-hint {
   font-size: 0.7rem;
+}
+
+.guest-connection {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0;
+  margin-block: 1rem;
+  --connection-padding: 0;
+}
+.guest-connection app-connection-status {
+  flex-shrink: 0;
+}
+.guest-connection > span {
+  min-width: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.guest-connection > .waiting-message::before {
+  content: '·';
+  margin-inline: 0.35rem;
+}
+.guest-connection > .lobby-format {
+  flex-shrink: 0;
+  margin-inline-start: auto;
+  padding-inline-start: 0.75rem;
+  white-space: nowrap;
+}
+.lobby-format {
+  margin-inline-start: auto;
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: end;
+}
+
+.room-credentials .lobby-format {
+  margin-inline: 0 auto;
+  text-align: start;
+  font-size: 0.75rem;
+}
+
+.assignment-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #0006;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+.assignment-dialog {
+  background: var(--surface, #fffef8);
+  color: var(--text, #203b32);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  max-width: 30rem;
+  width: 100%;
+  max-height: 90dvh;
+  overflow: auto;
+}
+
+.seat-request-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-block: 8px;
+}
+.seat-request-actions,
+.confirmation-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.seat-request-actions button {
+  min-width: 72px;
+  padding: 10px 16px;
+  border-radius: 12px;
+}
+.leave-confirmation {
+  width: min(28rem, calc(100vw - 32px));
+  padding: 24px;
+  border-radius: 16px;
+}
+.leave-confirmation p {
+  margin-block: 16px;
+}
+.online-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 10px 18px;
+  border-radius: 12px;
 }

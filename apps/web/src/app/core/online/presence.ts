@@ -1,6 +1,7 @@
 export interface PresenceSnapshot {
   version: number;
   seats: number[];
+  awaySeats?: number[];
 }
 
 export function playerConnectionStates(
@@ -8,8 +9,10 @@ export function playerConnectionStates(
   onlineSeats: readonly number[] | null,
   ownSeat: number | null,
   connection: string,
+  awaySeats: readonly number[] = [],
 ): string[] {
   return Array.from({ length: count }, (_, seat) => {
+    if (connection === 'Connected' && awaySeats.includes(seat)) return 'Away';
     if (seat === ownSeat) return connection;
     if (connection !== 'Connected' || onlineSeats === null) return 'Unknown';
     return onlineSeats.includes(seat) ? 'Connected' : 'Disconnected';
@@ -30,5 +33,12 @@ export function parsePresence(value: unknown): PresenceSnapshot | null {
     value.seats.some((seat) => !Number.isInteger(seat) || seat < 0 || seat > 3)
   )
     return null;
-  return { version: value.version, seats: [...new Set(value.seats)] };
+  const awaySeats =
+    'awaySeats' in value && Array.isArray(value.awaySeats)
+      ? value.awaySeats.filter(
+          (seat: unknown): seat is number =>
+            Number.isInteger(seat) && Number(seat) >= 0 && Number(seat) < 4,
+        )
+      : [];
+  return { version: value.version, seats: [...new Set(value.seats)], awaySeats };
 }

@@ -12,12 +12,21 @@ export async function scanQrImage(file: File, thorough = true): Promise<string> 
       }
     ).BarcodeDetector;
     if (Detector) {
+      let timeout: ReturnType<typeof setTimeout> | undefined;
       try {
-        const codes = await new Detector({ formats: ['qr_code'] }).detect(bitmap);
+        // Native detection can stall on some mobile browsers; keep the JS fallback reachable.
+        const codes = await Promise.race([
+          new Detector({ formats: ['qr_code'] }).detect(bitmap),
+          new Promise<never>((_, reject) => {
+            timeout = setTimeout(() => reject(new Error('QR detection timed out')), 1000);
+          }),
+        ]);
         const value = codes.find((code) => code.rawValue.trim())?.rawValue.trim();
         if (value) return value;
       } catch {
         // Some browsers expose the detector without supporting QR codes.
+      } finally {
+        clearTimeout(timeout);
       }
     }
     const canvas = document.createElement('canvas');
@@ -25,7 +34,9 @@ export async function scanQrImage(file: File, thorough = true): Promise<string> 
     if (!context) throw new Error('No QR code found.');
     const { default: jsQR } = await import('jsqr');
     const sizes = new Set(
-      [3200, 1600, 1000].map((limit) => Math.min(limit, Math.max(bitmap.width, bitmap.height))),
+      (thorough ? [3200, 1600, 1000] : [1000, 1600]).map((limit) =>
+        Math.min(limit, Math.max(bitmap.width, bitmap.height)),
+      ),
     );
     for (const size of sizes) {
       const scale = size / Math.max(bitmap.width, bitmap.height);

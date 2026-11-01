@@ -8,7 +8,11 @@ public static class Endpoint
 {
     /// <summary>Maps the existing HTTP route.</summary>
     /// <param name="routes">The route group for this feature.</param>
-    public static void Map(RouteGroupBuilder routes) =>
+    public static void Map(RouteGroupBuilder routes)
+    {
         routes.MapDelete("/{id}/seats/{seat:int}", (string id, int seat, HttpRequest request, ICommandHandler<Request> handler, CancellationToken cancellationToken) =>
             handler.HandleAsync(new Request(id, seat, Secrets.Bearer(request)), cancellationToken));
+        routes.MapDelete("/{id}/membership", (string id, HttpRequest request, ICommandHandler<Request> handler, CancellationToken cancellationToken) =>
+            handler.HandleAsync(new Request(id, -1, Secrets.Bearer(request)), cancellationToken));
+    }
 }

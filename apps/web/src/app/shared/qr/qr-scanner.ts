@@ -83,8 +83,8 @@ export class QrScanner {
       canvas.height = video.videoHeight;
       const context = canvas.getContext('2d');
       if (context) {
-        context.drawImage(video, 0, 0);
         try {
+          context.drawImage(video, 0, 0);
           const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve));
           if (blob && generation === this.generation) {
             const value = await scanQrImage(

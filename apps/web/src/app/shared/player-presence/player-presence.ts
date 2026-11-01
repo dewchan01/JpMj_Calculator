@@ -10,8 +10,10 @@ import { ConnectionStatus } from '../connection-status/connection-status';
   styleUrl: './player-presence.css',
 })
 export class PlayerPresence {
+  readonly unassignedCount = input<number | null>(null);
   readonly players = input.required<readonly { name: string }[]>();
   readonly onlineSeats = input<readonly number[] | null>(null);
+  readonly awaySeats = input<readonly number[]>([]);
   readonly ownSeat = input<number | null>(null);
   readonly connection = input('Connecting');
   readonly states = computed(() =>
@@ -20,6 +22,7 @@ export class PlayerPresence {
       this.onlineSeats(),
       this.ownSeat(),
       this.connection(),
+      this.awaySeats(),
     ),
   );
 }

@@ -15,6 +15,7 @@ import { Repository } from '../../matches/data-access/repository';
 import { TranslatePipe } from '../../../core/i18n/i18n';
 import { LocalDatePipe } from '../../../core/i18n/local-date';
 import { Toast } from '../../../shared/toast/toast';
+import { ErrorNotice } from '../../../shared/error-notice/error-notice';
 import { DialogBackdrop } from '../../../shared/dialog-backdrop';
 import { gameArchive, parseArchive } from './data-archive';
 import { gamesCsv, parseGamesCsv } from './data-csv';
@@ -42,6 +43,7 @@ import {
     LocalDatePipe,
     DialogBackdrop,
     QrScanner,
+    ErrorNotice,
   ],
   templateUrl: './data-transfer.html',
   styleUrl: './data-transfer.css',
@@ -96,9 +98,22 @@ export class DataTransfer implements OnInit {
     playerIdentities(this.localMatches(), this.library.players()),
   );
   readonly incomingPlayers = computed(() => playerIdentities(this.newGames()));
+  readonly updateExisting = signal(false);
+  readonly duplicateCount = computed(() => {
+    const existing = new Set(this.localMatches().map((match) => match.id));
+    return this.selected().filter((match) => existing.has(match.id)).length;
+  });
+  isDuplicate(id: string): boolean {
+    return this.importing() && this.localMatches().some((match) => match.id === id);
+  }
+  setUpdateExisting(value: boolean): void {
+    this.updateExisting.set(value);
+    this.playerMapping.set({});
+    this.error.set('');
+  }
   private newGames(): Match[] {
     const existing = new Set(this.localMatches().map((match) => match.id));
-    return this.selected().filter((match) => !existing.has(match.id));
+    return this.selected().filter((match) => this.updateExisting() || !existing.has(match.id));
   }
   readonly playerMapping = signal<Record<string, string>>({});
   readonly mergeTargets = computed(() =>
@@ -124,6 +139,7 @@ export class DataTransfer implements OnInit {
   }
   readonly importing = signal(false);
   readonly busy = signal(false);
+  readonly loadingShare = signal(false);
   readonly error = signal('');
   readonly toast = inject(Toast);
   readonly from = signal('');
@@ -143,6 +159,21 @@ export class DataTransfer implements OnInit {
   readonly selected = computed(() =>
     this.filtered().filter((game) => !this.excluded().has(game.id)),
   );
+  readonly allSelected = computed(
+    () => this.filtered().length > 0 && this.selected().length === this.filtered().length,
+  );
+  readonly partiallySelected = computed(() => this.selected().length > 0 && !this.allSelected());
+  toggleAll(): void {
+    const deselect = this.allSelected();
+    this.excluded.update((previous) => {
+      const next = new Set(previous);
+      for (const game of this.filtered()) {
+        if (deselect) next.add(game.id);
+        else next.delete(game.id);
+      }
+      return next;
+    });
+  }
   toggle(id: string): void {
     this.excluded.update((previous) => {
       const next = new Set(previous);
@@ -156,6 +187,7 @@ export class DataTransfer implements OnInit {
     const file = input.files?.[0];
     if (!file) return;
     this.games.set([]);
+    this.updateExisting.set(false);
     this.importing.set(true);
     this.error.set('');
     this.busy.set(true);
@@ -282,17 +314,23 @@ export class DataTransfer implements OnInit {
     }
   }
   private async loadTransfer(): Promise<void> {
-    this.games.set([]);
-    this.playerMapping.set({});
-    const id = transferId(this.transferCode());
-    const archive = parseArchive(
-      JSON.stringify(await this.online.request<unknown>(`/api/shares/${id}`)),
-    );
-    this.games.set(archive.matches);
-    this.excluded.set(new Set());
-    this.from.set('');
-    this.to.set('');
-    this.player.set('');
+    this.loadingShare.set(true);
+    try {
+      this.games.set([]);
+      this.updateExisting.set(false);
+      this.playerMapping.set({});
+      const id = transferId(this.transferCode());
+      const archive = parseArchive(
+        JSON.stringify(await this.online.request<unknown>(`/api/shares/${id}`)),
+      );
+      this.games.set(archive.matches);
+      this.excluded.set(new Set());
+      this.from.set('');
+      this.to.set('');
+      this.player.set('');
+    } finally {
+      this.loadingShare.set(false);
+    }
   }
   async revokeShare(dialog: HTMLDialogElement): Promise<void> {
     const receipt = this.share();
@@ -319,6 +357,8 @@ export class DataTransfer implements OnInit {
     this.busy.set(true);
     this.error.set('');
     try {
+      // Another tab may have deleted games since this page or share was opened.
+      this.localMatches.set(await this.repo.list());
       const mapping = Object.fromEntries(
         this.incomingPlayers().map((person) => [person.id, this.mappingTarget(person.id)]),
       );
@@ -334,13 +374,19 @@ export class DataTransfer implements OnInit {
       );
       let count: number;
       try {
-        count = await this.repo.importGames(mapped);
+        count = await this.repo.importGames(mapped, this.updateExisting());
       } catch (error) {
         this.library.replace(previousPlayers);
         throw error;
       }
       this.localMatches.set(await this.repo.list());
-      this.toast.success(count ? 'Games imported.' : 'No new games to import.');
+      if (count) this.toast.success('Games imported.');
+      else
+        this.toast.show(
+          this.updateExisting()
+            ? 'Selected games already match the saved versions.'
+            : 'Selected games already exist on this device, including unfinished games. Enable Update existing games to replace them.',
+        );
       this.changed.emit();
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'Could not import games.');

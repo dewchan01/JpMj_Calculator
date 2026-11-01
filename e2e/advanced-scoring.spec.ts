@@ -50,7 +50,11 @@ test('advanced preference persists; Riichi, calls, manual Ron and historical edi
     .filter({ hasText: 'Player 2' })
     .getByRole('button', { name: 'Riichi', exact: true })
     .click();
-  await playerAction(page, 'Player 3');
+  await page
+    .locator('.player-seat')
+    .filter({ hasText: 'Player 3' })
+    .getByRole('button', { name: 'Call', exact: true })
+    .click();
   await prompt(page).getByRole('button', { name: 'Pon', exact: true }).click();
   await enterLiveTiles(page, 'Meld tiles', '1z');
   await prompt(page).getByRole('button', { name: 'Record action', exact: true }).click();
@@ -64,7 +68,9 @@ test('advanced preference persists; Riichi, calls, manual Ron and historical edi
   await prompt(page).getByRole('button', { name: 'Next', exact: true }).click();
   await expect(prompt(page).locator('app-tile-input')).toHaveCount(0);
   await prompt(page).screenshot({ path: 'artifacts/advanced-manual-entry.png' });
-  await prompt(page).getByRole('spinbutton', { name: 'Han', exact: true }).fill('3');
+  await prompt(page)
+    .getByRole('combobox', { name: 'Han', exact: true })
+    .selectOption({ label: '3' });
   await prompt(page)
     .getByRole('combobox', { name: 'Fu', exact: true })
     .selectOption({ label: '40' });
@@ -80,8 +86,12 @@ test('advanced preference persists; Riichi, calls, manual Ron and historical edi
   await prompt(page).getByRole('button', { name: 'Win', exact: true }).click();
   await prompt(page).getByRole('checkbox', { name: 'Player 2', exact: true }).check();
   await prompt(page).getByRole('button', { name: 'Next', exact: true }).click();
-  await expect(prompt(page).getByRole('spinbutton', { name: 'Han', exact: true })).toHaveValue('3');
-  await prompt(page).getByRole('spinbutton', { name: 'Han', exact: true }).fill('4');
+  await expect(prompt(page).getByRole('combobox', { name: 'Han', exact: true })).toHaveValue(
+    '2: 3',
+  );
+  await prompt(page)
+    .getByRole('combobox', { name: 'Han', exact: true })
+    .selectOption({ label: '4' });
   await prompt(page)
     .getByRole('combobox', { name: 'Fu', exact: true })
     .selectOption({ label: '30' });
@@ -108,13 +118,17 @@ test('advanced Tsumo validates Han/Fu and settles Sanma without tiles', async ({
   await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await playerAction(page, 'Player 2');
   await prompt(page).getByRole('button', { name: 'Tsumo · self draw', exact: true }).click();
-  await prompt(page).getByRole('spinbutton', { name: 'Han', exact: true }).fill('1');
+  await prompt(page)
+    .getByRole('combobox', { name: 'Han', exact: true })
+    .selectOption({ label: '1' });
   await prompt(page)
     .getByRole('combobox', { name: 'Fu', exact: true })
     .selectOption({ label: '20' });
   await prompt(page).getByRole('button', { name: 'Review settlement', exact: true }).click();
   await expect(prompt(page).getByRole('alert')).toContainText('This Han/Fu combination');
-  await prompt(page).getByRole('spinbutton', { name: 'Han', exact: true }).fill('3');
+  await prompt(page)
+    .getByRole('combobox', { name: 'Han', exact: true })
+    .selectOption({ label: '3' });
   await prompt(page)
     .getByRole('combobox', { name: 'Fu', exact: true })
     .selectOption({ label: '40' });
@@ -122,7 +136,9 @@ test('advanced Tsumo validates Han/Fu and settles Sanma without tiles', async ({
   await expect(prompt(page).locator('.payment-list')).toContainText('2,600');
   await expect(prompt(page).locator('.payment-list')).toContainText('1,300');
   await prompt(page).getByRole('button', { name: 'Back', exact: true }).click();
-  await expect(prompt(page).getByRole('spinbutton', { name: 'Han', exact: true })).toHaveValue('3');
+  await expect(prompt(page).getByRole('combobox', { name: 'Han', exact: true })).toHaveValue(
+    '2: 3',
+  );
   await prompt(page).getByRole('button', { name: 'Review settlement', exact: true }).click();
   await expect(prompt(page).locator('.payment-list')).toContainText('2,600');
   await prompt(page)
@@ -143,7 +159,9 @@ test('advanced multiple Ron collects independent Han/Fu for each winner', async 
   await prompt(page).getByRole('button', { name: 'Next', exact: true }).click();
   await prompt(page).getByRole('button', { name: 'Review settlement', exact: true }).click();
   await expect(prompt(page)).toContainText('Player 3');
-  await prompt(page).getByRole('spinbutton', { name: 'Han', exact: true }).fill('2');
+  await prompt(page)
+    .getByRole('combobox', { name: 'Han', exact: true })
+    .selectOption({ label: '2' });
   await prompt(page)
     .getByRole('combobox', { name: 'Fu', exact: true })
     .selectOption({ label: '30' });

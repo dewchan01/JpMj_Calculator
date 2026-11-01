@@ -38,6 +38,11 @@ export const settingGroups: { title: string; fields: SettingField[] }[] = [
   {
     title: 'Game progress',
     fields: [
+      number(
+        'endPoints',
+        'Target score',
+        'Minimum leading score required to end the scheduled round.',
+      ),
       select(
         'extension',
         'Extension round',
@@ -45,7 +50,7 @@ export const settingGroups: { title: string; fields: SettingField[] }[] = [
           ['none', 'No extension'],
           ['one-round', 'One extra wind round'],
         ],
-        'If nobody reaches the return score at the scheduled end, play one extra wind round. The first completed hand reaching the target ends it; the extra round is the limit.',
+        'If nobody reaches the target score at the scheduled end, play one extra wind round. The first completed hand reaching the target ends it; the extra round is the limit.',
       ),
       select(
         'bankruptcy',

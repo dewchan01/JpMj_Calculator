@@ -5,6 +5,7 @@ const decode = vi.hoisted(() => vi.fn());
 vi.mock('jsqr', () => ({ default: decode }));
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.resetAllMocks();
 });
@@ -27,6 +28,25 @@ function image() {
 }
 
 describe('QR image scanning', () => {
+  it('falls back when native detection never completes', async () => {
+    vi.useFakeTimers();
+    const bitmap = image();
+    vi.stubGlobal(
+      'BarcodeDetector',
+      class {
+        detect() {
+          return new Promise<never>(() => {});
+        }
+      },
+    );
+    decode.mockReturnValue({ data: 'ABCDEF1234' });
+    const result = scanQrImage({ size: 10 } as File, false);
+    const assertion = expect(result).resolves.toBe('ABCDEF1234');
+    await vi.advanceTimersByTimeAsync(1000);
+    await assertion;
+    expect(bitmap.close).toHaveBeenCalledOnce();
+  });
+
   it('uses native QR detection when available and releases the image', async () => {
     const bitmap = image();
     vi.stubGlobal(

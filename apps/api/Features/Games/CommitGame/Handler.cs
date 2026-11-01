@@ -36,7 +36,10 @@ public sealed class Handler(AppDb db, IHubContext<RoomHub> hub, IOptions<Storage
         await using var transaction = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         var room = await _db.Rooms.SingleOrDefaultAsync(x => x.Id == id && x.ExpiresAt > now, cancellationToken);
         if (room is null) return Results.NotFound();
+        if (room.Closed) return Results.StatusCode(410);
         var host = Secrets.Matches(command.Token, room.HostHash);
+        if (host && string.IsNullOrEmpty(room.HandKey) && await _db.Unassigned.AnyAsync(x => x.RoomId == id, cancellationToken))
+            return Results.Conflict(new { code = "unassigned-players" });
         if (!host)
         {
             var hash = Secrets.Hash(command.Token);

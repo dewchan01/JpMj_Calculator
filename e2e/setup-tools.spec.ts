@@ -55,7 +55,17 @@ for (const width of [390, 1280]) {
     await expect(page.getByRole('button', { name: 'Choose player West', exact: true })).toHaveText(
       'Bob',
     );
+    const myPlayer = page.getByRole('combobox', { name: 'My player', exact: true });
+    await myPlayer.selectOption({ label: 'Cara' });
+    await page.evaluate(() => {
+      crypto.getRandomValues = <T extends ArrayBufferView | null>(array: T): T => {
+        if (array) new Uint8Array(array.buffer, array.byteOffset, array.byteLength).fill(0);
+        return array;
+      };
+    });
     await tools.getByRole('button', { name: 'Random positions', exact: true }).click();
+    await expect(myPlayer.locator('option:checked')).toHaveText('Cara');
+    await expect(myPlayer).toHaveValue('0');
     await expect
       .poll(() =>
         page
@@ -67,6 +77,10 @@ for (const width of [390, 1280]) {
     await expect(page.getByRole('button', { name: 'Choose player North', exact: true })).toHaveText(
       'Dana',
     );
+    await myPlayer.selectOption({ label: 'Dana' });
+    await tools.getByRole('button', { name: 'Random positions', exact: true }).click();
+    await expect(myPlayer.locator('option:checked')).toHaveText('Dana');
+    await expect(myPlayer).toHaveValue('2');
     await tools.getByRole('button', { name: 'Dice', exact: true }).click();
     const dice = page.getByRole('dialog', { name: 'Dice', exact: true });
     await expect(dice.locator('.dice')).toHaveClass(/rolling/);

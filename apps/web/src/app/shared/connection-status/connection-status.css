@@ -7,7 +7,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding-inline: 4px;
+  padding-inline: var(--connection-padding, 4px);
   white-space: nowrap;
   font-size: 0.75rem;
   color: var(--muted);
@@ -25,9 +25,10 @@
   --connection-color: #af7b20;
 }
 .unknown {
-  --connection-color: var(--muted);
+  --connection-color: #929892;
 }
-.unknown .connection-pulse {
+.unknown .connection-pulse,
+.connection-chip:not(.connected):not(.connecting) .connection-pulse {
   animation: none;
 }
 .connection-pulse {

@@ -34,8 +34,9 @@
       <section class="room-status" aria-live="polite">
         <div class="room-status-heading">
           <p>
-            {{ 'Room code' | t }}: {{ roomCode }} ·
-            {{ (room.access()?.host ? 'Host' : 'Player') | t }}
+            {{ ruleName(m.rules) | t }} ·
+            {{ (m.gameLength === 'east' ? 'East-only game' : 'East and South game') | t }} ·
+            {{ m.playerCount }}P
           </p>
           <app-connection-status [state]="room.connectionStatus()" />
         </div>
@@ -53,6 +54,7 @@
       [actionsDisabled]="paused() || busy()"
       [compact]="true"
       [liveControls]="true"
+      [showCaption]="!roomCode"
       [ended]="!!m.ended"
       [players]="m.players"
       [presence]="playerPresence()"
@@ -68,6 +70,7 @@
       [honba]="m.honba"
       [pot]="book().table"
       [ruleName]="ruleName(m.rules)"
+      [gameLength]="m.gameLength ?? 'south'"
       [yakitoriPenalty]="tableRules(m.rules).yakitoriPenalty"
       [callCounts]="callCounts()"
       [concealedKanCounts]="concealedKanCounts()"
@@ -116,12 +119,29 @@
           <path d="M7 7h.01M12 12h.01M17 17h.01" stroke-width="3" stroke-linecap="round" />
         </svg>
       </button>
+      <button
+        class="dice-icon page-refresh"
+        [disabled]="busy()"
+        (click)="refreshPage()"
+        [attr.aria-label]="'Refresh page' | t"
+        [title]="'Refresh page' | t"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20 4v6h-6M20 10a8 8 0 1 0 0 6" />
+        </svg>
+      </button>
       <button class="floating-menu" (click)="open('menu')" [attr.aria-label]="'Game menu' | t">
         •••
       </button>
     </div>
   </div>
 } @else {
+  @if (error()) {
+    <button class="primary missing-game-back" (click)="backToTables()">
+      <span aria-hidden="true">←</span>
+      {{ 'My table' | t }}
+    </button>
+  }
   @if (roomCode && error() === 'Could not connect to the online service.') {
     <app-connection-status state="Disconnected" />
   } @else {
@@ -179,9 +199,63 @@
         @case ('music') {
           <app-music-settings />
         }
+        @case ('leave-room') {
+          <p>{{ 'Leave this room?' | t }}</p>
+          <div class="room-exit-actions">
+            <button class="quiet secondary" (click)="close()" [disabled]="busy()">
+              {{ 'Cancel' | t }}
+            </button>
+            <button class="primary exit-room-button" (click)="returnToTables()" [disabled]="busy()">
+              {{ 'Exit room' | t }}
+            </button>
+          </div>
+        }
         @case ('notice') {}
+        @case ('seat-requests') {
+          @if (room.access()?.host) {
+            @for (request of room.state()?.seatRequests ?? []; track request.id) {
+              <div class="seat-request-row">
+                <span>{{ m.players[request.requestedSeat].name }}</span>
+                <div class="seat-request-actions">
+                  <button
+                    class="danger"
+                    (click)="decideSeat(request.id, false)"
+                    [disabled]="busy()"
+                  >
+                    {{ 'Reject' | t }}
+                  </button>
+                  <button
+                    class="primary"
+                    (click)="decideSeat(request.id, true)"
+                    [disabled]="busy()"
+                  >
+                    {{ 'Accept' | t }}
+                  </button>
+                </div>
+              </div>
+            }
+          }
+        }
         @case ('permissions') {
           @if (room.access()?.host) {
+            <div class="host-transfer">
+              <label class="host-transfer-player">
+                {{ 'Transfer host' | t }}
+                <select #successor [disabled]="busy()">
+                  <option value="">{{ 'Choose player' | t }}</option>
+                  @for (seat of room.state()?.occupiedSeats ?? []; track seat) {
+                    <option [value]="seat">{{ m.players[seat].name }}</option>
+                  }
+                </select>
+              </label>
+              <button
+                class="primary host-transfer-action"
+                (click)="transferHost(+successor.value)"
+                [disabled]="busy() || successor.value === ''"
+              >
+                {{ 'Transfer host' | t }}
+              </button>
+            </div>
             <div class="permission-list">
               @for (item of permissionItems; track item.key) {
                 <label class="permission-item">
@@ -298,6 +372,11 @@
               {{ 'Adjust view' | t }}
             </button>
             @if (roomCode && room.access()?.host) {
+              @if (room.state()?.seatRequests?.length) {
+                <button (click)="navigatePanel('seat-requests')">
+                  {{ 'Seat requests' | t }} ? {{ room.state()?.seatRequests?.length }}
+                </button>
+              }
               <button (click)="navigatePanel('permissions')">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M12 3 3 7v5c0 5 9 9 9 9s9-4 9-9V7ZM8 12l3 3 5-6" />
@@ -313,6 +392,13 @@
               </svg>
               {{ 'Music settings' | t }}
             </button>
+            <button (click)="navigatePanel('info')">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 11v6m0-10v1" />
+              </svg>
+              {{ 'Information' | t }}
+            </button>
             <button (click)="navigatePanel('settings')">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M4 7h16M4 17h16M8 4v6m8 4v6" />
@@ -327,11 +413,27 @@
               </svg>
               {{ 'Help' | t }}
             </button>
-            <button class="return-table" (click)="returnToTables()" [disabled]="busy()">
+            @if (roomCode) {
+              <button (click)="backToTables()" [disabled]="busy()">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m3 10 9-7 9 7v11h-7v-7h-4v7H3Z" />
+                </svg>
+                {{ 'Return home' | t }}
+              </button>
+            }
+            <button
+              class="return-table"
+              (click)="roomCode ? navigatePanel('leave-room') : returnToTables()"
+              [disabled]="busy()"
+            >
               <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="m3 10 9-7 9 7v11h-7v-7h-4v7H3Z" />
+                @if (roomCode) {
+                  <path d="M10 17v4H3V3h7v4m-3 5h14m-5-5 5 5-5 5" />
+                } @else {
+                  <path d="m3 10 9-7 9 7v11h-7v-7h-4v7H3Z" />
+                }
               </svg>
-              {{ 'My table' | t }}
+              {{ (roomCode ? 'Exit room' : 'My table') | t }}
             </button>
           </div>
         }
@@ -722,7 +824,11 @@
               @if (!manualYakuman) {
                 <label>
                   {{ 'Han' | t }}
-                  <input type="number" min="1" max="26" step="1" [(ngModel)]="manualHan" />
+                  <select [(ngModel)]="manualHan">
+                    @for (han of hanOptions; track han) {
+                      <option [ngValue]="han">{{ han }}</option>
+                    }
+                  </select>
                 </label>
                 @if (manualHan < 5) {
                   <label>
@@ -1012,21 +1118,86 @@
           />
         }
         @case ('info') {
+          @if (room.access(); as credential) {
+            @if (roomQr()) {
+              <img
+                class="room-invitation-qr"
+                [src]="roomQr()"
+                width="200"
+                height="200"
+                [alt]="'Room QR code' | t"
+              />
+            }
+            <label>
+              {{ 'Room code' | t }}
+              <div class="credential-copy">
+                <input readonly [value]="credential.id" />
+                <button
+                  class="secondary"
+                  [appCopyButton]="credential.id"
+                  #idCopy="copyButton"
+                  (copyFailed)="
+                    error.set('Could not copy. Select the room details to copy manually.')
+                  "
+                  [attr.aria-label]="('Copy room details' | t) + ' - ' + ('Room code' | t)"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    @if (idCopy.copied()) {
+                      <path d="m5 12 4 4L19 6" />
+                    } @else {
+                      <rect x="8" y="8" width="12" height="13" rx="2" />
+                      <path d="M16 8V3H3v13h5" />
+                    }
+                  </svg>
+                </button>
+              </div>
+            </label>
+            @if (credential.pin) {
+              <label>
+                {{ 'Room PIN' | t }}
+                <div class="credential-copy">
+                  <input readonly [value]="credential.pin" />
+                  <button
+                    class="secondary"
+                    [appCopyButton]="credential.pin"
+                    #pinCopy="copyButton"
+                    (copyFailed)="
+                      error.set('Could not copy. Select the room details to copy manually.')
+                    "
+                    [attr.aria-label]="('Copy room details' | t) + ' - ' + ('Room PIN' | t)"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      @if (pinCopy.copied()) {
+                        <path d="m5 12 4 4L19 6" />
+                      } @else {
+                        <rect x="8" y="8" width="12" height="13" rx="2" />
+                        <path d="M16 8V3H3v13h5" />
+                      }
+                    </svg>
+                  </button>
+                </div>
+              </label>
+            } @else {
+              <p>{{ 'Passcode is available on the device that created this room.' | t }}</p>
+            }
+          }
           <label>
             {{ 'Match name' | t }}
-            <input [(ngModel)]="editName" maxlength="80" />
+            <input [(ngModel)]="editName" maxlength="80" [readonly]="remotePlayer()" />
           </label>
           @for (p of players; track p.id; let index = $index) {
             <label>
               {{ 'Player name' | t }} {{ index + 1 }}
-              <input [(ngModel)]="editNames[index]" maxlength="40" />
+              <input [(ngModel)]="editNames[index]" maxlength="40" [readonly]="remotePlayer()" />
             </label>
           }
-          <div class="dialog-actions">
-            <button class="primary" (click)="saveInfo()" [disabled]="busy()">
-              {{ 'Save' | t }}
-            </button>
-          </div>
+          @if (!remotePlayer()) {
+            <div class="dialog-actions">
+              <button class="primary" (click)="saveInfo()" [disabled]="busy()">
+                {{ 'Save' | t }}
+              </button>
+            </div>
+          }
         }
         @case ('settings') {
           <p>

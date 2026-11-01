@@ -4,6 +4,7 @@ export interface TableRules {
   extension: 'none' | 'one-round';
   bankruptcy: 'negative' | 'nonpositive' | 'off';
   returnPoints: number;
+  endPoints?: number;
   notenPool: number;
   honbaRon: number;
   honbaTsumo: number;
@@ -32,15 +33,24 @@ export interface TableRules {
 /** Missing settings preserve existing version-1/2 match snapshots. */
 export function tableRules(profile: RuleProfile): TableRules {
   const league = profile.preset === 'm-league';
+  const soul = profile.preset === 'mahjong-soul' && profile.version >= 3;
+  const target = profile.playerCount === 3 ? 40000 : 30000;
   return {
     extension: league ? 'none' : 'one-round',
     bankruptcy: league ? 'off' : 'negative',
-    returnPoints: profile.playerCount === 3 ? 40000 : 30000,
+    returnPoints: soul ? (profile.playerCount === 3 ? 35000 : 25000) : target,
+    endPoints: profile.table?.returnPoints ?? target,
     notenPool: profile.playerCount === 3 ? 2000 : 3000,
     honbaRon: profile.playerCount === 3 ? 200 : 300,
     honbaTsumo: 100,
     yakitoriPenalty: 0,
-    uma: league ? [30, 10, -10, -30] : Array<number>(profile.playerCount).fill(0),
+    uma: league
+      ? [30, 10, -10, -30]
+      : soul
+        ? profile.playerCount === 3
+          ? [15, 0, -15]
+          : [15, 5, -5, -15]
+        : Array<number>(profile.playerCount).fill(0),
     rounding: 'none',
     tiedRanks: league ? 'share' : 'seat-order',
     bettingRate: 0,
@@ -71,8 +81,8 @@ export function validateProfile(profile: RuleProfile): string[] {
   if (![3, 4].includes(profile.playerCount)) errors.push('Choose three or four players.');
   if (profile.preset === 'm-league' && profile.playerCount !== 4)
     errors.push('M.League supports four players only.');
-  for (const value of [profile.startingPoints, t.returnPoints])
-    if (!Number.isSafeInteger(value) || value < 1000 || value > 100000)
+  for (const value of [profile.startingPoints, t.returnPoints, t.endPoints])
+    if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 1000 || value > 100000)
       errors.push('Starting and return points must be integers from 1,000 to 100,000.');
   for (const value of [t.notenPool, t.honbaRon, t.honbaTsumo, t.yakitoriPenalty])
     if (!Number.isSafeInteger(value) || value < 0 || value > 100000 || value % 100)

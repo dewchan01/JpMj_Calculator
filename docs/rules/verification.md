@@ -1,5 +1,11 @@
 # Rule verification register
 
+## Mahjong Soul settlement defaults (2026-11-02)
+
+New Mahjong Soul profiles use version 3: 3P Uma +15/0/-15 with 35,000 starting/return points; 4P Uma +15/+5/-5/-15 with 25,000 starting/return points. There is no Oka. End thresholds remain 40,000 (3P) and 30,000 (4P), configured separately from return points. Existing version-1/2 snapshots and explicit table overrides retain their previous settlement settings. Re-select the preset to apply corrected defaults to future games.
+
+References: [3P scoring explanation](https://mj-news.net/column/nemata-jantama/20190806130750), [4P scoring explanation](https://mj-news.net/column/nemata-jantama/20210131155210), [platform FAQ mirror: extension and Tsumo loss](https://backup.mahjongsoul.club/play/faq?language=ja). These describe standard play; tournament rules can differ.
+
 Source-review dates below retain their original audit dates. The 2026-10-29 documentation reorganization does not claim a new external rule audit. Current implementation includes final table Uma/Oka/return points, saved-rule money/chip conversion and auditable final-score correction. League/team ranking and referee penalties remain outside the app.
 
 Reviewed 2026-10-22. Platform-labelled presets are independent implementations. Custom settings are explicitly house rules.
