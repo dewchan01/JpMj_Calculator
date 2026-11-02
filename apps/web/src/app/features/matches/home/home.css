@@ -235,6 +235,10 @@
   display: block;
 }
 @media (max-width: 700px) {
+  :host {
+    display: block;
+    padding-top: 16px;
+  }
   .setup-card {
     padding: 12px;
   }

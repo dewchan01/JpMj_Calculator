@@ -141,6 +141,7 @@ type Panel =
   styleUrl: './game-table.css',
 })
 export class GameTable {
+  readonly retention = inject(RecordRetention);
   private readonly onlineApi = inject(OnlineApi);
   readonly roomQr = signal('');
   readonly hanOptions = Array.from({ length: 26 }, (_, index) => index + 1);
@@ -1734,3 +1735,4 @@ export class GameTable {
     URL.revokeObjectURL(url);
   }
 }
+import { RecordRetention } from '../../../core/record-retention';

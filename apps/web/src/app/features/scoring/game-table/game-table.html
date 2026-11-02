@@ -1432,7 +1432,14 @@
           />
         }
         @case ('help') {
-          <p>{{ 'This game is saved automatically.' | t }}</p>
+          <p>
+            {{
+              (retention.autoDelete()
+                ? 'Finished games are automatically deleted on this device. Choose Save game on the result page to keep a record.'
+                : 'This game is saved automatically.'
+              ) | t
+            }}
+          </p>
           <p>
             {{
               'Tap a player to record Riichi, calls, Kan or North. Update indicators after Kan. End this hand opens guided settlement; end entire match calculates final standings. Pause excludes breaks from the timer. History can undo the latest settlement.'

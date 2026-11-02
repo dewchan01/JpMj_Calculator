@@ -86,6 +86,15 @@
   <section class="card other-detail">
     @switch (section()) {
       @case ('data-management') {
+        <label class="advanced-mode-toggle data-retention-toggle">
+          <span>{{ 'Automatically delete each game when it ends' | t }}</span>
+          <input
+            type="checkbox"
+            role="switch"
+            [checked]="retention.autoDelete()"
+            (change)="retention.setAutoDelete($any($event.target).checked)"
+          />
+        </label>
         <div class="action-row data-management-actions">
           <button
             class="secondary danger"

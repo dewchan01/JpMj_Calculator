@@ -1,4 +1,6 @@
 {
+  "Finished games are automatically deleted on this device. Choose Save game on the result page to keep a record.": "대국 종료 시 이 기기의 기록이 자동 삭제됩니다. 보관하려면 결과 화면에서 대국 저장을 선택하세요.",
+  "Automatically delete each game when it ends": "대국 종료 시 해당 대국 기록 자동 삭제",
   "Your player must be seated at this table before starting.": "시작 전에 내 플레이어를 이 대국의 좌석에 배정하세요.",
   "This game is saved automatically.": "대국은 자동으로 저장됩니다.",
   "Merge players": "플레이어 병합",

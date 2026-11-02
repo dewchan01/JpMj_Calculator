@@ -1,4 +1,5 @@
 import { SignedValue } from '../../../shared/signed-value/signed-value';
+import { RecordRetention } from '../../../core/record-retention';
 import { DateTimeField } from '../../../shared/date-time-field/date-time-field';
 import {
   Component,
@@ -47,6 +48,26 @@ import { durationMinutes } from '../../records/record-stats';
   styleUrl: './final-results.css',
 })
 export class FinalResults {
+  readonly retention = inject(RecordRetention);
+  readonly kept = signal(false);
+  async keepGame(): Promise<void> {
+    if (this.busy()) return;
+    this.busy.set(true);
+    this.notice.set('');
+    try {
+      const save = this.saveLocal();
+      if (save) await save(this.match());
+      else {
+        const previous = await this.repo.get(this.match().id);
+        await this.repo.save(this.match(), previous?.updatedAt, true);
+      }
+      this.kept.set(true);
+    } catch {
+      this.notice.set('Could not save match.');
+    } finally {
+      this.busy.set(false);
+    }
+  }
   readonly saveLocal = input<((match: Match) => Promise<void>) | null>(null);
   readonly discardLocal = input<((match: Match) => Promise<void>) | null>(null);
   readonly offerGameActions = input(false);

@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { StorageUsageMonitor } from '../../../core/storage/storage-usage';
 import { DiagnosticLog } from '../../../core/diagnostic-log';
+import { RecordRetention } from '../../../core/record-retention';
 import Dexie, { type Table } from 'dexie';
 import type { Match } from '../../../../../../../packages/mahjong-core/ledger';
 import { mergePlayerRecords } from './merge-players';
@@ -15,6 +16,7 @@ class LocalDatabase extends Dexie {
 }
 @Injectable({ providedIn: 'root' })
 export class Repository {
+  private readonly retention = inject(RecordRetention);
   private readonly storage = inject(StorageUsageMonitor);
   private readonly logs = inject(DiagnosticLog);
   private storageFailure(message: string): (error: unknown) => never {
@@ -57,12 +59,24 @@ export class Repository {
   async roomForMatch(matchId: string): Promise<string | undefined> {
     return this.draft('shared-room:' + matchId);
   }
-  async save(match: Match, expectedUpdatedAt?: string): Promise<void> {
+  async save(match: Match, expectedUpdatedAt?: string, keep = false): Promise<void> {
     await this.db
-      .transaction('rw', this.db.matches, async () => {
+      .transaction('rw', this.db.matches, this.db.drafts, async () => {
         const previous = await this.db.matches.get(match.id);
         if (previous && previous.updatedAt !== expectedUpdatedAt)
           throw new Error('This match changed in another tab. Reopen it before saving.');
+        const retained = 'retained-result:' + match.id;
+        if (keep) await this.db.drafts.put({ id: retained, value: 'true' });
+        if (
+          match.ended &&
+          !previous?.ended &&
+          this.retention.autoDelete() &&
+          !keep &&
+          !(await this.db.drafts.get(retained))
+        ) {
+          await this.db.matches.delete(match.id);
+          return;
+        }
         await this.db.matches.put(structuredClone(match));
       })
       .catch(this.storageFailure('Could not save match.'));

@@ -1,4 +1,5 @@
 import { DataTransfer } from '../records/data-transfer/data-transfer';
+import { RecordRetention } from '../../core/record-retention';
 import { GameSounds } from '../../core/sound/game-sounds';
 import { MusicSettings } from '../../shared/music-settings/music-settings';
 import { ScoringMode } from '../../core/scoring-mode';
@@ -29,6 +30,7 @@ import { CaptureConfiguration } from '../scoring/capture/capture-config';
   styleUrl: './others.css',
 })
 export class Others {
+  readonly retention = inject(RecordRetention);
   private readonly repo = inject(Repository);
   readonly clearMode = signal<'records' | 'all'>('records');
   readonly clearing = signal(false);

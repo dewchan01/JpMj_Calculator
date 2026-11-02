@@ -320,9 +320,16 @@
           {{ 'Extend to East and South' | t }}
         </button>
       }
-      <button class="action-delete danger" (click)="requestDiscard()" [disabled]="busy()">
-        {{ 'Discard game' | t }}
-      </button>
+      @if (retention.autoDelete() && !kept()) {
+        <button class="primary" (click)="keepGame()" [disabled]="busy()">
+          {{ 'Save game' | t }}
+        </button>
+      }
+      @if (!retention.autoDelete()) {
+        <button class="action-delete danger" (click)="requestDiscard()" [disabled]="busy()">
+          {{ 'Discard game' | t }}
+        </button>
+      }
     </div>
   }
 </section>

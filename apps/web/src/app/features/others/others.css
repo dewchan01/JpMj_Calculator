@@ -312,6 +312,10 @@ dd {
   flex: 1;
   min-width: 0;
 }
+.advanced-mode-toggle.data-retention-toggle {
+  padding-inline: 0;
+  margin-bottom: 16px;
+}
 .advanced-mode-toggle small {
   display: block;
   font-size: 0.75rem;

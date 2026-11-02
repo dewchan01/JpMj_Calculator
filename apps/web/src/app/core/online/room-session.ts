@@ -97,7 +97,7 @@ export class RoomSession {
   private readonly discardedLocal = new Set<string>();
   async saveLocalResult(match: Match): Promise<void> {
     const previous = await this.repo.get(match.id);
-    await this.repo.save(match, previous?.updatedAt);
+    await this.repo.save(match, previous?.updatedAt, true);
     this.discardedLocal.delete(match.id);
   }
   async discardLocalResult(match: Match): Promise<void> {

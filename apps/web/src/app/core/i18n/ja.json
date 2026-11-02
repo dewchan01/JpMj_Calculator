@@ -1,4 +1,6 @@
 {
+  "Finished games are automatically deleted on this device. Choose Save game on the result page to keep a record.": "対局終了時、この端末の記録は自動削除されます。残す場合は結果画面で「対局を保存」を選んでください。",
+  "Automatically delete each game when it ends": "対局終了時にその対局の記録を自動削除する",
   "Your player must be seated at this table before starting.": "開始前に自分のプレイヤーをこの対局の座席に配置してください。",
   "This game is saved automatically.": "対局は自動保存されます。",
   "Merge players": "プレイヤーを統合",
