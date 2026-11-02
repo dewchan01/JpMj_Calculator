@@ -23,8 +23,13 @@ dialog {
   flex: 1;
 }
 .merge-entry svg {
-  width: 24px;
-  height: 24px;
+  box-sizing: border-box;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  border-radius: 8px;
+  background: var(--tray-surface);
+  color: var(--muted);
   flex: none;
 }
 .merge-body {

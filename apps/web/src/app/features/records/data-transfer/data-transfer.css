@@ -213,8 +213,14 @@
   flex: 1;
 }
 .transfer-options svg {
-  width: 22px;
-  height: 22px;
+  box-sizing: border-box;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: var(--tray-surface);
+  color: var(--muted);
   fill: none;
   stroke: currentColor;
   stroke-width: 1.7;
