@@ -4,6 +4,7 @@ import { ruleSettings } from '../mahjong-rules/index';
 import type { Match } from './ledger';
 
 export interface CallInput {
+  clearManual?: boolean;
   type: Meld['type'] | 'kita' | 'manual';
   text: string;
   source: string;
@@ -26,11 +27,12 @@ export function recordCall(
   if (state.riichi !== 'none' && !['ankan', 'kita'].includes(input.type))
     throw new Error('Riichi/Ippatsu require a closed hand.');
   if (input.type === 'manual') {
-    const openMelds = state.melds.filter((meld) => meld.type !== 'ankan');
-    const cancelling = !!state.manualCalls || openMelds.length > 0;
+    const openMelds = input.clearManual ? [] : state.melds.filter((meld) => meld.type !== 'ankan');
+    const cancelling = input.clearManual || !!state.manualCalls || openMelds.length > 0;
     const removedCalls = (state.manualCalls ?? 0) + openMelds.length;
     state.manualCalls = cancelling ? 0 : 1;
-    if (cancelling) state.melds = state.melds.filter((meld) => meld.type === 'ankan');
+    if (cancelling && !input.clearManual)
+      state.melds = state.melds.filter((meld) => meld.type === 'ankan');
     live.players[actor] = state;
     live.calls = Math.max(0, live.calls + (cancelling ? -removedCalls : 1));
     live.actions = cancelling

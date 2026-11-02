@@ -148,6 +148,8 @@
                     [attr.aria-pressed]="!!riichiPlayers()[player.id]"
                     [disabled]="
                       !allowRiichi() ||
+                      (!riichiPlayers()[player.id] && (balances()[player.id] ?? 0) < 1000) ||
+                      (!riichiPlayers()[player.id] && callCounts()[player.id] > 0) ||
                       actionsDisabled() ||
                       (!!activePlayer() && activePlayer() !== player.id)
                     "
@@ -160,7 +162,7 @@
                     [attr.aria-pressed]="callCounts()[player.id] > 0"
                     [disabled]="
                       !allowCalls() ||
-                      riichiPlayers()[player.id] === ('Double Riichi' | t) ||
+                      !!riichiPlayers()[player.id] ||
                       actionsDisabled() ||
                       (!!activePlayer() && activePlayer() !== player.id)
                     "

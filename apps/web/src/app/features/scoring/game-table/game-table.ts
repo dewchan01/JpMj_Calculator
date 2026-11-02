@@ -243,6 +243,9 @@ export class GameTable {
   }
 
   readonly manualEntry = signal(false);
+  readonly manualActions = computed(() =>
+    this.editingHand() ? this.manualEntry() : this.scoringMode.advanced(),
+  );
   manualHan = 3;
   manualFu = 40;
   manualYakuman = 0;
@@ -743,7 +746,7 @@ export class GameTable {
   get currentPlayer() {
     return this.match()
       ? livePlayer(this.match()!, this.selected)
-      : { melds: [], kita: [], riichi: 'none' };
+      : { melds: [], kita: [], riichi: 'none', manualCalls: 0 };
   }
   get winnerState() {
     return livePlayer(this.match()!, this.activeWinner);
@@ -1171,16 +1174,25 @@ export class GameTable {
     this.firstTurn = double;
     await this.riichi();
   }
-  async recordManualCall(): Promise<void> {
+  async recordManualCall(clearManual = false): Promise<void> {
     await this.act(async () => {
-      const payload = { type: 'manual' as const, text: '', source: '', called: 0, upgradeId: '' };
+      const payload = {
+        type: 'manual' as const,
+        text: '',
+        source: '',
+        called: 0,
+        upgradeId: '',
+        clearManual,
+      };
       if (this.remotePlayer() && !this.editingHand()) await this.room.submit('call', payload);
       else await this.persist(recordCall(this.match()!, this.selected, payload), true);
     });
   }
   canDeclareDoubleRiichi(): boolean {
     return (
+      (this.book().players[this.selected] ?? 0) >= 1000 &&
       this.currentPlayer.riichi === 'none' &&
+      !this.currentPlayer.manualCalls &&
       !this.currentPlayer.melds.some((meld) => meld.type !== 'ankan')
     );
   }

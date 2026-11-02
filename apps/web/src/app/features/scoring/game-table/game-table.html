@@ -30,23 +30,23 @@
           : error()
       "
     />
-    @if (roomCode) {
-      <section class="room-status" aria-live="polite">
-        <div class="room-status-heading">
-          <p>
-            {{ ruleName(m.rules) | t }} ·
-            {{ (m.gameLength === 'east' ? 'East-only game' : 'East and South game') | t }} ·
-            {{ m.playerCount }}P
-          </p>
+    <section class="room-status" aria-live="polite">
+      <div class="room-status-heading">
+        <p>
+          {{ ruleName(m.rules) | t }} ·
+          {{ (m.gameLength === 'east' ? 'East-only game' : 'East and South game') | t }} ·
+          {{ m.playerCount }}P
+        </p>
+        @if (roomCode) {
           <app-connection-status [state]="room.connectionStatus()" />
-        </div>
-        @if (can('settle') && room.wins().length) {
-          <button (click)="open('declarations')">
-            {{ 'Winning declarations' | t }} · {{ room.wins().length }}
-          </button>
         }
-      </section>
-    }
+      </div>
+      @if (roomCode && can('settle') && room.wins().length) {
+        <button (click)="open('declarations')">
+          {{ 'Winning declarations' | t }} · {{ room.wins().length }}
+        </button>
+      }
+    </section>
     <app-table-summary
       class="live-table"
       [class.room-table]="!!roomCode"
@@ -455,7 +455,11 @@
           ) {
             <div class="button-grid player-riichi-actions">
               @if (currentPlayer.riichi === 'none') {
-                <button class="secondary" (click)="declarePlayerRiichi(false)" [disabled]="busy()">
+                <button
+                  class="secondary"
+                  (click)="declarePlayerRiichi(false)"
+                  [disabled]="busy() || (book().players[selected] ?? 0) < 1000"
+                >
                   {{ 'Riichi' | t }}
                 </button>
               } @else {
@@ -501,7 +505,7 @@
                 </button>
               }
               @if (playerMode() === 'calls') {
-                @if (manualEntry() || scoringMode.advanced()) {
+                @if (manualActions()) {
                   <button
                     (click)="recordManualCall()"
                     [disabled]="paused() || busy() || currentPlayer.riichi !== 'none'"
@@ -520,13 +524,13 @@
                   </button>
                 }
               }
-              @if (playerMode() !== 'calls' && !manualEntry() && !scoringMode.advanced()) {
+              @if (playerMode() !== 'calls' && !manualActions()) {
                 <button (click)="startCall('ankan')" [disabled]="paused() || !can('calls')">
                   {{ 'Concealed Kan' | t }}
                 </button>
               }
 
-              @if (playerMode() === 'calls' && !manualEntry() && !scoringMode.advanced()) {
+              @if (playerMode() === 'calls' && !manualActions()) {
                 <button (click)="startCall('kakan')" [disabled]="paused() || !hasPon()">
                   {{ 'Added Kan' | t }}
                 </button>
@@ -563,6 +567,19 @@
             </div>
           }
           @if (playerMode() === 'calls') {
+            @if (currentPlayer.manualCalls && !manualActions()) {
+              <div class="recorded-call">
+                <span>{{ 'Call' | t }}</span>
+                <span></span>
+                <button
+                  class="secondary danger"
+                  (click)="recordManualCall(true)"
+                  [disabled]="paused() || busy()"
+                >
+                  {{ 'Cancel call' | t }}
+                </button>
+              </div>
+            }
             @for (group of playerMeldGroups; track group.label) {
               <section class="meld-section" [attr.aria-label]="group.label | t">
                 <h4>{{ group.label | t }}</h4>
@@ -818,6 +835,8 @@
                   busy() ||
                   paused() ||
                   (!!riichiPlayers()[player.id] && !isDoubleRiichi(player.id)) ||
+                  (!isDoubleRiichi(player.id) && (book().players[player.id] ?? 0) < 1000) ||
+                  (!isDoubleRiichi(player.id) && callCounts()[player.id] > 0) ||
                   (remotePlayer() && player.id !== roomPlayerId())
                 "
               >
@@ -880,29 +899,6 @@
         }
         @case ('hand') {
           @if (manualEntry()) {
-            <section class="winning-recorded" [attr.aria-label]="'Recorded calls' | t">
-              @for (meld of winnerState.melds; track meld.id) {
-                <div class="winning-recorded-group">
-                  <span>{{ meld.type | t }}</span>
-                  @for (tile of meld.tiles; track tile.id) {
-                    <app-tile-art
-                      [faceDown]="meld.type === 'ankan' && ($first || $last)"
-                      [tile]="tile"
-                      [decorative]="true"
-                    />
-                  }
-                </div>
-              }
-              @if (winnerState.kita.length) {
-                <div class="winning-recorded-group">
-                  <span>{{ 'North extraction' | t }}</span>
-                  @for (tile of winnerState.kita; track tile.id) {
-                    <app-tile-art [tile]="tile" [decorative]="true" />
-                  }
-                </div>
-              }
-            </section>
-
             <p>
               <strong>{{ name(activeWinner) }}</strong>
               · {{ 'Manual Han entry' | t }}
