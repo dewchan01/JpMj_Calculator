@@ -60,7 +60,9 @@
         @if (error()) {
           <app-error-notice [message]="error()" />
         }
-        <hr class="transfer-error-divider" />
+        @if (history.entries().length) {
+          <hr class="transfer-error-divider" />
+        }
         <ul class="share-history-list">
           @for (entry of history.entries(); track entry.id) {
             <li>

@@ -613,3 +613,44 @@ h1 {
   padding: 10px 16px;
   border-radius: 12px;
 }
+.in-game-scoring-mode {
+  min-width: 0;
+  margin: 0 0 20px;
+  padding: 0;
+  border: 0;
+}
+.in-game-scoring-mode legend {
+  font-weight: 600;
+}
+.in-game-scoring-mode label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
+  margin: 0;
+  cursor: pointer;
+}
+.in-game-scoring-mode label + label {
+  border-top: 1px solid var(--border);
+}
+.in-game-scoring-mode label > span {
+  flex: 1;
+  min-width: 0;
+}
+.in-game-scoring-mode small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-weight: 400;
+  line-height: 1.5;
+}
+.in-game-scoring-mode input[type='radio'] {
+  appearance: auto;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 0;
+  accent-color: var(--green);
+}

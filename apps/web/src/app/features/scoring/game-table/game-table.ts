@@ -106,6 +106,7 @@ type Panel =
   | 'finish'
   | 'info'
   | 'settings'
+  | 'scoring-mode'
   | 'help'
   | 'difference'
   | 'dice'
@@ -356,9 +357,21 @@ export class GameTable {
     }
   }
   cancelHandEdit(): void {
-    if (this.originalMatch) this.match.set(this.originalMatch);
+    if (this.originalMatch) {
+      this.match.set(this.originalMatch);
+      this.dora = this.originalMatch.live?.dora ?? '';
+      this.ura = this.originalMatch.live?.ura ?? '';
+    }
     this.originalMatch = undefined;
     this.editingHand.set(null);
+    this.inputs = [];
+    this.round = null;
+    this.drawInput = undefined;
+    this.pendingKan = null;
+    this.pendingCallPayload = null;
+    this.resumeCall = null;
+    this.requiredIndicators = 0;
+    this.indicatorResume = null;
   }
   onPromptClosed(): void {
     this.pendingKan = null;
@@ -392,6 +405,7 @@ export class GameTable {
   readonly panelParents = signal<Panel[]>([]);
   readonly canDismissPrompt = () => !this.busy();
   navigatePanel(panel: Panel): void {
+    if (this.editingHand() && ['history', 'results', 'menu'].includes(panel)) this.cancelHandEdit();
     if (panel === 'permissions' && !this.room.access()?.host) return;
     if (panel === this.panel()) return;
     if (panel === 'info') {
@@ -422,6 +436,8 @@ export class GameTable {
       return;
     }
     this.panelParents.set(parents.slice(0, -1));
+    if (this.editingHand() && ['history', 'results', 'menu'].includes(previous))
+      this.cancelHandEdit();
     this.panel.set(previous);
     this.error.set('');
   }
@@ -727,6 +743,7 @@ export class GameTable {
       'extend-south': 'Extend to East and South',
       info: 'Information',
       settings: 'In-game settings',
+      'scoring-mode': 'Scoring mode',
       perspective: 'Adjust view',
       help: 'Help',
       difference: 'Point differences',

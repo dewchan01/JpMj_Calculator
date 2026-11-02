@@ -188,7 +188,7 @@
             {{ 'Saving recalculates later hands. Cancel keeps the original record.' | t }}
           </p>
         }
-        <button class="action-cancel" (click)="close()" [disabled]="busy()">
+        <button class="secondary action-cancel" (click)="close()" [disabled]="busy()">
           {{ 'Cancel' | t }}
         </button>
       </div>
@@ -395,6 +395,12 @@
               </svg>
               {{ 'In-game settings' | t }}
             </button>
+            <button (click)="navigatePanel('scoring-mode')">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 3h14v18H5ZM8 6h8v4H8Zm0 8h2m4 0h2m-8 4h2m4 0h2" />
+              </svg>
+              {{ 'Scoring mode' | t }}
+            </button>
             <button (click)="navigatePanel('help')">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path
@@ -446,15 +452,17 @@
         @case ('player') {
           <h3>{{ name(selected) }}</h3>
           @if (editingHand()) {
-            @if (currentPlayer.riichi === 'none') {
-              <button (click)="declarePlayerRiichi(false)" [disabled]="busy()">
-                {{ 'Riichi' | t }}
-              </button>
-            } @else {
-              <button (click)="cancelDeclaration()" [disabled]="busy()">
-                {{ 'Cancel Riichi · refund 1,000 points' | t }}
-              </button>
-            }
+            <div class="button-grid player-riichi-actions">
+              @if (currentPlayer.riichi === 'none') {
+                <button class="secondary" (click)="declarePlayerRiichi(false)" [disabled]="busy()">
+                  {{ 'Riichi' | t }}
+                </button>
+              } @else {
+                <button class="secondary danger" (click)="cancelDeclaration()" [disabled]="busy()">
+                  {{ 'Cancel Riichi · refund 1,000 points' | t }}
+                </button>
+              }
+            </div>
           }
           @if (paused()) {
             <p>{{ 'Resume the game before recording actions.' | t }}</p>
@@ -717,36 +725,34 @@
           </div>
         }
         @case ('outcome') {
-          @if (editingHand()) {
-            <div class="button-grid">
+          <div class="button-grid">
+            @if (editingHand()) {
               @for (player of players; track player.id) {
                 <button (click)="selected = player.id; navigatePanel('player')">
                   {{ player.name }}
                 </button>
               }
               <button (click)="openIndicators('dora')">{{ 'Dora indicators' | t }}</button>
-              <button (click)="navigatePanel('win')">{{ 'Win' | t }}</button>
-              @if (can('draw')) {
+            }
+            <button (click)="navigatePanel('win')">{{ 'Win' | t }}</button>
+            @if (can('draw')) {
+              <button
+                (click)="drawType = 'exhaustive'; tenpai = {}; nagashi = {}; navigatePanel('draw')"
+              >
+                {{ 'Record draw' | t }}
+              </button>
+              @if (m.rules.preset !== 'm-league') {
                 <button
-                  (click)="
-                    drawType = 'exhaustive'; tenpai = {}; nagashi = {}; navigatePanel('draw')
-                  "
+                  (click)="drawType = 'nagashi'; tenpai = {}; nagashi = {}; navigatePanel('draw')"
                 >
-                  {{ 'Record draw' | t }}
+                  {{ 'Nagashi Mangan' | t }}
                 </button>
-                @if (m.rules.preset !== 'm-league') {
-                  <button
-                    (click)="drawType = 'nagashi'; tenpai = {}; nagashi = {}; navigatePanel('draw')"
-                  >
-                    {{ 'Nagashi Mangan' | t }}
-                  </button>
-                }
               }
-              @if (!remotePlayer() && !editingHand()) {
-                <button (click)="startChombo()">{{ 'Chombo' | t }}</button>
-              }
-            </div>
-          }
+            }
+            @if (!remotePlayer() && !editingHand()) {
+              <button (click)="startChombo()">{{ 'Chombo' | t }}</button>
+            }
+          </div>
         }
         @case ('win') {
           <label>
@@ -1323,6 +1329,44 @@
               </button>
             </div>
           }
+        }
+        @case ('scoring-mode') {
+          <fieldset class="in-game-scoring-mode" [disabled]="busy()">
+            <legend>{{ 'Scoring mode' | t }}</legend>
+            <label>
+              <span>
+                <strong>{{ 'Assisted scoring' | t }}</strong>
+                <small>
+                  {{ 'Enter tiles to calculate Han, Fu and payments automatically.' | t }}
+                </small>
+              </span>
+              <input
+                type="radio"
+                name="inGameScoringMode"
+                [checked]="!scoringMode.advanced()"
+                (change)="scoringMode.setAdvanced(false)"
+                [attr.aria-label]="'Assisted scoring' | t"
+              />
+            </label>
+            <label>
+              <span>
+                <strong>{{ 'Manual Han entry' | t }}</strong>
+                <small>
+                  {{
+                    'Enter total Han and Fu instead of a complete hand. Calls and Riichi remain available.'
+                      | t
+                  }}
+                </small>
+              </span>
+              <input
+                type="radio"
+                name="inGameScoringMode"
+                [checked]="scoringMode.advanced()"
+                (change)="scoringMode.setAdvanced(true)"
+                [attr.aria-label]="'Manual Han entry' | t"
+              />
+            </label>
+          </fieldset>
         }
         @case ('settings') {
           <p>

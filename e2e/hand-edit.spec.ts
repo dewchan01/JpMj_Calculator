@@ -1,6 +1,10 @@
 import { test, expect, type Page } from '@playwright/test';
 import { gameMenu, prompt, recordDraw, finishWin } from './helpers/game';
 import type { Match } from '../packages/mahjong-core/ledger';
+import { settleRound } from '../packages/mahjong-core/ledger';
+import { presetRules } from '../packages/mahjong-rules/index';
+import { drawSettlement, type DrawInput } from '../packages/mahjong-scoring/rounds';
+import { gamesCsv } from '../apps/web/src/app/features/records/data-transfer/data-csv';
 
 async function stored(page: Page): Promise<Match> {
   return page.evaluate(async () => {
@@ -26,6 +30,83 @@ async function editFirst(page: Page) {
   await row.getByRole('button', { name: 'Edit hand', exact: true }).click();
   await expect(prompt(page).locator('.hand-edit-banner')).toBeVisible();
 }
+
+test('back from editing restores the original history without reopening the page', async ({
+  page,
+}) => {
+  await page.addInitScript(() => localStorage.setItem('riichi-advanced-scoring', 'true'));
+  const rules = presetRules('mahjong-soul', 4);
+  let seeded: Match = {
+    id: 'back-edit',
+    schemaVersion: 1,
+    name: 'Back test',
+    createdAt: '2026-11-02T00:00:00Z',
+    updatedAt: '2026-11-02T00:00:00Z',
+    playerCount: 4,
+    rules,
+    players: [0, 1, 2, 3].map((i) => ({ id: `p${i}`, name: `Player ${i + 1}` })),
+    initialBalances: { p0: 25000, p1: 25000, p2: 25000, p3: 25000 },
+    initialDealerId: 'p0',
+    dealerId: 'p0',
+    roundWind: 'east',
+    handNumber: 1,
+    honba: 0,
+    gameLength: 'east',
+    events: [],
+  };
+  for (let i = 0; i < 2; i++) {
+    const drawInput: DrawInput = {
+      rules,
+      players: seeded.players,
+      dealerId: seeded.dealerId,
+      honba: seeded.honba,
+      type: 'exhaustive',
+      tenpaiIds: [`p${i}`],
+      nagashiIds: [],
+      circumstancesConfirmed: true,
+    };
+    seeded = settleRound(
+      seeded,
+      {
+        id: `draw-${i}`,
+        type: 'exhaustiveDraw',
+        timestamp: `2026-11-02T01:0${i}:00Z`,
+        payments: [],
+        drawInput,
+      },
+      drawSettlement(drawInput),
+    );
+  }
+  await page.goto('/others/data/import');
+  await page.getByLabel('Import CSV file', { exact: true }).setInputFiles({
+    name: 'back.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from(gamesCsv([seeded])),
+  });
+  await page.getByRole('button', { name: 'Import selected games', exact: true }).click();
+  await expect(page.locator('.toast')).toContainText('Games imported.');
+  await page.goto('/score/' + seeded.id);
+  await expect.poll(async () => !!(await stored(page)).clock).toBe(true);
+  const original = await stored(page);
+  await gameMenu(page, 'History');
+  const titles = await prompt(page).locator('.event-title').allTextContents();
+  const changes = await prompt(page).locator('.event-changes').allTextContents();
+  await prompt(page).getByRole('button', { name: 'Edit hand', exact: true }).first().click();
+  await expect(prompt(page).locator('.hand-edit-banner')).toBeVisible();
+  await prompt(page).getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(prompt(page).locator('.hand-edit-banner')).toHaveCount(0);
+  await expect(prompt(page).locator('.history-row')).toHaveCount(2);
+  expect(await prompt(page).locator('.event-title').allTextContents()).toEqual(titles);
+  expect(await prompt(page).locator('.event-changes').allTextContents()).toEqual(changes);
+  expect(await stored(page)).toEqual(original);
+  await prompt(page).getByRole('button', { name: 'Edit hand', exact: true }).first().click();
+  await prompt(page).getByRole('button', { name: 'Record draw', exact: true }).click();
+  await prompt(page).getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(prompt(page).locator('.hand-edit-banner')).toBeVisible();
+  await prompt(page).getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(prompt(page).locator('.history-row')).toHaveCount(2);
+  expect(await stored(page)).toEqual(original);
+});
 
 test('edit an earlier draw, replay later hands, cancel drafts, then replace it with a winning hand', async ({
   page,
