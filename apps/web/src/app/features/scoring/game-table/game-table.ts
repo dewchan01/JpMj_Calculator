@@ -1241,6 +1241,13 @@ export class GameTable {
       this.close(true);
     });
   }
+  openHandOutcome(): void {
+    const match = this.match();
+    if (!match || this.busy()) return;
+    if (match.ended) this.open('results');
+    else if (this.can('settle')) this.startOutcome();
+    else this.open('player', this.roomPlayerId());
+  }
   startOutcome(): void {
     if (this.remotePlayer() && !this.editingHand() && this.selected !== this.roomPlayerId()) {
       this.error.set('Declare only for your own seat.');
@@ -1263,7 +1270,14 @@ export class GameTable {
     this.winners = {};
     this.method = 'ron';
     this.discarder = this.players[0]?.id ?? '';
-    this.navigatePanel('outcome');
+    const dialog = this.dialog().nativeElement;
+    if (dialog.open) this.navigatePanel('outcome');
+    else {
+      this.panelParents.set([]);
+      this.panel.set('outcome');
+      this.error.set('');
+      dialog.showModal();
+    }
   }
   nextWinners(): void {
     this.error.set('');

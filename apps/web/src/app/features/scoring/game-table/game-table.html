@@ -81,14 +81,7 @@
       (playerAction)="open('player', $event)"
       (quickAction)="tableAction($event)"
       (pointDifference)="showPlayerDifference($event)"
-      (handAction)="
-        m.ended
-          ? open('results')
-          : can('settle')
-            ? open('outcome')
-            : open('player', roomPlayerId());
-        !m.ended && can('settle') && startOutcome()
-      "
+      (handAction)="openHandOutcome()"
     />
     <div class="indicator-bar">
       @for (kind of indicatorKinds; track kind) {
