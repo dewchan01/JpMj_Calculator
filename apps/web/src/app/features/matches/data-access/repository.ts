@@ -3,6 +3,8 @@ import { StorageUsageMonitor } from '../../../core/storage/storage-usage';
 import { DiagnosticLog } from '../../../core/diagnostic-log';
 import Dexie, { type Table } from 'dexie';
 import type { Match } from '../../../../../../../packages/mahjong-core/ledger';
+import { mergePlayerRecords } from './merge-players';
+import type { PlayerIdentity } from '../../records/player-identity';
 class LocalDatabase extends Dexie {
   matches!: Table<Match, string>;
   drafts!: Table<{ id: string; value: string }, string>;
@@ -27,6 +29,18 @@ export class Repository {
     };
   }
   private readonly db = new LocalDatabase();
+  async mergePlayers(source: string, target: PlayerIdentity): Promise<number> {
+    const count = await this.db.transaction('rw', this.db.matches, this.db.drafts, async () => {
+      const changed = mergePlayerRecords(await this.db.matches.toArray(), source, target);
+      for (const match of changed)
+        if (!match.ended && (await this.db.drafts.get('shared-room:' + match.id)))
+          throw new Error('Finish the shared game before merging these players.');
+      await this.db.matches.bulkPut(changed);
+      return changed.length;
+    });
+    void this.storage.refresh();
+    return count;
+  }
   async list(): Promise<Match[]> {
     return this.db.matches
       .orderBy('updatedAt')

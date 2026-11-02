@@ -1,0 +1,70 @@
+<button class="merge-entry" (click)="open(mergeDialog)">
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="8" cy="7" r="3" />
+    <path d="M2 20v-2a6 6 0 0 1 12 0v2M16 4a3 3 0 0 1 0 6m2 4h4m-2-2 2 2-2 2M18 20h-2" />
+  </svg>
+  <span>{{ 'Merge players' | t }}</span>
+  <span aria-hidden="true">›</span>
+</button>
+<dialog #mergeDialog class="app-dialog" (cancel)="busy() && $event.preventDefault()">
+  <header class="dialog-header">
+    <h2>{{ 'Merge players' | t }}</h2>
+    <button
+      class="icon-button"
+      [disabled]="busy()"
+      [attr.aria-label]="'Close' | t"
+      (click)="mergeDialog.close()"
+    >
+      ×
+    </button>
+  </header>
+  <div class="merge-body">
+    <app-error-notice [message]="error()" />
+    @if (result(); as summary) {
+      <section role="status">
+        <h3>{{ 'Merge complete' | t }}</h3>
+        <p>{{ summary.source }} → {{ summary.target }}</p>
+        <p>{{ 'Updated games' | t }} · {{ summary.count }}</p>
+        <p>{{ 'All merged records now belong to the retained player.' | t }}</p>
+      </section>
+      <footer>
+        <button (click)="mergeDialog.close()">{{ 'Close' | t }}</button>
+      </footer>
+    } @else {
+      <p>
+        {{
+          'Merge old records into the retained player. Players in the same game cannot be merged.'
+            | t
+        }}
+      </p>
+      <label>
+        {{ 'Player to merge' | t }}
+        <select [(ngModel)]="source" [disabled]="busy()">
+          <option value="">{{ 'Choose player' | t }}</option>
+          @for (player of players(); track player.id) {
+            <option [value]="player.id">{{ label(player) }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        {{ 'Retained player' | t }}
+        <select [(ngModel)]="target" [disabled]="busy()">
+          <option value="">{{ 'Choose player' | t }}</option>
+          @for (player of players(); track player.id) {
+            <option [value]="player.id" [disabled]="player.id === source">
+              {{ label(player) }}
+            </option>
+          }
+        </select>
+      </label>
+      <footer>
+        <button class="secondary" [disabled]="busy()" (click)="mergeDialog.close()">
+          {{ 'Cancel' | t }}
+        </button>
+        <button [disabled]="busy() || !source || !target || source === target" (click)="merge()">
+          {{ (busy() ? 'Loading…' : 'Confirm merge') | t }}
+        </button>
+      </footer>
+    }
+  </div>
+</dialog>
