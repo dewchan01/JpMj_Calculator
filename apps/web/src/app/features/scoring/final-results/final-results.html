@@ -106,7 +106,8 @@
                     {{ 'Uma' | t }}
                     <app-signed-value [value]="row.uma" />
                     @if (row.rank === 1) {
-                      · {{ 'Oka' | t }}
+                      <br />
+                      {{ 'Oka' | t }}
                       <app-signed-value [value]="row.oka" />
                     }
                   </small>
