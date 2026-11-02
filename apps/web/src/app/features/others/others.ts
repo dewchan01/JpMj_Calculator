@@ -115,6 +115,12 @@ export class Others {
       icon: 'M5 3h14v18H5ZM8 6h8v4H8Zm0 8h2m4 0h2m-8 4h2m4 0h2',
     },
     {
+      path: '/others/money-display',
+      title: 'Money and chip settings',
+      group: 'Preferences',
+      icon: 'M12 3v18m5-14H9a3 3 0 0 0 0 6h6a3 3 0 0 1 0 6H6',
+    },
+    {
       path: '/others/data-management',
       title: 'Manage local data',
       group: 'Data',

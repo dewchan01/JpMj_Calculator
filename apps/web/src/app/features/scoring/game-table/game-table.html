@@ -1503,22 +1503,24 @@
             {{ m.playerCount }}P
           </p>
           @for (group of settingGroups; track group.title) {
-            <section class="saved-rule-group">
-              <h3>{{ group.title | t }}</h3>
-              <dl>
-                @for (field of group.fields; track field.key) {
-                  @if (
-                    (!field.threeOnly || m.playerCount === 3) &&
-                    (field.key !== 'uma4' || m.playerCount === 4)
-                  ) {
-                    <div>
-                      <dt>{{ field.label | t }}</dt>
-                      <dd>{{ settingValue(field) }}</dd>
-                    </div>
+            @if (!scoringMode.hideMoney() || group.title !== 'Betting & chips') {
+              <section class="saved-rule-group">
+                <h3>{{ group.title | t }}</h3>
+                <dl>
+                  @for (field of group.fields; track field.key) {
+                    @if (
+                      (!field.threeOnly || m.playerCount === 3) &&
+                      (field.key !== 'uma4' || m.playerCount === 4)
+                    ) {
+                      <div>
+                        <dt>{{ field.label | t }}</dt>
+                        <dd>{{ settingValue(field) }}</dd>
+                      </div>
+                    }
                   }
-                }
-              </dl>
-            </section>
+                </dl>
+              </section>
+            }
           }
         }
         @case ('difference') {

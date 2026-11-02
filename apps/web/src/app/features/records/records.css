@@ -569,3 +569,12 @@ thead th {
 .player-card table td[colspan] {
   text-align: center;
 }
+.game-card table :is(th, td) {
+  text-align: center;
+}
+.signed-points {
+  --score-positive: #276344;
+  --score-negative: #a03b2f;
+  --score-positive-dark: #a3ddb4;
+  --score-negative-dark: #ffb6a3;
+}

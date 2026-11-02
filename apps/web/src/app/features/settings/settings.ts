@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { ScoringMode } from '../../core/scoring-mode';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { RuleLibrary } from './rule-library';
@@ -30,6 +31,7 @@ import {
   styleUrl: './settings.css',
 })
 export class Settings {
+  readonly displaySettings = inject(ScoringMode);
   private readonly toast = inject(Toast);
   readonly library = inject(RuleLibrary);
   readonly count = signal<3 | 4>(

@@ -150,6 +150,17 @@
           </label>
         </fieldset>
       }
+      @case ('money-display') {
+        <label class="advanced-mode-toggle">
+          <span>{{ 'Hide money columns in records' | t }}</span>
+          <input
+            type="checkbox"
+            role="switch"
+            [checked]="scoringMode.hideMoney()"
+            (change)="scoringMode.setHideMoney($any($event.target).checked)"
+          />
+        </label>
+      }
       @case ('sound') {
         <app-music-settings />
         <p class="hint">

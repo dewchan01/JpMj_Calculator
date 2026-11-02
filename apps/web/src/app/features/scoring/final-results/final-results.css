@@ -320,3 +320,12 @@ dd {
 .money-conversion {
   white-space: nowrap;
 }
+.result-table:not(.comparison-table) :is(th, td) {
+  text-align: center;
+}
+.signed-points {
+  --score-positive: #276344;
+  --score-negative: #a03b2f;
+  --score-positive-dark: #a3ddb4;
+  --score-negative-dark: #ffb6a3;
+}

@@ -1,4 +1,4 @@
-<div class="records-controls">
+﻿<div class="records-controls">
   <header class="records-heading">
     <div>
       <h1>{{ 'Records' | t }}</h1>
@@ -43,11 +43,15 @@
           <option value="rank-reverse">{{ 'Average rank: worst first' | t }}</option>
           <option value="score">{{ 'Total score: highest first' | t }}</option>
           <option value="score-reverse">{{ 'Total score: lowest first' | t }}</option>
-          <option value="money">{{ 'Total money: highest first' | t }}</option>
-          <option value="money-reverse">{{ 'Total money: lowest first' | t }}</option>
+          @if (!displaySettings.hideMoney()) {
+            <option value="money">{{ 'Total money: highest first' | t }}</option>
+          }
+          @if (!displaySettings.hideMoney()) {
+            <option value="money-reverse">{{ 'Total money: lowest first' | t }}</option>
+          }
         </select>
       </label>
-      @if (currencies().length > 1) {
+      @if (!displaySettings.hideMoney() && currencies().length > 1) {
         <label>
           {{ 'Money sort currency' | t }}
           <select [formControl]="currency">
@@ -186,7 +190,9 @@
               <th>{{ 'Player' | t }}</th>
               <th>{{ 'Points' | t }}</th>
               <th>{{ 'Total score' | t }}</th>
-              <th>{{ 'Total money' | t }}</th>
+              @if (!displaySettings.hideMoney()) {
+                <th>{{ 'Total money' | t }}</th>
+              }
             </tr>
           </thead>
           <tbody>
@@ -194,7 +200,9 @@
               <tr>
                 <td>{{ row.rank }}</td>
                 <th scope="row" class="player-name" [title]="row.name">{{ row.name }}</th>
-                <td>{{ row.points | number }}</td>
+                <td>
+                  <app-signed-value class="signed-points" [value]="row.points" digits="1.0-0" />
+                </td>
                 <td>
                   <strong><app-signed-value [value]="row.finalScore" /></strong>
                   <small class="score-breakdown">
@@ -210,10 +218,12 @@
                     }
                   </small>
                 </td>
-                <td>
-                  <app-signed-value [value]="row.totalMoney" digits="1.2-2" />
-                  {{ game.match.ended ? game.currency : '' }}
-                </td>
+                @if (!displaySettings.hideMoney()) {
+                  <td>
+                    <app-signed-value [value]="row.totalMoney" digits="1.2-2" />
+                    {{ game.match.ended ? game.currency : '' }}
+                  </td>
+                }
               </tr>
             }
           </tbody>
@@ -238,7 +248,9 @@
           <tr>
             <th>{{ 'Player' | t }}</th>
             <th>{{ 'Average rank' | t }}</th>
-            <th class="total-money">{{ 'Total money' | t }}</th>
+            @if (!displaySettings.hideMoney()) {
+              <th class="total-money">{{ 'Total money' | t }}</th>
+            }
             <th>{{ 'Total score' | t }}</th>
           </tr>
         </thead>
@@ -266,21 +278,25 @@
               <td class="average-rank">
                 {{ player.averageRank | number: '1.2-2' }}
               </td>
-              <td class="total-money">
-                @for (amount of player.money | keyvalue; track amount.key) {
-                  <span class="money-line">
-                    <app-signed-value [value]="amount.value" digits="1.2-2" />
-                    <span class="money-currency">{{ amount.key }}</span>
-                  </span>
-                }
-              </td>
+              @if (!displaySettings.hideMoney()) {
+                <td class="total-money">
+                  @for (amount of player.money | keyvalue; track amount.key) {
+                    <span class="money-line">
+                      <app-signed-value [value]="amount.value" digits="1.2-2" />
+                      <span class="money-currency">{{ amount.key }}</span>
+                    </span>
+                  }
+                </td>
+              }
               <td>
                 <app-signed-value [value]="player.score" digits="1.0-2" />
               </td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="4">{{ 'No completed games match these filters.' | t }}</td>
+              <td [attr.colspan]="displaySettings.hideMoney() ? 3 : 4">
+                {{ 'No completed games match these filters.' | t }}
+              </td>
             </tr>
           }
         </tbody>

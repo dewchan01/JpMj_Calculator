@@ -1,4 +1,4 @@
-<section class="final-results">
+﻿<section class="final-results">
   <div class="result-controls page-sticky-controls">
     <ng-content select="[resultHeading]" />
     <p class="game-time-range">
@@ -96,7 +96,9 @@
                     {{ row.name }}
                   </button>
                 </th>
-                <td>{{ row.points | number }}</td>
+                <td>
+                  <app-signed-value class="signed-points" [value]="row.points" digits="1.0-0" />
+                </td>
                 <td>
                   <strong><app-signed-value [value]="row.finalScore" /></strong>
                   <small class="score-breakdown">
@@ -111,7 +113,9 @@
                       <app-signed-value [value]="row.oka" />
                     }
                   </small>
-                  @if (settings().bettingRate || settings().chipValue) {
+                  @if (
+                    !displaySettings.hideMoney() && (settings().bettingRate || settings().chipValue)
+                  ) {
                     <small class="money-conversion">
                       <app-signed-value [value]="row.totalMoney" digits="1.2-2" />
                       {{ settings().currency }}
@@ -149,7 +153,9 @@
             <tr>
               <th scope="row">{{ 'Points' | t }}</th>
               @for (row of rows(); track row.id) {
-                <td>{{ row.points | number }}</td>
+                <td>
+                  <app-signed-value class="signed-points" [value]="row.points" digits="1.0-0" />
+                </td>
               }
             </tr>
             <tr>
@@ -182,7 +188,7 @@
                 <td><app-signed-value [value]="row.chips" /></td>
               }
             </tr>
-            @if (settings().bettingRate || settings().chipValue) {
+            @if (!displaySettings.hideMoney() && (settings().bettingRate || settings().chipValue)) {
               <tr>
                 <th scope="row">{{ 'Score money' | t }}</th>
                 @for (row of rows(); track row.id) {

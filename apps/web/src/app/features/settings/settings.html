@@ -29,61 +29,63 @@
 </div>
 <div class="settings-groups">
   @for (group of groups; track group.title) {
-    <section class="card">
-      <h2>{{ group.title | t }}</h2>
-      <div class="settings-fields">
-        @for (field of group.fields; track field.key) {
-          @if ((!field.threeOnly || count() === 3) && (field.key !== 'uma4' || count() === 4)) {
-            <div class="setting-field">
-              <label [class.check]="field.type === 'checkbox'">
-                @if (field.type === 'checkbox') {
-                  <input type="checkbox" [formControl]="form.controls[field.key]" />
+    @if (!displaySettings.hideMoney() || group.title !== 'Betting & chips') {
+      <section class="card">
+        <h2>{{ group.title | t }}</h2>
+        <div class="settings-fields">
+          @for (field of group.fields; track field.key) {
+            @if ((!field.threeOnly || count() === 3) && (field.key !== 'uma4' || count() === 4)) {
+              <div class="setting-field">
+                <label [class.check]="field.type === 'checkbox'">
+                  @if (field.type === 'checkbox') {
+                    <input type="checkbox" [formControl]="form.controls[field.key]" />
+                  }
+                  <span class="setting-label">{{ field.label | t }}</span>
+                  @switch (field.type) {
+                    @case ('number') {
+                      <input
+                        type="number"
+                        [min]="field.min ?? 0"
+                        [max]="field.max ?? 100000"
+                        [step]="field.step ?? 1"
+                        [formControl]="form.controls[field.key]"
+                      />
+                    }
+                    @case ('text') {
+                      <input maxlength="16" [formControl]="form.controls[field.key]" />
+                    }
+                    @case ('select') {
+                      <select [formControl]="form.controls[field.key]">
+                        @for (option of field.options; track option.value) {
+                          <option [ngValue]="option.value">{{ option.label | t }}</option>
+                        }
+                      </select>
+                    }
+                  }
+                </label>
+                @if (field.hint) {
+                  <div class="setting-help" [class.open]="help() === field.key">
+                    <button
+                      type="button"
+                      class="help-button"
+                      [attr.aria-label]="(field.label | t) + ': ' + ('What does this mean?' | t)"
+                      [attr.aria-expanded]="help() === field.key"
+                      [attr.aria-describedby]="'hint-' + field.key"
+                      (click)="toggleHelp(field.key, $event)"
+                    >
+                      ?
+                    </button>
+                    <p class="help-bubble" role="tooltip" [id]="'hint-' + field.key">
+                      {{ field.hint | t }}
+                    </p>
+                  </div>
                 }
-                <span class="setting-label">{{ field.label | t }}</span>
-                @switch (field.type) {
-                  @case ('number') {
-                    <input
-                      type="number"
-                      [min]="field.min ?? 0"
-                      [max]="field.max ?? 100000"
-                      [step]="field.step ?? 1"
-                      [formControl]="form.controls[field.key]"
-                    />
-                  }
-                  @case ('text') {
-                    <input maxlength="16" [formControl]="form.controls[field.key]" />
-                  }
-                  @case ('select') {
-                    <select [formControl]="form.controls[field.key]">
-                      @for (option of field.options; track option.value) {
-                        <option [ngValue]="option.value">{{ option.label | t }}</option>
-                      }
-                    </select>
-                  }
-                }
-              </label>
-              @if (field.hint) {
-                <div class="setting-help" [class.open]="help() === field.key">
-                  <button
-                    type="button"
-                    class="help-button"
-                    [attr.aria-label]="(field.label | t) + ': ' + ('What does this mean?' | t)"
-                    [attr.aria-expanded]="help() === field.key"
-                    [attr.aria-describedby]="'hint-' + field.key"
-                    (click)="toggleHelp(field.key, $event)"
-                  >
-                    ?
-                  </button>
-                  <p class="help-bubble" role="tooltip" [id]="'hint-' + field.key">
-                    {{ field.hint | t }}
-                  </p>
-                </div>
-              }
-            </div>
+              </div>
+            }
           }
-        }
-      </div>
-    </section>
+        </div>
+      </section>
+    }
   }
 </div>
 <section class="card settings-actions">

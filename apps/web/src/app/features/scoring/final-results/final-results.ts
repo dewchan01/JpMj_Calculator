@@ -48,6 +48,7 @@ import { durationMinutes } from '../../records/record-stats';
   styleUrl: './final-results.css',
 })
 export class FinalResults {
+  readonly displaySettings = inject(ScoringMode);
   readonly retention = inject(RecordRetention);
   readonly kept = signal(false);
   async keepGame(): Promise<void> {
@@ -246,3 +247,4 @@ export class FinalResults {
   readonly rows = computed(() => finalStandings(this.match()));
   readonly settings = computed(() => tableRules(this.match().rules));
 }
+import { ScoringMode } from '../../../core/scoring-mode';

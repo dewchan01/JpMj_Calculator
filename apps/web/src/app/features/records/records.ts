@@ -34,6 +34,7 @@ import { PlayerLibrary } from '../matches/data-access/player-library';
   styleUrl: './records.css',
 })
 export class Records {
+  readonly displaySettings = inject(ScoringMode);
   private readonly route = inject(ActivatedRoute);
   private readonly repo = inject(Repository);
   readonly i18n = inject(I18n);
@@ -220,3 +221,4 @@ export class Records {
     this.filters.reset({ from: '', to: '', mode: '', participant: '' });
   }
 }
+import { ScoringMode } from '../../core/scoring-mode';
