@@ -267,6 +267,12 @@ select:focus-visible {
   outline: none;
   box-shadow: inset 0 -3px 0 var(--green);
 }
+/* Native dialogs restore focus even after touch navigation. Keep the gold ring for keyboards. */
+@media (pointer: coarse) {
+  app-root:not(.keyboard-focus) :is(button, a, input, select, summary):focus-visible {
+    outline: none;
+  }
+}
 h1,
 h2,
 h3,

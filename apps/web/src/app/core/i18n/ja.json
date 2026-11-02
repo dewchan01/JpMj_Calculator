@@ -30,7 +30,7 @@
   "Mangan and Baiman reverse Tsumo payments from the payer to the selected recipients, without Honba.": "満貫・倍満のツモ支払いを逆にして選択した相手へ支払います。本場は加算しません。",
   "Keep the dealer and Honba, refund this hand’s Riichi deposits and start the hand again.": "親と本場を維持し、この局のリーチ供託を返してやり直します。",
   "Point transfers": "点数の支払い",
-  "Game started": "対局開始",
+  "Match started": "対局開始",
   "Current hand": "進行中の局",
   "Extend to East and South": "東南戦に延長",
   "This match cannot be extended to South.": "この対局は東南戦に延長できません。",

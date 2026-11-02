@@ -12,7 +12,12 @@ import { DialogBackdrop } from './shared/dialog-backdrop';
 import { MusicSettings } from './shared/music-settings/music-settings';
 @Component({
   selector: 'app-root',
-  host: { '(contextmenu)': 'preventMobileHold($event)' },
+  host: {
+    '(contextmenu)': 'preventMobileHold($event)',
+    '(document:pointerdown)': 'keyboardFocus.set(false)',
+    '(document:keydown)': 'trackKeyboardFocus($event)',
+    '[class.keyboard-focus]': 'keyboardFocus()',
+  },
   imports: [
     ToastHost,
     TranslatePipe,
@@ -26,6 +31,10 @@ import { MusicSettings } from './shared/music-settings/music-settings';
   styleUrl: './app.css',
 })
 export class App {
+  readonly keyboardFocus = signal(false);
+  trackKeyboardFocus(event: KeyboardEvent): void {
+    if (event.key === 'Tab' || event.key.startsWith('Arrow')) this.keyboardFocus.set(true);
+  }
   readonly musicOpen = signal(false);
   preventMobileHold(event: MouseEvent): void {
     if (!window.matchMedia('(pointer: coarse)').matches) return;
