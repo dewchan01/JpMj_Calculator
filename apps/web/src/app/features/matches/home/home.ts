@@ -48,6 +48,13 @@ import { localDateTimeInput } from '../../../core/i18n/date-format';
   styleUrl: './home.css',
 })
 export class Home {
+  myPlayerName(): string {
+    const selected = this.setup().mySeat;
+    return selected.startsWith('profile:')
+      ? (this.playerLibrary.players().find((player) => player.id === selected.slice(8))?.name ??
+          this.i18n.t('Choose player'))
+      : (this.activeNames()[+selected] ?? this.i18n.t('Choose player'));
+  }
   closeStartFlow(): void {
     closeDialogGroup('start-game');
   }
@@ -59,6 +66,8 @@ export class Home {
     return this.sharedGameId();
   };
   async openShared(mode: 'host' | 'join', dialog: HTMLDialogElement): Promise<void> {
+    this.error.set('');
+    if (mode === 'host' && !this.validateMyPlayer()) return;
     this.sharedGameId.set('');
     this.sharedMode.set('');
     this.sharedMode.set(mode);
@@ -212,6 +221,7 @@ export class Home {
     if (sort === 'asc' || sort === 'desc' || sort === 'newest') this.sortPlayers(sort);
   }
   alreadySeated(name: string): boolean {
+    if (this.pickerSeat() === -1) return false;
     return (
       this.pickerSeat() !== null &&
       this.setup()
@@ -223,6 +233,10 @@ export class Home {
     const index = this.pickerSeat();
     const player = this.playerLibrary.players().find((player) => player.id === id);
     if (index === null || !player) return false;
+    if (index === -1) {
+      this.setup.update((setup) => ({ ...setup, mySeat: 'profile:' + player.id }));
+      return true;
+    }
     if (this.alreadySeated(player.name)) {
       this.playerError.set('Choose a different player for each seat.');
       return false;
@@ -269,7 +283,7 @@ export class Home {
     this.setup.update((setup) => ({
       ...setup,
       names: [...names, ...setup.names.slice(this.count())],
-      mySeat: String(mySeat),
+      mySeat: Number.isNaN(mySeat) ? this.setup().mySeat : String(mySeat),
     }));
     this.seatNotice.set('');
   }
@@ -330,6 +344,20 @@ export class Home {
   private readonly repo = inject(Repository);
   private readonly router = inject(Router);
   readonly error = signal('');
+  private validateMyPlayer(): boolean {
+    const selected = this.setup().mySeat;
+    const profile = selected.startsWith('profile:')
+      ? this.playerLibrary.players().find((player) => player.id === selected.slice(8))
+      : null;
+    const seated = selected.startsWith('profile:')
+      ? !!profile &&
+        this.setup()
+          .names.slice(0, this.count())
+          .some((name) => name.trim() === profile.name)
+      : Number.isInteger(+selected) && +selected >= 0 && +selected < this.count();
+    if (!seated) this.error.set('Your player must be seated at this table before starting.');
+    return seated;
+  }
   readonly busy = signal(false);
   readonly seats = ['East', 'South', 'West', 'North'];
   readonly count = signal<3 | 4>(this.library.preferredCount);
@@ -356,7 +384,8 @@ export class Home {
       for (let seat = 0; seat < this.count(); seat++) {
         if (!names[seat].trim() && available.length) names[seat] = available.shift()!.name;
       }
-      return { ...setup, names };
+      const selected = players.find((player) => player.name === names[+setup.mySeat]);
+      return { ...setup, names, mySeat: selected ? 'profile:' + selected.id : setup.mySeat };
     });
   }
   async create(resultsOnly = false, shared = false): Promise<void> {
@@ -379,6 +408,17 @@ export class Home {
       }));
       if (new Set(players.map((p) => p.name)).size !== players.length)
         throw new Error('Choose a different player for each seat.');
+      const selectedProfile = setup.mySeat.startsWith('profile:') ? setup.mySeat.slice(8) : null;
+      const selectedSeat = selectedProfile
+        ? players.findIndex((player) => player.profileId === selectedProfile)
+        : +setup.mySeat;
+      if (
+        !resultsOnly &&
+        (selectedSeat < 0 || selectedSeat >= players.length || !Number.isInteger(selectedSeat))
+      ) {
+        this.error.set('Your player must be seated at this table before starting.');
+        return;
+      }
       const now = new Date().toISOString();
       let match: Match = {
         id: newId(),
@@ -400,7 +440,7 @@ export class Home {
         clock: { elapsedMs: 0, runningSince: shared ? null : now, handStartMs: 0 },
       };
       match.gameLength = rules.preset === 'm-league' ? 'south' : setup.gameLength;
-      const mySeat = +setup.mySeat < players.length ? +setup.mySeat : 0;
+      const mySeat = selectedSeat >= 0 && selectedSeat < players.length ? selectedSeat : 0;
       localStorage.setItem(
         `riichi-view:${match.id}`,
         JSON.stringify(

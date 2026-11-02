@@ -1,4 +1,5 @@
 {
+  "Your player must be seated at this table before starting.": "開始前に自分のプレイヤーをこの対局の座席に配置してください。",
   "This game is saved automatically.": "対局は自動保存されます。",
   "Merge players": "プレイヤーを統合",
   "Merge complete": "統合完了",

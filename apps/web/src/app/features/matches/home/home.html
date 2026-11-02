@@ -1,7 +1,4 @@
 <app-install-banner />
-@if (error()) {
-  <app-error-notice [message]="error()" />
-}
 <div class="setup-tools" [attr.aria-label]="'Table tools' | t" role="group">
   <button
     (click)="openPlayers(playersDialog)"
@@ -60,13 +57,15 @@
       </div>
       <app-rule-picker [profile]="rules()" />
       <div class="setup-fields">
-        <label>
-          {{ 'My player' | t }}
-          <select [formField]="setupForm.mySeat">
-            @for (player of activeNames(); track $index; let index = $index) {
-              <option [value]="index">{{ player || ('Player ' + (index + 1) | t) }}</option>
-            }
-          </select>
+        <label class="seat-choice">
+          <span class="field-label">{{ 'My player' | t }}</span>
+          <button type="button" class="field-control" (click)="openPlayers(playersDialog, -1)">
+            <strong>{{ myPlayerName() }}</strong>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="9" cy="8" r="3" />
+              <path d="M3 21v-3a6 6 0 0 1 12 0v3m4-13v8m-4-4h8" />
+            </svg>
+          </button>
         </label>
         <label>
           {{ 'Game length' | t }}
@@ -258,7 +257,7 @@
   <header class="players-heading dialog-header">
     <h2 id="players-title">
       {{ (pickerSeat() === null ? 'Saved players' : 'Choose player') | t }}
-      @if (pickerSeat() !== null) {
+      @if (pickerSeat() !== null && pickerSeat()! >= 0) {
         · {{ seats[pickerSeat()!] | t }}
       }
     </h2>
@@ -516,7 +515,7 @@
     <button class="secondary" (click)="create()" [disabled]="busy()">{{ 'Start game' | t }}</button>
     <button
       class="secondary"
-      (click)="sharedRoleDialog.showModal()"
+      (click)="error.set(''); sharedRoleDialog.showModal()"
       [disabled]="busy()"
       aria-haspopup="dialog"
     >

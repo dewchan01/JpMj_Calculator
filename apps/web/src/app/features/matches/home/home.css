@@ -342,6 +342,19 @@
 .setup-fields select {
   padding-right: 28px;
 }
+.setup-fields > label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.setup-fields > label > .field-label {
+  margin: 0;
+}
+.setup-fields > label > :is(input, select, button) {
+  margin: 0;
+  height: var(--field-control-height);
+  min-height: var(--field-control-height);
+}
 .players-dialog.player-sheet {
   height: min(80dvh, 760px);
   overflow: hidden;
