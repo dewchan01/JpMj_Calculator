@@ -68,9 +68,6 @@
         @if (error()) {
           <app-error-notice [message]="error()" />
         }
-        @if (history.entries().length) {
-          <hr class="transfer-error-divider" />
-        }
         <ul class="share-history-list">
           @for (entry of history.entries(); track entry.id) {
             <li>
@@ -135,7 +132,6 @@
         @if (error()) {
           <app-error-notice [message]="error()" />
         }
-        <hr class="transfer-error-divider" />
         <div class="dialog-fields date-range-fields">
           <label>
             {{ 'From date' | t }}
@@ -309,7 +305,6 @@
     @if (error()) {
       <app-error-notice [message]="error()" />
     }
-    <hr class="transfer-error-divider" />
     @if (share(); as receipt) {
       @if (!error()) {
         <p class="hint">
