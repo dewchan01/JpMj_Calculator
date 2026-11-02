@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+﻿import { test, expect } from '@playwright/test';
 import { gameMenu, prompt, enterLiveTiles, playerAction } from './helpers/game';
 test.use({ serviceWorkers: 'block' });
 
@@ -420,12 +420,16 @@ test('host permissions synchronize and final choices affect only each local copy
   await expect(guest.locator('app-player-presence')).toHaveCount(0);
   await gameMenu(host, 'End entire match');
   await prompt(host).getByRole('button', { name: 'End entire match', exact: true }).click();
-  await expect(prompt(host).getByRole('button', { name: 'Save game', exact: true })).toBeVisible();
-  await expect(prompt(guest).getByRole('button', { name: 'Save game', exact: true })).toBeVisible();
+  await expect(prompt(host).getByRole('button', { name: 'Save game', exact: true })).toHaveCount(0);
+  await expect(prompt(guest).getByRole('button', { name: 'Save game', exact: true })).toHaveCount(
+    0,
+  );
   await prompt(host).getByRole('button', { name: 'Discard game', exact: true }).click();
   await expect(host.locator('.game-shell')).toHaveCount(0);
-  await expect(prompt(guest).getByRole('button', { name: 'Save game', exact: true })).toBeVisible();
-  await prompt(guest).getByRole('button', { name: 'Save game', exact: true }).click();
+  await expect(prompt(guest).getByRole('button', { name: 'Save game', exact: true })).toHaveCount(
+    0,
+  );
+  await guest.goto('/records');
   await expect(guest).toHaveURL(/records/);
   const access = await host.evaluate(
     (apiUrl) => JSON.parse(localStorage.getItem(`riichi-room:${apiUrl}`)!),

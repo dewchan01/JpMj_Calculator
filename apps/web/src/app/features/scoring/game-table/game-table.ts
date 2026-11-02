@@ -198,7 +198,11 @@ export class GameTable {
       localStorage.setItem('riichi-view:' + this.match()!.id, JSON.stringify(order));
   }
   showResultsIfEnded(match: Match): void {
-    if (!match.ended || this.resultShown === match.id) return;
+    if (!match.ended) {
+      this.resultShown = '';
+      return;
+    }
+    if (this.resultShown === match.id) return;
     setTimeout(() => {
       if (!this.match()?.ended || this.resultShown === match.id) return;
       if (this.busy()) {
@@ -640,6 +644,11 @@ export class GameTable {
     });
     this.room.canProcess = () => !this.busy() && !this.editingHand();
     this.room.changed = (match) => {
+      if (this.match()?.ended && !match.ended) {
+        this.close();
+        this.panelParents.set([]);
+        this.resultShown = '';
+      }
       if (!this.editingHand()) {
         const kans = (value: Match | null) =>
           Object.values(value?.live?.players ?? {})
@@ -886,6 +895,7 @@ export class GameTable {
       else await this.repo.save(updated, previous?.updatedAt);
     }
     this.match.set(updated);
+    if (!updated.ended) this.resultShown = '';
     this.now.set(Date.now());
   }
   private async act(action: () => Promise<void>): Promise<void> {

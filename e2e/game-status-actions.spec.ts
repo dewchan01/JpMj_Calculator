@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+﻿import { test, expect } from '@playwright/test';
 import { gameMenu, prompt } from './helpers/game';
 
 test('end-match and final-result actions align to the right on phones', async ({ page }) => {
@@ -15,7 +15,7 @@ test('end-match and final-result actions align to the right on phones', async ({
   expect(Math.abs(finishBox.x + finishBox.width - endBox.x - endBox.width)).toBeLessThan(1);
   await end.click();
   const actions = page.locator('.result-actions');
-  await expect(actions.getByRole('button', { name: 'Save game', exact: true })).toBeVisible();
+  await expect(actions.getByRole('button', { name: 'Save game', exact: true })).toHaveCount(0);
   const groupBox = (await actions.boundingBox())!;
   const lastBox = (await actions
     .getByRole('button', { name: 'Discard game', exact: true })

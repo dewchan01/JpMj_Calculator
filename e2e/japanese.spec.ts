@@ -1,4 +1,4 @@
-import { beginWin, finishWin, gameMenu, prompt } from './helpers/game';
+﻿import { beginWin, finishWin, gameMenu, prompt } from './helpers/game';
 import { setLanguage } from './helpers/navigation';
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
@@ -22,7 +22,9 @@ test('Japanese saved matches and history format dates without changing names', a
   await setLanguage(page, 'en');
   await gameMenu(page, 'End entire match');
   await prompt(page).getByRole('button', { name: 'End entire match', exact: true }).click();
-  await prompt(page).getByRole('button', { name: 'Save game', exact: true }).click();
+  await expect(page.locator('app-final-results')).toBeVisible();
+  await page.goto('/');
+  await page.goto('/records');
   await setLanguage(page, 'ja');
   await expect(page.getByText('陳萬發', { exact: true })).toBeVisible();
   expect(errors).toEqual([]);

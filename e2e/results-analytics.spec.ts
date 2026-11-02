@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+﻿import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { beginWin, enterLiveTiles, finishWin, gameMenu, prompt } from './helpers/game';
 
@@ -121,7 +121,7 @@ test('final results offer table, list, history, statistics, PNG export, keep and
     .evaluateAll((players) => players.map((player) => player.getBoundingClientRect().y));
   expect(new Set(playerPositions).size).toBe(1);
   await page.screenshot({ path: 'artifacts/history-compact-390.png' });
-  await results.getByRole('button', { name: 'Save game', exact: true }).click();
+  await page.goto('/records');
   await expect(page).toHaveURL(/\/records$/);
   await page.locator('.game-card-link').click();
   await expect(page).toHaveURL(/\/records\/[^/]+$/);

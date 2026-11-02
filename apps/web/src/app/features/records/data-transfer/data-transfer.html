@@ -30,7 +30,14 @@
         <span>{{ 'Manage local data' | t }}</span>
         <span aria-hidden="true">&#8250;</span>
       </a>
-      <app-player-merge />
+      <a routerLink="/others/data/merge-players">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="8" cy="7" r="3" />
+          <path d="M2 20v-2a6 6 0 0 1 12 0v2M16 4a3 3 0 0 1 0 6m2 4h4m-2-2 2 2-2 2M18 20h-2" />
+        </svg>
+        <span>{{ 'Merge players' | t }}</span>
+        <span aria-hidden="true">&#8250;</span>
+      </a>
     </div>
   </section>
 } @else {

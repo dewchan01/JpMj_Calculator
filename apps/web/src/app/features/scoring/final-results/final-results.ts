@@ -187,19 +187,6 @@ export class FinalResults {
       this.busy.set(false);
     }
   }
-  async keepGame(): Promise<void> {
-    this.busy.set(true);
-    try {
-      const save = this.saveLocal();
-      if (save) await save(this.match());
-      else await this.repo.save(this.match(), this.match().updatedAt);
-      await this.router.navigateByUrl('/records');
-    } catch {
-      this.notice.set('Could not save match.');
-    } finally {
-      this.busy.set(false);
-    }
-  }
   async discardGame(): Promise<void> {
     if (this.busy() || !this.discardDialog().nativeElement.open) return;
     this.busy.set(true);

@@ -324,11 +324,15 @@ export class RoomSession {
           this.state.set(state);
         }
       }
-      if (state.match) this.changed(state.match);
-      if (state.match && this.access()?.host && this.backedUpRevision !== state.revision) {
+      if (
+        state.match &&
+        (this.access()?.host || state.match.ended) &&
+        this.backedUpRevision !== state.revision
+      ) {
         await this.backup(state.match);
         this.backedUpRevision = state.revision;
       }
+      if (state.match) this.changed(state.match);
       if (!this.access()?.host) {
         const last = [...state.actions].sort((a, b) => b.createdAt - a.createdAt)[0];
         if (last) {
@@ -362,7 +366,7 @@ export class RoomSession {
   }
   // Also backs up snapshots recovered after an acknowledgement was lost in transit.
   private async backup(match: Match): Promise<void> {
-    if (this.discardedLocal.has(match.id) || match.ended) return;
+    if (this.discardedLocal.has(match.id)) return;
     try {
       if (this.access()) await this.repo.linkRoom(match.id, this.access()!.id);
       const previous = await this.repo.get(match.id);

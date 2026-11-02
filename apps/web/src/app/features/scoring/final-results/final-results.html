@@ -307,7 +307,7 @@
         | t
     }}
   </p>
-  @if (match().ended && offerGameActions()) {
+  @if (match().ended && offerGameActions() && tab() === 'result') {
     <div class="result-actions">
       @if (offerReplay()) {
         <button class="primary extend-game" (click)="replayRequested.emit()" [disabled]="busy()">
@@ -319,21 +319,10 @@
           {{ 'Extend to East and South' | t }}
         </button>
       }
-      <button class="primary" (click)="keepGame()" [disabled]="busy()">
-        {{ 'Save game' | t }}
-      </button>
       <button class="action-delete danger" (click)="requestDiscard()" [disabled]="busy()">
         {{ 'Discard game' | t }}
       </button>
     </div>
-    <p class="hint">
-      {{
-        (saveLocal()
-          ? 'Save or discard only this device’s copy. Other players and the room are unaffected.'
-          : 'This game is saved automatically. Save keeps the record; discard removes it and its history.'
-        ) | t
-      }}
-    </p>
   }
 </section>
 <dialog

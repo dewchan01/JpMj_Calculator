@@ -1,4 +1,5 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, type OnInit } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '../../../core/i18n/i18n';
 import { ErrorNotice } from '../../../shared/error-notice/error-notice';
@@ -12,11 +13,14 @@ import {
 
 @Component({
   selector: 'app-player-merge',
-  imports: [FormsModule, TranslatePipe, ErrorNotice],
+  imports: [FormsModule, TranslatePipe, ErrorNotice, RouterLink],
   templateUrl: './player-merge.html',
   styleUrl: './player-merge.css',
 })
-export class PlayerMerge {
+export class PlayerMerge implements OnInit {
+  ngOnInit(): void {
+    void this.load();
+  }
   private readonly repository = inject(Repository);
   private readonly library = inject(PlayerLibrary);
   readonly players = signal<PlayerIdentity[]>([]);
@@ -28,12 +32,11 @@ export class PlayerMerge {
   label(player: PlayerIdentity): string {
     return identityLabel(player, this.players());
   }
-  async open(dialog: HTMLDialogElement): Promise<void> {
+  async load(): Promise<void> {
     this.error.set('');
     this.result.set(null);
     this.source = '';
     this.target = '';
-    dialog.showModal();
     this.busy.set(true);
     try {
       this.players.set(playerIdentities(await this.repository.list(), this.library.players()));

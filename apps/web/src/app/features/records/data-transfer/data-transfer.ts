@@ -25,7 +25,6 @@ import { CopyButton } from '../../../shared/copy-button/copy-button';
 import { filterMatches } from '../record-stats';
 import type { Match } from '../../../../../../../packages/mahjong-core/ledger';
 import { PlayerLibrary } from '../../matches/data-access/player-library';
-import { PlayerMerge } from '../../matches/player-merge/player-merge';
 import {
   playerIdentities,
   identityLabel,
@@ -37,7 +36,6 @@ import {
 @Component({
   selector: 'app-data-transfer',
   imports: [
-    PlayerMerge,
     RouterLink,
     CopyButton,
     FormsModule,

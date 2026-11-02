@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+﻿import { test, expect } from '@playwright/test';
 import { gameMenu, prompt } from './helpers/game';
 
 test.use({ serviceWorkers: 'block' });
@@ -15,7 +15,9 @@ test('an East-and-South game ended during East keeps its original length in reco
   await page.getByRole('button', { name: 'Start game', exact: true }).click();
   await gameMenu(page, 'End entire match');
   await prompt(page).getByRole('button', { name: 'End entire match', exact: true }).click();
-  await prompt(page).getByRole('button', { name: 'Save game', exact: true }).click();
+  await expect(page.locator('app-final-results')).toBeVisible();
+  await page.goto('/');
+  await page.goto('/records');
   await expect(page).toHaveURL('/records');
   await expect(page.locator('.game-card .eyebrow')).toContainText('East and South game');
   await expect(page.locator('.game-card .eyebrow')).not.toContainText('East-only game');

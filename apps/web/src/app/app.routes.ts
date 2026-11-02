@@ -1,6 +1,11 @@
 import { type Routes } from '@angular/router';
 
 export const routes: Routes = [
+  {
+    path: 'others/data/merge-players',
+    loadComponent: () =>
+      import('./features/matches/player-merge/player-merge').then((module) => module.PlayerMerge),
+  },
   ...(['import', 'export', 'share-history'] as const).map((mode) => ({
     path: `others/data/${mode}`,
     data: { transferMode: mode },

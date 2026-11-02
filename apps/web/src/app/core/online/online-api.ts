@@ -37,13 +37,20 @@ export interface RoomState {
 
 @Service()
 export class OnlineApi {
+  private readonly revokedRooms = new Set<string>();
+  private readonly roomReads = new Map<string, Promise<unknown>>();
   clearRoomAccess(id: string, token: string): void {
+    this.revokedRooms.add(`${id.toUpperCase()}:${token}`);
     const key = `riichi-room:${this.url()}`;
     for (const name of ['sessionStorage', 'localStorage'] as const) {
       try {
         const storage = window[name];
         const saved = JSON.parse(storage.getItem(key) ?? 'null');
-        if (saved?.id === id && saved?.token === token) {
+        if (
+          typeof saved?.id === 'string' &&
+          saved.id.toUpperCase() === id.toUpperCase() &&
+          saved?.token === token
+        ) {
           storage.removeItem(key);
           if (name === 'sessionStorage') storage.removeItem(`${key}:${id}:pin`);
         }
@@ -88,6 +95,31 @@ export class OnlineApi {
   async request<T>(
     path: string,
     method = 'GET',
+    body?: unknown,
+    token?: string,
+    headers?: Record<string, string>,
+  ): Promise<T> {
+    const roomRead = /^\/api\/rooms\/([a-f0-9]{10})(?:\/game)?(?:\?.*)?$/i.exec(path);
+    if (method === 'GET' && token && roomRead) {
+      const identity = `${roomRead[1].toUpperCase()}:${token}`;
+      if (this.revokedRooms.has(identity))
+        throw new Error('Room credentials are incorrect or expired.');
+      const key = `${path}:${token}`;
+      const pending = this.roomReads.get(key);
+      if (pending) return pending as Promise<T>;
+      const request = this.send<T>(path, method, body, token, headers);
+      this.roomReads.set(key, request);
+      try {
+        return await request;
+      } finally {
+        if (this.roomReads.get(key) === request) this.roomReads.delete(key);
+      }
+    }
+    return this.send<T>(path, method, body, token, headers);
+  }
+  private async send<T>(
+    path: string,
+    method: string,
     body?: unknown,
     token?: string,
     headers?: Record<string, string>,

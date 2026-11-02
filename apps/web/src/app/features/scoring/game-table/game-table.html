@@ -410,20 +410,22 @@
                 {{ 'Return home' | t }}
               </button>
             }
-            <button
-              class="return-table"
-              (click)="roomCode ? navigatePanel('leave-room') : returnToTables()"
-              [disabled]="busy()"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                @if (roomCode) {
-                  <path d="M10 17v4H3V3h7v4m-3 5h14m-5-5 5 5-5 5" />
-                } @else {
-                  <path d="m3 10 9-7 9 7v11h-7v-7h-4v7H3Z" />
-                }
-              </svg>
-              {{ (roomCode ? 'Exit room' : 'My table') | t }}
-            </button>
+            @if (!roomCode || !m.ended) {
+              <button
+                class="return-table"
+                (click)="roomCode ? navigatePanel('leave-room') : returnToTables()"
+                [disabled]="busy()"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  @if (roomCode) {
+                    <path d="M10 17v4H3V3h7v4m-3 5h14m-5-5 5 5-5 5" />
+                  } @else {
+                    <path d="m3 10 9-7 9 7v11h-7v-7h-4v7H3Z" />
+                  }
+                </svg>
+                {{ (roomCode ? 'Exit room' : 'My table') | t }}
+              </button>
+            }
           </div>
         }
         @case ('perspective') {
@@ -1430,6 +1432,7 @@
           />
         }
         @case ('help') {
+          <p>{{ 'This game is saved automatically.' | t }}</p>
           <p>
             {{
               'Tap a player to record Riichi, calls, Kan or North. Update indicators after Kan. End this hand opens guided settlement; end entire match calculates final standings. Pause excludes breaks from the timer. History can undo the latest settlement.'
