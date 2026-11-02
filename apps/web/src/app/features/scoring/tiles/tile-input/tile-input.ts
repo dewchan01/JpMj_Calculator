@@ -9,6 +9,9 @@ import {
   model,
   signal,
   afterNextRender,
+  afterRenderEffect,
+  untracked,
+  Injector,
   output,
   viewChild,
 } from '@angular/core';
@@ -43,17 +46,34 @@ import { PhotoCapture } from '../../capture/photo-capture/photo-capture';
   host: { '[attr.data-label]': 'label()' },
 })
 export class TileInput {
+  private readonly injector = inject(Injector);
   readonly directEntry = input(false);
+  readonly autoOpen = input(false);
+  readonly openRequest = input(0);
   readonly entryClosed = output<boolean>();
   private readonly entry = viewChild.required(TileEntryDialog);
   constructor() {
+    afterRenderEffect(() => {
+      if (this.openRequest() > 0) untracked(() => this.entry().show());
+    });
     afterNextRender(() => {
-      if (this.directEntry()) this.entry().show();
+      if (
+        this.directEntry() ||
+        (this.autoOpen() &&
+          (!this.value().trim() ||
+            (this.requiredCount() !== undefined && this.tiles().length !== this.requiredCount())))
+      )
+        this.entry().show();
     });
   }
   readonly notationHintId = `notation-hint-${newId()}`;
   readonly value = model('');
   readonly label = input.required<string>();
+  readonly entryTitle = computed(() => {
+    const action = this.meldType();
+    const title = this.i18n.t('Enter ' + this.label());
+    return action ? `${this.i18n.t(action)} · ${title}` : title;
+  });
   readonly playerCount = input.required<3 | 4>();
   readonly redFives = input(true);
   readonly meldType = input<MeldEntryType>();
@@ -105,6 +125,20 @@ export class TileInput {
   add(tile: Tile): void {
     this.value.set(this.notation([...this.tiles(), tile]));
     this.error.set('');
+    this.finishWhenComplete();
+  }
+  private finishWhenComplete(): void {
+    const required = this.requiredCount() ?? (this.maximumCount() === 1 ? 1 : undefined);
+    const complete = required !== undefined && this.tiles().length === required;
+    if ((complete || !!this.meldType()) && this.tiles().length && !this.entryError()) {
+      // The dialog's canFinish input updates on render, after the selected tile changes.
+      afterNextRender(
+        () => {
+          if (!this.entryError() && !this.error()) this.entry().finish();
+        },
+        { injector: this.injector },
+      );
+    }
   }
   dropTile(event: { index: number; target: string }): void {
     if (event.target !== 'preview' || event.index >= 100) return;
@@ -122,6 +156,7 @@ export class TileInput {
   applyPhoto(tiles: Tile[]): void {
     this.value.set(this.notation(tiles));
     this.error.set('');
+    this.finishWhenComplete();
   }
   remove(index: number): void {
     this.value.set(this.notation(this.tiles().filter((_, position) => position !== index)));
@@ -135,6 +170,7 @@ export class TileInput {
       parseTiles(this.editor().notation, 'input');
       this.value.set(this.editor().notation);
       this.error.set('');
+      this.finishWhenComplete();
     } catch {
       this.error.set('Invalid review notation. Correct the tiles before applying.');
     }

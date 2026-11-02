@@ -17,3 +17,9 @@ h1 {
   margin-left: auto;
   flex-shrink: 0;
 }
+:host {
+  --score-positive: #087e8b;
+  --score-negative: #b3342c;
+  --score-positive-dark: #69d4dc;
+  --score-negative-dark: #ff9a90;
+}

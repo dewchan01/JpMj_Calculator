@@ -73,7 +73,9 @@ export function applyRoomAction(
     case 'call': {
       const p = action.payload;
       if (
-        !['chi', 'pon', 'daiminkan', 'ankan', 'kakan', 'kita'].includes(String(p['type'])) ||
+        !['chi', 'pon', 'daiminkan', 'ankan', 'kakan', 'kita', 'manual'].includes(
+          String(p['type']),
+        ) ||
         typeof p['text'] !== 'string' ||
         p['text'].length > 40 ||
         typeof p['source'] !== 'string' ||

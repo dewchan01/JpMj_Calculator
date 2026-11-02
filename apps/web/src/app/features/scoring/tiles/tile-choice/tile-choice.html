@@ -19,7 +19,8 @@
 <dialog
   #dialog
   appDialogBackdrop
-  appResponsiveSheet
+  [appResponsiveSheet]="!centered()"
+  [class.centered-dialog]="centered()"
   class="tile-choice-dialog"
   [attr.aria-label]="pickerLabel() | t"
 >

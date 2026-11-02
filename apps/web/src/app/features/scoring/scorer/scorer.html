@@ -1,4 +1,4 @@
-@if (!match()) {
+﻿@if (!match()) {
   <a
     class="back-button quick-score-back"
     routerLink="/"
@@ -140,13 +140,24 @@
               </label>
               <label>
                 {{ 'Scoring type' | t }}
-                <select [(ngModel)]="manualYakuman" (ngModelChange)="changed()">
-                  <option [ngValue]="0">{{ 'Han / Fu' | t }}</option>
-                  @for (count of manualYakumanOptions; track count) {
-                    <option [ngValue]="count">{{ count }} × {{ 'Yakuman' | t }}</option>
-                  }
+                <select
+                  [ngModel]="manualYakuman > 0"
+                  (ngModelChange)="manualYakuman = $event ? 1 : 0; changed()"
+                >
+                  <option [ngValue]="false">{{ 'Han / Fu' | t }}</option>
+                  <option [ngValue]="true">{{ 'Yakuman' | t }}</option>
                 </select>
               </label>
+              @if (manualYakuman) {
+                <label>
+                  {{ 'Yakuman' | t }}
+                  <select [(ngModel)]="manualYakuman" (ngModelChange)="changed()">
+                    @for (count of manualYakumanOptions; track count) {
+                      <option [ngValue]="count">{{ count }} &#215; {{ 'Yakuman' | t }}</option>
+                    }
+                  </select>
+                </label>
+              }
               @if (!manualYakuman) {
                 <label>
                   {{ 'Han' | t }}
@@ -156,6 +167,7 @@
                     }
                   </select>
                 </label>
+
                 @if (manualHan < 5) {
                   <label>
                     {{ 'Fu' | t }}
@@ -794,9 +806,9 @@
           <option value="abortive" [disabled]="rules.preset === 'm-league'">
             {{ 'Abortive draw' | t }}
           </option>
-          <option value="nagashi" [disabled]="rules.preset === 'm-league'">
-            {{ 'Nagashi Mangan' | t }}
-          </option>
+          @if (rules.preset !== 'm-league') {
+            <option value="nagashi">{{ 'Nagashi Mangan' | t }}</option>
+          }
         </select>
       </label>
       @if (drawType === 'abortive') {

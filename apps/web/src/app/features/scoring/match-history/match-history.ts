@@ -199,9 +199,11 @@ export class MatchHistory {
   outcomeMarks(event: LedgerEvent): string[] {
     return this.scoredHands(event).map(({ result, limitName }) => {
       return [
-        this.i18n.t(result.han + ' Han · ' + result.fu + ' Fu'),
-        limitName ? this.i18n.t(limitName) : '',
-        ...result.yaku.map((yaku) => this.i18n.t(yaku.name)),
+        ...new Set([
+          result.han || result.fu ? this.i18n.t(result.han + ' Han · ' + result.fu + ' Fu') : '',
+          limitName ? this.i18n.t(limitName) : '',
+          ...result.yaku.map((yaku) => this.i18n.t(yaku.name)),
+        ]),
       ]
         .filter(Boolean)
         .join(' · ');

@@ -16,6 +16,22 @@
   min-height: 0;
   overflow-y: auto;
 }
+.dialog-header {
+  flex-shrink: 0;
+}
+.dialog-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background: var(--surface);
+  padding-block: 12px;
+}
+@media (orientation: portrait) {
+  .camera-frame {
+    max-width: min(100%, calc(48dvh * var(--camera-aspect)));
+    margin-inline: auto;
+  }
+}
 .rotate-hint {
   display: none;
 }

@@ -24,7 +24,7 @@
           <summary>{{ 'Photo guidance' | t }}</summary>
           <p class="hint">
             {{
-              (guided()
+              (guided() && !handOnly()
                 ? 'Photograph one winning hand. Place one group in each meld area and choose its source relative to the winner. Lay the called tile sideways. Show all four faces for concealed Kan.'
                 : 'Keep the tiles in view. Review the recognized tiles before applying.'
               ) | t
@@ -67,7 +67,7 @@
         </div>
       }
     </div>
-    @if (guided()) {
+    @if (guided() && !handOnly()) {
       <div class="zone-settings">
         @for (source of sources(); track $index; let index = $index) {
           <label>

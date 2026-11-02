@@ -5,5 +5,5 @@
   loading="eager"
   decoding="async"
   draggable="false"
-  [alt]="decorative() ? '' : i18n.tile(tile())"
+  [alt]="decorative() ? '' : faceDown() ? i18n.t('Concealed Kan') : i18n.tile(tile())"
 />

@@ -29,9 +29,11 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m7-7-7 7 7 7" /></svg>
       </button>
       <h2>{{ label() | t }}</h2>
-      <button class="secondary" (click)="finish()" [disabled]="!canFinish()">
-        {{ 'Done' | t }}
-      </button>
+      @if (showDone()) {
+        <button class="secondary" (click)="finish()" [disabled]="!canFinish()">
+          {{ 'Done' | t }}
+        </button>
+      }
     </header>
   </div>
   @if (opened()) {

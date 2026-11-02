@@ -1,4 +1,4 @@
-import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
+import { DestroyRef, Directive, ElementRef, inject, input, booleanAttribute } from '@angular/core';
 
 /** Keeps native dialog focus/backdrop semantics while animating mobile sheets. */
 @Directive({
@@ -6,6 +6,7 @@ import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
   host: { class: 'responsive-sheet', '(cancel)': 'cancel($event)' },
 })
 export class ResponsiveSheet {
+  readonly enabled = input(true, { alias: 'appResponsiveSheet', transform: booleanAttribute });
   private readonly dialog = inject<ElementRef<HTMLDialogElement>>(ElementRef).nativeElement;
   private readonly nativeClose = this.dialog.close.bind(this.dialog);
   private readonly nativeShow = this.dialog.showModal.bind(this.dialog);
@@ -13,6 +14,7 @@ export class ResponsiveSheet {
   private closing = false;
   private mobile(): boolean {
     return (
+      this.enabled() &&
       matchMedia('(max-width: 700px)').matches &&
       !matchMedia('(prefers-reduced-motion: reduce)').matches
     );

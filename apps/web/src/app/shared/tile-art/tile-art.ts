@@ -13,9 +13,11 @@ import { Theme } from '../../core/theme/theme';
 export class TileArt {
   readonly tile = input.required<Tile>();
   readonly decorative = input(false);
+  readonly faceDown = input(false);
   readonly i18n = inject(I18n);
   private readonly theme = inject(Theme);
   readonly source = computed(() => {
+    if (this.faceDown()) return `tiles/${this.theme.dark() ? 'Black' : 'Regular'}/Back.svg`;
     const tile = this.tile();
     const kind = tile.kind;
     const name =

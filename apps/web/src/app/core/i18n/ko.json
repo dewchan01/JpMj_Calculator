@@ -1,4 +1,8 @@
-{
+﻿{
+  "Average rank: worst first": "평균 순위: 낮은 순위부터",
+  "Total score: lowest first": "총 점수: 낮은 순",
+  "Total money: lowest first": "총 금액: 낮은 순",
+  "Cancel Double Riichi": "더블 리치 취소",
   "Finished games are automatically deleted on this device. Choose Save game on the result page to keep a record.": "대국 종료 시 이 기기의 기록이 자동 삭제됩니다. 보관하려면 결과 화면에서 대국 저장을 선택하세요.",
   "Automatically delete each game when it ends": "대국 종료 시 해당 대국 기록 자동 삭제",
   "Your player must be seated at this table before starting.": "시작 전에 내 플레이어를 이 대국의 좌석에 배정하세요.",
@@ -218,7 +222,7 @@
   "Positions swapped.": "자리를 교환했습니다.",
   "Positions randomized.": "자리를 무작위로 배정했습니다.",
   "Rolling…": "주사위 굴리는 중…",
-  "Cancel Riichi · refund 1,000 points": "리치 취소 · 1,000점 환불",
+  "Cancel Riichi": "리치 취소",
   "No Riichi declaration to cancel.": "취소할 리치 선언이 없습니다.",
   "Undo previous action": "이전 동작 실행 취소",
   "No action to undo.": "실행 취소할 동작이 없습니다.",

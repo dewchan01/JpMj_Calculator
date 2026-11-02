@@ -274,11 +274,15 @@ h1 {
   margin: 0;
 }
 .recorded-call {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(52px, auto) minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
   justify-content: space-between;
   padding-block: 8px;
+}
+.recorded-call > .mini-tiles {
+  justify-self: center;
 }
 .recorded-call > span:first-child {
   font-size: 0.9rem;
@@ -423,7 +427,7 @@ h1 {
   font-size: 0.85rem;
 }
 .recorded-call.concealed-call {
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(52px, auto) minmax(0, 1fr) auto;
 }
 .room-status {
   flex-shrink: 0;
@@ -653,4 +657,15 @@ h1 {
   min-height: 18px;
   margin: 0;
   accent-color: var(--green);
+}
+.han-breakdown-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+.han-breakdown-row > span:last-child {
+  flex-shrink: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }

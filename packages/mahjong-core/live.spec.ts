@@ -13,6 +13,19 @@ import {
 import { balances, finishMatch, undoLastEvent, type Match } from './ledger';
 import { presetRules, tableRules } from '../mahjong-rules/index';
 import { parseTiles } from './index';
+import { recordCall } from './record-call';
+
+it('toggles manual calls off, including an open meld recorded before switching modes', () => {
+  const input = { type: 'manual' as const, text: '', source: '', called: 0, upgradeId: '' };
+  const match = game();
+  const enabled = recordCall(match, 'a', input);
+  expect(enabled.live?.players['a'].manualCalls).toBe(1);
+  expect(recordCall(enabled, 'a', input).live?.players['a'].manualCalls).toBe(0);
+  const previous = recordCall(match, 'a', { ...input, type: 'pon', text: '1p', source: 'b' });
+  const cancelled = recordCall(previous, 'a', input);
+  expect(cancelled.live?.players['a'].melds).toEqual([]);
+  expect(cancelled.live?.players['a'].manualCalls).toBe(0);
+});
 function game(): Match {
   const base = presetRules('custom', 4);
   return {

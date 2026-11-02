@@ -102,6 +102,7 @@ export class TableSummary {
   readonly activePlayer = input('');
   readonly allowRiichi = input(true);
   readonly allowCalls = input(true);
+  readonly manualScoring = input(false);
   readonly callCounts = input<Record<string, number>>({});
   readonly concealedKanCounts = input<Record<string, number>>({});
   readonly northCounts = input<Record<string, number>>({});

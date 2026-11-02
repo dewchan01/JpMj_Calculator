@@ -235,6 +235,10 @@ export class Home {
     if (index === null || !player) return false;
     if (index === -1) {
       this.setup.update((setup) => ({ ...setup, mySeat: 'profile:' + player.id }));
+      if (this.error() === 'Your player must be seated at this table before starting.') {
+        this.error.set('');
+        this.validateMyPlayer();
+      }
       return true;
     }
     if (this.alreadySeated(player.name)) {

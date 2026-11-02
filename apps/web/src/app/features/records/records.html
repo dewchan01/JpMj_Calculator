@@ -40,9 +40,11 @@
           <option value="name">{{ 'Name: A to Z' | t }}</option>
           <option value="games">{{ 'Game count: highest first' | t }}</option>
           <option value="rank">{{ 'Average rank: best first' | t }}</option>
-          <option value="points">{{ 'Total points: highest first' | t }}</option>
+          <option value="rank-reverse">{{ 'Average rank: worst first' | t }}</option>
           <option value="score">{{ 'Total score: highest first' | t }}</option>
+          <option value="score-reverse">{{ 'Total score: lowest first' | t }}</option>
           <option value="money">{{ 'Total money: highest first' | t }}</option>
+          <option value="money-reverse">{{ 'Total money: lowest first' | t }}</option>
         </select>
       </label>
       @if (currencies().length > 1) {
@@ -236,9 +238,8 @@
           <tr>
             <th>{{ 'Player' | t }}</th>
             <th>{{ 'Average rank' | t }}</th>
-            <th>{{ 'Total points' | t }}</th>
+            <th class="total-money">{{ 'Total money' | t }}</th>
             <th>{{ 'Total score' | t }}</th>
-            <th>{{ 'Total money' | t }}</th>
           </tr>
         </thead>
         <tbody>
@@ -262,27 +263,24 @@
                   <strong>{{ player.games }}</strong>
                 </span>
               </th>
-              <td>
+              <td class="average-rank">
                 {{ player.averageRank | number: '1.2-2' }}
               </td>
-              <td>
-                {{ player.points | number }}
-              </td>
-              <td>
-                {{ player.score | number: '1.0-2' }}
-              </td>
-              <td>
+              <td class="total-money">
                 @for (amount of player.money | keyvalue; track amount.key) {
                   <span class="money-line">
-                    {{ amount.value | number: '1.2-2' }}
+                    <app-signed-value [value]="amount.value" digits="1.2-2" />
                     <span class="money-currency">{{ amount.key }}</span>
                   </span>
                 }
               </td>
+              <td>
+                <app-signed-value [value]="player.score" digits="1.0-2" />
+              </td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="5">{{ 'No completed games match these filters.' | t }}</td>
+              <td colspan="4">{{ 'No completed games match these filters.' | t }}</td>
             </tr>
           }
         </tbody>

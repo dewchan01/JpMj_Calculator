@@ -174,7 +174,9 @@ export class Records {
     const selected = this.moneyCurrency();
     const currency = this.currencies().includes(selected) ? selected : (this.currencies()[0] ?? '');
     return rows.sort((a, b) => {
-      const order = this.playerOrder();
+      const selectedOrder = this.playerOrder();
+      const reverse = selectedOrder.endsWith('-reverse');
+      const order = selectedOrder.replace('-reverse', '');
       const comparison =
         order === 'games'
           ? b.games - a.games
@@ -187,7 +189,9 @@ export class Records {
                 : order === 'money'
                   ? (b.money[currency] ?? 0) - (a.money[currency] ?? 0)
                   : 0;
-      return comparison || a.name.localeCompare(b.name, this.i18n.locale());
+      return (
+        (reverse ? -comparison : comparison) || a.name.localeCompare(b.name, this.i18n.locale())
+      );
     });
   });
   constructor() {

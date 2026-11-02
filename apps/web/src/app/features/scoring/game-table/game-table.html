@@ -1,4 +1,4 @@
-@if (match(); as m) {
+﻿@if (match(); as m) {
   <div class="game-shell" [class.room-game]="!!roomCode">
     <header class="game-heading">
       <h1>{{ m.name }}</h1>
@@ -61,6 +61,7 @@
       [activePlayer]="remotePlayer() ? roomPlayerId() : ''"
       [allowRiichi]="can('riichi')"
       [allowCalls]="can('calls')"
+      [manualScoring]="scoringMode.advanced()"
       [balances]="book().players"
       [dealer]="m.dealerId"
       [winner]="''"
@@ -446,15 +447,27 @@
         }
         @case ('player') {
           <h3>{{ name(selected) }}</h3>
-          @if (editingHand()) {
+          @if (
+            editingHand() ||
+            (currentPlayer.riichi === 'double' &&
+              !m.ended &&
+              (!remotePlayer() || selected === roomPlayerId()))
+          ) {
             <div class="button-grid player-riichi-actions">
               @if (currentPlayer.riichi === 'none') {
                 <button class="secondary" (click)="declarePlayerRiichi(false)" [disabled]="busy()">
                   {{ 'Riichi' | t }}
                 </button>
               } @else {
-                <button class="secondary danger" (click)="cancelDeclaration()" [disabled]="busy()">
-                  {{ 'Cancel Riichi · refund 1,000 points' | t }}
+                <button
+                  class="secondary danger"
+                  (click)="cancelDeclaration()"
+                  [disabled]="busy() || paused()"
+                >
+                  {{
+                    (currentPlayer.riichi === 'double' ? 'Cancel Double Riichi' : 'Cancel Riichi')
+                      | t
+                  }}
                 </button>
               }
             </div>
@@ -488,21 +501,32 @@
                 </button>
               }
               @if (playerMode() === 'calls') {
-                @if (m.playerCount === 4) {
-                  <button (click)="startCall('chi')" [disabled]="paused()">{{ 'Chi' | t }}</button>
+                @if (manualEntry() || scoringMode.advanced()) {
+                  <button
+                    (click)="recordManualCall()"
+                    [disabled]="paused() || busy() || currentPlayer.riichi !== 'none'"
+                  >
+                    {{ 'Call' | t }}
+                  </button>
+                } @else {
+                  @if (m.playerCount === 4) {
+                    <button (click)="startCall('chi')" [disabled]="paused()">
+                      {{ 'Chi' | t }}
+                    </button>
+                  }
+                  <button (click)="startCall('pon')" [disabled]="paused()">{{ 'Pon' | t }}</button>
+                  <button (click)="startCall('daiminkan')" [disabled]="paused()">
+                    {{ 'Open Kan' | t }}
+                  </button>
                 }
-                <button (click)="startCall('pon')" [disabled]="paused()">{{ 'Pon' | t }}</button>
-                <button (click)="startCall('daiminkan')" [disabled]="paused()">
-                  {{ 'Open Kan' | t }}
-                </button>
               }
-              @if (playerMode() !== 'calls') {
+              @if (playerMode() !== 'calls' && !manualEntry() && !scoringMode.advanced()) {
                 <button (click)="startCall('ankan')" [disabled]="paused() || !can('calls')">
                   {{ 'Concealed Kan' | t }}
                 </button>
               }
 
-              @if (playerMode() === 'calls') {
+              @if (playerMode() === 'calls' && !manualEntry() && !scoringMode.advanced()) {
                 <button (click)="startCall('kakan')" [disabled]="paused() || !hasPon()">
                   {{ 'Added Kan' | t }}
                 </button>
@@ -549,7 +573,10 @@
                     <span>{{ meld.type | t }}</span>
                     <div class="mini-tiles">
                       @for (tile of meld.tiles; track tile.id) {
-                        <app-tile-art [tile]="tile" />
+                        <app-tile-art
+                          [faceDown]="meld.type === 'ankan' && ($first || $last)"
+                          [tile]="tile"
+                        />
                       }
                     </div>
                     <button
@@ -600,7 +627,7 @@
           }
         }
         @case ('call') {
-          <p>{{ name(selected) }} · {{ callType | t }}</p>
+          <h3>{{ name(selected) }}</h3>
           @if (callType === 'kakan') {
             <label>
               {{ 'Upgrade Pon' | t }}
@@ -618,9 +645,13 @@
           } @else {
             <app-tile-input
               [meldType]="callType"
+              (click)="error.set('')"
+              [openRequest]="callEntryRequest()"
+              (entryClosed)="$event && callType !== 'daiminkan' && calledTileChoice()?.open()"
               [upgradeKind]="upgradeTileKind()"
               [label]="callType === 'kakan' ? 'Fourth tile' : 'Meld tiles'"
               [(value)]="callText"
+              (valueChange)="error.set('')"
               [playerCount]="m.playerCount"
               [redFives]="settings?.redFives ?? true"
             />
@@ -638,12 +669,15 @@
                 </select>
               </label>
             }
-            @if (callType === 'chi' || callTiles().length > 1) {
+            @if (callType !== 'daiminkan' && callTiles().length) {
               <app-tile-choice
+                #callTilePicker
+                [centered]="true"
                 label="Called tile"
                 pickerLabel="Choose called tile"
                 [tiles]="callTiles()"
                 [(selected)]="called"
+                (selectedChange)="error.set('')"
               />
             }
           }
@@ -653,25 +687,34 @@
             </button>
           </div>
           @if (callType === 'ankan') {
-            @for (entry of concealedKanEntries; track entry.meld.id) {
-              <div class="recorded-call concealed-call">
-                <div class="mini-tiles">
-                  @for (tile of entry.meld.tiles; track tile.id) {
-                    <app-tile-art [tile]="tile" />
-                  }
+            <section class="meld-section">
+              @if (concealedKanEntries.length) {
+                <h4>{{ 'Concealed Kan' | t }}</h4>
+              }
+              @for (entry of concealedKanEntries; track entry.meld.id) {
+                <div class="recorded-call concealed-call">
+                  <span aria-hidden="true"></span>
+                  <div class="mini-tiles">
+                    @for (tile of entry.meld.tiles; track tile.id) {
+                      <app-tile-art
+                        [faceDown]="entry.meld.type === 'ankan' && ($first || $last)"
+                        [tile]="tile"
+                      />
+                    }
+                  </div>
+                  <button
+                    class="icon-button action-delete"
+                    (click)="removeCall(entry.index)"
+                    [disabled]="paused()"
+                    [attr.aria-label]="('Remove' | t) + ' ' + ('ankan' | t)"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7" />
+                    </svg>
+                  </button>
                 </div>
-                <button
-                  class="icon-button action-delete"
-                  (click)="removeCall(entry.index)"
-                  [disabled]="paused()"
-                  [attr.aria-label]="('Remove' | t) + ' ' + ('ankan' | t)"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7" />
-                  </svg>
-                </button>
-              </div>
-            }
+              }
+            </section>
           }
         }
         @case ('indicators') {
@@ -688,18 +731,22 @@
           @if (indicatorKind() === 'dora') {
             <app-tile-input
               label="Dora indicators"
+              [autoOpen]="true"
               [requiredCount]="requiredIndicators || undefined"
               [maximumCount]="requiredDoraCount"
               [(value)]="dora"
+              (valueChange)="error.set('')"
               [playerCount]="m.playerCount"
               [redFives]="settings?.redFives ?? true"
             />
           } @else {
             <app-tile-input
               label="Ura indicators"
+              [autoOpen]="true"
               [requiredCount]="requiredIndicators || undefined"
               [maximumCount]="requiredDoraCount"
               [(value)]="ura"
+              (valueChange)="error.set('')"
               [playerCount]="m.playerCount"
               [redFives]="settings?.redFives ?? true"
             />
@@ -730,6 +777,12 @@
               <button (click)="openIndicators('dora')">{{ 'Dora indicators' | t }}</button>
             }
             <button (click)="navigatePanel('win')">{{ 'Win' | t }}</button>
+            <button
+              (click)="navigatePanel('double-riichi')"
+              [disabled]="!can('riichi') || paused() || busy()"
+            >
+              {{ 'Double Riichi' | t }}
+            </button>
             @if (can('draw')) {
               <button
                 (click)="drawType = 'exhaustive'; tenpai = {}; nagashi = {}; navigatePanel('draw')"
@@ -749,10 +802,37 @@
             }
           </div>
         }
+        @case ('double-riichi') {
+          <p class="hint">
+            {{
+              'Confirm Double Riichi was declared on your uninterrupted first turn. Turn order is not tracked.'
+                | t
+            }}
+          </p>
+          <div class="button-grid">
+            @for (player of players; track player.id) {
+              <button
+                (click)="toggleDoubleRiichi(player.id)"
+                [class.danger]="isDoubleRiichi(player.id)"
+                [disabled]="
+                  busy() ||
+                  paused() ||
+                  (!!riichiPlayers()[player.id] && !isDoubleRiichi(player.id)) ||
+                  (remotePlayer() && player.id !== roomPlayerId())
+                "
+              >
+                {{ player.name }}
+                @if (isDoubleRiichi(player.id)) {
+                  · {{ 'Cancel Double Riichi' | t }}
+                }
+              </button>
+            }
+          </div>
+        }
         @case ('win') {
           <label>
             {{ 'Win method' | t }}
-            <select [(ngModel)]="method">
+            <select [ngModel]="method" (ngModelChange)="setWinMethod($event)">
               <option value="ron">{{ 'Ron · discard' | t }}</option>
               <option value="tsumo">{{ 'Tsumo · self draw' | t }}</option>
             </select>
@@ -762,7 +842,12 @@
             <div class="button-grid">
               @for (p of players; track p.id) {
                 <label class="check">
-                  <input type="checkbox" [(ngModel)]="winners[p.id]" />
+                  <input
+                    [type]="method === 'tsumo' ? 'radio' : 'checkbox'"
+                    name="hand-winner"
+                    [checked]="!!winners[p.id]"
+                    (change)="selectHandWinner(p.id, $any($event.target).checked)"
+                  />
                   {{ p.name }}
                 </label>
               }
@@ -773,16 +858,18 @@
               <legend>{{ 'Discarder' | t }}</legend>
               <div class="button-grid">
                 @for (p of players; track p.id) {
-                  <label class="check">
-                    <input
-                      type="radio"
-                      name="discarder"
-                      [value]="p.id"
-                      [attr.value]="p.id"
-                      [(ngModel)]="discarder"
-                    />
-                    {{ p.name }}
-                  </label>
+                  @if (!winners[p.id]) {
+                    <label class="check">
+                      <input
+                        type="radio"
+                        name="discarder"
+                        [value]="p.id"
+                        [attr.value]="p.id"
+                        [(ngModel)]="discarder"
+                      />
+                      {{ p.name }}
+                    </label>
+                  }
                 }
               </div>
             </fieldset>
@@ -798,7 +885,11 @@
                 <div class="winning-recorded-group">
                   <span>{{ meld.type | t }}</span>
                   @for (tile of meld.tiles; track tile.id) {
-                    <app-tile-art [tile]="tile" [decorative]="true" />
+                    <app-tile-art
+                      [faceDown]="meld.type === 'ankan' && ($first || $last)"
+                      [tile]="tile"
+                      [decorative]="true"
+                    />
                   }
                 </div>
               }
@@ -827,13 +918,24 @@
             <div class="form-grid">
               <label>
                 {{ 'Scoring type' | t }}
-                <select [(ngModel)]="manualYakuman">
-                  <option [ngValue]="0">{{ 'Han / Fu' | t }}</option>
-                  @for (count of yakumanOptions; track count) {
-                    <option [ngValue]="count">{{ count }} × {{ 'Yakuman' | t }}</option>
-                  }
+                <select
+                  [ngModel]="manualYakuman > 0"
+                  (ngModelChange)="manualYakuman = $event ? 1 : 0"
+                >
+                  <option [ngValue]="false">{{ 'Han / Fu' | t }}</option>
+                  <option [ngValue]="true">{{ 'Yakuman' | t }}</option>
                 </select>
               </label>
+              @if (manualYakuman) {
+                <label>
+                  {{ 'Yakuman' | t }}
+                  <select [(ngModel)]="manualYakuman">
+                    @for (count of yakumanOptions; track count) {
+                      <option [ngValue]="count">{{ count }} &#215; {{ 'Yakuman' | t }}</option>
+                    }
+                  </select>
+                </label>
+              }
               @if (!manualYakuman) {
                 <label>
                   {{ 'Han' | t }}
@@ -843,6 +945,7 @@
                     }
                   </select>
                 </label>
+
                 @if (manualHan < 5) {
                   <label>
                     {{ 'Fu' | t }}
@@ -906,23 +1009,36 @@
             </p>
             <app-tile-input
               label="The winning hand"
+              [autoOpen]="true"
+              (entryClosed)="
+                $event &&
+                  tiles.length === 14 - 3 * winnerState.melds.length &&
+                  winningTileChoice.open()
+              "
               [requiredCount]="14 - 3 * winnerState.melds.length"
               [(value)]="handText"
+              (valueChange)="error.set('')"
               [playerCount]="m.playerCount"
               [redFives]="settings?.redFives ?? true"
             />
             <app-tile-choice
+              #winningTileChoice
               label="Winning tile"
               pickerLabel="Choose winning tile"
               [tiles]="tiles"
               [(selected)]="winningIndex"
+              (selectedChange)="error.set('')"
             />
             <section class="winning-recorded" [attr.aria-label]="'Recorded calls' | t">
               @for (meld of winnerState.melds; track meld.id) {
                 <div class="winning-recorded-group">
                   <span>{{ meld.type | t }}</span>
                   @for (tile of meld.tiles; track tile.id) {
-                    <app-tile-art [tile]="tile" [decorative]="true" />
+                    <app-tile-art
+                      [faceDown]="meld.type === 'ankan' && ($first || $last)"
+                      [tile]="tile"
+                      [decorative]="true"
+                    />
                   }
                 </div>
               }
@@ -982,8 +1098,10 @@
           @if (winnerState.riichi !== 'none') {
             <app-tile-input
               label="Ura indicators"
+              [autoOpen]="true"
               [requiredCount]="requiredDoraCount"
               [(value)]="ura"
+              (valueChange)="error.set('')"
               [playerCount]="m.playerCount"
               [redFives]="settings?.redFives ?? true"
             />
@@ -999,13 +1117,10 @@
               </select>
             </label>
           }
-          <div class="action-row">
-            <button class="quiet" (click)="backPanel()">{{ 'Back' | t }}</button>
-            <div class="dialog-actions">
-              <button class="primary" (click)="reviewWinner()">
-                {{ 'Review settlement' | t }}
-              </button>
-            </div>
+          <div class="dialog-actions">
+            <button class="primary" (click)="reviewWinner()">
+              {{ 'Review settlement' | t }}
+            </button>
           </div>
         }
         @case ('chombo') {
@@ -1151,7 +1266,16 @@
                   <p class="hint">{{ 'Manual Han/Fu' | t }}</p>
                 }
                 @for (yaku of entry.yaku; track yaku.name) {
-                  <p>{{ yaku.name | t }} · {{ yaku.han }}</p>
+                  <p class="han-breakdown-row">
+                    <span>{{ yaku.name | t }}</span>
+                    <span>{{ yaku.han }} {{ 'Han' | t }}</span>
+                  </p>
+                }
+                @for (bonus of entry.bonusHan; track bonus.source) {
+                  <p class="han-breakdown-row">
+                    <span>{{ bonus.source | t }}</span>
+                    <span>{{ bonus.count }} {{ 'Han' | t }}</span>
+                  </p>
                 }
               </details>
             }

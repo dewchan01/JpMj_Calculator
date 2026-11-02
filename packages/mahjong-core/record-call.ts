@@ -4,7 +4,7 @@ import { ruleSettings } from '../mahjong-rules/index';
 import type { Match } from './ledger';
 
 export interface CallInput {
-  type: Meld['type'] | 'kita';
+  type: Meld['type'] | 'kita' | 'manual';
   text: string;
   source: string;
   called: number;
@@ -25,6 +25,29 @@ export function recordCall(
     state = structuredClone(livePlayer(m, actor));
   if (state.riichi !== 'none' && !['ankan', 'kita'].includes(input.type))
     throw new Error('Riichi/Ippatsu require a closed hand.');
+  if (input.type === 'manual') {
+    const openMelds = state.melds.filter((meld) => meld.type !== 'ankan');
+    const cancelling = !!state.manualCalls || openMelds.length > 0;
+    const removedCalls = (state.manualCalls ?? 0) + openMelds.length;
+    state.manualCalls = cancelling ? 0 : 1;
+    if (cancelling) state.melds = state.melds.filter((meld) => meld.type === 'ankan');
+    live.players[actor] = state;
+    live.calls = Math.max(0, live.calls + (cancelling ? -removedCalls : 1));
+    live.actions = cancelling
+      ? (live.actions ?? []).filter(
+          (action) => !(action.type === 'Call' && action.playerId === actor),
+        )
+      : [
+          ...(live.actions ?? []),
+          {
+            type: 'Call',
+            playerId: actor,
+            timestamp: new Date().toISOString(),
+            elapsedMs: elapsedMs(m.clock),
+          },
+        ];
+    return { ...m, live };
+  }
   let tiles = parseTiles(input.text, idFactory());
   if (tiles.length === 1 && ['pon', 'ankan', 'daiminkan'].includes(input.type)) {
     const tile = tiles[0];

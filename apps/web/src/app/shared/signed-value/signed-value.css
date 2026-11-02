@@ -1,12 +1,12 @@
 .score-add {
-  color: #276344;
+  color: var(--score-positive, #276344);
 }
 .score-deduct {
-  color: #a03b2f;
+  color: var(--score-negative, #a03b2f);
 }
 :host-context([data-theme='dark']) .score-add {
-  color: #a3ddb4;
+  color: var(--score-positive-dark, #a3ddb4);
 }
 :host-context([data-theme='dark']) .score-deduct {
-  color: #ffb6a3;
+  color: var(--score-negative-dark, #ffb6a3);
 }

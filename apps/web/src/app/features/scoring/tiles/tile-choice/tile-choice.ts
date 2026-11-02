@@ -12,6 +12,7 @@ import type { Tile } from '../../../../../../../../packages/mahjong-core/index';
   styleUrl: './tile-choice.css',
 })
 export class TileChoice {
+  readonly centered = input(false);
   readonly i18n = inject(I18n);
   readonly label = input.required<string>();
   readonly pickerLabel = input('Choose tiles');

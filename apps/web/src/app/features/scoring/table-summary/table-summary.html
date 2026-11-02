@@ -153,39 +153,42 @@
                     "
                     (click)="quickAction.emit({ player: player.id, type: 'riichi' })"
                   >
-                    {{ 'Riichi' | t }}
+                    {{ riichiPlayers()[player.id] || ('Riichi' | t) }}
                   </button>
                   <button
                     [class.action-active]="callCounts()[player.id] > 0"
                     [attr.aria-pressed]="callCounts()[player.id] > 0"
                     [disabled]="
                       !allowCalls() ||
+                      riichiPlayers()[player.id] === ('Double Riichi' | t) ||
                       actionsDisabled() ||
                       (!!activePlayer() && activePlayer() !== player.id)
                     "
                     (click)="quickAction.emit({ player: player.id, type: 'calls' })"
                   >
                     {{ 'Call' | t }}
-                    @if (callCounts()[player.id]) {
+                    @if (!manualScoring() && callCounts()[player.id]) {
                       <span>{{ callCounts()[player.id] }}</span>
                     }
                   </button>
-                  <button
-                    [class.action-active]="concealedKanCounts()[player.id] > 0"
-                    [attr.aria-pressed]="concealedKanCounts()[player.id] > 0"
-                    [disabled]="
-                      !allowCalls() ||
-                      actionsDisabled() ||
-                      (!!activePlayer() && activePlayer() !== player.id)
-                    "
-                    (click)="quickAction.emit({ player: player.id, type: 'ankan' })"
-                    [attr.aria-label]="'Concealed Kan' | t"
-                  >
-                    {{ 'ankan' | t }}
-                    @if (concealedKanCounts()[player.id]) {
-                      <span>{{ concealedKanCounts()[player.id] }}</span>
-                    }
-                  </button>
+                  @if (!manualScoring()) {
+                    <button
+                      [class.action-active]="concealedKanCounts()[player.id] > 0"
+                      [attr.aria-pressed]="concealedKanCounts()[player.id] > 0"
+                      [disabled]="
+                        !allowCalls() ||
+                        actionsDisabled() ||
+                        (!!activePlayer() && activePlayer() !== player.id)
+                      "
+                      (click)="quickAction.emit({ player: player.id, type: 'ankan' })"
+                      [attr.aria-label]="'Concealed Kan' | t"
+                    >
+                      {{ 'ankan' | t }}
+                      @if (concealedKanCounts()[player.id]) {
+                        <span>{{ concealedKanCounts()[player.id] }}</span>
+                      }
+                    </button>
+                  }
                 </div>
               }
             </article>

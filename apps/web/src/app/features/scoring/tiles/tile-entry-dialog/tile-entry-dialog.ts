@@ -25,6 +25,7 @@ export class TileEntryDialog {
   readonly label = input('Enter tiles');
   readonly buttonText = input<string>();
   readonly canFinish = input(true);
+  readonly showDone = input(true);
   readonly showTrigger = input(true);
   readonly closed = output<boolean>();
   private confirmed = false;

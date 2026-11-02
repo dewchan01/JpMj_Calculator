@@ -23,28 +23,20 @@
   {{ 'Choose an image' | t }}
   <input
     type="file"
-    accept="image/*"
+    accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
     (change)="capture($event)"
     [disabled]="busy() || !configuration.value()"
   />
 </label>
 <app-guided-camera
-  [guided]="false"
+  [guided]="true"
+  [handOnly]="!autoAssign()"
   [players]="players()"
   [winnerId]="winnerId()"
   [playerCount]="playerCount()"
   [disabled]="busy() || !configuration.value()"
   (captured)="captureGuided($event)"
 />
-@if (autoAssign()) {
-  <app-guided-camera
-    [players]="players()"
-    [winnerId]="winnerId()"
-    [playerCount]="playerCount()"
-    [disabled]="busy() || !configuration.value()"
-    (captured)="captureGuided($event)"
-  />
-}
 @if (!error() && !configuration.error()) {
   <p class="hint">{{ 'Choose a saved photo. The preview opens automatically for editing.' | t }}</p>
 }
@@ -214,14 +206,4 @@
       </button>
     </div>
   </section>
-  <label>
-    {{ 'Take a photo' | t }}
-    <input
-      type="file"
-      accept="image/*"
-      capture="environment"
-      (change)="capture($event)"
-      [disabled]="busy() || !configuration.value()"
-    />
-  </label>
 </details>

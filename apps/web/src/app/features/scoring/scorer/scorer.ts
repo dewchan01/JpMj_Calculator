@@ -1,4 +1,4 @@
-import { gamesCsv } from '../../records/data-transfer/data-csv';
+﻿import { gamesCsv } from '../../records/data-transfer/data-csv';
 import { DialogBackdrop } from '../../../shared/dialog-backdrop';
 import { ScoringMode } from '../../../core/scoring-mode';
 import { newId } from '../../../core/id/new-id';
@@ -142,7 +142,13 @@ export class Scorer {
   manualPayer = '';
   manualResponsibleYakuman = 1;
   readonly manualFuOptions = [20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 110];
-  readonly manualYakumanOptions = [1, 2, 3, 4, 5, 6];
+  get manualYakumanOptions(): number[] {
+    return this.settings.stackYakuman
+      ? [1, 2, 3, 4, 5, 6]
+      : this.settings.doubleYakuman
+        ? [1, 2]
+        : [1];
+  }
   get meldGroups() {
     return [
       { label: 'Open melds', melds: this.melds.filter((meld) => meld.type !== 'ankan') },

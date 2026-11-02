@@ -548,3 +548,24 @@ thead th {
   line-height: 1.6;
   color: var(--muted);
 }
+:host {
+  --score-positive: #087e8b;
+  --score-negative: #b3342c;
+  --score-positive-dark: #69d4dc;
+  --score-negative-dark: #ff9a90;
+}
+.player-card .total-money {
+  text-align: center;
+}
+.player-card .total-money .money-line {
+  justify-content: center;
+}
+.player-card table :is(th, td):not(:first-child) {
+  text-align: center;
+}
+.player-card .average-rank {
+  color: var(--text);
+}
+.player-card table td[colspan] {
+  text-align: center;
+}

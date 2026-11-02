@@ -8,6 +8,7 @@ export interface GameClock {
   handStartMs: number;
 }
 export interface LivePlayer {
+  manualCalls?: number;
   melds: Meld[];
   kita: Tile[];
   riichi: 'none' | 'riichi' | 'double';
@@ -107,7 +108,7 @@ export function declareRiichi(
     match.events.slice(last + 1).some((e) => e.payments.some((p) => p.from === playerId))
   )
     throw new Error('This player has already deposited in the current hand.');
-  if (state.melds.some((m) => m.type !== 'ankan'))
+  if (state.manualCalls || state.melds.some((m) => m.type !== 'ankan'))
     throw new Error('Riichi/Ippatsu require a closed hand.');
   if (double && (match.live?.calls ?? 0) && !timing.doubleBeforeRecordedCalls)
     throw new Error('Double Riichi requires an uninterrupted first turn.');

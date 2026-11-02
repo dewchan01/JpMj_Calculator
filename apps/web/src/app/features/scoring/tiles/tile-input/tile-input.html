@@ -19,9 +19,10 @@
     <app-tile-entry-dialog
       [showTrigger]="!directEntry()"
       (closed)="entryClosed.emit($event)"
-      [label]="'Enter ' + label()"
+      [label]="entryTitle()"
       buttonText="Enter"
       [canFinish]="!entryError() && !error()"
+      [showDone]="requiredCount() === undefined && maximumCount() !== 1 && !meldType()"
     >
       <ng-template>
         @if ((meldType() || countHint()) && !error()) {

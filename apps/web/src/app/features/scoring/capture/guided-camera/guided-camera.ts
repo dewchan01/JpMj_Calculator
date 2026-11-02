@@ -23,7 +23,8 @@ import { captureZones, type CaptureZone, type GuidedPhoto } from '../guided-layo
 })
 export class GuidedCamera {
   readonly guided = input(true);
-  readonly title = computed(() => (this.guided() ? 'Guided photo' : 'Take a photo'));
+  readonly handOnly = input(false);
+  readonly title = computed(() => 'Take a photo');
   readonly titleId = `camera-title-${newId()}`;
   readonly players = input.required<readonly { id: string; name: string }[]>();
   readonly winnerId = input.required<string>();
@@ -31,9 +32,12 @@ export class GuidedCamera {
   readonly disabled = input(false);
   readonly captured = output<GuidedPhoto>();
   readonly sources = signal<string[]>([]);
-  readonly zones = computed(() =>
-    captureZones(this.sources(), this.playerCount() === 3, this.aspect()),
-  );
+  readonly zones = computed(() => {
+    const zones = captureZones(this.sources(), this.playerCount() === 3, this.aspect());
+    return this.handOnly()
+      ? [{ ...zones[0], box: { x: 0.05, y: 0.25, width: 0.9, height: 0.5 } }]
+      : zones;
+  });
   readonly active = signal(false);
   readonly busy = signal(false);
   readonly error = signal('');

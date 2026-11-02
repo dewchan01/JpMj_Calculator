@@ -1,4 +1,4 @@
-import { CopyButton } from '../../../shared/copy-button/copy-button';
+﻿import { CopyButton } from '../../../shared/copy-button/copy-button';
 import {
   canRestartLastHand,
   restartLastHand,
@@ -97,6 +97,7 @@ type Panel =
   | 'call'
   | 'indicators'
   | 'outcome'
+  | 'double-riichi'
   | 'win'
   | 'hand'
   | 'details'
@@ -249,7 +250,13 @@ export class GameTable {
   manualPayer = '';
   manualResponsibleYakuman = 1;
   readonly fuOptions = [20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 110];
-  readonly yakumanOptions = [1, 2, 3, 4, 5, 6];
+  get yakumanOptions(): number[] {
+    return this.settings?.stackYakuman
+      ? [1, 2, 3, 4, 5, 6]
+      : this.settings?.doubleYakuman
+        ? [1, 2]
+        : [1];
+  }
   get concealedKanEntries() {
     return this.currentPlayer.melds
       .map((meld, index) => ({ meld, index }))
@@ -406,6 +413,7 @@ export class GameTable {
     }
   }
   readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('prompt');
+  readonly calledTileChoice = viewChild<TileChoice>('callTilePicker');
   readonly panel = signal<Panel>('menu');
   readonly panelParents = signal<Panel[]>([]);
   readonly canDismissPrompt = () => !this.busy();
@@ -488,7 +496,8 @@ export class GameTable {
       (this.match()?.players ?? []).map((p) => {
         return [
           p.id,
-          livePlayer(this.match()!, p.id).melds.filter((meld) => meld.type !== 'ankan').length,
+          livePlayer(this.match()!, p.id).melds.filter((meld) => meld.type !== 'ankan').length +
+            (livePlayer(this.match()!, p.id).manualCalls ?? 0),
         ];
       }),
     ),
@@ -512,7 +521,7 @@ export class GameTable {
   callType: Meld['type'] | 'kita' = 'pon';
   callText = '';
   callSource = '';
-  called = 0;
+  called = -1;
   upgradeId = '';
   dora = '';
   ura = '';
@@ -520,6 +529,19 @@ export class GameTable {
   firstTurn = false;
   method: 'ron' | 'tsumo' = 'ron';
   winners: Record<string, boolean> = {};
+  setWinMethod(method: 'ron' | 'tsumo'): void {
+    this.method = method;
+    if (method === 'tsumo') {
+      const winner = this.players.find((player) => this.winners[player.id]);
+      this.winners = winner ? { [winner.id]: true } : {};
+    }
+    this.error.set('');
+  }
+  selectHandWinner(id: string, checked: boolean): void {
+    if (this.method === 'tsumo') this.winners = { [id]: true };
+    else this.winners = { ...this.winners, [id]: checked };
+    this.error.set('');
+  }
   playerWinSelected = false;
   private winSoundPlayed = false;
   discarder = '';
@@ -741,6 +763,7 @@ export class GameTable {
       call: 'Record call',
       indicators: 'Dora / Ura',
       outcome: 'End this hand',
+      'double-riichi': 'Double Riichi',
       win: this.playerWinSelected ? 'Win method' : 'Who won this hand?',
       hand: this.manualEntry() ? 'Manual Han entry' : 'The winning hand',
       details: 'Winning conditions',
@@ -1056,7 +1079,9 @@ export class GameTable {
       this.close(true);
     });
   }
+  readonly callEntryRequest = signal(0);
   startCall(type: Meld['type'] | 'kita', resuming = false): void {
+    if (this.currentPlayer.riichi === 'double' && !['ankan', 'kita'].includes(type)) return;
     if (this.paused() || (this.busy() && !resuming) || this.match()?.ended) return;
     if (
       type !== 'kita' &&
@@ -1080,13 +1105,14 @@ export class GameTable {
               this.players.length
           ].id
         : (this.players.find((p) => p.id !== this.selected)?.id ?? '');
-    this.called = 0;
+    this.called = -1;
     this.upgradeId = this.currentPlayer.melds.find((m) => m.type === 'pon')?.id ?? '';
     if (type === 'kita') {
       void this.saveCall(true);
       return;
     }
     this.navigatePanel('call');
+    this.callEntryRequest.update((value) => value + 1);
   }
   async undoAction(): Promise<void> {
     await this.act(async () => {
@@ -1126,6 +1152,11 @@ export class GameTable {
       }
       return;
     }
+    if (action.type === 'calls' && this.scoringMode.advanced()) {
+      this.selected = action.player;
+      await this.recordManualCall();
+      return;
+    }
     this.open('player', action.player);
     this.playerMode.set(action.type);
     if (action.type === 'ankan') {
@@ -1140,11 +1171,26 @@ export class GameTable {
     this.firstTurn = double;
     await this.riichi();
   }
+  async recordManualCall(): Promise<void> {
+    await this.act(async () => {
+      const payload = { type: 'manual' as const, text: '', source: '', called: 0, upgradeId: '' };
+      if (this.remotePlayer() && !this.editingHand()) await this.room.submit('call', payload);
+      else await this.persist(recordCall(this.match()!, this.selected, payload), true);
+    });
+  }
   canDeclareDoubleRiichi(): boolean {
     return (
       this.currentPlayer.riichi === 'none' &&
       !this.currentPlayer.melds.some((meld) => meld.type !== 'ankan')
     );
+  }
+  isDoubleRiichi(playerId: string): boolean {
+    return !!this.match() && livePlayer(this.match()!, playerId).riichi === 'double';
+  }
+  async toggleDoubleRiichi(playerId: string): Promise<void> {
+    this.selected = playerId;
+    if (this.isDoubleRiichi(playerId)) await this.cancelDeclaration();
+    else await this.declarePlayerRiichi(true);
   }
   startPlayerWin(method: 'ron' | 'tsumo'): void {
     if (this.paused() || this.busy() || this.match()?.ended) return;
@@ -1168,6 +1214,11 @@ export class GameTable {
     this.comparisonPlayer.set(player);
   }
   async saveCall(keepOpen = false): Promise<void> {
+    if (this.callType === 'daiminkan') this.called = 0;
+    if (['chi', 'pon'].includes(this.callType) && !this.callTiles()[this.called]) {
+      this.error.set('Choose called tile');
+      return;
+    }
     await this.act(async () => {
       const payload = {
         type: this.callType,
