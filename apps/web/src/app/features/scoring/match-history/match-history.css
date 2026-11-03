@@ -10,6 +10,9 @@
 .history-row {
   position: relative;
 }
+.history-list > .empty {
+  margin-top: 16px;
+}
 .history-list .history-row.editable .history-event > summary {
   grid-template-columns: minmax(0, 1fr) 44px 12px;
 }
