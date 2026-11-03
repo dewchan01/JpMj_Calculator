@@ -18,8 +18,8 @@ h1 {
   flex-shrink: 0;
 }
 :host {
-  --score-positive: #087e8b;
+  --score-positive: #276344;
   --score-negative: #b3342c;
-  --score-positive-dark: #69d4dc;
+  --score-positive-dark: #a3ddb4;
   --score-negative-dark: #ff9a90;
 }

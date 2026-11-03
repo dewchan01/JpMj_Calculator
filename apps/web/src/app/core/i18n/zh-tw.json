@@ -1,4 +1,4 @@
-﻿{
+{
   "Money and chip settings": "金錢與籌碼設定",
   "Hide money columns in records": "隱藏紀錄中的金錢欄",
   "Cancel call": "取消副露",
@@ -1069,6 +1069,7 @@
   "Oldest first": "日期由舊到新",
   "Sort players": "玩家排序",
   "Name: A to Z": "依名稱排序",
+  "Game count: lowest first": "對局數由少到多",
   "Game count: highest first": "對局數由多到少",
   "Average rank: best first": "平均順位由優到劣",
   "Total points: highest first": "總點數由高到低",

@@ -1,7 +1,9 @@
 ﻿@if (match(); as m) {
   <div class="game-shell" [class.room-game]="!!roomCode">
     <header class="game-heading">
-      <h1>{{ m.name }}</h1>
+      @if (roomCode) {
+        <h1>{{ m.name }}</h1>
+      }
       <button class="quiet clock" (click)="open('menu')" [attr.aria-label]="'Game timer' | t">
         {{ time(elapsed()) }}
         @if (paused()) {
@@ -54,7 +56,7 @@
       [actionsDisabled]="paused() || busy()"
       [compact]="true"
       [liveControls]="true"
-      [showCaption]="!roomCode"
+      [showCaption]="false"
       [ended]="!!m.ended"
       [players]="m.players"
       [presence]="playerPresence()"

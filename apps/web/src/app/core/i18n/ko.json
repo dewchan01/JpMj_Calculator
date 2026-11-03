@@ -1,4 +1,4 @@
-﻿{
+{
   "Money and chip settings": "금액 및 칩 설정",
   "Hide money columns in records": "기록의 금액 열 숨기기",
   "Cancel call": "후로 취소",
@@ -1069,6 +1069,7 @@
   "Oldest first": "오래된순",
   "Sort players": "플레이어 정렬",
   "Name: A to Z": "이름 오름차순",
+  "Game count: lowest first": "대국 수 적은순",
   "Game count: highest first": "대국 수 많은순",
   "Average rank: best first": "평균 순위 높은순",
   "Total points: highest first": "총 점수 높은순",

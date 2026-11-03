@@ -2,7 +2,7 @@ import { Service, signal } from '@angular/core';
 
 @Service()
 export class ScoringMode {
-  readonly hideMoney = signal(localStorage.getItem('riichi-hide-money') === 'true');
+  readonly hideMoney = signal(localStorage.getItem('riichi-hide-money') !== 'false');
   setHideMoney(value: boolean): void {
     localStorage.setItem('riichi-hide-money', String(value));
     this.hideMoney.set(value);
