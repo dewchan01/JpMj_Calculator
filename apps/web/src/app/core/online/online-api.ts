@@ -37,10 +37,13 @@ export interface RoomState {
 
 @Service()
 export class OnlineApi {
-  private readonly revokedRooms = new Set<string>();
+  private readonly revokedRooms = signal(new Set<string>());
+  hasRoomAccess(id: string, token: string): boolean {
+    return !this.revokedRooms().has(`${id.toUpperCase()}:${token}`);
+  }
   private readonly roomReads = new Map<string, Promise<unknown>>();
   clearRoomAccess(id: string, token: string): void {
-    this.revokedRooms.add(`${id.toUpperCase()}:${token}`);
+    this.revokedRooms.update((rooms) => new Set([...rooms, `${id.toUpperCase()}:${token}`]));
     const key = `riichi-room:${this.url()}`;
     for (const name of ['sessionStorage', 'localStorage'] as const) {
       try {
@@ -100,10 +103,10 @@ export class OnlineApi {
     headers?: Record<string, string>,
   ): Promise<T> {
     const roomRead = /^\/api\/rooms\/([a-f0-9]{10})(?:\/game)?(?:\?.*)?$/i.exec(path);
+    const roomPath = /^\/api\/rooms\/([a-f0-9]{10})(?:\/|$|\?)/i.exec(path);
+    if (token && roomPath && !this.hasRoomAccess(roomPath[1], token))
+      throw new Error('Room credentials are incorrect or expired.');
     if (method === 'GET' && token && roomRead) {
-      const identity = `${roomRead[1].toUpperCase()}:${token}`;
-      if (this.revokedRooms.has(identity))
-        throw new Error('Room credentials are incorrect or expired.');
       const key = `${path}:${token}`;
       const pending = this.roomReads.get(key);
       if (pending) return pending as Promise<T>;
@@ -145,8 +148,8 @@ export class OnlineApi {
       throw new Error('Could not connect to the online service.');
     }
     if (!response.ok) {
-      const roomRead = /^\/api\/rooms\/([a-f0-9]{10})(?:\/game)?(?:\?.*)?$/i.exec(path);
-      if (method === 'GET' && token && roomRead && [401, 404, 410].includes(response.status))
+      const roomRead = /^\/api\/rooms\/([a-f0-9]{10})(?:\/|$|\?)/i.exec(path);
+      if (token && roomRead && [401, 404, 410].includes(response.status))
         this.clearRoomAccess(roomRead[1], token);
       if (response.status === 409) {
         const detail: unknown = await response.json().catch(() => null);

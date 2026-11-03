@@ -1,5 +1,5 @@
 import { LobbyConnection } from './lobby-connection';
-import { Service, computed, inject, signal } from '@angular/core';
+import { Service, computed, effect, inject, signal, untracked } from '@angular/core';
 import { HubConnectionBuilder, LogLevel, type HubConnection } from '@microsoft/signalr';
 import { RoomTabAccess } from './room-tab-access';
 import { OnlineApi, type RoomAccess, type RoomState } from './online-api';
@@ -54,6 +54,18 @@ export class RoomSession {
     this.connectionStatus.set(state);
   }
   readonly access = signal<RoomAccess | null>(null);
+  readonly authorized = computed(() => {
+    const access = this.access();
+    return !!access && this.api.hasRoomAccess(access.id, access.token);
+  });
+  private readonly revokeSession = effect(() => {
+    if (this.access() && !this.authorized()) {
+      untracked(() => {
+        void this.stop();
+        this.error.set('Room credentials are incorrect or expired.');
+      });
+    }
+  });
   readonly state = signal<RoomGame | null>(null);
   readonly status = signal('');
   readonly error = signal('');
@@ -69,7 +81,7 @@ export class RoomSession {
     ...this.state()?.permissions,
   }));
   can(permission: RoomPermission): boolean {
-    return !!this.access()?.host || this.permissions()[permission];
+    return this.authorized() && (!!this.access()?.host || this.permissions()[permission]);
   }
   async setPermission(permission: RoomPermission, enabled: boolean): Promise<void> {
     if (!this.access()?.host) throw new Error('Only the host can change shared table settings.');

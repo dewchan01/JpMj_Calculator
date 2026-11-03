@@ -462,7 +462,9 @@ export class GameTable {
     this.match() ? balances(this.match()!) : { players: {}, table: 0 },
   );
   readonly elapsed = computed(() => elapsedMs(this.match()?.clock, this.now()));
-  readonly paused = computed(() => !this.match()?.clock?.runningSince);
+  readonly paused = computed(
+    () => (!!this.roomCode && !this.room.authorized()) || !this.match()?.clock?.runningSince,
+  );
   readonly statuses = computed(() =>
     Object.fromEntries(
       (this.match()?.players ?? []).map((p) => {
