@@ -1,7 +1,17 @@
 import { SignedValue } from '../../shared/signed-value/signed-value';
 import { ResponsiveSheet } from '../../shared/responsive-sheet';
 import { DialogBackdrop } from '../../shared/dialog-backdrop';
-import { Component, computed, inject, signal, viewChild, ElementRef } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  signal,
+  viewChild,
+  ElementRef,
+  DestroyRef,
+  afterRenderEffect,
+} from '@angular/core';
+import { RecordsMemory } from './records-memory';
 import { DecimalPipe, KeyValuePipe } from '@angular/common';
 import { LocalDatePipe } from '../../core/i18n/local-date';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
@@ -34,6 +44,7 @@ import { PlayerLibrary } from '../matches/data-access/player-library';
   styleUrl: './records.css',
 })
 export class Records {
+  private readonly memory = inject(RecordsMemory);
   readonly displaySettings = inject(ScoringMode);
   private readonly route = inject(ActivatedRoute);
   private readonly repo = inject(Repository);
@@ -201,6 +212,34 @@ export class Records {
       from: query.get('from') ?? '',
       to: query.get('to') ?? '',
       mode: query.get('mode') ?? '',
+    });
+    const saved = this.memory.position;
+    let restore = !!saved && this.memory.returning();
+    afterRenderEffect(() => {
+      if (this.loading()) return;
+      if (!restore || !saved) return;
+      restore = false;
+      this.memory.position = undefined;
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => window.scrollTo({ top: saved.top, behavior: 'instant' })),
+      );
+    });
+    if (saved && this.memory.returning()) {
+      this.view.set(saved.view);
+      this.filters.setValue(saved.filters);
+      this.gameSort.setValue(saved.gameSort);
+      this.playerSort.setValue(saved.playerSort);
+      this.currency.setValue(saved.currency);
+    }
+    inject(DestroyRef).onDestroy(() => {
+      this.memory.position = {
+        view: this.view(),
+        filters: this.filters.getRawValue(),
+        gameSort: this.gameSort.value,
+        playerSort: this.playerSort.value,
+        currency: this.currency.value,
+        top: window.scrollY,
+      };
     });
     void this.load();
   }
