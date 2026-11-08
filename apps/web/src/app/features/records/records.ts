@@ -16,7 +16,7 @@ import { DecimalPipe, KeyValuePipe } from '@angular/common';
 import { LocalDatePipe } from '../../core/i18n/local-date';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, NavigationStart, Router, RouterLink } from '@angular/router';
 import { Repository } from '../matches/data-access/repository';
 import { I18n, TranslatePipe } from '../../core/i18n/i18n';
 import { ErrorNotice } from '../../shared/error-notice/error-notice';
@@ -231,7 +231,8 @@ export class Records {
       this.playerSort.setValue(saved.playerSort);
       this.currency.setValue(saved.currency);
     }
-    inject(DestroyRef).onDestroy(() => {
+    const navigation = inject(Router).events.subscribe((event) => {
+      if (!(event instanceof NavigationStart)) return;
       this.memory.position = {
         view: this.view(),
         filters: this.filters.getRawValue(),
@@ -241,6 +242,7 @@ export class Records {
         top: window.scrollY,
       };
     });
+    inject(DestroyRef).onDestroy(() => navigation.unsubscribe());
     void this.load();
   }
   async load(): Promise<void> {
