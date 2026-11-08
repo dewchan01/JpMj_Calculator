@@ -1,4 +1,5 @@
 import { ResponsiveSheet } from '../../../shared/responsive-sheet';
+import { DetailTabMemory } from '../../../core/detail-tab-memory';
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -85,7 +86,7 @@ export class PlayerProfile {
     this.opponent.set('');
     dialog.close();
   }
-  readonly tab = signal<'overview' | 'stats' | 'explore'>('overview');
+  readonly tab = inject(DetailTabMemory).player;
   readonly tabs = [
     { key: 'overview', label: 'Overview' },
     { key: 'stats', label: 'Statistics' },

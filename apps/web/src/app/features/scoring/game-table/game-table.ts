@@ -1,4 +1,5 @@
-﻿import { CopyButton } from '../../../shared/copy-button/copy-button';
+import { manualYakumanNames } from '../../../../../../../packages/mahjong-scoring/manual-yakuman';
+import { CopyButton } from '../../../shared/copy-button/copy-button';
 import {
   canRestartLastHand,
   restartLastHand,
@@ -248,6 +249,8 @@ export class GameTable {
   );
   manualHan = 3;
   manualFu = 40;
+  readonly manualYakumanNames = manualYakumanNames;
+  manualYakumanName = '';
   manualYakuman = 0;
   manualChips = 0;
   manualPayer = '';
@@ -1382,6 +1385,7 @@ export class GameTable {
     this.manualHan = stored?.han ?? 3;
     this.manualFu = stored?.fu ?? 40;
     this.manualYakuman = stored?.yakuman ?? 0;
+    this.manualYakumanName = stored?.yakumanName ?? '';
     this.manualChips = stored?.chips ?? 0;
     this.manualPayer = stored?.pao?.payerId ?? '';
     this.manualResponsibleYakuman = stored?.pao?.yakuman ?? 1;
@@ -1506,6 +1510,7 @@ export class GameTable {
               han: this.manualHan,
               fu: this.manualFu,
               yakuman: this.manualYakuman,
+              yakumanName: this.manualYakuman ? this.manualYakumanName || undefined : undefined,
               chips: this.manualChips,
               pao:
                 this.manualYakuman && this.manualPayer

@@ -5,6 +5,7 @@ import { enumerateForms } from './forms';
 import { basePoints, paymentsFor, responsibilityPayments, responsibilityFor } from './payments';
 import type { Form, ScoringInput } from './types';
 import { validate } from './validation';
+import { manualYakumanNames } from './manual-yakuman';
 export type { ScoringInput } from './types';
 export { basePoints, ceil100, paymentsFor } from './payments';
 export function invalid(errors: string[]): ScoreResult {
@@ -85,7 +86,17 @@ export function score(input: ScoringInput): ScoreResult {
       errors: [],
       han: yakuman ? 0 : han,
       fu: yakuman ? 0 : fu,
-      yaku: yakuman ? [{ id: 'manual-yakuman', name: 'Yakuman', yakumanMultiplier: yakuman }] : [],
+      yaku: yakuman
+        ? [
+            {
+              id: 'manual-yakuman',
+              name: manualYakumanNames.includes(input.manualScore.yakumanName ?? '')
+                ? input.manualScore.yakumanName!
+                : 'Yakuman',
+              yakumanMultiplier: yakuman,
+            },
+          ]
+        : [],
       bonusHan: [],
       fuBreakdown: [],
       limitName: limit.limitName,

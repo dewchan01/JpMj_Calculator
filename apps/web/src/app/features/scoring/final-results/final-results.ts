@@ -1,4 +1,5 @@
 import { SignedValue } from '../../../shared/signed-value/signed-value';
+import { DetailTabMemory } from '../../../core/detail-tab-memory';
 import { RecordRetention } from '../../../core/record-retention';
 import { DateTimeField } from '../../../shared/date-time-field/date-time-field';
 import {
@@ -86,7 +87,7 @@ export class FinalResults {
     this.notice.set('');
     this.discardDialog().nativeElement.showModal();
   }
-  readonly tab = signal<'result' | 'history' | 'details'>('result');
+  readonly tab = inject(DetailTabMemory).result;
   readonly tabs = ['result', 'history', 'details'] as const;
   readonly tabLabels = { result: 'Result', history: 'History', details: 'Details' };
   readonly editing = signal(false);

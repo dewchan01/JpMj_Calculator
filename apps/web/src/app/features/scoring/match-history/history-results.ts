@@ -25,6 +25,7 @@ export function historyResults(event: LedgerEvent, rules: RuleProfile) {
         : undefined);
     return {
       result,
+      yakuman,
       limitName,
       win: input?.win ?? (index === 0 ? event.win : undefined),
       hand: input?.hand ?? (index === 0 ? event.hand : undefined),

@@ -197,10 +197,12 @@ export class MatchHistory {
       : this.i18n.t(ruleName(profile));
   }
   outcomeMarks(event: LedgerEvent): string[] {
-    return this.scoredHands(event).map(({ result, limitName }) => {
+    return this.scoredHands(event).map(({ result, limitName, yakuman }) => {
       return [
         ...new Set([
-          result.han || result.fu ? this.i18n.t(result.han + ' Han · ' + result.fu + ' Fu') : '',
+          !yakuman && (result.han || result.fu)
+            ? this.i18n.t(result.han + ' Han · ' + result.fu + ' Fu')
+            : '',
           limitName ? this.i18n.t(limitName) : '',
           ...result.yaku.map((yaku) => this.i18n.t(yaku.name)),
         ]),

@@ -14,6 +14,17 @@ function manual(han = 3, fu = 40): ScoringInput {
   return input;
 }
 describe('player-confirmed Han/Fu scoring', () => {
+  it('preserves an optional Yakuman name without changing its confirmed payment', () => {
+    const input = manual();
+    input.manualScore = { han: 3, fu: 40, yakuman: 1 };
+    const generic = score(input);
+    input.manualScore.yakumanName = 'Thirteen orphans (Kokushi musou)';
+    const named = score(input);
+    expect(named.yaku[0].name).toBe('Thirteen orphans (Kokushi musou)');
+    expect(named.han).toBe(0);
+    expect(named.fu).toBe(0);
+    expect(named.payments).toEqual(generic.payments);
+  });
   it('splits explicit Pao using the saved component/whole-hand policy and applies Honba once', () => {
     const input = manual();
     input.rules = presetRules('mahjong-soul', 4);

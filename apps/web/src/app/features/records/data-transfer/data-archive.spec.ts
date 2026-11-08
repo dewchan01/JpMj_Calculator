@@ -40,7 +40,14 @@ describe('game archives', () => {
   it('preserves manual Han/Fu and responsibility metadata without fabricating tiles', () => {
     const match = sample();
     const input = fixture('', 3);
-    input.manualScore = { han: 3, fu: 40, yakuman: 2, chips: 3, pao: { payerId: 'c', yakuman: 1 } };
+    input.manualScore = {
+      han: 3,
+      fu: 40,
+      yakuman: 2,
+      yakumanName: 'Thirteen orphans (Kokushi musou)',
+      chips: 3,
+      pao: { payerId: 'c', yakuman: 1 },
+    };
     match.events[0] = {
       id: 'manual',
       type: 'win',

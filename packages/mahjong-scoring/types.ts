@@ -6,6 +6,7 @@ export interface ScoringInput {
     han: number;
     fu: number;
     yakuman?: number;
+    yakumanName?: string;
     chips?: number;
     pao?: { payerId: string; yakuman: number };
   };

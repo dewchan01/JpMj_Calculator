@@ -184,7 +184,9 @@
                   @if (entry.win; as win) {
                     {{ (win.method === 'ron' ? 'Ron · discard' : 'Tsumo · self draw') | t }} ·
                   }
-                  {{ r.han + ' Han · ' + r.fu + ' Fu' | t }} ·
+                  @if (!entry.yakuman && (r.han || r.fu)) {
+                    {{ r.han + ' Han · ' + r.fu + ' Fu' | t }} ·
+                  }
                   {{ entry.limitName ?? 'standard' | t }}
                 </p>
                 @for (y of r.yaku; track y.id) {

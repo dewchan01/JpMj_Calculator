@@ -1,4 +1,5 @@
-﻿import { gamesCsv } from '../../records/data-transfer/data-csv';
+import { manualYakumanNames } from '../../../../../../../packages/mahjong-scoring/manual-yakuman';
+import { gamesCsv } from '../../records/data-transfer/data-csv';
 import { DialogBackdrop } from '../../../shared/dialog-backdrop';
 import { ScoringMode } from '../../../core/scoring-mode';
 import { newId } from '../../../core/id/new-id';
@@ -137,6 +138,8 @@ export class Scorer {
   readonly scoringMode = inject(ScoringMode);
   manualHan = 3;
   manualFu = 40;
+  readonly manualYakumanNames = manualYakumanNames;
+  manualYakumanName = '';
   manualYakuman = 0;
   manualChips = 0;
   manualPayer = '';
@@ -447,6 +450,7 @@ export class Scorer {
         han: this.manualHan,
         fu: this.manualFu,
         yakuman: this.manualYakuman,
+        yakumanName: this.manualYakuman ? this.manualYakumanName || undefined : undefined,
         chips: this.manualChips,
         pao: this.manualPayer
           ? { payerId: this.manualPayer, yakuman: this.manualResponsibleYakuman }
@@ -479,6 +483,7 @@ export class Scorer {
     this.manualHan = d.manualScore?.han ?? 3;
     this.manualFu = d.manualScore?.fu ?? 40;
     this.manualYakuman = d.manualScore?.yakuman ?? 0;
+    this.manualYakumanName = d.manualScore?.yakumanName ?? '';
     this.manualChips = d.manualScore?.chips ?? 0;
     this.manualPayer = d.manualScore?.pao?.payerId ?? '';
     this.manualResponsibleYakuman = d.manualScore?.pao?.yakuman ?? 1;
@@ -802,6 +807,7 @@ export class Scorer {
             han: this.manualHan,
             fu: this.manualFu,
             yakuman: this.manualYakuman,
+            yakumanName: this.manualYakuman ? this.manualYakumanName || undefined : undefined,
             chips: this.manualChips,
             pao:
               this.manualYakuman && this.manualPayer

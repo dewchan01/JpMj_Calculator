@@ -157,6 +157,15 @@
                     }
                   </select>
                 </label>
+                <label>
+                  {{ 'Yaku' | t }}
+                  <select [(ngModel)]="manualYakumanName" (ngModelChange)="changed()">
+                    <option value="">{{ 'Yakuman' | t }}</option>
+                    @for (name of manualYakumanNames; track name) {
+                      <option [value]="name">{{ name | t }}</option>
+                    }
+                  </select>
+                </label>
               }
               @if (!manualYakuman) {
                 <label>

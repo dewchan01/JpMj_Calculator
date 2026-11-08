@@ -80,9 +80,10 @@ test('autoplay restriction retries on the next interaction without a music error
   });
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
+  await expect.poll(() => page.evaluate(() => Reflect.get(window, 'musicAttempts'))).toBe(1);
   await page.getByRole('button', { name: 'Music settings', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Music settings', exact: true });
-  await expect.poll(() => page.evaluate(() => Reflect.get(window, 'musicAttempts'))).toBe(1);
+  await expect.poll(() => page.evaluate(() => Reflect.get(window, 'musicAttempts'))).toBe(2);
   await expect(
     dialog.getByText('Could not play background music.', { exact: true }),
   ).not.toBeVisible();
@@ -116,9 +117,8 @@ test('successful retry of the same music clears its previous playback error', as
     });
   });
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Music settings', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Music settings', exact: true });
+  await page.goto('/others/sound');
+  const dialog = page.locator('app-music-settings');
   await expect(dialog.getByText('Could not play background music.', { exact: true })).toBeVisible();
   await dialog.getByRole('slider', { name: 'Music volume', exact: true }).fill('0.5');
   await expect(

@@ -21,7 +21,7 @@ export class BackgroundMusic {
   readonly error = signal('');
   private readonly scene = signal<MusicScene>('lobby');
   private readonly hand = signal('');
-  private readonly unlocked = signal(false);
+  private readonly unlocked = signal(true);
   private readonly visible = signal(!document.hidden);
   private readonly selected = computed(() => {
     const scene = this.scene();
@@ -42,19 +42,41 @@ export class BackgroundMusic {
     const unlock = () => {
       this.unlocked.set(true);
       // Retry inside the user gesture, where browsers permit media playback.
-      if (this.audio?.paused && !this.pending)
+      if ((!this.audio || this.audio.paused) && !this.pending)
         untracked(() =>
           this.play(this.selected(), this.enabled() && this.visible(), this.volume()),
         );
     };
-    const visibility = () => this.visible.set(!document.hidden);
+    const suspend = () => {
+      this.visible.set(false);
+      // Mobile browsers can freeze the page before a reactive effect runs.
+      untracked(() => this.play(this.selected(), false, this.volume()));
+    };
+    const resume = () => {
+      if (this.visible()) return;
+      this.visible.set(!document.hidden);
+      this.playSelection();
+    };
+    const visibility = () => (document.hidden ? suspend() : resume());
     document.addEventListener('pointerdown', unlock);
+    document.addEventListener('pointerup', unlock);
+    document.addEventListener('touchend', unlock);
     document.addEventListener('keydown', unlock);
     document.addEventListener('visibilitychange', visibility);
+    window.addEventListener('pagehide', suspend);
+    window.addEventListener('pageshow', resume);
+    document.addEventListener('freeze', suspend);
+    document.addEventListener('resume', resume);
     inject(DestroyRef).onDestroy(() => {
       document.removeEventListener('pointerdown', unlock);
+      document.removeEventListener('pointerup', unlock);
+      document.removeEventListener('touchend', unlock);
       document.removeEventListener('keydown', unlock);
       document.removeEventListener('visibilitychange', visibility);
+      window.removeEventListener('pagehide', suspend);
+      window.removeEventListener('pageshow', resume);
+      document.removeEventListener('freeze', suspend);
+      document.removeEventListener('resume', resume);
       this.generation++;
       this.audio?.pause();
     });
