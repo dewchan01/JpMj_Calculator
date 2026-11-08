@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, DestroyRef } from '@angular/core';
 import { ScoringMode } from '../../core/scoring-mode';
 import { DetailTabMemory } from '../../core/detail-tab-memory';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
@@ -67,13 +67,38 @@ export class Settings {
   );
   constructor() {
     this.memory.settingsCount.set(this.count());
-    this.load(this.base());
+    this.restoreDraft(this.count());
+    inject(DestroyRef).onDestroy(() => this.rememberDraft());
+  }
+  private rememberDraft(): void {
+    this.memory.set(`settings:draft:${this.count()}`, {
+      base: this.base(),
+      selected: this.selected(),
+      values: this.form.getRawValue(),
+      dirty: this.form.dirty,
+    });
+  }
+  private restoreDraft(count: 3 | 4): void {
+    const draft = this.memory.get<{
+      base: RuleProfile;
+      selected: string;
+      values: Record<string, string | number | boolean>;
+      dirty: boolean;
+    }>(`settings:draft:${count}`);
+    this.load(draft?.base ?? this.library.draft(count));
+    if (draft) {
+      this.selected.set(draft.selected);
+      this.form.patchValue(draft.values);
+      if (draft.dirty) this.form.markAsDirty();
+    }
   }
   setCount(count: 3 | 4): void {
+    if (count === this.count()) return;
+    this.rememberDraft();
     this.memory.switchTab('settings', this.count(), count, () => {
       this.memory.settingsCount.set(count);
       this.count.set(count);
-      this.load(this.library.draft(count));
+      this.restoreDraft(count);
     });
   }
   choose(event: Event): void {

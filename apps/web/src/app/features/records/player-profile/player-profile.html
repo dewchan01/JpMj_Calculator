@@ -215,7 +215,7 @@
             | t
         }}
       </p>
-      <details>
+      <details [appRememberDetails]="memoryKey('reference')">
         <summary>{{ 'Method and source' | t }}</summary>
         <p class="hint">
           {{
@@ -236,9 +236,11 @@
     <label class="compare-control">
       {{ 'Compare with' | t }}
       <select [value]="compare()" (change)="setValue($event, 'compare')">
-        <option value="">{{ 'No comparison' | t }}</option>
+        <option value="" [selected]="!compare()">{{ 'No comparison' | t }}</option>
         @for (peer of peers(); track peer.id) {
-          <option [value]="peer.id">{{ identityLabel(peer) }}</option>
+          <option [value]="peer.id" [selected]="compare() === peer.id">
+            {{ identityLabel(peer) }}
+          </option>
         }
       </select>
     </label>
@@ -300,7 +302,7 @@
         }
       </section>
     </div>
-    <details class="metric-definitions">
+    <details class="metric-definitions" [appRememberDetails]="memoryKey('definitions')">
       <summary>{{ 'How these rates are calculated' | t }}</summary>
       <p>
         {{
@@ -375,9 +377,11 @@
       <label>
         {{ 'Shared opponent' | t }}
         <select [value]="opponent()" (change)="setValue($event, 'opponent')">
-          <option value="">{{ 'All players' | t }}</option>
+          <option value="" [selected]="!opponent()">{{ 'All players' | t }}</option>
           @for (row of analysis().chemistry; track row.id) {
-            <option [value]="row.id">{{ identityLabel(row) }}</option>
+            <option [value]="row.id" [selected]="opponent() === row.id">
+              {{ identityLabel(row) }}
+            </option>
           }
         </select>
       </label>
@@ -410,7 +414,7 @@
           </dl>
         </article>
       }
-      <details>
+      <details [appRememberDetails]="memoryKey('shared-games')">
         <summary>{{ 'Shared game history' | t }}</summary>
         <ol class="game-links">
           @for (game of sharedGames(); track game.match.id) {

@@ -1,5 +1,6 @@
 import { SignedValue } from '../../../shared/signed-value/signed-value';
 import { DetailTabMemory } from '../../../core/detail-tab-memory';
+import { RememberDetails } from '../../../shared/remember-details';
 import { RecordRetention } from '../../../core/record-retention';
 import { DateTimeField } from '../../../shared/date-time-field/date-time-field';
 import {
@@ -36,6 +37,7 @@ import { durationMinutes } from '../../records/record-stats';
 @Component({
   selector: 'app-final-results',
   imports: [
+    RememberDetails,
     DateTimeField,
     SignedValue,
     DecimalPipe,
@@ -90,7 +92,7 @@ export class FinalResults {
   private readonly tabMemory = inject(DetailTabMemory);
   readonly tab = this.tabMemory.result;
   selectTab(tab: 'result' | 'history' | 'details'): void {
-    this.tabMemory.switchTab('result', this.tab(), tab, () => {
+    this.tabMemory.switchTab(`result:${this.match().id}`, this.tab(), tab, () => {
       this.tab.set(tab);
       this.editing.set(false);
     });
@@ -139,13 +141,19 @@ export class FinalResults {
       this.busy.set(false);
     }
   }
-  readonly view = signal<'table' | 'list'>('table');
+  readonly view = this.tabMemory.remember<'table' | 'list'>(
+    () => `result:${this.match().id}:layout`,
+    () => 'table',
+  );
   readonly views = ['table', 'list'] as const;
   readonly viewLabels = {
     table: 'Table',
     list: 'List',
   };
-  readonly selected = signal('');
+  readonly selected = this.tabMemory.remember(
+    () => `result:${this.match().id}:${this.tab()}:player`,
+    () => '',
+  );
   readonly busy = signal(false);
   readonly notice = signal('');
   readonly i18n = inject(I18n);

@@ -257,7 +257,7 @@
           }
         }
       </svg>
-      <details class="score-data">
+      <details class="score-data" [appRememberDetails]="'result:' + match().id + ':score-data'">
         <summary>{{ 'Score history data' | t }}</summary>
         <table>
           <thead>

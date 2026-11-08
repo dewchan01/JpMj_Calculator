@@ -1,6 +1,6 @@
 import { TileArt } from '../../../shared/tile-art/tile-art';
 import { SignedValue } from '../../../shared/signed-value/signed-value';
-import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { LocalDatePipe } from '../../../core/i18n/local-date';
 import { tileLabel } from '../../../../../../../packages/mahjong-core/index';
@@ -10,14 +10,19 @@ import { I18n, TranslatePipe } from '../../../core/i18n/i18n';
 import { editableHand } from '../game-table/hand-edit';
 import { historyResults } from './history-results';
 import { historyEvents } from './history-events';
+import { RememberDetails } from '../../../shared/remember-details';
+import { DetailTabMemory } from '../../../core/detail-tab-memory';
 @Component({
   selector: 'app-match-history',
-  imports: [SignedValue, TileArt, LocalDatePipe, DecimalPipe, TranslatePipe],
+  imports: [RememberDetails, SignedValue, TileArt, LocalDatePipe, DecimalPipe, TranslatePipe],
   templateUrl: './match-history.html',
   styleUrl: './match-history.css',
 })
 export class MatchHistory {
-  readonly selectedPlayers = signal<Record<string, string>>({});
+  readonly selectedPlayers = inject(DetailTabMemory).remember<Record<string, string>>(
+    () => `history:${this.match()?.id}:players`,
+    () => ({}),
+  );
   selectPlayer(eventId: string, playerId: string): void {
     this.selectedPlayers.update((selected) => ({
       ...selected,

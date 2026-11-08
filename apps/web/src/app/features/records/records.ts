@@ -47,7 +47,25 @@ import { PlayerLibrary } from '../matches/data-access/player-library';
 export class Records {
   private readonly tabMemory = inject(DetailTabMemory);
   selectView(view: 'games' | 'players'): void {
-    this.tabMemory.switchTab('records', this.view(), view, () => this.view.set(view));
+    this.tabMemory.set(`records:${this.view()}:controls`, this.controlsSnapshot());
+    this.tabMemory.switchTab('records', this.view(), view, () => {
+      this.view.set(view);
+      const saved = this.tabMemory.get<ReturnType<Records['controlsSnapshot']>>(
+        `records:${view}:controls`,
+      );
+      this.filters.setValue(saved?.filters ?? { from: '', to: '', mode: '', participant: '' });
+      this.gameSort.setValue(saved?.gameSort ?? 'newest');
+      this.playerSort.setValue(saved?.playerSort ?? 'name');
+      this.currency.setValue(saved?.currency ?? this.currencies()[0] ?? '');
+    });
+  }
+  private controlsSnapshot() {
+    return {
+      filters: this.filters.getRawValue(),
+      gameSort: this.gameSort.value,
+      playerSort: this.playerSort.value,
+      currency: this.currency.value,
+    };
   }
   private readonly memory = inject(RecordsMemory);
   readonly displaySettings = inject(ScoringMode);
@@ -58,7 +76,11 @@ export class Records {
   readonly error = signal('');
   readonly loading = signal(true);
   readonly view = signal<'games' | 'players'>(
-    this.route.snapshot.queryParamMap.get('view') === 'players' ? 'players' : 'games',
+    this.route.snapshot.queryParamMap.has('view')
+      ? this.route.snapshot.queryParamMap.get('view') === 'players'
+        ? 'players'
+        : 'games'
+      : (this.memory.position?.view ?? 'games'),
   );
   readonly modes = [
     { value: '', label: 'All modes' },
@@ -229,15 +251,23 @@ export class Records {
         requestAnimationFrame(() => window.scrollTo({ top: saved.top, behavior: 'instant' })),
       );
     });
-    if (saved && this.memory.returning()) {
+    if (saved) {
       this.view.set(saved.view);
       this.filters.setValue(saved.filters);
       this.gameSort.setValue(saved.gameSort);
       this.playerSort.setValue(saved.playerSort);
       this.currency.setValue(saved.currency);
+      if (query.has('view')) this.view.set(query.get('view') === 'players' ? 'players' : 'games');
+      if (query.has('from') || query.has('to') || query.has('mode'))
+        this.filters.patchValue({
+          from: query.get('from') ?? '',
+          to: query.get('to') ?? '',
+          mode: query.get('mode') ?? '',
+        });
     }
     const navigation = inject(Router).events.subscribe((event) => {
       if (!(event instanceof NavigationStart)) return;
+      this.tabMemory.set(`records:${this.view()}:controls`, this.controlsSnapshot());
       this.memory.position = {
         view: this.view(),
         filters: this.filters.getRawValue(),

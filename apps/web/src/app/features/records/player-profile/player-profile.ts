@@ -1,5 +1,6 @@
 import { ResponsiveSheet } from '../../../shared/responsive-sheet';
 import { DetailTabMemory } from '../../../core/detail-tab-memory';
+import { RememberDetails } from '../../../shared/remember-details';
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -20,11 +21,23 @@ import { playerIdentities, playerIdentity, identityLabel } from '../player-ident
 import { PlayerLibrary } from '../../matches/data-access/player-library';
 
 @Component({
-  imports: [ResponsiveSheet, RouterLink, TranslatePipe, LocalDatePipe, ErrorNotice, DialogBackdrop],
+  imports: [
+    RememberDetails,
+    ResponsiveSheet,
+    RouterLink,
+    TranslatePipe,
+    LocalDatePipe,
+    ErrorNotice,
+    DialogBackdrop,
+  ],
   templateUrl: './player-profile.html',
   styleUrl: './player-profile.css',
 })
 export class PlayerProfile {
+  private readonly tabMemory = inject(DetailTabMemory);
+  memoryKey(field: string): string {
+    return `player:${this.params().get('name')}:${field}`;
+  }
   private readonly route = inject(ActivatedRoute);
   private readonly repo = inject(Repository);
   readonly i18n = inject(I18n);
@@ -54,12 +67,23 @@ export class PlayerProfile {
   readonly matches = signal<Match[]>([]);
   readonly error = signal('');
   readonly loading = signal(true);
-  readonly count = signal<3 | 4>(
-    this.route.snapshot.queryParamMap.get('mode')?.startsWith('3') ? 3 : 4,
+  readonly count = this.tabMemory.remember<3 | 4>(
+    () => this.memoryKey('count'),
+    () => (this.route.snapshot.queryParamMap.get('mode')?.startsWith('3') ? 3 : 4),
   );
-  readonly length = signal(this.route.snapshot.queryParamMap.get('mode')?.split('-')[1] ?? '');
-  readonly from = signal(this.route.snapshot.queryParamMap.get('from') ?? '');
-  readonly to = signal(this.route.snapshot.queryParamMap.get('to') ?? '');
+  private readonly hadSavedCount = this.tabMemory.get(this.memoryKey('count')) !== undefined;
+  readonly length = this.tabMemory.remember(
+    () => this.memoryKey('length'),
+    () => this.route.snapshot.queryParamMap.get('mode')?.split('-')[1] ?? '',
+  );
+  readonly from = this.tabMemory.remember(
+    () => this.memoryKey('from'),
+    () => this.route.snapshot.queryParamMap.get('from') ?? '',
+  );
+  readonly to = this.tabMemory.remember(
+    () => this.memoryKey('to'),
+    () => this.route.snapshot.queryParamMap.get('to') ?? '',
+  );
   readonly invalidDates = computed(() => !!this.from() && !!this.to() && this.from() > this.to());
   readonly filterDraft = signal({ from: '', to: '', length: '' });
   readonly invalidDraftDates = computed(
@@ -86,18 +110,23 @@ export class PlayerProfile {
     this.opponent.set('');
     dialog.close();
   }
-  private readonly tabMemory = inject(DetailTabMemory);
   readonly tab = this.tabMemory.player;
   selectTab(tab: 'overview' | 'stats' | 'explore'): void {
-    this.tabMemory.switchTab('player', this.tab(), tab, () => this.tab.set(tab));
+    this.tabMemory.switchTab(this.memoryKey('tabs'), this.tab(), tab, () => this.tab.set(tab));
   }
   readonly tabs = [
     { key: 'overview', label: 'Overview' },
     { key: 'stats', label: 'Statistics' },
     { key: 'explore', label: 'Explore' },
   ] as const;
-  readonly compare = signal('');
-  readonly opponent = signal('');
+  readonly compare = this.tabMemory.remember(
+    () => this.memoryKey(`${this.tab()}:compare`),
+    () => '',
+  );
+  readonly opponent = this.tabMemory.remember(
+    () => this.memoryKey('opponent'),
+    () => '',
+  );
   readonly groups = analysisGroups;
   readonly seats = ['East seat', 'South seat', 'West seat', 'North seat'];
   readonly reference = mLeagueReference;
@@ -173,7 +202,7 @@ export class PlayerProfile {
         this.identities().filter((player) => player.name === requested).length > 1
       )
         this.error.set('Several players share this name. Select a player from Records.');
-      if (!this.route.snapshot.queryParamMap.get('mode')) {
+      if (!this.route.snapshot.queryParamMap.get('mode') && !this.hadSavedCount) {
         const own = matches.filter((match) =>
           match.players.some((player) => playerIdentity(match, player) === this.identity()),
         );

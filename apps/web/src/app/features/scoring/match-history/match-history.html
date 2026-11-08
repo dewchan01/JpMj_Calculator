@@ -21,7 +21,10 @@
   @for (event of events(); track event.id) {
     @if (event.type !== 'matchEnd') {
       <div class="history-row" [class.editable]="allowHandEditing() && editableHand(event)">
-        <details class="history-event">
+        <details
+          class="history-event"
+          [appRememberDetails]="'history:' + match()?.id + ':' + event.id"
+        >
           <summary>
             <strong class="event-title">
               <span
