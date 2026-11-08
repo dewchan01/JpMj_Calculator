@@ -22,6 +22,7 @@ import { GameSounds } from '../../../core/sound/game-sounds';
 import { BackgroundMusic } from '../../../core/sound/background-music';
 import { MusicSettings } from '../../../shared/music-settings/music-settings';
 import { ScoringMode } from '../../../core/scoring-mode';
+import { ScreenAwake } from '../../../core/screen-awake';
 import { handEditDraft, finishHandEdit } from './hand-edit';
 import { DiceSimulator } from '../../../shared/dice-simulator/dice-simulator';
 import { TileChoice } from '../tiles/tile-choice/tile-choice';
@@ -631,6 +632,12 @@ export class GameTable {
     window.location.reload();
   }
   constructor() {
+    const screenAwake = inject(ScreenAwake);
+    effect(() => {
+      const match = this.match();
+      screenAwake.setActive(!!match && !match.ended && (!this.roomCode || this.room.authorized()));
+    });
+    inject(DestroyRef).onDestroy(() => screenAwake.setActive(false));
     effect(() => {
       const state = this.room.state();
       if (this.roomCode && state?.host === false && state.ownSeat === null && state.hasGame)

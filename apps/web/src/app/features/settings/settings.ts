@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { ScoringMode } from '../../core/scoring-mode';
+import { DetailTabMemory } from '../../core/detail-tab-memory';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { RuleLibrary } from './rule-library';
@@ -31,6 +32,7 @@ import {
   styleUrl: './settings.css',
 })
 export class Settings {
+  private readonly memory = inject(DetailTabMemory);
   readonly displaySettings = inject(ScoringMode);
   private readonly toast = inject(Toast);
   readonly library = inject(RuleLibrary);
@@ -39,7 +41,7 @@ export class Settings {
       ? 3
       : inject(ActivatedRoute).snapshot.queryParamMap.get('players') === '4'
         ? 4
-        : this.library.preferredCount,
+        : (this.memory.settingsCount() ?? this.library.preferredCount),
   );
   readonly base = signal(this.library.draft(this.count()));
   readonly selected = signal(this.base().id);
@@ -64,9 +66,11 @@ export class Settings {
     ]),
   );
   constructor() {
+    this.memory.settingsCount.set(this.count());
     this.load(this.base());
   }
   setCount(count: 3 | 4): void {
+    this.memory.settingsCount.set(count);
     this.count.set(count);
     this.load(this.library.draft(count));
   }

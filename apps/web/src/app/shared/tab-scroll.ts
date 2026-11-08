@@ -12,6 +12,7 @@ export class TabScroll {
           const button = event.target instanceof Element ? event.target.closest('button') : null;
           if (
             !button ||
+            button.closest('[data-preserve-scroll]') ||
             button.disabled ||
             button.getAttribute('aria-pressed') === 'true' ||
             button.getAttribute('aria-selected') === 'true' ||

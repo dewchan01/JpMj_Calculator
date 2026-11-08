@@ -3,7 +3,7 @@
     <h1>{{ 'Settings' | t }}</h1>
   </section>
   <section class="rule-library">
-    <div class="segmented" [attr.aria-label]="'Player count' | t">
+    <div class="segmented" data-preserve-scroll [attr.aria-label]="'Player count' | t">
       <button [class.selected]="count() === 4" (click)="setCount(4)">{{ '4 players' | t }}</button>
       <button [class.selected]="count() === 3" (click)="setCount(3)">{{ '3 players' | t }}</button>
     </div>

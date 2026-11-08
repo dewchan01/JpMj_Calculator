@@ -30,7 +30,12 @@
         {{ 'Filter records' | t }}
       </button>
     </div>
-    <div class="segmented" role="group" [attr.aria-label]="'Player analysis' | t">
+    <div
+      class="segmented"
+      data-preserve-scroll
+      role="group"
+      [attr.aria-label]="'Player analysis' | t"
+    >
       @for (item of tabs; track item.key) {
         <button
           [class.selected]="tab() === item.key"

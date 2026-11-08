@@ -7,7 +7,12 @@
       <span>({{ gameTiming().minutes | number }} {{ 'minutes' | t }})</span>
     </p>
     <div class="result-header">
-      <div class="segmented result-tabs" role="group" [attr.aria-label]="'Result view' | t">
+      <div
+        class="segmented result-tabs"
+        data-preserve-scroll
+        role="group"
+        [attr.aria-label]="'Result view' | t"
+      >
         @for (item of tabs; track item) {
           <button
             [class.selected]="tab() === item"
