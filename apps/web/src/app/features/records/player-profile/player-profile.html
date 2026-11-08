@@ -40,7 +40,7 @@
         <button
           [class.selected]="tab() === item.key"
           [attr.aria-pressed]="tab() === item.key"
-          (click)="tab.set(item.key)"
+          (click)="selectTab(item.key)"
         >
           {{ item.label | t }}
         </button>

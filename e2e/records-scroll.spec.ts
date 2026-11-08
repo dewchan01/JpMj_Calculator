@@ -64,4 +64,10 @@ test('records restore list position after details and reset when switching tabs'
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(top - 5);
   await page.getByRole('button', { name: 'Players', exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  await page.evaluate(() => window.scrollTo(0, 150));
+  const playerTop = await page.evaluate(() => window.scrollY);
+  await page.getByRole('button', { name: 'Games', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(top - 5);
+  await page.getByRole('button', { name: 'Players', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(playerTop);
 });

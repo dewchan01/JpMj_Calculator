@@ -12,6 +12,7 @@ import {
   afterRenderEffect,
 } from '@angular/core';
 import { RecordsMemory } from './records-memory';
+import { DetailTabMemory } from '../../core/detail-tab-memory';
 import { DecimalPipe, KeyValuePipe } from '@angular/common';
 import { LocalDatePipe } from '../../core/i18n/local-date';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
@@ -44,6 +45,10 @@ import { PlayerLibrary } from '../matches/data-access/player-library';
   styleUrl: './records.css',
 })
 export class Records {
+  private readonly tabMemory = inject(DetailTabMemory);
+  selectView(view: 'games' | 'players'): void {
+    this.tabMemory.switchTab('records', this.view(), view, () => this.view.set(view));
+  }
   private readonly memory = inject(RecordsMemory);
   readonly displaySettings = inject(ScoringMode);
   private readonly route = inject(ActivatedRoute);

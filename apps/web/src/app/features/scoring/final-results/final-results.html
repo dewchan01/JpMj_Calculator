@@ -17,7 +17,7 @@
           <button
             [class.selected]="tab() === item"
             [attr.aria-pressed]="tab() === item"
-            (click)="tab.set(item); editing.set(false)"
+            (click)="selectTab(item)"
           >
             {{ tabLabels[item] | t }}
           </button>

@@ -86,7 +86,11 @@ export class PlayerProfile {
     this.opponent.set('');
     dialog.close();
   }
-  readonly tab = inject(DetailTabMemory).player;
+  private readonly tabMemory = inject(DetailTabMemory);
+  readonly tab = this.tabMemory.player;
+  selectTab(tab: 'overview' | 'stats' | 'explore'): void {
+    this.tabMemory.switchTab('player', this.tab(), tab, () => this.tab.set(tab));
+  }
   readonly tabs = [
     { key: 'overview', label: 'Overview' },
     { key: 'stats', label: 'Statistics' },

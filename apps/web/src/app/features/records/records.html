@@ -109,18 +109,18 @@
     </footer>
   </dialog>
   <div class="records-toolbar filter-controls">
-    <div class="segmented" [attr.aria-label]="'Record view' | t">
+    <div class="segmented" data-preserve-scroll [attr.aria-label]="'Record view' | t">
       <button
         [class.selected]="view() === 'games'"
         [attr.aria-pressed]="view() === 'games'"
-        (click)="view.set('games')"
+        (click)="selectView('games')"
       >
         {{ 'Games' | t }}
       </button>
       <button
         [class.selected]="view() === 'players'"
         [attr.aria-pressed]="view() === 'players'"
-        (click)="view.set('players')"
+        (click)="selectView('players')"
       >
         {{ 'Players' | t }}
       </button>

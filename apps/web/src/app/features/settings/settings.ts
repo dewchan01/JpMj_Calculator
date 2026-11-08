@@ -70,9 +70,11 @@ export class Settings {
     this.load(this.base());
   }
   setCount(count: 3 | 4): void {
-    this.memory.settingsCount.set(count);
-    this.count.set(count);
-    this.load(this.library.draft(count));
+    this.memory.switchTab('settings', this.count(), count, () => {
+      this.memory.settingsCount.set(count);
+      this.count.set(count);
+      this.load(this.library.draft(count));
+    });
   }
   choose(event: Event): void {
     const id = (event.target as HTMLSelectElement).value;

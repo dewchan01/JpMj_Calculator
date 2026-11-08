@@ -87,7 +87,14 @@ export class FinalResults {
     this.notice.set('');
     this.discardDialog().nativeElement.showModal();
   }
-  readonly tab = inject(DetailTabMemory).result;
+  private readonly tabMemory = inject(DetailTabMemory);
+  readonly tab = this.tabMemory.result;
+  selectTab(tab: 'result' | 'history' | 'details'): void {
+    this.tabMemory.switchTab('result', this.tab(), tab, () => {
+      this.tab.set(tab);
+      this.editing.set(false);
+    });
+  }
   readonly tabs = ['result', 'history', 'details'] as const;
   readonly tabLabels = { result: 'Result', history: 'History', details: 'Details' };
   readonly editing = signal(false);
