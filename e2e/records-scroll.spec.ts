@@ -84,12 +84,18 @@ test('records restore list position after details and reset when switching tabs'
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(top + 5);
   await page.goBack();
   await expect(page.locator('app-final-results')).toBeVisible();
-  await expect(results.getByRole('button', { name: 'List', exact: true })).toHaveAttribute(
+  await expect(results.getByRole('button', { name: 'Result', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(results.getByRole('button', { name: 'Table', exact: true })).toHaveAttribute(
     'aria-pressed',
     'true',
   );
   await results.getByRole('button', { name: 'History', exact: true }).click();
-  await expect(page.locator('details.history-event')).toHaveAttribute('open', '');
+  await expect(page.locator('details.history-event')).not.toHaveAttribute('open');
+  await results.getByRole('button', { name: 'Details', exact: true }).click();
+  await expect(page.locator('details.score-data')).not.toHaveAttribute('open');
   await page.goForward();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(top - 5);
   await page.getByRole('button', { name: 'Players', exact: true }).click();
@@ -110,4 +116,14 @@ test('records restore list position after details and reset when switching tabs'
   await page.getByRole('button', { name: 'Statistics', exact: true }).click();
   await expect(comparison).toHaveValue(comparisonValue);
   await expect(page.locator('details.metric-definitions')).toHaveAttribute('open', '');
+  await page.getByRole('link', { name: 'Back', exact: true }).click();
+  await expect(page.locator('.player-profile-link').first()).toBeVisible();
+  await page.locator('.player-profile-link').first().click();
+  await expect(page.getByRole('button', { name: 'Overview', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await page.getByRole('button', { name: 'Statistics', exact: true }).click();
+  await expect(comparison).toHaveValue('');
+  await expect(page.locator('details.metric-definitions')).not.toHaveAttribute('open');
 });

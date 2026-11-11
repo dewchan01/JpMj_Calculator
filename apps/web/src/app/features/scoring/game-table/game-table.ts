@@ -22,6 +22,7 @@ import { GameSounds } from '../../../core/sound/game-sounds';
 import { BackgroundMusic } from '../../../core/sound/background-music';
 import { MusicSettings } from '../../../shared/music-settings/music-settings';
 import { ScoringMode } from '../../../core/scoring-mode';
+import { DetailTabMemory } from '../../../core/detail-tab-memory';
 import { ScreenAwake } from '../../../core/screen-awake';
 import { handEditDraft, finishHandEdit } from './hand-edit';
 import { DiceSimulator } from '../../../shared/dice-simulator/dice-simulator';
@@ -123,6 +124,7 @@ type Panel =
   | 'restart-hand'
   | 'notice';
 @Component({
+  providers: [DetailTabMemory],
   imports: [
     CopyButton,
     MusicSettings,

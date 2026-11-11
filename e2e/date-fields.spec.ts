@@ -20,6 +20,13 @@ test('date filters fit their containers on phones and desktops', async ({ page }
         expect(
           await input.evaluate((element) => element.scrollWidth <= element.clientWidth + 1),
         ).toBe(true);
+        expect(
+          await input.evaluate((element) => {
+            const field = element.getBoundingClientRect();
+            const parent = element.parentElement!.getBoundingClientRect();
+            return field.width <= parent.width + 1;
+          }),
+        ).toBe(true);
       }
       const [first, second] = await from.evaluate((element) =>
         Array.from(

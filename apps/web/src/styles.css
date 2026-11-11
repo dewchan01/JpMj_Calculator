@@ -479,6 +479,8 @@ input::placeholder {
   min-width: 0;
 }
 input:is([type='date'], [type='time'], [type='datetime-local']) {
+  -webkit-appearance: none;
+  appearance: none;
   display: block;
   min-inline-size: 0;
   inline-size: 100%;
@@ -490,8 +492,14 @@ input:is([type='date'], [type='time'], [type='datetime-local']) {
   text-align: start;
 }
 input::-webkit-date-and-time-value {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
   min-height: 1.3em;
   text-align: start;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 input::-webkit-datetime-edit {
   min-width: 0;
@@ -500,6 +508,22 @@ input::-webkit-datetime-edit {
 input::-webkit-calendar-picker-indicator {
   flex-shrink: 0;
   cursor: pointer;
+}
+/* iOS WebKit can add native date/time padding outside a 100% border box.
+   Keep horizontal spacing inside its value instead (WebKit bug 301648). */
+@supports (-webkit-touch-callout: none) {
+  input:is([type='date'], [type='time'], [type='datetime-local']) {
+    padding-inline: 0;
+  }
+  input::-webkit-date-and-time-value {
+    box-sizing: border-box;
+    padding-inline: 12px;
+  }
+}
+@media (pointer: coarse) {
+  input:is([type='date'], [type='time'], [type='datetime-local']) {
+    font-size: max(16px, 0.9rem);
+  }
 }
 @media (max-width: 600px) {
   .date-range-fields,

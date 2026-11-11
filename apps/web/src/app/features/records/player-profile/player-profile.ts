@@ -21,6 +21,7 @@ import { playerIdentities, playerIdentity, identityLabel } from '../player-ident
 import { PlayerLibrary } from '../../matches/data-access/player-library';
 
 @Component({
+  providers: [DetailTabMemory],
   imports: [
     RememberDetails,
     ResponsiveSheet,
