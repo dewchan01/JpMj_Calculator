@@ -71,9 +71,6 @@
                 @if (player.marks.length) {
                   <small class="player-marks">{{ player.marks.join(' · ') }}</small>
                 }
-                @if (player.after !== player.before) {
-                  <app-signed-value [value]="player.after - player.before" />
-                }
               </button>
             }
           </div>
