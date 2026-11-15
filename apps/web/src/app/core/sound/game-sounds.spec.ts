@@ -3,6 +3,33 @@ import { callSounds, GameSounds } from './game-sounds';
 
 afterEach(() => vi.unstubAllGlobals());
 describe('game sounds', () => {
+  it('plays the bundled bell, restarts it and respects mute', async () => {
+    const { service } = setup();
+    const play = vi.fn(() => Promise.resolve());
+    const pause = vi.fn();
+    const sources: string[] = [];
+    vi.stubGlobal(
+      'Audio',
+      class {
+        play = play;
+        pause = pause;
+        constructor(src: string) {
+          sources.push(src);
+        }
+      },
+    );
+    service.playBell();
+    service.playBell();
+    expect(sources).toEqual(Array(2).fill('https://example.com/app/sounds/bell.mp3'));
+    expect(pause).toHaveBeenCalledTimes(1);
+    service.setEnabled(false);
+    service.playBell();
+    expect(play).toHaveBeenCalledTimes(2);
+    service.setEnabled(true);
+    play.mockRejectedValueOnce(new Error('Audio unavailable'));
+    service.playBell();
+    await Promise.resolve();
+  });
   it('plays the bundled dice recording, restarts it and stops on mute', () => {
     const { service, speech } = setup();
     const pause = vi.fn();

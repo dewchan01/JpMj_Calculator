@@ -101,6 +101,21 @@ export class GameSounds {
     this.playFallback(call);
   }
 
+  playBell(): void {
+    if (!this.enabled() || typeof Audio === 'undefined') return;
+    this.playback++;
+    this.audio?.pause();
+    this.unlock();
+    try {
+      const audio = new Audio(new URL('sounds/bell.mp3', document.baseURI).href);
+      this.audio = audio;
+      audio.volume = 0.7;
+      void audio.play().catch(() => undefined);
+    } catch {
+      /* Optional audio must not interrupt the game. */
+    }
+  }
+
   playDice(): void {
     if (!this.enabled()) return;
     const playback = ++this.playback;
