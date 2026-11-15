@@ -24,12 +24,14 @@ public sealed class GameTests
         ((await guest.PutAsJsonAsync(path + "/game", commit)).StatusCode).Should().Be(HttpStatusCode.Forbidden);
         ((await host.PutAsJsonAsync(path + "/game", commit)).StatusCode).Should().Be(HttpStatusCode.OK);
         var action = new { id = Guid.NewGuid().ToString(), handKey = "first", kind = "riichi", payload = new { }, seat = 0 };
+        ((await guest.PostAsJsonAsync(path + "/game/actions", action)).StatusCode).Should().Be(HttpStatusCode.Forbidden);
+        action = action with { seat = 1 };
         ((await guest.PostAsJsonAsync(path + "/game/actions", action)).StatusCode).Should().Be(HttpStatusCode.OK);
         ((await guest.PostAsJsonAsync(path + "/game/actions", action)).StatusCode).Should().Be(HttpStatusCode.OK);
         var state = await (await host.GetAsync(path + "/game")).Content.ReadFromJsonAsync<JsonElement>();
         (state.GetProperty("revision").GetInt32()).Should().Be(3);
         (state.GetProperty("actions").GetArrayLength()).Should().Be(1);
-        (state.GetProperty("actions")[0].GetProperty("seat").GetInt32()).Should().Be(1); // ignores guest's forged seat
+        (state.GetProperty("actions")[0].GetProperty("seat").GetInt32()).Should().Be(1);
         ((await host.PutAsJsonAsync(path + "/game", commit)).StatusCode).Should().Be(HttpStatusCode.Conflict);
         var accepted = new { revision = 3, handKey = "second", match, decisions = new[] { new { id = action.id, error = "" } } };
         ((await host.PutAsJsonAsync(path + "/game", accepted)).StatusCode).Should().Be(HttpStatusCode.OK);
