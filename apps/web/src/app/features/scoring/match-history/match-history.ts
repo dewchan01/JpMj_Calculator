@@ -206,7 +206,9 @@ export class MatchHistory {
       return [
         ...new Set([
           !yakuman && (result.han || result.fu)
-            ? this.i18n.t(result.han + ' Han · ' + result.fu + ' Fu')
+            ? result.han >= 5
+              ? result.han + ' ' + this.i18n.t('Han')
+              : this.i18n.t(result.han + ' Han · ' + result.fu + ' Fu')
             : '',
           limitName ? this.i18n.t(limitName) : '',
           ...result.yaku.map((yaku) => this.i18n.t(yaku.name)),

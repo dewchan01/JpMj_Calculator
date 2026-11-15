@@ -1,4 +1,4 @@
-﻿@if (match(); as m) {
+@if (match(); as m) {
   <div class="game-shell" [class.room-game]="!!roomCode">
     <header class="game-heading">
       <h1>{{ m.name }}</h1>
@@ -41,11 +41,6 @@
           <app-connection-status [state]="room.connectionStatus()" />
         }
       </div>
-      @if (roomCode && can('settle') && room.wins().length) {
-        <button (click)="open('declarations')">
-          {{ 'Winning declarations' | t }} · {{ room.wins().length }}
-        </button>
-      }
     </section>
     <app-table-summary
       class="live-table"
@@ -59,6 +54,10 @@
       [players]="m.players"
       [presence]="playerPresence()"
       [activePlayer]="remotePlayer() ? roomPlayerId() : ''"
+      [allowOtherWins]="can('declareAny')"
+      [pendingWins]="pendingWins()"
+      [allowSettle]="can('settle')"
+      (pendingAction)="open('declarations')"
       [allowRiichi]="can('riichi')"
       [allowCalls]="can('calls')"
       [manualScoring]="scoringMode.advanced()"
@@ -150,10 +149,10 @@
   [class.results-prompt]="panel() === 'results'"
   aria-labelledby="game-prompt-title"
   (close)="onPromptClosed()"
-  (cancel)="busy() && $event.preventDefault()"
+  (cancel)="!canDismissPrompt() && $event.preventDefault()"
 >
   <header class="prompt-heading">
-    @if (panelParents().length > 0) {
+    @if (panelParents().length > 0 && panel() !== 'declarations') {
       <button
         class="menu-back back-button"
         (click)="backPanel()"
@@ -164,14 +163,16 @@
       </button>
     }
     <h2 id="game-prompt-title">{{ panelTitle() | t }}</h2>
-    <button
-      class="icon-button close-prompt"
-      (click)="close()"
-      [disabled]="busy()"
-      [attr.aria-label]="'Close' | t"
-    >
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
-    </button>
+    @if (panel() !== 'declarations') {
+      <button
+        class="icon-button close-prompt"
+        (click)="close()"
+        [disabled]="busy()"
+        [attr.aria-label]="'Close' | t"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
+      </button>
+    }
   </header>
   <div class="prompt-body">
     @if (editingHand()) {
@@ -212,7 +213,7 @@
                 <span>{{ m.players[request.requestedSeat].name }}</span>
                 <div class="seat-request-actions">
                   <button
-                    class="danger"
+                    class="secondary action-reject"
                     (click)="decideSeat(request.id, false)"
                     [disabled]="busy()"
                   >
@@ -272,18 +273,23 @@
             @for (action of room.wins(); track action.id) {
               <div class="pending-win">
                 <span>{{ m.players[action.seat].name }} · {{ roomWinSummary(action) }}</span>
-                @if (room.access()?.host) {
+              </div>
+            }
+            <div class="dialog-actions declaration-actions">
+              @if (room.access()?.host) {
+                @for (action of room.wins(); track action.id) {
                   <button
-                    class="danger"
+                    class="secondary action-reject"
                     (click)="rejectRoomDeclaration(action.id)"
                     [disabled]="busy()"
                   >
                     {{ 'Reject' | t }}
+                    @if (room.wins().length > 1) {
+                      · {{ m.players[action.seat].name }}
+                    }
                   </button>
                 }
-              </div>
-            }
-            <div class="dialog-actions">
+              }
               <button
                 class="primary"
                 (click)="settleRoomDeclarations()"
@@ -451,7 +457,7 @@
             editingHand() ||
             (currentPlayer.riichi === 'double' &&
               !m.ended &&
-              (!remotePlayer() || selected === roomPlayerId()))
+              (!remotePlayer() || selected === roomPlayerId() || can('declareAny')))
           ) {
             <div class="button-grid player-riichi-actions">
               @if (currentPlayer.riichi === 'none') {
@@ -524,7 +530,7 @@
                   </button>
                 }
               }
-              @if (playerMode() !== 'calls' && !manualActions()) {
+              @if (playerMode() !== 'calls' && playerMode() !== 'declaration' && !manualActions()) {
                 <button (click)="startCall('ankan')" [disabled]="paused() || !can('calls')">
                   {{ 'Concealed Kan' | t }}
                 </button>
@@ -664,7 +670,7 @@
               [meldType]="callType"
               (click)="error.set('')"
               [openRequest]="callEntryRequest()"
-              (entryClosed)="$event && callType !== 'daiminkan' && calledTileChoice()?.open()"
+              (entryClosed)="$event && callType === 'chi' && calledTileChoice()?.open()"
               [upgradeKind]="upgradeTileKind()"
               [label]="callType === 'kakan' ? 'Fourth tile' : 'Meld tiles'"
               [(value)]="callText"
@@ -686,7 +692,7 @@
                 </select>
               </label>
             }
-            @if (callType !== 'daiminkan' && callTiles().length) {
+            @if (callType === 'chi' && callTiles().length) {
               <app-tile-choice
                 #callTilePicker
                 [centered]="true"
@@ -793,7 +799,7 @@
               }
               <button (click)="openIndicators('dora')">{{ 'Dora indicators' | t }}</button>
             }
-            <button (click)="navigatePanel('win')">{{ 'Win' | t }}</button>
+            <button (click)="navigatePanel('win')" [disabled]="!can('win')">{{ 'Win' | t }}</button>
             <button
               (click)="navigatePanel('double-riichi')"
               [disabled]="!can('riichi') || paused() || busy()"
@@ -802,7 +808,7 @@
             </button>
             @if (can('draw')) {
               <button
-                (click)="drawType = 'exhaustive'; tenpai = {}; nagashi = {}; navigatePanel('draw')"
+                (click)="drawType = 'exhaustive'; seedTenpai(); nagashi = {}; navigatePanel('draw')"
               >
                 {{ 'Record draw' | t }}
               </button>
@@ -837,7 +843,7 @@
                   (!!riichiPlayers()[player.id] && !isDoubleRiichi(player.id)) ||
                   (!isDoubleRiichi(player.id) && (book().players[player.id] ?? 0) < 1000) ||
                   (!isDoubleRiichi(player.id) && callCounts()[player.id] > 0) ||
-                  (remotePlayer() && player.id !== roomPlayerId())
+                  (remotePlayer() && player.id !== roomPlayerId() && !can('declareAny'))
                 "
               >
                 {{ player.name }}
@@ -864,6 +870,7 @@
                   <input
                     [type]="method === 'tsumo' ? 'radio' : 'checkbox'"
                     name="hand-winner"
+                    [disabled]="!editingHand() && !canDeclareFor(p.id)"
                     [checked]="!!winners[p.id]"
                     (change)="selectHandWinner(p.id, $any($event.target).checked)"
                   />
@@ -914,10 +921,7 @@
             <div class="form-grid">
               <label>
                 {{ 'Scoring type' | t }}
-                <select
-                  [ngModel]="manualYakuman > 0"
-                  (ngModelChange)="manualYakuman = $event ? 1 : 0"
-                >
+                <select [ngModel]="manualYakuman > 0" (ngModelChange)="setManualYakuman($event)">
                   <option [ngValue]="false">{{ 'Han / Fu' | t }}</option>
                   <option [ngValue]="true">{{ 'Yakuman' | t }}</option>
                 </select>
@@ -925,21 +929,26 @@
               @if (manualYakuman) {
                 <label>
                   {{ 'Yakuman' | t }}
-                  <select [(ngModel)]="manualYakuman">
+                  <select [(ngModel)]="manualYakuman" [disabled]="!!manualYakumanSelections.length">
                     @for (count of yakumanOptions; track count) {
                       <option [ngValue]="count">{{ count }} &#215; {{ 'Yakuman' | t }}</option>
                     }
                   </select>
                 </label>
-                <label>
-                  {{ 'Yaku' | t }}
-                  <select [(ngModel)]="manualYakumanName">
-                    <option value="">{{ 'Yakuman' | t }}</option>
-                    @for (name of manualYakumanNames; track name) {
-                      <option [value]="name">{{ name | t }}</option>
-                    }
-                  </select>
-                </label>
+                <fieldset class="yakuman-choices">
+                  <legend>{{ 'Yaku' | t }}</legend>
+                  @for (name of manualYakumanNames; track name) {
+                    <label class="check">
+                      <input
+                        type="checkbox"
+                        [checked]="manualYakumanSelections.includes(name)"
+                        [disabled]="yakumanDisabled(name)"
+                        (change)="toggleYakuman(name)"
+                      />
+                      {{ name | t }}
+                    </label>
+                  }
+                </fieldset>
               }
               @if (!manualYakuman) {
                 <label>
@@ -1208,7 +1217,10 @@
         @case ('draw') {
           <label>
             {{ 'Draw type' | t }}
-            <select [(ngModel)]="drawType">
+            <select
+              [(ngModel)]="drawType"
+              (ngModelChange)="drawType === 'exhaustive' && seedTenpai()"
+            >
               <option value="exhaustive">{{ 'Exhaustive draw' | t }}</option>
               @if (m.rules.preset !== 'm-league') {
                 <option value="abortive">{{ 'Abortive draw' | t }}</option>
@@ -1264,7 +1276,10 @@
                     {{ entry.limitName | t }}
                   }
                   @if (entry.han || entry.fu) {
-                    {{ entry.han }} {{ 'Han' | t }} · {{ entry.fu }} {{ 'Fu' | t }}
+                    {{ entry.han }} {{ 'Han' | t }}
+                    @if (entry.han < 5) {
+                      · {{ entry.fu }} {{ 'Fu' | t }}
+                    }
                   }
                 </summary>
                 @if (inputs[$index]?.manualScore) {
@@ -1273,7 +1288,13 @@
                 @for (yaku of entry.yaku; track yaku.name) {
                   <p class="han-breakdown-row">
                     <span>{{ yaku.name | t }}</span>
-                    <span>{{ yaku.han }} {{ 'Han' | t }}</span>
+                    <span>
+                      @if (yaku.yakumanMultiplier) {
+                        {{ yaku.yakumanMultiplier }} × {{ 'Yakuman' | t }}
+                      } @else {
+                        {{ yaku.han }} {{ 'Han' | t }}
+                      }
+                    </span>
                   </p>
                 }
                 @for (bonus of entry.bonusHan; track bonus.source) {
@@ -1595,3 +1616,17 @@
     (entryClosed)="finishDirectIndicator($event)"
   />
 }
+
+<dialog
+  #waitingDeclaration
+  class="app-dialog"
+  aria-labelledby="waiting-declaration-title"
+  (cancel)="$event.preventDefault()"
+>
+  <header class="dialog-header">
+    <h2 id="waiting-declaration-title">{{ 'Winning declarations' | t }}</h2>
+  </header>
+  <div class="dialog-body" role="status">
+    <p>{{ 'Waiting for the host to accept the declaration.' | t }}</p>
+  </div>
+</dialog>

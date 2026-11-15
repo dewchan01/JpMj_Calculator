@@ -23,6 +23,7 @@ import {
 } from './room-permissions';
 
 export interface RoomGame {
+  pendingWinSeats?: number[];
   host?: boolean;
   ownSeat?: number | null;
   closed?: boolean;
@@ -81,7 +82,12 @@ export class RoomSession {
     ...this.state()?.permissions,
   }));
   can(permission: RoomPermission): boolean {
-    return this.authorized() && (!!this.access()?.host || this.permissions()[permission]);
+    return (
+      this.authorized() &&
+      (!!this.access()?.host ||
+        this.permissions()[permission] ||
+        (['win', 'riichi', 'calls'].includes(permission) && this.permissions().declareAny))
+    );
   }
   async setPermission(permission: RoomPermission, enabled: boolean): Promise<void> {
     if (!this.access()?.host) throw new Error('Only the host can change shared table settings.');
@@ -409,6 +415,14 @@ export class RoomSession {
     seat?: number,
   ): Promise<void> {
     const state = this.state();
+    if (
+      !this.can(kind === 'call' ? 'calls' : kind === 'win' ? 'win' : 'riichi') ||
+      (!this.access()?.host &&
+        seat !== undefined &&
+        seat !== this.access()?.seat &&
+        !this.can('declareAny'))
+    )
+      throw new Error('This action is not permitted by the host.');
     if (!state?.match) throw new Error('The host has not attached a game yet.');
     const key = JSON.stringify([state.handKey, kind, payload, seat]);
     const id = this.retries.get(key) ?? newId();

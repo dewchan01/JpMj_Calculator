@@ -42,6 +42,7 @@ public sealed class Handler(AppDb db, IRoomAccess access, RoomPresence presence)
         return Results.Ok(new
         {
             presence = _presence.Get(id),
+            pendingWinSeats = await _db.Actions.Where(x => x.RoomId == id && x.Kind == "win" && x.Status == "pending" && x.HandKey == room.HandKey).Select(x => x.Seat).Distinct().ToArrayAsync(cancellationToken),
             permissions = DelegatedChanges.Permissions(room.Permissions),
             room.Revision,
             room.HandKey,

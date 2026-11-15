@@ -652,6 +652,19 @@
   font-size: 0.65rem;
   line-height: 1.5;
 }
+.player-status .pending-declaration {
+  position: relative;
+  z-index: 3;
+  max-width: 100%;
+  min-height: 0;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  white-space: normal;
+}
 .player-status span {
   padding: 2px 6px;
   border-radius: 5px;

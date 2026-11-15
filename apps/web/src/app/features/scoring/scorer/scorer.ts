@@ -1,4 +1,8 @@
-import { manualYakumanNames } from '../../../../../../../packages/mahjong-scoring/manual-yakuman';
+import {
+  manualYakumanNames,
+  namedYakuman,
+  toggleNamedYakuman,
+} from '../../../../../../../packages/mahjong-scoring/manual-yakuman';
 import { gamesCsv } from '../../records/data-transfer/data-csv';
 import { DialogBackdrop } from '../../../shared/dialog-backdrop';
 import { ScoringMode } from '../../../core/scoring-mode';
@@ -140,6 +144,32 @@ export class Scorer {
   manualFu = 40;
   readonly manualYakumanNames = manualYakumanNames;
   manualYakumanName = '';
+  manualYakumanSelections: string[] = [];
+  yakumanDisabled(name: string): boolean {
+    return (
+      !this.manualYakumanSelections.includes(name) &&
+      toggleNamedYakuman(this.manualYakumanSelections, name, this.rules) ===
+        this.manualYakumanSelections
+    );
+  }
+  setManualYakuman(enabled: boolean): void {
+    this.manualYakumanSelections = [];
+    this.manualYakumanName = '';
+    this.manualYakuman = enabled ? 1 : 0;
+  }
+  toggleYakuman(name: string): void {
+    const rules = this.rules;
+    const names = toggleNamedYakuman(this.manualYakumanSelections, name, rules);
+    const total = namedYakuman(names, rules).reduce(
+      (sum, entry) => sum + entry.yakumanMultiplier,
+      0,
+    );
+    if (total > 6) return;
+    this.manualYakumanName = '';
+    this.manualYakumanSelections = names;
+    this.manualYakuman = total || 1;
+    this.changed();
+  }
   manualYakuman = 0;
   manualChips = 0;
   manualPayer = '';
@@ -450,6 +480,10 @@ export class Scorer {
         han: this.manualHan,
         fu: this.manualFu,
         yakuman: this.manualYakuman,
+        yakumanNames:
+          this.manualYakuman && this.manualYakumanSelections.length
+            ? [...this.manualYakumanSelections]
+            : undefined,
         yakumanName: this.manualYakuman ? this.manualYakumanName || undefined : undefined,
         chips: this.manualChips,
         pao: this.manualPayer
@@ -484,6 +518,7 @@ export class Scorer {
     this.manualFu = d.manualScore?.fu ?? 40;
     this.manualYakuman = d.manualScore?.yakuman ?? 0;
     this.manualYakumanName = d.manualScore?.yakumanName ?? '';
+    this.manualYakumanSelections = d.manualScore?.yakumanNames ?? [];
     this.manualChips = d.manualScore?.chips ?? 0;
     this.manualPayer = d.manualScore?.pao?.payerId ?? '';
     this.manualResponsibleYakuman = d.manualScore?.pao?.yakuman ?? 1;
@@ -807,6 +842,10 @@ export class Scorer {
             han: this.manualHan,
             fu: this.manualFu,
             yakuman: this.manualYakuman,
+            yakumanNames:
+              this.manualYakuman && this.manualYakumanSelections.length
+                ? [...this.manualYakumanSelections]
+                : undefined,
             yakumanName: this.manualYakuman ? this.manualYakumanName || undefined : undefined,
             chips: this.manualChips,
             pao:

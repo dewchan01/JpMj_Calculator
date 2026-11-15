@@ -52,7 +52,7 @@
               @if (interactive()) {
                 <button
                   class="seat-hit"
-                  [disabled]="!!activePlayer() && activePlayer() !== player.id"
+                  [disabled]="!!activePlayer() && activePlayer() !== player.id && !allowOtherWins()"
                   (click)="playerAction.emit(player.id)"
                   [attr.aria-label]="('Player actions' | t) + ' ' + player.name"
                 ></button>
@@ -151,7 +151,7 @@
                       (!riichiPlayers()[player.id] && (balances()[player.id] ?? 0) < 1000) ||
                       (!riichiPlayers()[player.id] && callCounts()[player.id] > 0) ||
                       actionsDisabled() ||
-                      (!!activePlayer() && activePlayer() !== player.id)
+                      (!!activePlayer() && activePlayer() !== player.id && !allowOtherWins())
                     "
                     (click)="quickAction.emit({ player: player.id, type: 'riichi' })"
                   >
@@ -164,7 +164,7 @@
                       !allowCalls() ||
                       !!riichiPlayers()[player.id] ||
                       actionsDisabled() ||
-                      (!!activePlayer() && activePlayer() !== player.id)
+                      (!!activePlayer() && activePlayer() !== player.id && !allowOtherWins())
                     "
                     (click)="quickAction.emit({ player: player.id, type: 'calls' })"
                   >
@@ -180,7 +180,7 @@
                       [disabled]="
                         !allowCalls() ||
                         actionsDisabled() ||
-                        (!!activePlayer() && activePlayer() !== player.id)
+                        (!!activePlayer() && activePlayer() !== player.id && !allowOtherWins())
                       "
                       (click)="quickAction.emit({ player: player.id, type: 'ankan' })"
                       [attr.aria-label]="'Concealed Kan' | t"

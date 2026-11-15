@@ -100,6 +100,10 @@ export class TableSummary {
   readonly quickAction = output<{ player: string; type: string }>();
   readonly actionsDisabled = input(false);
   readonly activePlayer = input('');
+  readonly allowOtherWins = input(false);
+  readonly pendingWins = input<Readonly<Record<string, boolean>>>({});
+  readonly allowSettle = input(false);
+  readonly pendingAction = output<void>();
   readonly allowRiichi = input(true);
   readonly allowCalls = input(true);
   readonly manualScoring = input(false);

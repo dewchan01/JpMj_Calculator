@@ -1429,6 +1429,7 @@
   "Player permissions": "プレイヤーの権限",
   "Declare or cancel own Riichi": "自分のリーチ宣言・取り消し",
   "Record own melds and North extractions": "自分の副露・暗槓・抜きドラを記録",
+  "Declare actions for any player": "全プレイヤーの立直・副露・和了を申告",
   "Submit own winning hand": "自分の和了を申告",
   "Edit shared indicators": "共有ドラ表示牌を編集",
   "Settle hands and winning declarations": "局と和了申告を精算",

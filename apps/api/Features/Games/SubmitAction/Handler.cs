@@ -42,12 +42,15 @@ public sealed class Handler(AppDb db, IHubContext<RoomHub> hub, IOptions<Storage
         var permissions = DelegatedChanges.Permissions(room.Permissions);
         if (!host && !(input.Kind switch
         {
-            "riichi" or "cancelRiichi" => permissions.Riichi,
-            "call" => permissions.Calls,
-            "win" => permissions.Win,
+            "riichi" or "cancelRiichi" => permissions.Riichi || permissions.DeclareAny,
+            "call" => permissions.Calls || permissions.DeclareAny,
+            "win" => permissions.Win || permissions.DeclareAny,
             _ => false
         })) return Results.StatusCode(403);
-        var actorSeat = host ? input.Seat : seat?.Number;
+        if (!host && seat is null) return Results.Unauthorized();
+        if (!host && input.Seat.HasValue && input.Seat != seat!.Number && !permissions.DeclareAny)
+            return Results.StatusCode(403);
+        var actorSeat = host || permissions.DeclareAny ? input.Seat ?? seat?.Number : seat?.Number;
         if (actorSeat is null || actorSeat < 0 || actorSeat >= room.PlayerCount) return Results.Unauthorized();
         var duplicate = await _db.Actions.SingleOrDefaultAsync(x => x.RoomId == id && x.Id == input.Id, cancellationToken);
         if (duplicate is not null)

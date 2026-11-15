@@ -12,6 +12,38 @@ namespace Riichi.Api.Tests;
 public sealed class PermissionsTests
 {
     [TestMethod]
+    public async Task DeclaringAnotherSeatRequiresExplicitGrantAndBroadcastsPendingSeat()
+    {
+        using var app = new ApiFactory();
+        using var host = app.CreateClient();
+        using var guest = app.CreateClient();
+        using var observer = app.CreateClient();
+        var match = JsonNode.Parse("""{"id":"any-win","playerCount":3,"players":[{"id":"a"},{"id":"b"},{"id":"c"}],"events":[],"live":{"players":{}}}""")!;
+        var room = await (await host.PostAsJsonAsync("/api/rooms", new { playerCount = 3, match, handKey = "first" })).Content.ReadFromJsonAsync<JsonElement>();
+        var path = "/api/rooms/" + room.GetProperty("id").GetString();
+        var joined = await (await guest.PostAsJsonAsync(path + "/join", new { pin = room.GetProperty("pin").GetString() })).Content.ReadFromJsonAsync<JsonElement>();
+        var observing = await (await observer.PostAsJsonAsync(path + "/join", new { pin = room.GetProperty("pin").GetString() })).Content.ReadFromJsonAsync<JsonElement>();
+        host.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", room.GetProperty("token").GetString());
+        guest.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", joined.GetProperty("token").GetString());
+        observer.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", observing.GetProperty("token").GetString());
+        await RoomTest.Approve(host, guest, path, 0);
+        await RoomTest.Approve(host, observer, path, 1);
+        var declaration = new { id = Guid.NewGuid(), handKey = "first", kind = "win", seat = 2, payload = new { } };
+        (await guest.PostAsJsonAsync(path + "/game/actions", declaration)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await host.PutAsJsonAsync(path + "/permissions", new { win = false, declareAny = true })).EnsureSuccessStatusCode();
+        (await guest.PostAsJsonAsync(path + "/game/actions", declaration)).EnsureSuccessStatusCode();
+        foreach (var kind in new[] { "riichi", "cancelRiichi", "call" })
+            (await guest.PostAsJsonAsync(path + "/game/actions", declaration with { id = Guid.NewGuid(), kind = kind })).EnsureSuccessStatusCode();
+        var hostState = await host.GetFromJsonAsync<JsonElement>(path + "/game");
+        hostState.GetProperty("actions").EnumerateArray().Should().OnlyContain(action => action.GetProperty("seat").GetInt32() == 2);
+        var state = await observer.GetFromJsonAsync<JsonElement>(path + "/game");
+        state.GetProperty("pendingWinSeats")[0].GetInt32().Should().Be(2);
+        (await host.PutAsJsonAsync(path + "/permissions", new { win = true, declareAny = false })).EnsureSuccessStatusCode();
+        (await guest.PostAsJsonAsync(path + "/game/actions", declaration with { id = Guid.NewGuid() })).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        foreach (var kind in new[] { "riichi", "cancelRiichi", "call" })
+            (await guest.PostAsJsonAsync(path + "/game/actions", declaration with { id = Guid.NewGuid(), kind = kind })).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+    [TestMethod]
     public async Task HostingReservesTheChosenPlayerAndJoiningRequiresSelection()
     {
         using var app = new ApiFactory();

@@ -275,7 +275,11 @@
             }}
           </span>
           <div class="seat-request-actions">
-            <button class="danger" (click)="decideSeat(request.id, false)" [disabled]="busy()">
+            <button
+              class="secondary action-reject"
+              (click)="decideSeat(request.id, false)"
+              [disabled]="busy()"
+            >
               {{ 'Reject' | t }}
             </button>
             <button class="primary" (click)="decideSeat(request.id, true)" [disabled]="busy()">

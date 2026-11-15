@@ -467,9 +467,30 @@ h1 {
 }
 .pending-win {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+}
+.pending-win > span {
+  flex: 1 1 12rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.pending-win > button {
+  margin-inline-start: auto;
+}
+.declaration-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  align-items: stretch;
+  gap: 12px;
+}
+.declaration-actions > .primary {
+  margin-inline-start: 0;
+  min-width: 0;
+  white-space: normal;
 }
 
 .permission-list {
@@ -602,6 +623,7 @@ h1 {
 }
 .seat-request-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
@@ -609,6 +631,7 @@ h1 {
 }
 .seat-request-actions {
   display: flex;
+  flex-shrink: 0;
   gap: 8px;
   margin-inline-start: auto;
 }

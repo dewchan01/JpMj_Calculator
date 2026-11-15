@@ -337,6 +337,7 @@ form > button.primary {
 
 .seat-request-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
@@ -345,6 +346,7 @@ form > button.primary {
 .seat-request-actions,
 .confirmation-actions {
   display: flex;
+  flex-shrink: 0;
   justify-content: flex-end;
   gap: 8px;
 }

@@ -12,7 +12,12 @@
       <div class="result-meta">
         <span>{{ r.limitName ?? 'Standard hand' | t }}</span>
         @if (r.han) {
-          <strong>{{ r.han + ' Han · ' + r.fu + ' Fu' | t }}</strong>
+          <strong>
+            {{ r.han }} {{ 'Han' | t }}
+            @if (r.han < 5) {
+              · {{ r.fu }} {{ 'Fu' | t }}
+            }
+          </strong>
         }
       </div>
       @if (r.interpretation === 'Manual Han/Fu') {

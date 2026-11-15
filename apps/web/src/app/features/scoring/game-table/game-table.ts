@@ -1,4 +1,8 @@
-import { manualYakumanNames } from '../../../../../../../packages/mahjong-scoring/manual-yakuman';
+import {
+  manualYakumanNames,
+  namedYakuman,
+  toggleNamedYakuman,
+} from '../../../../../../../packages/mahjong-scoring/manual-yakuman';
 import { CopyButton } from '../../../shared/copy-button/copy-button';
 import {
   canRestartLastHand,
@@ -16,7 +20,10 @@ import { OnlineApi } from '../../../core/online/online-api';
 import { playerConnectionStates } from '../../../core/online/presence';
 import { recordCall } from '../../../../../../../packages/mahjong-core/record-call';
 import { RoomSession } from '../../../core/online/room-session';
-import type { RoomAction } from '../../../../../../../packages/mahjong-core/room-actions';
+import {
+  roomHandKey,
+  type RoomAction,
+} from '../../../../../../../packages/mahjong-core/room-actions';
 import { DialogBackdrop } from '../../../shared/dialog-backdrop';
 import { GameSounds } from '../../../core/sound/game-sounds';
 import { BackgroundMusic } from '../../../core/sound/background-music';
@@ -155,7 +162,6 @@ export class GameTable {
   readonly permissionItems = roomPermissionItems;
   readonly viewOrder = signal<string[]>([]);
   private resultShown = '';
-  private pendingSignature = '';
   private noticedError = '';
   private resumeCall: Meld['type'] | null = null;
   private pendingKan: Match | null = null;
@@ -254,6 +260,31 @@ export class GameTable {
   manualFu = 40;
   readonly manualYakumanNames = manualYakumanNames;
   manualYakumanName = '';
+  manualYakumanSelections: string[] = [];
+  yakumanDisabled(name: string): boolean {
+    return (
+      !this.manualYakumanSelections.includes(name) &&
+      toggleNamedYakuman(this.manualYakumanSelections, name, this.match()!.rules) ===
+        this.manualYakumanSelections
+    );
+  }
+  setManualYakuman(enabled: boolean): void {
+    this.manualYakumanSelections = [];
+    this.manualYakumanName = '';
+    this.manualYakuman = enabled ? 1 : 0;
+  }
+  toggleYakuman(name: string): void {
+    const rules = this.match()!.rules;
+    const names = toggleNamedYakuman(this.manualYakumanSelections, name, rules);
+    const total = namedYakuman(names, rules).reduce(
+      (sum, entry) => sum + entry.yakumanMultiplier,
+      0,
+    );
+    if (total > 6) return;
+    this.manualYakumanName = '';
+    this.manualYakumanSelections = names;
+    this.manualYakuman = total || 1;
+  }
   manualYakuman = 0;
   manualChips = 0;
   manualPayer = '';
@@ -315,6 +346,19 @@ export class GameTable {
   readonly room = inject(RoomSession);
   readonly roomCode = this.route.snapshot.paramMap.get('room');
   readonly remotePlayer = computed(() => !!this.roomCode && !this.room.access()?.host);
+  canDeclareFor(player: string): boolean {
+    return (
+      this.can('win') &&
+      (!this.remotePlayer() || player === this.roomPlayerId() || this.can('declareAny'))
+    );
+  }
+  readonly pendingWins = computed(() =>
+    Object.fromEntries(
+      (this.room.state()?.pendingWinSeats ?? this.room.wins().map((action) => action.seat)).map(
+        (seat) => [this.players[seat]?.id ?? '', true],
+      ),
+    ),
+  );
   readonly roomPlayerId = computed(
     () => this.match()?.players[this.room.access()?.seat ?? -1]?.id ?? '',
   );
@@ -323,7 +367,10 @@ export class GameTable {
     if (!input) return '';
     try {
       const result = score(input);
-      return `${this.i18n.t(input.win.method === 'tsumo' ? 'Tsumo · self draw' : 'Ron · discard')} · ${result.han} ${this.i18n.t('Han')} · ${result.fu} ${this.i18n.t('Fu')}`;
+      const points = result.han
+        ? `${result.han} ${this.i18n.t('Han')}${result.han < 5 ? ' · ' + result.fu + ' ' + this.i18n.t('Fu') : ''}`
+        : this.i18n.t(result.limitName ?? 'Yakuman');
+      return `${this.i18n.t(input.win.method === 'tsumo' ? 'Tsumo · self draw' : 'Ron · discard')} · ${points}`;
     } catch {
       return this.i18n.t('Invalid online request.');
     }
@@ -352,6 +399,7 @@ export class GameTable {
     return Object.fromEntries(players.map((player, index) => [player.id, states[index]]));
   });
   readonly error = signal('');
+  readonly waitingDeclaration = viewChild<ElementRef<HTMLDialogElement>>('waitingDeclaration');
   readonly busy = signal(false);
   readonly now = signal(Date.now());
   readonly editingHand = signal<string | null>(null);
@@ -425,8 +473,12 @@ export class GameTable {
   readonly calledTileChoice = viewChild<TileChoice>('callTilePicker');
   readonly panel = signal<Panel>('menu');
   readonly panelParents = signal<Panel[]>([]);
-  readonly canDismissPrompt = () => !this.busy();
+  readonly canDismissPrompt = () => !this.busy() && this.panel() !== 'declarations';
   navigatePanel(panel: Panel): void {
+    if (panel === 'win' && !this.editingHand() && !this.can('win')) {
+      this.error.set('This action is not permitted by the host.');
+      return;
+    }
     if (this.editingHand() && ['history', 'results', 'menu'].includes(panel)) this.cancelHandEdit();
     if (panel === 'permissions' && !this.room.access()?.host) return;
     if (panel === this.panel()) return;
@@ -634,6 +686,40 @@ export class GameTable {
     window.location.reload();
   }
   constructor() {
+    effect(() => {
+      const dialog = this.waitingDeclaration()?.nativeElement;
+      if (!dialog) return;
+      const waiting = this.remotePlayer() && !this.can('settle') && this.room.wins().length > 0;
+      if (waiting && !dialog.open) dialog.showModal();
+      else if (!waiting && dialog.open) dialog.close();
+    });
+    let shownDeclarations = '';
+    effect(() => {
+      const key = this.room
+        .wins()
+        .map((action) => action.id)
+        .sort()
+        .join(',');
+      const ready = !!this.match() && this.can('settle') && !this.busy();
+      if (!key) {
+        shownDeclarations = '';
+        if (this.panel() === 'declarations')
+          queueMicrotask(() => {
+            if (!this.room.wins().length && this.panel() === 'declarations') this.close();
+          });
+        return;
+      }
+      if (ready && key !== shownDeclarations) {
+        shownDeclarations = key;
+        queueMicrotask(() => {
+          if (!this.room.wins().length || !this.can('settle')) return;
+          this.dialog()
+            .nativeElement.querySelectorAll<HTMLDialogElement>('dialog[open]')
+            .forEach((dialog) => dialog.close());
+          this.open('declarations');
+        });
+      }
+    });
     const screenAwake = inject(ScreenAwake);
     effect(() => {
       const match = this.match();
@@ -684,6 +770,17 @@ export class GameTable {
     });
     this.room.canProcess = () => !this.busy() && !this.editingHand();
     this.room.changed = (match) => {
+      const previousHand = this.match();
+      if (previousHand && !this.editingHand() && roomHandKey(previousHand) !== roomHandKey(match)) {
+        this.dialog()
+          .nativeElement.querySelectorAll<HTMLDialogElement>('dialog[open]')
+          .forEach((dialog) => dialog.close());
+        this.pendingKan = null;
+        this.inputs = [];
+        this.round = null;
+        this.close();
+        this.panelParents.set([]);
+      }
       if (this.match()?.ended && !match.ended) {
         this.close();
         this.panelParents.set([]);
@@ -698,21 +795,6 @@ export class GameTable {
         this.match.set(match);
         this.initializeView(match);
         this.showResultsIfEnded(match);
-        const signature = this.room
-          .wins()
-          .map((action) => action.id)
-          .join(':');
-        if (
-          signature &&
-          signature !== this.pendingSignature &&
-          this.can('settle') &&
-          !this.busy() &&
-          !match.ended
-        )
-          queueMicrotask(() => {
-            if (!this.dialog().nativeElement.open) this.open('declarations');
-          });
-        this.pendingSignature = signature;
         if (
           previous &&
           this.room.access()?.host &&
@@ -953,14 +1035,23 @@ export class GameTable {
     }
   }
   open(panel: Panel, player?: string): void {
-    if (this.remotePlayer() && !this.editingHand() && player && player !== this.roomPlayerId()) {
+    if (
+      this.remotePlayer() &&
+      !this.editingHand() &&
+      player &&
+      player !== this.roomPlayerId() &&
+      !this.can('declareAny')
+    ) {
       this.error.set('Declare only for your own seat.');
       return;
     }
     if (
       this.remotePlayer() &&
       ((panel === 'indicators' && !this.can('indicators')) ||
-        (panel === 'outcome' && !this.can('settle')) ||
+        (panel === 'outcome' &&
+          !this.can('settle') &&
+          !this.can('declareAny') &&
+          !this.can('draw')) ||
         (panel === 'finish' && !this.can('finish')) ||
         panel === 'permissions')
     ) {
@@ -1071,9 +1162,13 @@ export class GameTable {
   async riichi(): Promise<void> {
     await this.act(async () => {
       if (this.remotePlayer() && !this.editingHand()) {
-        if (this.selected !== this.roomPlayerId())
+        if (this.selected !== this.roomPlayerId() && !this.can('declareAny'))
           throw new Error('Declare only for your own seat.');
-        await this.room.submit('riichi', { double: this.doubleRiichi });
+        await this.room.submit(
+          'riichi',
+          { double: this.doubleRiichi },
+          this.players.findIndex((p) => p.id === this.selected),
+        );
         this.sounds.play(this.doubleRiichi ? 'doubleRiichi' : 'riichi');
         this.close(true);
         return;
@@ -1098,6 +1193,7 @@ export class GameTable {
   }
   readonly callEntryRequest = signal(0);
   startCall(type: Meld['type'] | 'kita', resuming = false): void {
+    if (!this.can('calls')) return;
     if (this.currentPlayer.riichi === 'double' && !['ankan', 'kita'].includes(type)) return;
     if (this.paused() || (this.busy() && !resuming) || this.match()?.ended) return;
     if (
@@ -1140,9 +1236,13 @@ export class GameTable {
   async cancelDeclaration(): Promise<void> {
     await this.act(async () => {
       if (this.remotePlayer() && !this.editingHand()) {
-        if (this.selected !== this.roomPlayerId())
+        if (this.selected !== this.roomPlayerId() && !this.can('declareAny'))
           throw new Error('Declare only for your own seat.');
-        await this.room.submit('cancelRiichi', {});
+        await this.room.submit(
+          'cancelRiichi',
+          {},
+          this.players.findIndex((p) => p.id === this.selected),
+        );
         this.close(true);
         return;
       }
@@ -1152,7 +1252,7 @@ export class GameTable {
     });
   }
   async tableAction(action: { player: string; type: string }): Promise<void> {
-    if (this.remotePlayer() && action.player !== this.roomPlayerId()) {
+    if (this.remotePlayer() && action.player !== this.roomPlayerId() && !this.can('declareAny')) {
       this.error.set('Declare only for your own seat.');
       return;
     }
@@ -1198,7 +1298,12 @@ export class GameTable {
         upgradeId: '',
         clearManual,
       };
-      if (this.remotePlayer() && !this.editingHand()) await this.room.submit('call', payload);
+      if (this.remotePlayer() && !this.editingHand())
+        await this.room.submit(
+          'call',
+          payload,
+          this.players.findIndex((p) => p.id === this.selected),
+        );
       else await this.persist(recordCall(this.match()!, this.selected, payload), true);
     });
   }
@@ -1220,8 +1325,12 @@ export class GameTable {
   }
   startPlayerWin(method: 'ron' | 'tsumo'): void {
     if (this.paused() || this.busy() || this.match()?.ended) return;
+    if (!this.canDeclareFor(this.selected)) {
+      this.error.set('This action is not permitted by the host.');
+      return;
+    }
     const player = this.selected;
-    this.startOutcome();
+    if (!this.startOutcome()) return;
     this.playerWinSelected = true;
     this.sounds.play(method);
     this.winSoundPlayed = true;
@@ -1240,8 +1349,8 @@ export class GameTable {
     this.comparisonPlayer.set(player);
   }
   async saveCall(keepOpen = false): Promise<void> {
-    if (this.callType === 'daiminkan') this.called = 0;
-    if (['chi', 'pon'].includes(this.callType) && !this.callTiles()[this.called]) {
+    if (['pon', 'daiminkan'].includes(this.callType)) this.called = 0;
+    if (this.callType === 'chi' && !this.callTiles()[this.called]) {
       this.error.set('Choose called tile');
       return;
     }
@@ -1266,9 +1375,13 @@ export class GameTable {
         return;
       }
       if (this.remotePlayer() && !this.editingHand()) {
-        if (this.selected !== this.roomPlayerId())
+        if (this.selected !== this.roomPlayerId() && !this.can('declareAny'))
           throw new Error('Declare only for your own seat.');
-        await this.room.submit('call', payload);
+        await this.room.submit(
+          'call',
+          payload,
+          this.players.findIndex((p) => p.id === this.selected),
+        );
       } else await this.persist(updated, true);
       if (!keepOpen) this.close(true);
     });
@@ -1298,11 +1411,15 @@ export class GameTable {
       validateRevealed(m, live);
       if (this.pendingKan) {
         if (this.remotePlayer() && !this.editingHand())
-          await this.room.submit('call', {
-            ...this.pendingCallPayload,
-            dora: this.dora,
-            requireDora: true,
-          });
+          await this.room.submit(
+            'call',
+            {
+              ...this.pendingCallPayload,
+              dora: this.dora,
+              requireDora: true,
+            },
+            this.players.findIndex((p) => p.id === this.selected),
+          );
         else await this.persist({ ...m, live }, true);
         this.pendingKan = null;
         this.pendingCallPayload = null;
@@ -1333,13 +1450,21 @@ export class GameTable {
     const match = this.match();
     if (!match || this.busy()) return;
     if (match.ended) this.open('results');
-    else if (this.can('settle')) this.startOutcome();
-    else this.open('player', this.roomPlayerId());
+    else if (this.can('settle') && this.room.wins().length) this.open('declarations');
+    else if (this.can('settle') || this.can('declareAny') || this.can('draw')) {
+      this.selected = this.roomPlayerId() || this.players[0]?.id || '';
+      this.startOutcome();
+    } else this.open('player', this.roomPlayerId());
   }
-  startOutcome(): void {
-    if (this.remotePlayer() && !this.editingHand() && this.selected !== this.roomPlayerId()) {
+  startOutcome(): boolean {
+    if (
+      this.remotePlayer() &&
+      !this.editingHand() &&
+      this.selected !== this.roomPlayerId() &&
+      !this.canDeclareFor(this.selected)
+    ) {
       this.error.set('Declare only for your own seat.');
-      return;
+      return false;
     }
     const edited = this.originalMatch?.events.find((event) => event.id === this.editingHand());
     this.manualEntry.set(
@@ -1366,10 +1491,15 @@ export class GameTable {
       this.error.set('');
       dialog.showModal();
     }
+    return true;
   }
   nextWinners(): void {
     this.error.set('');
     const ids = this.players.filter((p) => this.winners[p.id]);
+    if (!this.editingHand() && ids.some((player) => !this.canDeclareFor(player.id))) {
+      this.error.set('This action is not permitted by the host.');
+      return;
+    }
     if (
       !ids.length ||
       (this.method === 'tsumo' && ids.length !== 1) ||
@@ -1395,6 +1525,7 @@ export class GameTable {
     this.manualFu = stored?.fu ?? 40;
     this.manualYakuman = stored?.yakuman ?? 0;
     this.manualYakumanName = stored?.yakumanName ?? '';
+    this.manualYakumanSelections = stored?.yakumanNames ?? [];
     this.manualChips = stored?.chips ?? 0;
     this.manualPayer = stored?.pao?.payerId ?? '';
     this.manualResponsibleYakuman = stored?.pao?.yakuman ?? 1;
@@ -1519,6 +1650,10 @@ export class GameTable {
               han: this.manualHan,
               fu: this.manualFu,
               yakuman: this.manualYakuman,
+              yakumanNames:
+                this.manualYakuman && this.manualYakumanSelections.length
+                  ? [...this.manualYakumanSelections]
+                  : undefined,
               yakumanName: this.manualYakuman ? this.manualYakumanName || undefined : undefined,
               chips: this.manualChips,
               pao:
@@ -1608,7 +1743,7 @@ export class GameTable {
     if (this.remotePlayer()) this.selected = this.roomPlayerId();
     this.startOutcome();
     this.drawType = 'exhaustive';
-    this.tenpai = {};
+    this.seedTenpai();
     this.nagashi = {};
     this.panel.set('draw');
   }
@@ -1626,11 +1761,20 @@ export class GameTable {
     this.drawType = 'nagashi';
     this.nagashi = { [player]: true };
   }
+  seedTenpai(): void {
+    const match = this.match();
+    this.tenpai = Object.fromEntries(
+      (match?.players ?? []).map((player) => [
+        player.id,
+        !!match && livePlayer(match, player.id).riichi !== 'none',
+      ]),
+    );
+  }
   async settle(): Promise<void> {
     await this.act(async () => {
       if (this.remotePlayer() && !this.editingHand() && this.inputs.length) {
         for (const input of this.inputs) {
-          if (this.remotePlayer() && input.win.winnerId !== this.roomPlayerId())
+          if (!this.canDeclareFor(input.win.winnerId))
             throw new Error('Declare only for your own seat.');
           await this.room.submit(
             'win',

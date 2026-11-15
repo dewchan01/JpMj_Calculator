@@ -15,7 +15,7 @@
         <p>{{ 'All merged records now belong to the retained player.' | t }}</p>
       </section>
       <footer>
-        <button (click)="load()">{{ 'Merge players' | t }}</button>
+        <button class="primary" (click)="load()">{{ 'Merge players' | t }}</button>
       </footer>
     } @else {
       <p>
@@ -48,7 +48,11 @@
         <button class="secondary" [disabled]="busy()" routerLink="/others">
           {{ 'Cancel' | t }}
         </button>
-        <button [disabled]="busy() || !source || !target || source === target" (click)="merge()">
+        <button
+          class="primary"
+          [disabled]="busy() || !source || !target || source === target"
+          (click)="merge()"
+        >
           {{ (busy() ? 'Loading…' : 'Confirm merge') | t }}
         </button>
       </footer>

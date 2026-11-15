@@ -1429,6 +1429,7 @@
   "Player permissions": "玩家權限",
   "Declare or cancel own Riichi": "宣告或取消自己的立直",
   "Record own melds and North extractions": "記錄自己的副露、暗槓與拔北",
+  "Declare actions for any player": "允許代所有玩家宣告（立直、副露、和牌等）",
   "Submit own winning hand": "提交自己的和牌",
   "Edit shared indicators": "編輯共用寶牌指示牌",
   "Settle hands and winning declarations": "結算牌局與和牌宣告",

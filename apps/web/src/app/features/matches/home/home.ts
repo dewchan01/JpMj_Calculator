@@ -8,6 +8,7 @@ import { ruleName } from '../../../../../../../packages/mahjong-rules/index';
 import { TileArt } from '../../../shared/tile-art/tile-art';
 import { parseTiles } from '../../../../../../../packages/mahjong-core/index';
 import { newId } from '../../../core/id/new-id';
+import { playerIdentities } from '../../records/player-identity';
 import { TableSetup } from '../table-setup';
 import { RuleLibrary } from '../../settings/rule-library';
 import { ErrorNotice } from '../../../shared/error-notice/error-notice';
@@ -405,10 +406,24 @@ export class Home {
         rules.startingPoints > 100000
       )
         throw new Error('Starting points must be an integer between 1,000 and 100,000.');
+      const existingPlayers = playerIdentities(
+        await this.repo.list(),
+        this.playerLibrary.players(),
+      );
+      const profileFor = (name: string) => {
+        const saved = this.playerLibrary.players().find((player) => player.name === name);
+        if (saved) return saved.id;
+        const matches = existingPlayers.filter((player) => player.name === name);
+        if (matches.length === 1) {
+          this.playerLibrary.importPlayers(matches);
+          return matches[0].id;
+        }
+        return this.playerLibrary.add(name).id;
+      };
       const players = setup.names.slice(0, this.count()).map((n, i) => ({
         id: `p${i}`,
         name: n.trim() || this.i18n.t(`Player ${i + 1}`),
-        profileId: this.playerLibrary.players().find((p) => p.name === n.trim())?.id ?? newId(),
+        profileId: profileFor(n.trim() || this.i18n.t(`Player ${i + 1}`)),
       }));
       if (new Set(players.map((p) => p.name)).size !== players.length)
         throw new Error('Choose a different player for each seat.');

@@ -1,4 +1,4 @@
-﻿@if (!match()) {
+@if (!match()) {
   <a
     class="back-button quick-score-back"
     routerLink="/"
@@ -142,7 +142,7 @@
                 {{ 'Scoring type' | t }}
                 <select
                   [ngModel]="manualYakuman > 0"
-                  (ngModelChange)="manualYakuman = $event ? 1 : 0; changed()"
+                  (ngModelChange)="setManualYakuman($event); changed()"
                 >
                   <option [ngValue]="false">{{ 'Han / Fu' | t }}</option>
                   <option [ngValue]="true">{{ 'Yakuman' | t }}</option>
@@ -151,21 +151,30 @@
               @if (manualYakuman) {
                 <label>
                   {{ 'Yakuman' | t }}
-                  <select [(ngModel)]="manualYakuman" (ngModelChange)="changed()">
+                  <select
+                    [(ngModel)]="manualYakuman"
+                    (ngModelChange)="changed()"
+                    [disabled]="!!manualYakumanSelections.length"
+                  >
                     @for (count of manualYakumanOptions; track count) {
                       <option [ngValue]="count">{{ count }} &#215; {{ 'Yakuman' | t }}</option>
                     }
                   </select>
                 </label>
-                <label>
-                  {{ 'Yaku' | t }}
-                  <select [(ngModel)]="manualYakumanName" (ngModelChange)="changed()">
-                    <option value="">{{ 'Yakuman' | t }}</option>
-                    @for (name of manualYakumanNames; track name) {
-                      <option [value]="name">{{ name | t }}</option>
-                    }
-                  </select>
-                </label>
+                <fieldset class="yakuman-choices">
+                  <legend>{{ 'Yaku' | t }}</legend>
+                  @for (name of manualYakumanNames; track name) {
+                    <label class="check">
+                      <input
+                        type="checkbox"
+                        [checked]="manualYakumanSelections.includes(name)"
+                        [disabled]="yakumanDisabled(name)"
+                        (change)="toggleYakuman(name)"
+                      />
+                      {{ name | t }}
+                    </label>
+                  }
+                </fieldset>
               }
               @if (!manualYakuman) {
                 <label>

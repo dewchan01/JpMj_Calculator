@@ -5,7 +5,13 @@ import { RecordRetention } from '../../../core/record-retention';
 import Dexie, { type Table } from 'dexie';
 import type { Match } from '../../../../../../../packages/mahjong-core/ledger';
 import { mergePlayerRecords } from './merge-players';
-import type { PlayerIdentity } from '../../records/player-identity';
+import {
+  type PlayerIdentity,
+  playerIdentities,
+  mergePlayersByName,
+  mapImportedPlayers,
+} from '../../records/player-identity';
+import { PlayerLibrary } from './player-library';
 class LocalDatabase extends Dexie {
   matches!: Table<Match, string>;
   drafts!: Table<{ id: string; value: string }, string>;
@@ -16,6 +22,7 @@ class LocalDatabase extends Dexie {
 }
 @Injectable({ providedIn: 'root' })
 export class Repository {
+  private readonly players = inject(PlayerLibrary);
   private readonly retention = inject(RecordRetention);
   private readonly storage = inject(StorageUsageMonitor);
   private readonly logs = inject(DiagnosticLog);
@@ -77,7 +84,13 @@ export class Repository {
           await this.db.matches.delete(match.id);
           return;
         }
-        await this.db.matches.put(structuredClone(match));
+        let saved = match;
+        if (match.ended && !previous?.ended) {
+          const others = (await this.db.matches.toArray()).filter((value) => value.id !== match.id);
+          const identities = playerIdentities(others, this.players.players());
+          saved = mapImportedPlayers([match], mergePlayersByName([match], identities))[0];
+        }
+        await this.db.matches.put(structuredClone(saved));
       })
       .catch(this.storageFailure('Could not save match.'));
     void this.storage.refresh();

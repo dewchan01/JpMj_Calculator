@@ -185,7 +185,11 @@
                     {{ (win.method === 'ron' ? 'Ron · discard' : 'Tsumo · self draw') | t }} ·
                   }
                   @if (!entry.yakuman && (r.han || r.fu)) {
-                    {{ r.han + ' Han · ' + r.fu + ' Fu' | t }} ·
+                    {{ r.han }} {{ 'Han' | t }}
+                    @if (r.han < 5) {
+                      · {{ r.fu }} {{ 'Fu' | t }}
+                    }
+                    ·
                   }
                   {{ entry.limitName ?? 'standard' | t }}
                 </p>
