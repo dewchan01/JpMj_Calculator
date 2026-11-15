@@ -23,9 +23,7 @@ public sealed class GameTests
         var commit = new { revision = 1, handKey = "first", match, decisions = Array.Empty<object>() };
         ((await guest.PutAsJsonAsync(path + "/game", commit)).StatusCode).Should().Be(HttpStatusCode.Forbidden);
         ((await host.PutAsJsonAsync(path + "/game", commit)).StatusCode).Should().Be(HttpStatusCode.OK);
-        var action = new { id = Guid.NewGuid().ToString(), handKey = "first", kind = "riichi", payload = new { }, seat = 0 };
-        ((await guest.PostAsJsonAsync(path + "/game/actions", action)).StatusCode).Should().Be(HttpStatusCode.Forbidden);
-        action = action with { seat = 1 };
+        var action = new { id = Guid.NewGuid().ToString(), handKey = "first", kind = "riichi", payload = new { }, seat = 1 };
         ((await guest.PostAsJsonAsync(path + "/game/actions", action)).StatusCode).Should().Be(HttpStatusCode.OK);
         ((await guest.PostAsJsonAsync(path + "/game/actions", action)).StatusCode).Should().Be(HttpStatusCode.OK);
         var state = await (await host.GetAsync(path + "/game")).Content.ReadFromJsonAsync<JsonElement>();

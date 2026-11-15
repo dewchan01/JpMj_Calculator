@@ -40,7 +40,7 @@ test('declaration permission is checked before entry, waiting stays on seats, se
     live: emptyLive(),
     clock: { elapsedMs: 0, handStartMs: 0, runningSince: new Date().toISOString() },
   };
-  let permissions = { ...defaultRoomPermissions, win: false };
+  let permissions = { ...defaultRoomPermissions, win: false, declareAny: false };
   let revision = 1;
   let actions: RoomAction[] = [];
   let pendingWinSeats: number[] = [2];

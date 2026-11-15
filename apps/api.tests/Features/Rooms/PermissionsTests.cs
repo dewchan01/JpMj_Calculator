@@ -28,6 +28,9 @@ public sealed class PermissionsTests
         observer.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", observing.GetProperty("token").GetString());
         await RoomTest.Approve(host, guest, path, 0);
         await RoomTest.Approve(host, observer, path, 1);
+        var defaults = await host.GetFromJsonAsync<JsonElement>(path + "/game");
+        defaults.GetProperty("permissions").GetProperty("declareAny").GetBoolean().Should().BeTrue();
+        (await host.PutAsJsonAsync(path + "/permissions", new { declareAny = false })).EnsureSuccessStatusCode();
         var declaration = new { id = Guid.NewGuid(), handKey = "first", kind = "win", seat = 2, payload = new { } };
         (await guest.PostAsJsonAsync(path + "/game/actions", declaration)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await host.PutAsJsonAsync(path + "/permissions", new { win = false, declareAny = true })).EnsureSuccessStatusCode();
@@ -82,7 +85,7 @@ public sealed class PermissionsTests
         host.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", room.GetProperty("token").GetString());
         guest.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", player.GetProperty("token").GetString());
         await RoomTest.Approve(host, guest, path);
-        var permissions = new { riichi = false, calls = true, win = true, indicators = true, settle = false, history = false, finish = false };
+        var permissions = new { riichi = false, calls = true, win = true, declareAny = false, indicators = true, settle = false, history = false, finish = false };
 
         (await guest.PutAsJsonAsync(path + "/permissions", permissions)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         (await host.PutAsJsonAsync(path + "/permissions", permissions)).StatusCode.Should().Be(HttpStatusCode.NoContent);
