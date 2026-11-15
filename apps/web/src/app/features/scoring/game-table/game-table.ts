@@ -737,10 +737,13 @@ export class GameTable {
         this.music.setScene('lobby');
         return;
       }
-      const riichi = match.players.some((player) => livePlayer(match, player.id).riichi !== 'none');
+      const riichiPlayers = match.players
+        .filter((player) => livePlayer(match, player.id).riichi !== 'none')
+        .map((player) => player.id)
+        .sort();
       this.music.setScene(
-        riichi ? 'riichi' : 'game',
-        `${match.id}:${match.roundWind}:${match.handNumber}:${match.honba}`,
+        riichiPlayers.length ? 'riichi' : 'game',
+        `${match.id}:${match.roundWind}:${match.handNumber}:${match.honba}:${riichiPlayers.join(',')}`,
       );
     });
     effect(() => {

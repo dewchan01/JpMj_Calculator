@@ -23,6 +23,7 @@ export class BackgroundMusic {
   private readonly hand = signal('');
   private readonly unlocked = signal(true);
   private readonly visible = signal(!document.hidden);
+  private lastRandomTrack = '';
   private readonly selected = computed(() => {
     const scene = this.scene();
     this.hand();
@@ -31,7 +32,11 @@ export class BackgroundMusic {
     const chosen = scene === 'riichi' ? this.riichi() : this.game();
     const fixed = tracks.find((track) => track === chosen);
     if (fixed) return fixed;
-    return tracks[Math.floor(Math.random() * tracks.length)];
+    const candidates = tracks.filter((track) => track !== this.lastRandomTrack);
+    const pool = candidates.length ? candidates : tracks;
+    const track = pool[Math.floor(Math.random() * pool.length)];
+    this.lastRandomTrack = track;
+    return track;
   });
   private audio?: HTMLAudioElement;
   private source = '';
