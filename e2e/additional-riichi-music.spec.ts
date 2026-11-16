@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { musicFile, riichiTracks } from '../apps/web/src/app/core/sound/music-catalog';
 
 test('additional riichi changes random riichi music without repeating', async ({ page }) => {
   await page.addInitScript(() => {
@@ -36,7 +37,12 @@ test('additional riichi changes random riichi music without repeating', async ({
     .filter({ hasText: 'Player 1' })
     .getByRole('button', { name: 'Riichi', exact: true })
     .click();
-  await expect.poll(last).toContain('/liqi');
+  const riichiFiles = riichiTracks.map(musicFile);
+  const isRiichiTrack = async () => {
+    const track = await last();
+    return riichiFiles.some((file) => track?.endsWith('/' + file));
+  };
+  await expect.poll(isRiichiTrack).toBe(true);
   const first = await last();
   await page
     .locator('.player-seat')
@@ -44,5 +50,5 @@ test('additional riichi changes random riichi music without repeating', async ({
     .getByRole('button', { name: 'Riichi', exact: true })
     .click();
   await expect.poll(last).not.toBe(first);
-  await expect.poll(last).toContain('/liqi');
+  await expect.poll(isRiichiTrack).toBe(true);
 });

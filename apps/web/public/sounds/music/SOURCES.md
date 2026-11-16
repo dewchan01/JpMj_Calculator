@@ -30,3 +30,13 @@ Rights remain with Cat Food Studio / Yostar and the respective rights holders. P
 - `liqi-23ex-rpg.mp3`: https://mahjongsoul.game.yo-star.com/v0.10.261.w/audio/music/liqi_23ex_rpg.mp3
 - `liqi-23ex-xiyang.mp3`: https://mahjongsoul.game.yo-star.com/v0.10.261.w/audio/music/liqi_23ex_xiyang.mp3
 - `yichujifa.mp3`: https://mahjongsoul.game.yo-star.com/v0.11.131.w/audio/music/yichujifa.mp3
+
+## User-provided tracks
+
+Added on 2026-11-16. Display titles are localized in the app; audio is unchanged.
+
+- `moonlit-pulse.mp3`: originally `Riichi Loop (Vibe A).mp3`; normal gameplay only.
+- `crimson-momentum.mp3`: originally `Riichi Loop (Vibe B).mp3`.
+- `electric-showdown.mp3`: originally `Modern Japanese Electro Showdown (Take 2).mp3`.
+
+Provided locally by the user. No external source or license was supplied.

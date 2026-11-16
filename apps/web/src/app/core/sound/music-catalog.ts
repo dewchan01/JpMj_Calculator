@@ -13,6 +13,7 @@ export const gameTracks = [
   '23ex Duiju2',
   '23ex Duiju3',
   '23ex Duiju4',
+  'Moonlit Pulse',
 ] as const;
 export const riichiTracks = [
   'Liqi1',
@@ -25,10 +26,12 @@ export const riichiTracks = [
   'Liqi 23ex Rpg',
   'Liqi 23ex Xiyang',
   'Yichujifa',
+  'Crimson Momentum',
+  'Electric Showdown',
 ] as const;
 export const musicFile = (track: string) => track.toLowerCase().replaceAll(' ', '-') + '.mp3';
 
-/** Official titles matched by audio path; see docs/guides/music-titles.md. */
+/** Display titles matched by audio path; includes user-provided tracks. */
 export const musicTitles: Readonly<Record<string, string>> = {
   Lobby: 'Sakura',
   'Lobby Autumn': 'Autumn Chill',
@@ -52,4 +55,7 @@ export const musicTitles: Readonly<Record<string, string>> = {
   'Liqi 23ex Rpg': 'Over the Clouds',
   'Liqi 23ex Xiyang': 'Path to Victory',
   Yichujifa: 'On the Edge',
+  'Moonlit Pulse': 'Moonlit Pulse',
+  'Crimson Momentum': 'Crimson Momentum',
+  'Electric Showdown': 'Electric Showdown',
 };
