@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -15,7 +15,8 @@ namespace Riichi.Api.Migrations
                 table: "Rooms",
                 type: "nvarchar(max)",
                 nullable: false,
-                defaultValue: "");
+                defaultValue: ""
+            );
 
             migrationBuilder.CreateTable(
                 name: "Actions",
@@ -30,7 +31,7 @@ namespace Riichi.Api.Migrations
                     Payload = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     CreatedAt = table.Column<long>(type: "bigint", nullable: false),
                     Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Error = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Error = table.Column<string>(type: "nvarchar(max)", nullable: false),
                 },
                 constraints: table =>
                 {
@@ -40,19 +41,18 @@ namespace Riichi.Api.Migrations
                         column: x => x.RoomId,
                         principalTable: "Rooms",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
+                        onDelete: ReferentialAction.Cascade
+                    );
+                }
+            );
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "Actions");
+            migrationBuilder.DropTable(name: "Actions");
 
-            migrationBuilder.DropColumn(
-                name: "HandKey",
-                table: "Rooms");
+            migrationBuilder.DropColumn(name: "HandKey", table: "Rooms");
         }
     }
 }

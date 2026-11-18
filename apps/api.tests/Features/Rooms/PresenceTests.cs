@@ -21,6 +21,7 @@ public sealed class PresenceTests
         presence.SetAway("first", false)!.AwaySeats.Should().BeEmpty();
         presence.SetAway("unknown", true).Should().BeNull();
     }
+
     [TestMethod]
     public void MultipleTabsRemainOnlineUntilLastConnectionLeaves()
     {

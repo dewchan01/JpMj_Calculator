@@ -18,48 +18,145 @@ public sealed class PermissionsTests
         using var host = app.CreateClient();
         using var guest = app.CreateClient();
         using var observer = app.CreateClient();
-        var match = JsonNode.Parse("""{"id":"any-win","playerCount":3,"players":[{"id":"a"},{"id":"b"},{"id":"c"}],"events":[],"live":{"players":{}}}""")!;
-        var room = await (await host.PostAsJsonAsync("/api/rooms", new { playerCount = 3, match, handKey = "first" })).Content.ReadFromJsonAsync<JsonElement>();
+        var match = JsonNode.Parse(
+            """{"id":"any-win","playerCount":3,"players":[{"id":"a"},{"id":"b"},{"id":"c"}],"events":[],"live":{"players":{}}}"""
+        )!;
+        var room = await (
+            await host.PostAsJsonAsync(
+                "/api/rooms",
+                new
+                {
+                    playerCount = 3,
+                    match,
+                    handKey = "first",
+                }
+            )
+        ).Content.ReadFromJsonAsync<JsonElement>();
         var path = "/api/rooms/" + room.GetProperty("id").GetString();
-        var joined = await (await guest.PostAsJsonAsync(path + "/join", new { pin = room.GetProperty("pin").GetString() })).Content.ReadFromJsonAsync<JsonElement>();
-        var observing = await (await observer.PostAsJsonAsync(path + "/join", new { pin = room.GetProperty("pin").GetString() })).Content.ReadFromJsonAsync<JsonElement>();
-        host.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", room.GetProperty("token").GetString());
-        guest.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", joined.GetProperty("token").GetString());
-        observer.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", observing.GetProperty("token").GetString());
+        var joined = await (
+            await guest.PostAsJsonAsync(
+                path + "/join",
+                new { pin = room.GetProperty("pin").GetString() }
+            )
+        ).Content.ReadFromJsonAsync<JsonElement>();
+        var observing = await (
+            await observer.PostAsJsonAsync(
+                path + "/join",
+                new { pin = room.GetProperty("pin").GetString() }
+            )
+        ).Content.ReadFromJsonAsync<JsonElement>();
+        host.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            room.GetProperty("token").GetString()
+        );
+        guest.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            joined.GetProperty("token").GetString()
+        );
+        observer.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            observing.GetProperty("token").GetString()
+        );
         await RoomTest.Approve(host, guest, path, 0);
         await RoomTest.Approve(host, observer, path, 1);
         var defaults = await host.GetFromJsonAsync<JsonElement>(path + "/game");
-        defaults.GetProperty("permissions").GetProperty("declareAny").GetBoolean().Should().BeTrue();
-        (await host.PutAsJsonAsync(path + "/permissions", new { declareAny = false })).EnsureSuccessStatusCode();
-        var declaration = new { id = Guid.NewGuid(), handKey = "first", kind = "win", seat = 2, payload = new { } };
-        (await guest.PostAsJsonAsync(path + "/game/actions", declaration)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        (await host.PutAsJsonAsync(path + "/permissions", new { win = false, declareAny = true })).EnsureSuccessStatusCode();
-        (await guest.PostAsJsonAsync(path + "/game/actions", declaration)).EnsureSuccessStatusCode();
+        defaults
+            .GetProperty("permissions")
+            .GetProperty("declareAny")
+            .GetBoolean()
+            .Should()
+            .BeTrue();
+        (
+            await host.PutAsJsonAsync(path + "/permissions", new { declareAny = false })
+        ).EnsureSuccessStatusCode();
+        var declaration = new
+        {
+            id = Guid.NewGuid(),
+            handKey = "first",
+            kind = "win",
+            seat = 2,
+            payload = new { },
+        };
+        (await guest.PostAsJsonAsync(path + "/game/actions", declaration))
+            .StatusCode.Should()
+            .Be(HttpStatusCode.Forbidden);
+        (
+            await host.PutAsJsonAsync(path + "/permissions", new { win = false, declareAny = true })
+        ).EnsureSuccessStatusCode();
+        (
+            await guest.PostAsJsonAsync(path + "/game/actions", declaration)
+        ).EnsureSuccessStatusCode();
         foreach (var kind in new[] { "riichi", "cancelRiichi", "call" })
-            (await guest.PostAsJsonAsync(path + "/game/actions", declaration with { id = Guid.NewGuid(), kind = kind })).EnsureSuccessStatusCode();
+            (
+                await guest.PostAsJsonAsync(
+                    path + "/game/actions",
+                    declaration with
+                    {
+                        id = Guid.NewGuid(),
+                        kind = kind,
+                    }
+                )
+            ).EnsureSuccessStatusCode();
         var hostState = await host.GetFromJsonAsync<JsonElement>(path + "/game");
-        hostState.GetProperty("actions").EnumerateArray().Should().OnlyContain(action => action.GetProperty("seat").GetInt32() == 2);
+        hostState
+            .GetProperty("actions")
+            .EnumerateArray()
+            .Should()
+            .OnlyContain(action => action.GetProperty("seat").GetInt32() == 2);
         var state = await observer.GetFromJsonAsync<JsonElement>(path + "/game");
         state.GetProperty("pendingWinSeats")[0].GetInt32().Should().Be(2);
-        (await host.PutAsJsonAsync(path + "/permissions", new { win = true, declareAny = false })).EnsureSuccessStatusCode();
-        (await guest.PostAsJsonAsync(path + "/game/actions", declaration with { id = Guid.NewGuid() })).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (
+            await host.PutAsJsonAsync(path + "/permissions", new { win = true, declareAny = false })
+        ).EnsureSuccessStatusCode();
+        (
+            await guest.PostAsJsonAsync(
+                path + "/game/actions",
+                declaration with
+                {
+                    id = Guid.NewGuid(),
+                }
+            )
+        )
+            .StatusCode.Should()
+            .Be(HttpStatusCode.Forbidden);
         foreach (var kind in new[] { "riichi", "cancelRiichi", "call" })
-            (await guest.PostAsJsonAsync(path + "/game/actions", declaration with { id = Guid.NewGuid(), kind = kind })).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+            (
+                await guest.PostAsJsonAsync(
+                    path + "/game/actions",
+                    declaration with
+                    {
+                        id = Guid.NewGuid(),
+                        kind = kind,
+                    }
+                )
+            )
+                .StatusCode.Should()
+                .Be(HttpStatusCode.Forbidden);
     }
+
     [TestMethod]
     public async Task HostingReservesTheChosenPlayerAndJoiningRequiresSelection()
     {
         using var app = new ApiFactory();
         using var client = app.CreateClient();
-        using var created = await client.PostAsJsonAsync("/api/rooms", new { playerCount = 3, hostSeat = 1 });
+        using var created = await client.PostAsJsonAsync(
+            "/api/rooms",
+            new { playerCount = 3, hostSeat = 1 }
+        );
         created.EnsureSuccessStatusCode();
         var room = await created.Content.ReadFromJsonAsync<JsonElement>();
         room.GetProperty("seat").GetInt32().Should().Be(1);
         var path = "/api/rooms/" + room.GetProperty("id").GetString() + "/join";
         var pin = room.GetProperty("pin").GetString();
-        (await client.PostAsJsonAsync(path, new { pin, seat = 1 })).StatusCode.Should().Be(HttpStatusCode.Conflict);
-        var first = await (await client.PostAsJsonAsync(path, new { pin })).Content.ReadFromJsonAsync<JsonElement>();
-        var second = await (await client.PostAsJsonAsync(path, new { pin })).Content.ReadFromJsonAsync<JsonElement>();
+        (await client.PostAsJsonAsync(path, new { pin, seat = 1 }))
+            .StatusCode.Should()
+            .Be(HttpStatusCode.Conflict);
+        var first = await (
+            await client.PostAsJsonAsync(path, new { pin })
+        ).Content.ReadFromJsonAsync<JsonElement>();
+        var second = await (
+            await client.PostAsJsonAsync(path, new { pin })
+        ).Content.ReadFromJsonAsync<JsonElement>();
         first.GetProperty("seat").ValueKind.Should().Be(JsonValueKind.Null);
         second.GetProperty("seat").ValueKind.Should().Be(JsonValueKind.Null);
         (await client.PostAsJsonAsync(path, new { pin })).StatusCode.Should().Be(HttpStatusCode.OK);
@@ -71,42 +168,131 @@ public sealed class PermissionsTests
         using var app = new ApiFactory();
         using var host = app.CreateClient();
         using var guest = app.CreateClient();
-        var match = JsonNode.Parse("""
+        var match = JsonNode.Parse(
+            """
             {"id":"permissions-game","playerCount":3,"players":[{"id":"a"},{"id":"b"},{"id":"c"}],
              "events":[],"live":{"dora":"1m","ura":"","players":{}}}
-            """)!;
-        using var created = await host.PostAsJsonAsync("/api/rooms", new { playerCount = 3, match, handKey = "first" });
+            """
+        )!;
+        using var created = await host.PostAsJsonAsync(
+            "/api/rooms",
+            new
+            {
+                playerCount = 3,
+                match,
+                handKey = "first",
+            }
+        );
         created.EnsureSuccessStatusCode();
         var room = await created.Content.ReadFromJsonAsync<JsonElement>();
         var path = "/api/rooms/" + room.GetProperty("id").GetString();
-        using var joined = await guest.PostAsJsonAsync(path + "/join", new { pin = room.GetProperty("pin").GetString() });
+        using var joined = await guest.PostAsJsonAsync(
+            path + "/join",
+            new { pin = room.GetProperty("pin").GetString() }
+        );
         joined.EnsureSuccessStatusCode();
         var player = await joined.Content.ReadFromJsonAsync<JsonElement>();
-        host.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", room.GetProperty("token").GetString());
-        guest.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", player.GetProperty("token").GetString());
+        host.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            room.GetProperty("token").GetString()
+        );
+        guest.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            player.GetProperty("token").GetString()
+        );
         await RoomTest.Approve(host, guest, path);
-        var permissions = new { riichi = false, calls = true, win = true, declareAny = false, indicators = true, settle = false, history = false, finish = false };
+        var permissions = new
+        {
+            riichi = false,
+            calls = true,
+            win = true,
+            declareAny = false,
+            indicators = true,
+            settle = false,
+            history = false,
+            finish = false,
+        };
 
-        (await guest.PutAsJsonAsync(path + "/permissions", permissions)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-        (await host.PutAsJsonAsync(path + "/permissions", permissions)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await guest.PutAsJsonAsync(path + "/permissions", permissions))
+            .StatusCode.Should()
+            .Be(HttpStatusCode.Unauthorized);
+        (await host.PutAsJsonAsync(path + "/permissions", permissions))
+            .StatusCode.Should()
+            .Be(HttpStatusCode.NoContent);
         var state = await host.GetFromJsonAsync<JsonElement>(path + "/game");
         state.GetProperty("permissions").GetProperty("riichi").GetBoolean().Should().BeFalse();
-        (await guest.PostAsJsonAsync(path + "/game/actions", new { id = Guid.NewGuid(), handKey = "first", kind = "riichi", payload = new { } }))
-            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (
+            await guest.PostAsJsonAsync(
+                path + "/game/actions",
+                new
+                {
+                    id = Guid.NewGuid(),
+                    handKey = "first",
+                    kind = "riichi",
+                    payload = new { },
+                }
+            )
+        ).StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
         var revision = state.GetProperty("revision").GetInt64();
         match["live"]!["dora"] = "2m";
-        (await guest.PutAsJsonAsync(path + "/game", new { revision, handKey = "first", match, decisions = Array.Empty<object>(), operation = "indicators" }))
-            .StatusCode.Should().Be(HttpStatusCode.OK);
+        (
+            await guest.PutAsJsonAsync(
+                path + "/game",
+                new
+                {
+                    revision,
+                    handKey = "first",
+                    match,
+                    decisions = Array.Empty<object>(),
+                    operation = "indicators",
+                }
+            )
+        ).StatusCode.Should().Be(HttpStatusCode.OK);
 
         match["events"] = JsonNode.Parse("""[{"type":"win","payments":[]}]""");
-        (await guest.PutAsJsonAsync(path + "/game", new { revision = revision + 1, handKey = "first", match, decisions = Array.Empty<object>(), operation = "indicators" }))
-            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        (await guest.PutAsJsonAsync(path + "/game", new { revision = revision + 1, handKey = "first", match, decisions = Array.Empty<object>(), operation = "history" }))
-            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        (await host.PutAsJsonAsync(path + "/permissions", permissions with { indicators = false })).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (
+            await guest.PutAsJsonAsync(
+                path + "/game",
+                new
+                {
+                    revision = revision + 1,
+                    handKey = "first",
+                    match,
+                    decisions = Array.Empty<object>(),
+                    operation = "indicators",
+                }
+            )
+        ).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (
+            await guest.PutAsJsonAsync(
+                path + "/game",
+                new
+                {
+                    revision = revision + 1,
+                    handKey = "first",
+                    match,
+                    decisions = Array.Empty<object>(),
+                    operation = "history",
+                }
+            )
+        ).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await host.PutAsJsonAsync(path + "/permissions", permissions with { indicators = false }))
+            .StatusCode.Should()
+            .Be(HttpStatusCode.NoContent);
         match["events"] = new JsonArray();
-        (await guest.PutAsJsonAsync(path + "/game", new { revision = revision + 2, handKey = "first", match, decisions = Array.Empty<object>(), operation = "indicators" }))
-            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (
+            await guest.PutAsJsonAsync(
+                path + "/game",
+                new
+                {
+                    revision = revision + 2,
+                    handKey = "first",
+                    match,
+                    decisions = Array.Empty<object>(),
+                    operation = "indicators",
+                }
+            )
+        ).StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 }

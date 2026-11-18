@@ -8,7 +8,13 @@ namespace Riichi.Api.Features.Games.SubmitAction;
 /// <param name="Kind">The declaration kind.</param>
 /// <param name="Payload">The internal declaration payload.</param>
 /// <param name="Seat">The optional zero-based seat index.</param>
-public sealed record Body(string Id, string HandKey, string Kind, JsonElement Payload, int? Seat = null);
+public sealed record Body(
+    string Id,
+    string HandKey,
+    string Kind,
+    JsonElement Payload,
+    int? Seat = null
+);
 
 /// <summary>Input for submit action.</summary>
 /// <param name="Id">The operation resource identifier.</param>

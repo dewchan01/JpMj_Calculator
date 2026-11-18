@@ -1,8 +1,8 @@
+using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using FluentAssertions;
 
 namespace Riichi.Api.Tests;
 
@@ -25,8 +25,12 @@ public sealed class ConfigurationTests
         using var response = await client.SendAsync(request);
 
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.NoContent);
-        response.Headers.TryGetValues("Access-Control-Allow-Origin", out var origins).Should().Be(allowed);
-        if (allowed) origins.Should().ContainSingle().Which.Should().Be(origin);
+        response
+            .Headers.TryGetValues("Access-Control-Allow-Origin", out var origins)
+            .Should()
+            .Be(allowed);
+        if (allowed)
+            origins.Should().ContainSingle().Which.Should().Be(origin);
     }
 
     [TestMethod]
@@ -34,31 +38,56 @@ public sealed class ConfigurationTests
     {
         // Arrange.
         using var root = new ApiFactory();
-        using var app = root.WithWebHostBuilder(builder => builder.ConfigureAppConfiguration((_, config) =>
-            config.AddInMemoryCollection(new Dictionary<string, string?> { ["Storage:MaxBytes"] = "0" })));
+        using var app = root.WithWebHostBuilder(builder =>
+            builder.ConfigureAppConfiguration(
+                (_, config) =>
+                    config.AddInMemoryCollection(
+                        new Dictionary<string, string?> { ["Storage:MaxBytes"] = "0" }
+                    )
+            )
+        );
 
         // Act / Assert.
-        FluentActions.Invoking(() => app.CreateClient()).Should().Throw<Microsoft.Extensions.Options.OptionsValidationException>()
-            .Which.Message.Should().Contain("MaxBytes");
+        FluentActions
+            .Invoking(() => app.CreateClient())
+            .Should()
+            .Throw<Microsoft.Extensions.Options.OptionsValidationException>()
+            .Which.Message.Should()
+            .Contain("MaxBytes");
     }
 
     [TestMethod]
     [DataRow("Development", true, "http://localhost:4200")]
     [DataRow("Production", true, "https://dewchan01.github.io")]
     [DataRow("Development", false, "https://dewchan01.github.io")]
-    public void EnvironmentSelectsTheCorrectJsonSettings(string environment, bool includeDevelopmentFile, string expectedOrigin)
+    public void EnvironmentSelectsTheCorrectJsonSettings(
+        string environment,
+        bool includeDevelopmentFile,
+        string expectedOrigin
+    )
     {
         // Do not depend on a developer's ignored appsettings.Development.json.
         var directory = Directory.CreateTempSubdirectory("riichi-configuration-");
         try
         {
-            File.Copy(Path.Combine(AppContext.BaseDirectory, "appsettings.json"), Path.Combine(directory.FullName, "appsettings.json"));
+            File.Copy(
+                Path.Combine(AppContext.BaseDirectory, "appsettings.json"),
+                Path.Combine(directory.FullName, "appsettings.json")
+            );
             if (includeDevelopmentFile)
-                File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "appsettings.Development.example.json"),
-                    Path.Combine(directory.FullName, "appsettings.Development.json"));
+                File.Copy(
+                    Path.Combine(
+                        AppContext.BaseDirectory,
+                        "Fixtures",
+                        "appsettings.Development.example.json"
+                    ),
+                    Path.Combine(directory.FullName, "appsettings.Development.json")
+                );
 
             using var root = new ApiFactory();
-            using var app = root.WithWebHostBuilder(builder => builder.UseContentRoot(directory.FullName).UseEnvironment(environment));
+            using var app = root.WithWebHostBuilder(builder =>
+                builder.UseContentRoot(directory.FullName).UseEnvironment(environment)
+            );
             using var client = app.CreateClient();
             var configuration = app.Services.GetRequiredService<IConfiguration>();
             (configuration["Cors:AllowedOrigins:0"]).Should().Be(expectedOrigin);

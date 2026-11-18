@@ -10,7 +10,10 @@ public sealed record PresenceSnapshot(long Version, int[] Seats, int[]? AwaySeat
 public sealed class RoomPresence
 {
     private readonly object _gate = new();
-    private readonly Dictionary<string, (string Room, int? Seat, string Hash, bool Away)> _connections = [];
+    private readonly Dictionary<
+        string,
+        (string Room, int? Seat, string Hash, bool Away)
+    > _connections = [];
     private long _version;
 
     /// <summary>Registers an authenticated connection.</summary>
@@ -21,36 +24,65 @@ public sealed class RoomPresence
     /// <returns>The updated room snapshot.</returns>
     public PresenceSnapshot Connect(string connection, string room, int? seat, string hash = "")
     {
-        lock (_gate) { _connections[connection] = (room, seat, hash, false); _version++; return Snapshot(room); }
+        lock (_gate)
+        {
+            _connections[connection] = (room, seat, hash, false);
+            _version++;
+            return Snapshot(room);
+        }
     }
+
     /// <summary>Marks a connected member as temporarily away without releasing their seat.</summary>
     public PresenceSnapshot? SetAway(string connection, bool away)
     {
         lock (_gate)
         {
-            if (!_connections.TryGetValue(connection, out var entry)) return null;
+            if (!_connections.TryGetValue(connection, out var entry))
+                return null;
             _connections[connection] = (entry.Room, entry.Seat, entry.Hash, away);
             _version++;
             return Snapshot(entry.Room);
         }
     }
+
     /// <summary>Checks whether a credential still has a live connection.</summary>
-    public bool IsConnected(string room, string hash) { lock (_gate) return _connections.Values.Any(x => x.Room == room && x.Hash == hash); }
+    public bool IsConnected(string room, string hash)
+    {
+        lock (_gate)
+            return _connections.Values.Any(x => x.Room == room && x.Hash == hash);
+    }
+
     /// <summary>Updates a member's seat without disconnecting their authenticated connections.</summary>
     public PresenceSnapshot Assign(string room, string hash, int? seat)
     {
         lock (_gate)
         {
-            foreach (var key in _connections.Where(x => x.Value.Room == room && x.Value.Hash == hash).Select(x => x.Key).ToArray())
+            foreach (
+                var key in _connections
+                    .Where(x => x.Value.Room == room && x.Value.Hash == hash)
+                    .Select(x => x.Key)
+                    .ToArray()
+            )
                 _connections[key] = (room, seat, hash, _connections[key].Away);
             _version++;
             return Snapshot(room);
         }
     }
+
     /// <summary>Forgets all connections belonging to a departing member.</summary>
     public void ReleaseMember(string room, string hash)
     {
-        lock (_gate) { foreach (var key in _connections.Where(x => x.Value.Room == room && x.Value.Hash == hash).Select(x => x.Key).ToArray()) _connections.Remove(key); _version++; }
+        lock (_gate)
+        {
+            foreach (
+                var key in _connections
+                    .Where(x => x.Value.Room == room && x.Value.Hash == hash)
+                    .Select(x => x.Key)
+                    .ToArray()
+            )
+                _connections.Remove(key);
+            _version++;
+        }
     }
 
     /// <summary>Removes a connection while preserving other tabs on the same seat.</summary>
@@ -60,7 +92,8 @@ public sealed class RoomPresence
     {
         lock (_gate)
         {
-            if (!_connections.Remove(connection, out var entry)) return null;
+            if (!_connections.Remove(connection, out var entry))
+                return null;
             _version++;
             return (entry.Room, Snapshot(entry.Room));
         }
@@ -69,7 +102,11 @@ public sealed class RoomPresence
     /// <summary>Reads online seats for a room.</summary>
     /// <param name="room">The room identifier.</param>
     /// <returns>The current snapshot.</returns>
-    public PresenceSnapshot Get(string room) { lock (_gate) return Snapshot(room); }
+    public PresenceSnapshot Get(string room)
+    {
+        lock (_gate)
+            return Snapshot(room);
+    }
 
     /// <summary>Removes revoked seat connections from presence.</summary>
     /// <param name="room">The room identifier.</param>
@@ -79,7 +116,13 @@ public sealed class RoomPresence
     {
         lock (_gate)
         {
-            foreach (var key in _connections.Where(x => x.Value.Room == room && x.Value.Seat == seat).Select(x => x.Key).ToArray()) _connections.Remove(key);
+            foreach (
+                var key in _connections
+                    .Where(x => x.Value.Room == room && x.Value.Seat == seat)
+                    .Select(x => x.Key)
+                    .ToArray()
+            )
+                _connections.Remove(key);
             _version++;
             return Snapshot(room);
         }
@@ -91,12 +134,32 @@ public sealed class RoomPresence
     {
         lock (_gate)
         {
-            foreach (var key in _connections.Where(x => x.Value.Room == room).Select(x => x.Key).ToArray()) _connections.Remove(key);
+            foreach (
+                var key in _connections
+                    .Where(x => x.Value.Room == room)
+                    .Select(x => x.Key)
+                    .ToArray()
+            )
+                _connections.Remove(key);
             _version++;
         }
     }
 
-    private PresenceSnapshot Snapshot(string room) => new(_version,
-        _connections.Values.Where(x => x.Room == room && x.Seat.HasValue).Select(x => x.Seat!.Value).Distinct().Order().ToArray(),
-        _connections.Values.Where(x => x.Room == room && x.Seat.HasValue).GroupBy(x => x.Seat!.Value).Where(x => x.All(connection => connection.Away)).Select(x => x.Key).Order().ToArray());
+    private PresenceSnapshot Snapshot(string room) =>
+        new(
+            _version,
+            _connections
+                .Values.Where(x => x.Room == room && x.Seat.HasValue)
+                .Select(x => x.Seat!.Value)
+                .Distinct()
+                .Order()
+                .ToArray(),
+            _connections
+                .Values.Where(x => x.Room == room && x.Seat.HasValue)
+                .GroupBy(x => x.Seat!.Value)
+                .Where(x => x.All(connection => connection.Away))
+                .Select(x => x.Key)
+                .Order()
+                .ToArray()
+        );
 }

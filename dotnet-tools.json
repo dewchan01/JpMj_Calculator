@@ -6,6 +6,11 @@
       "version": "10.0.10",
       "commands": ["dotnet-ef"],
       "rollForward": false
+    },
+    "csharpier": {
+      "version": "1.4.0",
+      "commands": ["csharpier"],
+      "rollForward": false
     }
   }
 }

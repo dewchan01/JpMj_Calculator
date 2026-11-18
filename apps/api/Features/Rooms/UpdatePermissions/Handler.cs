@@ -14,20 +14,36 @@ namespace Riichi.Api.Features.Rooms.UpdatePermissions;
 public sealed class Handler(AppDb db, IHubContext<RoomHub> hub) : CommandHandler<Request>
 {
     private readonly AppDb _db = db ?? throw new ArgumentNullException(nameof(db));
-    private readonly IHubContext<RoomHub> _hub = hub ?? throw new ArgumentNullException(nameof(hub));
+    private readonly IHubContext<RoomHub> _hub = hub
+        ?? throw new ArgumentNullException(nameof(hub));
 
     /// <inheritdoc />
-    protected override async Task<IResult> ExecuteAsync(Request command, CancellationToken cancellationToken)
+    protected override async Task<IResult> ExecuteAsync(
+        Request command,
+        CancellationToken cancellationToken
+    )
     {
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        var room = await _db.Rooms.SingleOrDefaultAsync(x => x.Id == command.Id && x.ExpiresAt > now, cancellationToken);
-        if (room is null) return Results.NotFound();
-        if (!Secrets.Matches(command.Token, room.HostHash)) return Results.Unauthorized();
-        if (room.Closed) return Results.StatusCode(410);
+        var room = await _db.Rooms.SingleOrDefaultAsync(
+            x => x.Id == command.Id && x.ExpiresAt > now,
+            cancellationToken
+        );
+        if (room is null)
+            return Results.NotFound();
+        if (!Secrets.Matches(command.Token, room.HostHash))
+            return Results.Unauthorized();
+        if (room.Closed)
+            return Results.StatusCode(410);
         room.Permissions = JsonSerializer.Serialize(command.Permissions);
         room.Revision++;
-        try { await _db.SaveChangesAsync(cancellationToken); }
-        catch (DbUpdateConcurrencyException) { return Results.Conflict(); }
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Results.Conflict();
+        }
         await _hub.Clients.Group(command.Id).SendAsync("Changed");
         return Results.NoContent();
     }

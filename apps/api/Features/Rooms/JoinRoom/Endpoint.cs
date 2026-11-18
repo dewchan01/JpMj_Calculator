@@ -8,6 +8,15 @@ public static class Endpoint
     /// <summary>Maps the existing HTTP route.</summary>
     /// <param name="routes">The route group for this feature.</param>
     public static void Map(RouteGroupBuilder routes) =>
-        routes.MapPost("/{id}/join", (string id, Body input, ICommandHandler<Request> handler, CancellationToken cancellationToken) =>
-            handler.HandleAsync(new Request(id, input), cancellationToken)).RequireRateLimiting("join");
+        routes
+            .MapPost(
+                "/{id}/join",
+                (
+                    string id,
+                    Body input,
+                    ICommandHandler<Request> handler,
+                    CancellationToken cancellationToken
+                ) => handler.HandleAsync(new Request(id, input), cancellationToken)
+            )
+            .RequireRateLimiting("join");
 }

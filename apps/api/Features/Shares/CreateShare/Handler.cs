@@ -5,8 +5,8 @@ using Microsoft.Extensions.Options;
 using Riichi.Api.Data;
 using Riichi.Api.Infrastructure.Configuration;
 using Riichi.Api.Infrastructure.Security;
-using Riichi.Api.Shared.Handlers;
 using Riichi.Api.Resources;
+using Riichi.Api.Shared.Handlers;
 
 namespace Riichi.Api.Features.Shares.CreateShare;
 
@@ -16,31 +16,45 @@ namespace Riichi.Api.Features.Shares.CreateShare;
 public sealed class Handler(AppDb db, IOptions<StorageOptions> storage) : CommandHandler<Request>
 {
     private readonly AppDb _db = db ?? throw new ArgumentNullException(nameof(db));
-    private readonly StorageOptions _storage = storage?.Value ?? throw new ArgumentNullException(nameof(storage));
+    private readonly StorageOptions _storage = storage?.Value
+        ?? throw new ArgumentNullException(nameof(storage));
 
     /// <inheritdoc />
-    protected override async Task<IResult> ExecuteAsync(Request command, CancellationToken cancellationToken)
+    protected override async Task<IResult> ExecuteAsync(
+        Request command,
+        CancellationToken cancellationToken
+    )
     {
-
         var max = _storage.MaxArchiveBytes;
         using var buffer = new MemoryStream();
         var bytes = new byte[8192];
         int count;
         while ((count = await command.Content.ReadAsync(bytes, cancellationToken)) > 0)
         {
-            if (buffer.Length + count > max) return Results.StatusCode(413);
+            if (buffer.Length + count > max)
+                return Results.StatusCode(413);
             buffer.Write(bytes, 0, count);
         }
         var content = buffer.ToArray();
         try
         {
-            using var document = JsonDocument.Parse(content, new JsonDocumentOptions { MaxDepth = 64 });
-            if (!ArchiveValidator.IsValid(document.RootElement)) return Results.BadRequest(new { error = ErrorMessages.Get("InvalidArchive") });
+            using var document = JsonDocument.Parse(
+                content,
+                new JsonDocumentOptions { MaxDepth = 64 }
+            );
+            if (!ArchiveValidator.IsValid(document.RootElement))
+                return Results.BadRequest(new { error = ErrorMessages.Get("InvalidArchive") });
         }
-        catch (JsonException) { return Results.BadRequest(new { error = ErrorMessages.Get("InvalidArchive") }); }
+        catch (JsonException)
+        {
+            return Results.BadRequest(new { error = ErrorMessages.Get("InvalidArchive") });
+        }
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         // Serializable quota check prevents simultaneous uploads bypassing the global limit.
-        await using var transaction = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        await using var transaction = await _db.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable,
+            cancellationToken
+        );
         await _db.Shares.Where(x => x.ExpiresAt <= now).ExecuteDeleteAsync(cancellationToken);
         await _db.Rooms.Where(x => x.ExpiresAt <= now).ExecuteDeleteAsync(cancellationToken);
         var used = await _db.StorageBytes(cancellationToken);
@@ -53,11 +67,18 @@ public sealed class Handler(AppDb db, IOptions<StorageOptions> storage) : Comman
             Content = content,
             Size = content.Length,
             DeleteHash = Secrets.Hash(deletionSecret),
-            ExpiresAt = now + 86400
+            ExpiresAt = now + 86400,
         };
         _db.Shares.Add(share);
         await _db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        return Results.Ok(new { share.Id, deletionSecret, expiresAt = DateTimeOffset.FromUnixTimeSeconds(share.ExpiresAt) });
+        return Results.Ok(
+            new
+            {
+                share.Id,
+                deletionSecret,
+                expiresAt = DateTimeOffset.FromUnixTimeSeconds(share.ExpiresAt),
+            }
+        );
     }
 }

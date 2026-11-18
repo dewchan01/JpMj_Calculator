@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -20,12 +20,13 @@ namespace Riichi.Api.Migrations
                     PlayerCount = table.Column<int>(type: "int", nullable: false),
                     ExpiresAt = table.Column<long>(type: "bigint", nullable: false),
                     Revision = table.Column<long>(type: "bigint", nullable: false),
-                    Snapshot = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Snapshot = table.Column<string>(type: "nvarchar(max)", nullable: false),
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Rooms", x => x.Id);
-                });
+                }
+            );
 
             migrationBuilder.CreateTable(
                 name: "Shares",
@@ -35,12 +36,13 @@ namespace Riichi.Api.Migrations
                     Content = table.Column<byte[]>(type: "varbinary(max)", nullable: false),
                     Size = table.Column<long>(type: "bigint", nullable: false),
                     ExpiresAt = table.Column<long>(type: "bigint", nullable: false),
-                    DeleteHash = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    DeleteHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Shares", x => x.Id);
-                });
+                }
+            );
 
             migrationBuilder.CreateTable(
                 name: "Seats",
@@ -48,7 +50,7 @@ namespace Riichi.Api.Migrations
                 {
                     RoomId = table.Column<string>(type: "nvarchar(16)", nullable: false),
                     Number = table.Column<int>(type: "int", nullable: false),
-                    TokenHash = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    TokenHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
                 },
                 constraints: table =>
                 {
@@ -58,31 +60,32 @@ namespace Riichi.Api.Migrations
                         column: x => x.RoomId,
                         principalTable: "Rooms",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
+                        onDelete: ReferentialAction.Cascade
+                    );
+                }
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_Rooms_ExpiresAt",
                 table: "Rooms",
-                column: "ExpiresAt");
+                column: "ExpiresAt"
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_Shares_ExpiresAt",
                 table: "Shares",
-                column: "ExpiresAt");
+                column: "ExpiresAt"
+            );
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "Seats");
+            migrationBuilder.DropTable(name: "Seats");
 
-            migrationBuilder.DropTable(
-                name: "Shares");
+            migrationBuilder.DropTable(name: "Shares");
 
-            migrationBuilder.DropTable(
-                name: "Rooms");
+            migrationBuilder.DropTable(name: "Rooms");
         }
     }
 }

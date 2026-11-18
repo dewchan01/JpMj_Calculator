@@ -8,7 +8,13 @@ namespace Riichi.Api.Features.Games.CommitGame;
 /// <param name="Match">The game snapshot.</param>
 /// <param name="Decisions">The host declaration decisions.</param>
 /// <param name="Operation">The explicitly delegated operation, when submitted by a player.</param>
-public sealed record Body(long Revision, string HandKey, JsonElement Match, ActionDecision[] Decisions, string? Operation = null);
+public sealed record Body(
+    long Revision,
+    string HandKey,
+    JsonElement Match,
+    ActionDecision[] Decisions,
+    string? Operation = null
+);
 
 /// <summary>Input for commit game.</summary>
 /// <param name="Id">The operation resource identifier.</param>

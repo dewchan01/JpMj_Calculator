@@ -15,7 +15,9 @@ public sealed class DevelopmentDatabaseTests
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
-        await using var db = new AppDb(new DbContextOptionsBuilder<AppDb>().UseSqlite(connection).Options);
+        await using var db = new AppDb(
+            new DbContextOptionsBuilder<AppDb>().UseSqlite(connection).Options
+        );
         await db.Database.EnsureCreatedAsync();
         db.Rooms.Add(new Room { Id = "existing", PlayerCount = 3 });
         await db.SaveChangesAsync();

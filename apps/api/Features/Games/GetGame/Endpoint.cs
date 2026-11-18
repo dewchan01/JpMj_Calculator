@@ -1,5 +1,5 @@
-using Riichi.Api.Shared.Handlers;
 using Riichi.Api.Infrastructure.Security;
+using Riichi.Api.Shared.Handlers;
 
 namespace Riichi.Api.Features.Games.GetGame;
 
@@ -9,6 +9,18 @@ public static class Endpoint
     /// <summary>Maps the existing HTTP route.</summary>
     /// <param name="routes">The route group for this feature.</param>
     public static void Map(RouteGroupBuilder routes) =>
-        routes.MapGet("", (string id, long? revision, HttpRequest request, IQueryHandler<Request> handler, CancellationToken cancellationToken) =>
-            handler.HandleAsync(new Request(id, revision, Secrets.Bearer(request)), cancellationToken));
+        routes.MapGet(
+            "",
+            (
+                string id,
+                long? revision,
+                HttpRequest request,
+                IQueryHandler<Request> handler,
+                CancellationToken cancellationToken
+            ) =>
+                handler.HandleAsync(
+                    new Request(id, revision, Secrets.Bearer(request)),
+                    cancellationToken
+                )
+        );
 }

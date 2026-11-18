@@ -10,5 +10,14 @@ namespace Riichi.Api.Features.Rooms;
 /// <param name="Finish">Whether players may end the shared game.</param>
 /// <param name="Draw">Whether players may record a draw without winning-settlement access.</param>
 /// <param name="DeclareAny">Whether seated players may declare actions for any seat.</param>
-public sealed record RoomPermissions(bool Riichi = true, bool Calls = true, bool Win = true,
-    bool Indicators = true, bool Settle = false, bool History = false, bool Finish = false, bool Draw = false, bool DeclareAny = true);
+public sealed record RoomPermissions(
+    bool Riichi = true,
+    bool Calls = true,
+    bool Win = true,
+    bool Indicators = true,
+    bool Settle = false,
+    bool History = false,
+    bool Finish = false,
+    bool Draw = false,
+    bool DeclareAny = true
+);

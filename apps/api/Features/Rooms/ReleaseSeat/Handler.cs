@@ -1,11 +1,11 @@
 using System.Data;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using Riichi.Api.Data;
-using Riichi.Api.Infrastructure.Security;
-using Riichi.Api.Shared.Handlers;
-using Riichi.Api.Resources;
 using Riichi.Api.Features.Rooms.Notifications;
+using Riichi.Api.Infrastructure.Security;
+using Riichi.Api.Resources;
+using Riichi.Api.Shared.Handlers;
 
 namespace Riichi.Api.Features.Rooms.ReleaseSeat;
 
@@ -13,37 +13,80 @@ namespace Riichi.Api.Features.Rooms.ReleaseSeat;
 /// <param name="db">The scoped database context.</param>
 /// <param name="hub">The room notification hub.</param>
 /// <param name="presence">The online connection registry.</param>
-public sealed class Handler(AppDb db, IHubContext<RoomHub> hub, RoomPresence presence) : CommandHandler<Request>
+public sealed class Handler(AppDb db, IHubContext<RoomHub> hub, RoomPresence presence)
+    : CommandHandler<Request>
 {
-    private readonly RoomPresence _presence = presence ?? throw new ArgumentNullException(nameof(presence));
+    private readonly RoomPresence _presence = presence
+        ?? throw new ArgumentNullException(nameof(presence));
     private readonly AppDb _db = db ?? throw new ArgumentNullException(nameof(db));
-    private readonly IHubContext<RoomHub> _hub = hub ?? throw new ArgumentNullException(nameof(hub));
+    private readonly IHubContext<RoomHub> _hub = hub
+        ?? throw new ArgumentNullException(nameof(hub));
 
     /// <inheritdoc />
-    protected override async Task<IResult> ExecuteAsync(Request command, CancellationToken cancellationToken)
+    protected override async Task<IResult> ExecuteAsync(
+        Request command,
+        CancellationToken cancellationToken
+    )
     {
         var id = command.Id;
         var seat = command.Seat;
-        await using var transaction = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        await using var transaction = await _db.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable,
+            cancellationToken
+        );
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        var room = await _db.Rooms.SingleOrDefaultAsync(x => x.Id == id && x.ExpiresAt > now, cancellationToken);
-        if (room is null) return Results.NotFound();
+        var room = await _db.Rooms.SingleOrDefaultAsync(
+            x => x.Id == id && x.ExpiresAt > now,
+            cancellationToken
+        );
+        if (room is null)
+            return Results.NotFound();
         var isHost = Secrets.Matches(command.Token, room.HostHash);
         var hash = Secrets.Hash(command.Token);
         if (seat == -1)
         {
-            if (isHost) return Results.StatusCode(403);
-            var own = await _db.Seats.SingleOrDefaultAsync(x => x.RoomId == id && x.TokenHash == hash, cancellationToken);
-            var waiting = await _db.Unassigned.SingleOrDefaultAsync(x => x.RoomId == id && x.TokenHash == hash, cancellationToken);
-            if (own is null && waiting is null) return Results.Unauthorized();
-            if (waiting is not null) _db.Unassigned.Remove(waiting);
+            if (isHost)
+                return Results.StatusCode(403);
+            var own = await _db.Seats.SingleOrDefaultAsync(
+                x => x.RoomId == id && x.TokenHash == hash,
+                cancellationToken
+            );
+            var waiting = await _db.Unassigned.SingleOrDefaultAsync(
+                x => x.RoomId == id && x.TokenHash == hash,
+                cancellationToken
+            );
+            if (own is null && waiting is null)
+                return Results.Unauthorized();
+            if (waiting is not null)
+                _db.Unassigned.Remove(waiting);
             seat = own?.Number ?? -1;
         }
-        else if (!isHost && !await _db.Seats.AnyAsync(x => x.RoomId == id && x.Number == seat && x.TokenHash == hash, cancellationToken)) return Results.Unauthorized();
-        if (await _db.Seats.AnyAsync(x => x.RoomId == id && x.Number == seat && x.TokenHash == room.HostHash, cancellationToken)) return Results.StatusCode(403);
-        await _db.Seats.Where(x => x.RoomId == id && x.Number == seat).ExecuteDeleteAsync(cancellationToken);
-        await _db.Actions.Where(x => x.RoomId == id && x.Seat == seat && x.Status == "pending")
-            .ExecuteUpdateAsync(set => set.SetProperty(x => x.Status, "rejected").SetProperty(x => x.Error, ErrorMessages.Get("RoomCredentialsExpired")), cancellationToken);
+        else if (
+            !isHost
+            && !await _db.Seats.AnyAsync(
+                x => x.RoomId == id && x.Number == seat && x.TokenHash == hash,
+                cancellationToken
+            )
+        )
+            return Results.Unauthorized();
+        if (
+            await _db.Seats.AnyAsync(
+                x => x.RoomId == id && x.Number == seat && x.TokenHash == room.HostHash,
+                cancellationToken
+            )
+        )
+            return Results.StatusCode(403);
+        await _db
+            .Seats.Where(x => x.RoomId == id && x.Number == seat)
+            .ExecuteDeleteAsync(cancellationToken);
+        await _db
+            .Actions.Where(x => x.RoomId == id && x.Seat == seat && x.Status == "pending")
+            .ExecuteUpdateAsync(
+                set =>
+                    set.SetProperty(x => x.Status, "rejected")
+                        .SetProperty(x => x.Error, ErrorMessages.Get("RoomCredentialsExpired")),
+                cancellationToken
+            );
         room.Revision++;
         await _db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);

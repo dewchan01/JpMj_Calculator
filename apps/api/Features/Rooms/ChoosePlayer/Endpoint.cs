@@ -8,6 +8,18 @@ public static class Endpoint
 {
     /// <summary>Maps the lobby player endpoint.</summary>
     public static void Map(RouteGroupBuilder routes) =>
-        routes.MapPut("/{id}/player", (string id, Body input, HttpRequest request, ICommandHandler<Request> handler, CancellationToken cancellationToken) =>
-            handler.HandleAsync(new Request(id, input.Seat, Secrets.Bearer(request)), cancellationToken));
+        routes.MapPut(
+            "/{id}/player",
+            (
+                string id,
+                Body input,
+                HttpRequest request,
+                ICommandHandler<Request> handler,
+                CancellationToken cancellationToken
+            ) =>
+                handler.HandleAsync(
+                    new Request(id, input.Seat, Secrets.Bearer(request)),
+                    cancellationToken
+                )
+        );
 }

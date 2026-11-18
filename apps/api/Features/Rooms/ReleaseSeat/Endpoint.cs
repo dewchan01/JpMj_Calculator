@@ -1,5 +1,5 @@
-using Riichi.Api.Shared.Handlers;
 using Riichi.Api.Infrastructure.Security;
+using Riichi.Api.Shared.Handlers;
 
 namespace Riichi.Api.Features.Rooms.ReleaseSeat;
 
@@ -10,9 +10,29 @@ public static class Endpoint
     /// <param name="routes">The route group for this feature.</param>
     public static void Map(RouteGroupBuilder routes)
     {
-        routes.MapDelete("/{id}/seats/{seat:int}", (string id, int seat, HttpRequest request, ICommandHandler<Request> handler, CancellationToken cancellationToken) =>
-            handler.HandleAsync(new Request(id, seat, Secrets.Bearer(request)), cancellationToken));
-        routes.MapDelete("/{id}/membership", (string id, HttpRequest request, ICommandHandler<Request> handler, CancellationToken cancellationToken) =>
-            handler.HandleAsync(new Request(id, -1, Secrets.Bearer(request)), cancellationToken));
+        routes.MapDelete(
+            "/{id}/seats/{seat:int}",
+            (
+                string id,
+                int seat,
+                HttpRequest request,
+                ICommandHandler<Request> handler,
+                CancellationToken cancellationToken
+            ) =>
+                handler.HandleAsync(
+                    new Request(id, seat, Secrets.Bearer(request)),
+                    cancellationToken
+                )
+        );
+        routes.MapDelete(
+            "/{id}/membership",
+            (
+                string id,
+                HttpRequest request,
+                ICommandHandler<Request> handler,
+                CancellationToken cancellationToken
+            ) =>
+                handler.HandleAsync(new Request(id, -1, Secrets.Bearer(request)), cancellationToken)
+        );
     }
 }

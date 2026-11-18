@@ -1,7 +1,9 @@
 namespace Riichi.Api.Shared.Handlers;
+
 /// <summary>Handles a single application request.</summary>
 /// <typeparam name="TRequest">The request contract.</typeparam>
-public interface IRequestHandler<in TRequest> where TRequest : class
+public interface IRequestHandler<in TRequest>
+    where TRequest : class
 {
     /// <summary>Executes a validated request with cooperative cancellation.</summary>
     /// <param name="request">The operation input.</param>

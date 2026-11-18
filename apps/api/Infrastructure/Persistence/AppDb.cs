@@ -4,16 +4,21 @@ namespace Riichi.Api.Data;
 
 /// <summary>Stores rooms, seat credentials, declarations and expiring archives.</summary>
 /// <param name="options">The configured database provider.</param>
-public sealed class AppDb(DbContextOptions<AppDb> options) : DbContext(options ?? throw new ArgumentNullException(nameof(options)))
+public sealed class AppDb(DbContextOptions<AppDb> options)
+    : DbContext(options ?? throw new ArgumentNullException(nameof(options)))
 {
     /// <summary>Gets the shares collection.</summary>
     public DbSet<SharedArchive> Shares => Set<SharedArchive>();
+
     /// <summary>Gets the rooms collection.</summary>
     public DbSet<Room> Rooms => Set<Room>();
+
     /// <summary>Gets the seats collection.</summary>
     public DbSet<Seat> Seats => Set<Seat>();
+
     /// <summary>Gets room members waiting for a valid player assignment.</summary>
     public DbSet<UnassignedPlayer> Unassigned => Set<UnassignedPlayer>();
+
     /// <summary>Gets the actions collection.</summary>
     public DbSet<RoomAction> Actions => Set<RoomAction>();
 
@@ -21,9 +26,15 @@ public sealed class AppDb(DbContextOptions<AppDb> options) : DbContext(options ?
     /// <param name="cancellationToken">The caller cancellation token.</param>
     /// <returns>The estimated storage in bytes.</returns>
     public async Task<long> StorageBytes(CancellationToken cancellationToken = default) =>
-        (await Shares.SumAsync(x => (long?)x.Size, cancellationToken) ?? 0) +
-        (await Rooms.SumAsync(x => (long?)(x.Snapshot.Length * 2L + 1024), cancellationToken) ?? 0) +
-        (await Actions.SumAsync(x => (long?)(x.Payload.Length * 2L + 1024), cancellationToken) ?? 0);
+        (await Shares.SumAsync(x => (long?)x.Size, cancellationToken) ?? 0)
+        + (
+            await Rooms.SumAsync(x => (long?)(x.Snapshot.Length * 2L + 1024), cancellationToken)
+            ?? 0
+        )
+        + (
+            await Actions.SumAsync(x => (long?)(x.Payload.Length * 2L + 1024), cancellationToken)
+            ?? 0
+        );
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder model)
@@ -34,15 +45,30 @@ public sealed class AppDb(DbContextOptions<AppDb> options) : DbContext(options ?
         model.Entity<Room>().HasIndex(x => x.ExpiresAt);
         model.Entity<Room>().Property(x => x.Revision).IsConcurrencyToken();
         model.Entity<Seat>().HasKey(x => new { x.RoomId, x.Number });
-        model.Entity<Seat>().HasOne<Room>().WithMany().HasForeignKey(x => x.RoomId).OnDelete(DeleteBehavior.Cascade);
+        model
+            .Entity<Seat>()
+            .HasOne<Room>()
+            .WithMany()
+            .HasForeignKey(x => x.RoomId)
+            .OnDelete(DeleteBehavior.Cascade);
         model.Entity<UnassignedPlayer>().HasKey(x => new { x.RoomId, x.Id });
         model.Entity<UnassignedPlayer>().Property(x => x.Id).HasMaxLength(32);
         model.Entity<UnassignedPlayer>().Property(x => x.Decision).HasDefaultValue("unassigned");
         model.Entity<UnassignedPlayer>().Property(x => x.TokenHash).HasMaxLength(64);
         model.Entity<UnassignedPlayer>().HasIndex(x => new { x.RoomId, x.TokenHash }).IsUnique();
-        model.Entity<UnassignedPlayer>().HasOne<Room>().WithMany().HasForeignKey(x => x.RoomId).OnDelete(DeleteBehavior.Cascade);
+        model
+            .Entity<UnassignedPlayer>()
+            .HasOne<Room>()
+            .WithMany()
+            .HasForeignKey(x => x.RoomId)
+            .OnDelete(DeleteBehavior.Cascade);
         model.Entity<RoomAction>().HasKey(x => new { x.RoomId, x.Id });
         model.Entity<RoomAction>().Property(x => x.Id).HasMaxLength(64);
-        model.Entity<RoomAction>().HasOne<Room>().WithMany().HasForeignKey(x => x.RoomId).OnDelete(DeleteBehavior.Cascade);
+        model
+            .Entity<RoomAction>()
+            .HasOne<Room>()
+            .WithMany()
+            .HasForeignKey(x => x.RoomId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

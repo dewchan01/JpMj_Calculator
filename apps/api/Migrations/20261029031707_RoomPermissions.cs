@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -15,15 +15,14 @@ namespace Riichi.Api.Migrations
                 table: "Rooms",
                 type: "nvarchar(max)",
                 nullable: false,
-                defaultValue: "{}");
+                defaultValue: "{}"
+            );
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "Permissions",
-                table: "Rooms");
+            migrationBuilder.DropColumn(name: "Permissions", table: "Rooms");
         }
     }
 }

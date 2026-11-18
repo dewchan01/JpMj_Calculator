@@ -8,6 +8,12 @@ public static class Endpoint
     /// <summary>Maps the existing HTTP route.</summary>
     /// <param name="routes">The route group for this feature.</param>
     public static void Map(RouteGroupBuilder routes) =>
-        routes.MapPost("", (HttpRequest request, ICommandHandler<Request> handler, CancellationToken cancellationToken) =>
-            handler.HandleAsync(new Request(request.Body), cancellationToken));
+        routes.MapPost(
+            "",
+            (
+                HttpRequest request,
+                ICommandHandler<Request> handler,
+                CancellationToken cancellationToken
+            ) => handler.HandleAsync(new Request(request.Body), cancellationToken)
+        );
 }

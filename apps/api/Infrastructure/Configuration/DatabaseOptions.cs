@@ -1,4 +1,5 @@
 namespace Riichi.Api.Infrastructure.Configuration;
+
 /// <summary>Configures the database connection; blank permits local SQLite only.</summary>
 public sealed class DatabaseOptions
 {

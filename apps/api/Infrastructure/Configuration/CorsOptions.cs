@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
+
 namespace Riichi.Api.Infrastructure.Configuration;
+
 /// <summary>Configures explicit frontend origins allowed to use credentials.</summary>
 public sealed class CorsOptions
 {

@@ -1,6 +1,6 @@
-using Riichi.Api.Shared.Handlers;
 using Riichi.Api.Features.Rooms;
 using Riichi.Api.Features.Rooms.Notifications;
+using Riichi.Api.Shared.Handlers;
 
 namespace Riichi.Api.Features;
 
@@ -17,19 +17,34 @@ public static class FeatureRegistration
         services.AddSingleton<RoomPresence>();
         services.AddScoped<Rooms.Lifecycle.RoomLifecycle>();
         services.AddHostedService<Rooms.Lifecycle.RoomLifecycleWorker>();
-        services.AddScoped<ICommandHandler<Rooms.UpdatePermissions.Request>, Rooms.UpdatePermissions.Handler>();
+        services.AddScoped<
+            ICommandHandler<Rooms.UpdatePermissions.Request>,
+            Rooms.UpdatePermissions.Handler
+        >();
         services.AddScoped<ICommandHandler<Rooms.CreateRoom.Request>, Rooms.CreateRoom.Handler>();
         services.AddScoped<ICommandHandler<Rooms.JoinRoom.Request>, Rooms.JoinRoom.Handler>();
-        services.AddScoped<ICommandHandler<Rooms.ChoosePlayer.Request>, Rooms.ChoosePlayer.Handler>();
+        services.AddScoped<
+            ICommandHandler<Rooms.ChoosePlayer.Request>,
+            Rooms.ChoosePlayer.Handler
+        >();
         services.AddScoped<IQueryHandler<Rooms.GetRoom.Request>, Rooms.GetRoom.Handler>();
         services.AddScoped<ICommandHandler<Rooms.ReleaseSeat.Request>, Rooms.ReleaseSeat.Handler>();
         services.AddScoped<ICommandHandler<Rooms.CloseRoom.Request>, Rooms.CloseRoom.Handler>();
         services.AddScoped<IQueryHandler<Games.GetGame.Request>, Games.GetGame.Handler>();
-        services.AddScoped<ICommandHandler<Games.SubmitAction.Request>, Games.SubmitAction.Handler>();
+        services.AddScoped<
+            ICommandHandler<Games.SubmitAction.Request>,
+            Games.SubmitAction.Handler
+        >();
         services.AddScoped<ICommandHandler<Games.CommitGame.Request>, Games.CommitGame.Handler>();
-        services.AddScoped<ICommandHandler<Shares.CreateShare.Request>, Shares.CreateShare.Handler>();
+        services.AddScoped<
+            ICommandHandler<Shares.CreateShare.Request>,
+            Shares.CreateShare.Handler
+        >();
         services.AddScoped<IQueryHandler<Shares.GetShare.Request>, Shares.GetShare.Handler>();
-        services.AddScoped<ICommandHandler<Shares.RevokeShare.Request>, Shares.RevokeShare.Handler>();
+        services.AddScoped<
+            ICommandHandler<Shares.RevokeShare.Request>,
+            Shares.RevokeShare.Handler
+        >();
         return services;
     }
 
