@@ -17,15 +17,59 @@ export class AppUpdates {
   readonly message = signal('');
   readonly failed = signal(false);
   readonly available = signal(false);
+  readonly showPrompt = signal(false);
+  private automatic = false;
+  private timer?: ReturnType<typeof setInterval>;
+  private lastAutomaticCheck = 0;
+  private readonly wake = () => {
+    if (Date.now() - this.lastAutomaticCheck >= 15 * 60 * 1000) this.checkAutomatically();
+  };
+
+  private markAvailable(): void {
+    this.available.set(true);
+    this.showPrompt.set(true);
+    this.message.set('Update available');
+  }
+
+  startAutomaticChecks(): void {
+    if (this.automatic) return;
+    this.automatic = true;
+    this.checkAutomatically();
+    this.timer = setInterval(() => this.checkAutomatically(), 15 * 60 * 1000);
+    this.document.addEventListener('visibilitychange', this.wake);
+    this.document.defaultView?.addEventListener('online', this.wake);
+  }
+
+  private checkAutomatically(): void {
+    if (
+      this.document.hidden ||
+      this.document.defaultView?.navigator.onLine === false ||
+      this.busy() ||
+      this.available()
+    )
+      return;
+    this.lastAutomaticCheck = Date.now();
+    void this.check(false, true);
+  }
 
   constructor() {
     const subscription = this.sw.versionUpdates.subscribe((event) => {
-      if (event.type === 'VERSION_READY') this.ready = true;
+      if (event.type === 'VERSION_READY') {
+        this.ready = true;
+        this.markAvailable();
+      }
     });
-    inject(DestroyRef).onDestroy(() => subscription.unsubscribe());
+    inject(DestroyRef).onDestroy(() => {
+      subscription.unsubscribe();
+      clearInterval(this.timer);
+      if (this.automatic) {
+        this.document.removeEventListener('visibilitychange', this.wake);
+        this.document.defaultView?.removeEventListener('online', this.wake);
+      }
+    });
   }
 
-  async check(autoReload = true): Promise<void> {
+  async check(autoReload = true, silent = false): Promise<void> {
     if (this.busy()) return;
     this.busy.set(true);
     this.failed.set(false);
@@ -37,8 +81,7 @@ export class AppUpdates {
       if (workerActive) {
         const downloaded = this.ready || (await this.sw.checkForUpdate());
         if (downloaded || this.ready) {
-          this.available.set(true);
-          this.message.set('Update available');
+          this.markAvailable();
           if (autoReload) this.reload();
           return;
         }
@@ -65,19 +108,20 @@ export class AppUpdates {
         remote.commit !== local.commit ||
         ('dirty' in remote && remote.dirty === true) !== local.dirty
       ) {
-        this.available.set(true);
-        this.message.set('Update available');
+        this.markAvailable();
         if (autoReload) this.reload();
       } else {
         this.available.set(false);
         this.message.set('You are using the latest version.');
-        this.toast.success(this.message());
+        if (!silent) this.toast.success(this.message());
       }
     } catch {
       this.failed.set(true);
       this.message.set('Could not check for updates. Check your connection and try again.');
-      this.toast.error(this.message());
-      this.logs.add('warn', 'Could not check application updates.', 'network');
+      if (!silent) {
+        this.toast.error(this.message());
+        this.logs.add('warn', 'Could not check application updates.', 'network');
+      }
     } finally {
       this.busy.set(false);
     }

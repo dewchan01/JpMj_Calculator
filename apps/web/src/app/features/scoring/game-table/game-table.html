@@ -125,11 +125,11 @@
       </button>
       <button
         class="dice-icon game-resync"
-        [disabled]="busy() || resyncing() || updates.busy()"
+        [disabled]="busy() || resyncing()"
         [attr.aria-busy]="resyncing()"
         (click)="resyncGame()"
-        [attr.aria-label]="'Sync and check for updates' | t"
-        [title]="'Sync and check for updates' | t"
+        [attr.aria-label]="'Refresh page' | t"
+        [title]="'Refresh page' | t"
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path
@@ -205,13 +205,6 @@
     <app-error-notice [messages]="error().split('\n')" />
     @if (match(); as m) {
       @switch (panel()) {
-        @case ('app-update') {
-          <p>{{ 'A new version is available. Reload to update?' | t }}</p>
-          <div class="dialog-actions">
-            <button class="secondary" (click)="close()">{{ 'Cancel' | t }}</button>
-            <button class="primary" (click)="updates.apply()">{{ 'Reload now' | t }}</button>
-          </div>
-        }
         @case ('music') {
           <app-music-settings />
         }

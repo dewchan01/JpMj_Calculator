@@ -1,3 +1,12 @@
+@if (updates.showPrompt()) {
+  <aside class="app-update-notice" role="status" [attr.aria-label]="'Update available' | t">
+    <span>{{ 'Update available' | t }}</span>
+    <div class="dialog-actions">
+      <button class="secondary" (click)="updates.showPrompt.set(false)">{{ 'Cancel' | t }}</button>
+      <button class="primary" (click)="updates.apply()">{{ 'Reload now' | t }}</button>
+    </div>
+  </aside>
+}
 <dialog
   appDialogBackdrop
   #musicDialog

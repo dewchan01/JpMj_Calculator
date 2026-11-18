@@ -400,3 +400,16 @@ dd {
   accent-color: var(--green);
   cursor: pointer;
 }
+.app-update-check[aria-busy='true'] svg {
+  animation: app-update-spin 1s linear infinite;
+}
+@keyframes app-update-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-update-check[aria-busy='true'] svg {
+    animation: none;
+  }
+}

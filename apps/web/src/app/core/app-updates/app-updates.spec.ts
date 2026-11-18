@@ -19,6 +19,7 @@ const injectors: EnvironmentInjector[] = [];
 afterEach(() => {
   injectors.splice(0).forEach((injector) => injector.destroy());
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 function setup(worker = true) {
@@ -43,7 +44,12 @@ function setup(worker = true) {
         provide: DOCUMENT,
         useValue: {
           baseURI: 'https://example.com/app/',
+          hidden: false,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
           defaultView: {
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
             navigator: { serviceWorker: { controller: worker ? {} : null } },
             location: { reload },
           },
@@ -54,10 +60,44 @@ function setup(worker = true) {
   );
   injectors.push(injector);
   const service = runInInjectionContext(injector, () => new AppUpdates());
-  return { service, sw, reload, events, fetcher, logs };
+  return {
+    service,
+    sw,
+    reload,
+    events,
+    fetcher,
+    logs,
+    document: injector.get(DOCUMENT),
+    toast: injector.get(Toast),
+  };
 }
 
 describe('manual application updates', () => {
+  it('detects ready versions without reloading', () => {
+    const { service, reload, events } = setup();
+    events.next({
+      type: 'VERSION_READY',
+      currentVersion: { hash: 'old' },
+      latestVersion: { hash: 'new' },
+    });
+    expect(service.available()).toBe(true);
+    expect(service.showPrompt()).toBe(true);
+    expect(reload).not.toHaveBeenCalled();
+  });
+  it('checks quietly every 15 minutes and skips hidden pages', async () => {
+    vi.useFakeTimers();
+    const { service, fetcher, document, toast } = setup(false);
+    service.startAutomaticChecks();
+    service.startAutomaticChecks();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(toast.success).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(15 * 60 * 1000);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+    await vi.advanceTimersByTimeAsync(15 * 60 * 1000);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
   it.each([true, false])('defers game reload until confirmed (worker: %s)', async (worker) => {
     const { service, sw, reload, fetcher } = setup(worker);
     sw.checkForUpdate.mockResolvedValue(true);

@@ -1,9 +1,10 @@
 import { CaptureConfiguration } from './features/scoring/capture/capture-config';
 import { I18n, TranslatePipe } from './core/i18n/i18n';
-import { Component, computed, inject, signal } from '@angular/core';
+import { ApplicationRef, Component, computed, inject, signal } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { filter, map } from 'rxjs';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { filter, map, take } from 'rxjs';
+import { AppUpdates } from './core/app-updates/app-updates';
 import { Theme } from './core/theme/theme';
 import { AudioControls } from './core/sound/audio-controls';
 import { SegmentedSwipe } from './shared/segmented-swipe';
@@ -51,7 +52,11 @@ export class App {
   private readonly diagnosticLog = inject(DiagnosticLog);
   private readonly ripples = inject(ButtonRipples);
   readonly configuration = inject(CaptureConfiguration);
+  readonly updates = inject(AppUpdates);
   constructor() {
+    inject(ApplicationRef)
+      .isStable.pipe(filter(Boolean), take(1), takeUntilDestroyed())
+      .subscribe(() => this.updates.startAutomaticChecks());
     inject(AudioControls);
     this.diagnosticLog.trackNavigation(this.router);
     void this.configuration.load();

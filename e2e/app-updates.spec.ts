@@ -3,19 +3,43 @@ import AxeBuilder from '@axe-core/playwright';
 
 test.use({ serviceWorkers: 'block' });
 
+test('automatic update detection offers reload without interrupting the page', async ({ page }) => {
+  await page.route('**/version.json', (route) =>
+    route.fulfill({
+      json: {
+        version: '1.0.0',
+        commit: route.request().headers()['ngsw-bypass'] ? 'new' : 'old',
+        dirty: false,
+      },
+    }),
+  );
+  await page.goto('/');
+  const notice = page.getByRole('status', { name: 'Update available', exact: true });
+  await expect(notice).toBeVisible();
+  await expect(notice.getByRole('button', { name: 'Reload now', exact: true })).toBeVisible();
+  await notice.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(notice).not.toBeVisible();
+  await expect(page.getByRole('button', { name: /Start match/ })).toBeVisible();
+});
+
 test('version page offers a manual update check with busy, current and retry states', async ({
   page,
 }) => {
   const version = { version: '1.0.0', commit: 'local-test', dirty: false };
   let check: Route | undefined;
+  let automaticHandled = false;
   await page.route('**/version.json', (route) => {
-    if (route.request().headers()['ngsw-bypass']) check = route;
-    else void route.fulfill({ json: version });
+    if (route.request().headers()['ngsw-bypass'] && automaticHandled) check = route;
+    else if (route.request().headers()['ngsw-bypass']) {
+      automaticHandled = true;
+      void route.fulfill({ json: version });
+    } else void route.fulfill({ json: version });
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/others/version');
   await expect(page.getByText('local-test', { exact: true })).toBeVisible();
   const button = page.getByRole('button', { name: /Check for updates|Checking for updates/ });
+  await expect(button).toBeEnabled();
   await button.click();
   await expect(button).toBeDisabled();
   await expect.poll(() => !!check).toBe(true);

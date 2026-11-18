@@ -161,3 +161,17 @@
     padding-inline: 4px;
   }
 }
+:host .app-update-notice {
+  position: fixed;
+  inset-inline: 16px;
+  bottom: calc(92px + env(safe-area-inset-bottom));
+  z-index: 100;
+  width: min(480px, calc(100vw - 32px));
+  margin-inline: auto;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 8px 32px #0003;
+}
