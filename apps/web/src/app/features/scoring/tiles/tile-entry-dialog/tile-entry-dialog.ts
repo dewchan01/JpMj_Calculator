@@ -11,6 +11,8 @@ import {
   signal,
   viewChild,
   output,
+  afterNextRender,
+  Injector,
 } from '@angular/core';
 import { TranslatePipe } from '../../../../core/i18n/i18n';
 
@@ -22,6 +24,16 @@ import { TranslatePipe } from '../../../../core/i18n/i18n';
   styleUrl: './tile-entry-dialog.css',
 })
 export class TileEntryDialog {
+  private readonly injector = inject(Injector);
+  scrollToTop(): void {
+    afterNextRender(
+      () => {
+        const dialog = this.dialog().nativeElement;
+        if (dialog.open) dialog.scrollTo({ top: 0, behavior: 'smooth' });
+      },
+      { injector: this.injector },
+    );
+  }
   readonly label = input('Enter tiles');
   readonly buttonText = input<string>();
   readonly canFinish = input(true);

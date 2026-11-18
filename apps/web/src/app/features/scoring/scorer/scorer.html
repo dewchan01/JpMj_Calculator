@@ -286,7 +286,7 @@
                 [class.empty]="!tiles.length"
                 [attr.aria-label]="'Concealed tiles including winning tile' | t"
               >
-                <app-tile-entry-dialog (keydown)="tileEditKeydown($event)">
+                <app-tile-entry-dialog #collectionEntry (keydown)="tileEditKeydown($event)">
                   <ng-template>
                     <div
                       appTileReorder
@@ -341,7 +341,7 @@
                       [autoAssign]="true"
                       [players]="players"
                       [winnerId]="winner"
-                      (layoutConfirmed)="applyWorkspacePhoto($event)"
+                      (layoutConfirmed)="applyWorkspacePhoto($event); collectionEntry.scrollToTop()"
                     />
                   </ng-template>
                 </app-tile-entry-dialog>

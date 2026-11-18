@@ -18,11 +18,13 @@
     }
     <app-tile-entry-dialog
       [showTrigger]="!directEntry()"
-      (closed)="entryClosed.emit($event)"
+      (closed)="onEntryClosed($event)"
       [label]="entryTitle()"
       buttonText="Enter"
       [canFinish]="!entryError() && !error()"
-      [showDone]="requiredCount() === undefined && maximumCount() !== 1 && !meldType()"
+      [showDone]="
+        photoReview() || (requiredCount() === undefined && maximumCount() !== 1 && !meldType())
+      "
     >
       <ng-template>
         @if ((meldType() || countHint()) && !error()) {

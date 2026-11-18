@@ -51,6 +51,11 @@ export class TileInput {
   readonly autoOpen = input(false);
   readonly openRequest = input(0);
   readonly entryClosed = output<boolean>();
+  readonly photoReview = signal(false);
+  onEntryClosed(confirmed: boolean): void {
+    this.photoReview.set(false);
+    this.entryClosed.emit(confirmed);
+  }
   private readonly entry = viewChild.required(TileEntryDialog);
   constructor() {
     afterRenderEffect(() => {
@@ -156,7 +161,8 @@ export class TileInput {
   applyPhoto(tiles: Tile[]): void {
     this.value.set(this.notation(tiles));
     this.error.set('');
-    this.finishWhenComplete();
+    this.photoReview.set(true);
+    this.entry().scrollToTop();
   }
   remove(index: number): void {
     this.value.set(this.notation(this.tiles().filter((_, position) => position !== index)));
