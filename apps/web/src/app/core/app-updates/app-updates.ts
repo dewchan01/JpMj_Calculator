@@ -16,6 +16,7 @@ export class AppUpdates {
   readonly busy = signal(false);
   readonly message = signal('');
   readonly failed = signal(false);
+  readonly available = signal(false);
 
   constructor() {
     const subscription = this.sw.versionUpdates.subscribe((event) => {
@@ -24,7 +25,7 @@ export class AppUpdates {
     inject(DestroyRef).onDestroy(() => subscription.unsubscribe());
   }
 
-  async check(): Promise<void> {
+  async check(autoReload = true): Promise<void> {
     if (this.busy()) return;
     this.busy.set(true);
     this.failed.set(false);
@@ -36,7 +37,9 @@ export class AppUpdates {
       if (workerActive) {
         const downloaded = this.ready || (await this.sw.checkForUpdate());
         if (downloaded || this.ready) {
-          this.reload();
+          this.available.set(true);
+          this.message.set('Update available');
+          if (autoReload) this.reload();
           return;
         }
       }
@@ -61,9 +64,12 @@ export class AppUpdates {
         remote.version !== local.version ||
         remote.commit !== local.commit ||
         ('dirty' in remote && remote.dirty === true) !== local.dirty
-      )
-        this.reload();
-      else {
+      ) {
+        this.available.set(true);
+        this.message.set('Update available');
+        if (autoReload) this.reload();
+      } else {
+        this.available.set(false);
         this.message.set('You are using the latest version.');
         this.toast.success(this.message());
       }
@@ -75,6 +81,10 @@ export class AppUpdates {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  apply(): void {
+    if (this.available()) this.reload();
   }
 
   private reload(): void {

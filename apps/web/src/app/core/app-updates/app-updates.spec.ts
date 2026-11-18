@@ -58,6 +58,19 @@ function setup(worker = true) {
 }
 
 describe('manual application updates', () => {
+  it.each([true, false])('defers game reload until confirmed (worker: %s)', async (worker) => {
+    const { service, sw, reload, fetcher } = setup(worker);
+    sw.checkForUpdate.mockResolvedValue(true);
+    fetcher.mockResolvedValue({
+      ok: true,
+      json: async () => ({ version: '2.0.0', commit: 'new', dirty: false }),
+    });
+    await service.check(false);
+    expect(service.available()).toBe(true);
+    expect(reload).not.toHaveBeenCalled();
+    service.apply();
+    expect(reload).toHaveBeenCalledOnce();
+  });
   it('waits for the worker download and reloads when a new version is ready', async () => {
     const { service, sw, reload, fetcher } = setup();
     sw.checkForUpdate.mockResolvedValue(true);

@@ -31,6 +31,7 @@ import { MusicSettings } from '../../../shared/music-settings/music-settings';
 import { ScoringMode } from '../../../core/scoring-mode';
 import { DetailTabMemory } from '../../../core/detail-tab-memory';
 import { ScreenAwake } from '../../../core/screen-awake';
+import { AppUpdates } from '../../../core/app-updates/app-updates';
 import { handEditDraft, finishHandEdit } from './hand-edit';
 import { DiceSimulator } from '../../../shared/dice-simulator/dice-simulator';
 import { TileChoice } from '../tiles/tile-choice/tile-choice';
@@ -129,6 +130,7 @@ type Panel =
   | 'extend-south'
   | 'chombo'
   | 'restart-hand'
+  | 'app-update'
   | 'notice';
 @Component({
   providers: [DetailTabMemory],
@@ -682,8 +684,22 @@ export class GameTable {
     'four-kans',
     'triple-ron',
   ];
-  refreshPage(): void {
-    window.location.reload();
+  readonly updates = inject(AppUpdates);
+  readonly resyncing = signal(false);
+  async resyncGame(): Promise<void> {
+    if (this.busy() || this.resyncing() || this.updates.busy()) return;
+    this.resyncing.set(true);
+    try {
+      const results = await Promise.allSettled([
+        this.roomCode ? this.room.sync() : Promise.resolve(),
+        this.updates.check(false),
+      ]);
+      const failed = results.find((result) => result.status === 'rejected');
+      if (failed?.status === 'rejected') this.fail(failed.reason);
+      else if (this.updates.available() && !this.updates.failed()) this.open('app-update');
+    } finally {
+      this.resyncing.set(false);
+    }
   }
   constructor() {
     effect(() => {
@@ -860,6 +876,7 @@ export class GameTable {
     if (this.panel() === 'player' && this.playerMode() === 'riichi') return 'Riichi';
     const titles: Record<Panel, string> = {
       music: 'Music settings',
+      'app-update': 'Update available',
       menu: 'Game menu',
       player: 'Player actions',
       call: 'Record call',

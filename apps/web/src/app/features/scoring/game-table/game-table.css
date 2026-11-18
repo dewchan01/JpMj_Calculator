@@ -141,6 +141,19 @@ h1 {
   stroke: currentColor;
   stroke-width: 1.8;
 }
+.game-resync[aria-busy='true'] svg {
+  animation: game-resync-spin 1s linear infinite;
+}
+@keyframes game-resync-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-resync[aria-busy='true'] svg {
+    animation: none;
+  }
+}
 .indicator-bar button {
   flex: 1;
   min-width: 0;

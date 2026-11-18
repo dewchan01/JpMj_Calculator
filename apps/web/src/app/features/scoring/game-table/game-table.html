@@ -124,14 +124,17 @@
         </svg>
       </button>
       <button
-        class="dice-icon page-refresh"
-        [disabled]="busy()"
-        (click)="refreshPage()"
-        [attr.aria-label]="'Refresh page' | t"
-        [title]="'Refresh page' | t"
+        class="dice-icon game-resync"
+        [disabled]="busy() || resyncing() || updates.busy()"
+        [attr.aria-busy]="resyncing()"
+        (click)="resyncGame()"
+        [attr.aria-label]="'Sync and check for updates' | t"
+        [title]="'Sync and check for updates' | t"
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M20 4v6h-6M20 10a8 8 0 1 0 0 6" />
+          <path
+            d="M20 7a8.5 8.5 0 0 0-14.5-1L3 9m0-5v5h5M4 17a8.5 8.5 0 0 0 14.5 1L21 15m0 5v-5h-5"
+          />
         </svg>
       </button>
       <button class="floating-menu" (click)="open('menu')" [attr.aria-label]="'Game menu' | t">
@@ -202,6 +205,13 @@
     <app-error-notice [messages]="error().split('\n')" />
     @if (match(); as m) {
       @switch (panel()) {
+        @case ('app-update') {
+          <p>{{ 'A new version is available. Reload to update?' | t }}</p>
+          <div class="dialog-actions">
+            <button class="secondary" (click)="close()">{{ 'Cancel' | t }}</button>
+            <button class="primary" (click)="updates.apply()">{{ 'Reload now' | t }}</button>
+          </div>
+        }
         @case ('music') {
           <app-music-settings />
         }
