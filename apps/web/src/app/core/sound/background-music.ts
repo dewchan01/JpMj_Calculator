@@ -42,10 +42,43 @@ export class BackgroundMusic {
   private source = '';
   private generation = 0;
   private pending?: HTMLAudioElement;
+  private volumeContext?: AudioContext;
+  private volumeGain?: GainNode;
+  private volumeSource?: MediaElementAudioSourceNode;
+
+  /** Media-element volume is read-only on iOS; use a gain node after a user gesture. */
+  private unlockVolume(): void {
+    if (!this.audio || typeof AudioContext === 'undefined') return;
+    let created: AudioContext | undefined;
+    try {
+      if (!this.volumeContext) {
+        const context = (created = new AudioContext());
+        const gain = context.createGain();
+        gain.gain.value = this.volume();
+        const source = context.createMediaElementSource(this.audio);
+        source.connect(gain);
+        gain.connect(context.destination);
+        this.volumeContext = context;
+        this.volumeGain = gain;
+        this.volumeSource = source;
+      }
+      this.applyVolume(this.volume());
+      void this.volumeContext.resume().catch(() => undefined);
+    } catch {
+      if (created && !this.volumeContext) void created.close().catch(() => undefined);
+      // Retain native volume control when Web Audio is unavailable.
+    }
+  }
+
+  private applyVolume(volume: number): void {
+    if (this.volumeGain) this.volumeGain.gain.value = volume;
+    if (this.audio) this.audio.volume = this.volumeGain ? 1 : volume;
+  }
 
   constructor() {
     const unlock = () => {
       this.unlocked.set(true);
+      this.unlockVolume();
       // Retry inside the user gesture, where browsers permit media playback.
       if ((!this.audio || this.audio.paused) && !this.pending)
         untracked(() =>
@@ -84,6 +117,9 @@ export class BackgroundMusic {
       document.removeEventListener('resume', resume);
       this.generation++;
       this.audio?.pause();
+      this.volumeSource?.disconnect();
+      this.volumeGain?.disconnect();
+      if (this.volumeContext) void this.volumeContext.close().catch(() => undefined);
     });
     effect(() => {
       const track = this.selected();
@@ -133,7 +169,8 @@ export class BackgroundMusic {
     this.save('riichi-music', volume > 0 ? 'on' : 'off');
     this.save('riichi-music-volume', String(volume));
     this.unlocked.set(true);
-    if (this.audio) this.audio.volume = volume;
+    this.unlockVolume();
+    this.applyVolume(volume);
     this.playSelection();
   }
   private playSelection(): void {
@@ -168,7 +205,9 @@ export class BackgroundMusic {
       this.error.set('');
     }
     const audio = this.audio!;
-    audio.volume = volume;
+    this.applyVolume(volume);
+    if (this.volumeContext?.state === 'suspended')
+      void this.volumeContext.resume().catch(() => undefined);
     if (this.pending === audio) return;
     if (!audio.paused) {
       this.error.set('');

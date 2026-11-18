@@ -54,6 +54,7 @@
     [value]="music.volume()"
     [style.--volume]="music.volume() * 100 + '%'"
     (input)="audio.setVolume(+$any($event.target).value)"
+    (change)="audio.setVolume(+$any($event.target).value)"
   />
 </label>
 <p class="hint">
