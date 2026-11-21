@@ -105,6 +105,7 @@ export class TableSummary {
   readonly allowSettle = input(false);
   readonly pendingAction = output<void>();
   readonly allowRiichi = input(true);
+  readonly allowNegativeRiichi = input(false);
   readonly allowCalls = input(true);
   readonly manualScoring = input(false);
   readonly callCounts = input<Record<string, number>>({});

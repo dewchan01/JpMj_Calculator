@@ -1,4 +1,8 @@
 {
+  "Match actions": "對局操作",
+  "Navigation": "頁面導覽",
+  "Automatically merge players by name after games end": "對局結束後按姓名自動合併玩家",
+  "Names must match exactly, including letter case. Ambiguous names and players seated together are not merged.": "姓名須完全一致，區分大小寫；同名對象不明確或曾在同一場對局中的玩家不會自動合併。",
   "Sync and check for updates": "同步並檢查更新",
   "Update available": "有可用更新",
   "A new version is available. Reload to update?": "有新版本，是否重新載入以更新？",

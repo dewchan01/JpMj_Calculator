@@ -200,7 +200,14 @@ export class BackgroundMusic {
       // Keep the media element that the user's first interaction unlocked.
       if (this.audio) this.audio.src = url;
       else this.audio = new Audio(url);
-      this.audio.loop = true;
+      // Always restart at zero rather than relying on the browser's native loop point.
+      this.audio.loop = false;
+      this.audio.onended = () => {
+        const audio = this.audio;
+        if (!audio) return;
+        audio.currentTime = 0;
+        this.playSelection();
+      };
       this.audio.preload = 'auto';
       this.error.set('');
     }

@@ -7,20 +7,26 @@ describe('game sounds', () => {
     const { service } = setup();
     const play = vi.fn(() => Promise.resolve());
     const pause = vi.fn();
+    const load = vi.fn();
     const sources: string[] = [];
     vi.stubGlobal(
       'Audio',
       class {
         play = play;
         pause = pause;
+        load = load;
         constructor(src: string) {
           sources.push(src);
         }
       },
     );
+    service.preloadBell();
+    expect(load).toHaveBeenCalledOnce();
+    expect(play).not.toHaveBeenCalled();
     service.playBell();
     service.playBell();
-    expect(sources).toEqual(Array(2).fill('https://example.com/app/sounds/bell.mp3'));
+    expect(sources).toEqual(['https://example.com/app/sounds/bell.mp3']);
+    expect(load).toHaveBeenCalledOnce();
     expect(pause).toHaveBeenCalledTimes(1);
     service.setEnabled(false);
     service.playBell();

@@ -42,6 +42,35 @@ function game(id: string, profileId?: string, name = 'Alice'): Match {
   };
 }
 describe('player identity and explicit import mapping', () => {
+  it('matches completed-game names case-sensitively even when the incoming ID is in the library', () => {
+    const source = game('one', 'incoming');
+    const existing = [
+      { id: 'incoming', name: 'Alice' },
+      { id: 'saved', name: 'Alice' },
+    ];
+    const options = { caseSensitive: true, knownPlayerIds: new Set<string>() };
+    const mapping = mergePlayersByName([source], existing, options);
+    expect(mapImportedPlayers([source], mapping)[0].players[0].profileId).toBe('saved');
+    expect(mergePlayersByName([game('one', 'incoming', 'alice')], existing, options)).toEqual({});
+    expect(
+      mergePlayersByName([source], existing, {
+        ...options,
+        knownPlayerIds: new Set(['incoming']),
+      }),
+    ).toEqual({});
+    source.players[1].name = 'Alice';
+    expect(() =>
+      mapImportedPlayers([source], mergePlayersByName([source], existing, options)),
+    ).not.toThrow();
+    expect(
+      new Set(
+        mapImportedPlayers(
+          [source],
+          mergePlayersByName([source], existing, options),
+        )[0].players.map((p) => p.profileId),
+      ).size,
+    ).toBe(3);
+  });
   it('uses names and ordinals without exposing identity values', () => {
     const people = [
       { id: 'secret-one', name: 'Alice' },

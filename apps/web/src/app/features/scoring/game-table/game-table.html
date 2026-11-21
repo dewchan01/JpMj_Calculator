@@ -59,6 +59,7 @@
       [allowSettle]="can('settle')"
       (pendingAction)="open('declarations')"
       [allowRiichi]="can('riichi')"
+      [allowNegativeRiichi]="tableRules(m.rules).allowNegativeRiichi"
       [allowCalls]="can('calls')"
       [manualScoring]="scoringMode.advanced()"
       [balances]="book().players"
@@ -316,137 +317,166 @@
         }
         @case ('menu') {
           <div class="menu-list">
-            @if (!m.ended) {
-              <button
-                [hidden]="remotePlayer()"
-                (click)="undoAction()"
-                [disabled]="busy() || !m.liveUndo?.length"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M4 10h10a6 6 0 1 1-5 9M4 10l5-5m-5 5 5 5" />
-                </svg>
-                {{ 'Undo previous action' | t }}
-              </button>
-              <button [hidden]="remotePlayer()" (click)="pause()">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path [attr.d]="paused() ? 'm8 4 12 8-12 8Z' : 'M8 5v14M16 5v14'" />
-                </svg>
-                {{ (paused() ? 'Resume game' : 'Pause game') | t }}
-              </button>
-              <button [hidden]="!can('settle')" (click)="startOutcome()" [disabled]="paused()">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
-                {{ 'End this hand' | t }}
-              </button>
-              @if (can('draw') && !can('settle')) {
-                <button (click)="startDraw()" [disabled]="paused() || busy()">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M4 7h16M4 12h16M4 17h16" />
-                  </svg>
-                  {{ 'Record draw' | t }}
-                </button>
-              }
-              <button
-                [hidden]="!can('finish')"
-                class="danger end-match-menu"
-                (click)="navigatePanel('finish')"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 4h12v16H6zM9 8h6m-6 4h6" />
-                </svg>
-                {{ 'End entire match' | t }}
-              </button>
-            } @else {
-              <button (click)="navigatePanel('results')">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="m8 12 3 3 5-6M12 3l3 3h4v4l2 3-2 3v4h-4l-3 2-3-2H5v-4l-2-3 2-3V6h4Z" />
-                </svg>
-                {{ 'Final results' | t }}
-              </button>
-            }
-            <button (click)="navigatePanel('history')">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 4h16v16H4zM8 8h8m-8 4h8m-8 4h5" />
-              </svg>
-              {{ 'History' | t }} · {{ m.events.length }}
-            </button>
-            <button (click)="navigatePanel('perspective')">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M20 7v5h-5M4 17v-5h5M5 8a8 8 0 0 1 13-3l2 2M4 17l2 2a8 8 0 0 0 13-3" />
-              </svg>
-              {{ 'Adjust view' | t }}
-            </button>
-            @if (roomCode && room.access()?.host) {
-              @if (room.state()?.seatRequests?.length) {
-                <button (click)="navigatePanel('seat-requests')">
-                  {{ 'Seat requests' | t }} ? {{ room.state()?.seatRequests?.length }}
-                </button>
-              }
-              <button (click)="navigatePanel('permissions')">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M12 3 3 7v5c0 5 9 9 9 9s9-4 9-9V7ZM8 12l3 3 5-6" />
-                </svg>
-                {{ 'Player permissions' | t }}
-              </button>
-            }
-            <button (click)="navigatePanel('music')">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M9 18V5l12-2v13M9 8l12-2" />
-                <ellipse cx="6" cy="18" rx="3" ry="2" />
-                <ellipse cx="18" cy="16" rx="3" ry="2" />
-              </svg>
-              {{ 'Music settings' | t }}
-            </button>
-            <button (click)="navigatePanel('info')">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="12" cy="12" r="9" />
-                <path d="M12 11v6m0-10v1" />
-              </svg>
-              {{ 'Information' | t }}
-            </button>
-            <button (click)="navigatePanel('settings')">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 7h16M4 17h16M8 4v6m8 4v6" />
-              </svg>
-              {{ 'In-game settings' | t }}
-            </button>
-            <button (click)="navigatePanel('scoring-mode')">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M5 3h14v18H5ZM8 6h8v4H8Zm0 8h2m4 0h2m-8 4h2m4 0h2" />
-              </svg>
-              {{ 'Scoring mode' | t }}
-            </button>
-            <button (click)="navigatePanel('help')">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M9 9a3 3 0 1 1 5 2c-2 1-2 2-2 3m0 3h.01M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20"
-                />
-              </svg>
-              {{ 'Help' | t }}
-            </button>
-            @if (roomCode) {
-              <button (click)="backToTables()" [disabled]="busy()">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="m3 10 9-7 9 7v11h-7v-7h-4v7H3Z" />
-                </svg>
-                {{ 'Return home' | t }}
-              </button>
-            }
-            @if (!roomCode || !m.ended) {
-              <button
-                class="return-table"
-                (click)="roomCode ? navigatePanel('leave-room') : returnToTables()"
-                [disabled]="busy()"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  @if (roomCode) {
-                    <path d="M10 17v4H3V3h7v4m-3 5h14m-5-5 5 5-5 5" />
-                  } @else {
-                    <path d="m3 10 9-7 9 7v11h-7v-7h-4v7H3Z" />
+            <details class="menu-section" open>
+              <summary>{{ 'Match actions' | t }}</summary>
+              <div class="menu-section-actions">
+                @if (!m.ended) {
+                  <button
+                    [hidden]="remotePlayer()"
+                    (click)="undoAction()"
+                    [disabled]="busy() || !m.liveUndo?.length"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M4 10h10a6 6 0 1 1-5 9M4 10l5-5m-5 5 5 5" />
+                    </svg>
+                    {{ 'Undo previous action' | t }}
+                  </button>
+                  <button [hidden]="remotePlayer()" (click)="pause()">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path [attr.d]="paused() ? 'm8 4 12 8-12 8Z' : 'M8 5v14M16 5v14'" />
+                    </svg>
+                    {{ (paused() ? 'Resume game' : 'Pause game') | t }}
+                  </button>
+                  <button [hidden]="!can('settle')" (click)="startOutcome()" [disabled]="paused()">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+                    {{ 'End this hand' | t }}
+                  </button>
+                  @if (can('draw') && !can('settle')) {
+                    <button (click)="startDraw()" [disabled]="paused() || busy()">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 7h16M4 12h16M4 17h16" />
+                      </svg>
+                      {{ 'Record draw' | t }}
+                    </button>
                   }
-                </svg>
-                {{ (roomCode ? 'Exit room' : 'My table') | t }}
-              </button>
+                  <button
+                    [hidden]="!can('finish')"
+                    class="danger end-match-menu"
+                    (click)="navigatePanel('finish')"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M6 4h12v16H6zM9 8h6m-6 4h6" />
+                    </svg>
+                    {{ 'End entire match' | t }}
+                  </button>
+                } @else {
+                  <button (click)="navigatePanel('results')">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="m8 12 3 3 5-6M12 3l3 3h4v4l2 3-2 3v4h-4l-3 2-3-2H5v-4l-2-3 2-3V6h4Z"
+                      />
+                    </svg>
+                    {{ 'Final results' | t }}
+                  </button>
+                }
+                <button (click)="navigatePanel('history')">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 4h16v16H4zM8 8h8m-8 4h8m-8 4h5" />
+                  </svg>
+                  {{ 'History' | t }} · {{ m.events.length }}
+                </button>
+              </div>
+            </details>
+            <details class="menu-section" open>
+              <summary>{{ 'Settings' | t }}</summary>
+              <div class="menu-section-actions">
+                <button (click)="navigatePanel('perspective')">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M20 7v5h-5M4 17v-5h5M5 8a8 8 0 0 1 13-3l2 2M4 17l2 2a8 8 0 0 0 13-3" />
+                  </svg>
+                  {{ 'Adjust view' | t }}
+                </button>
+                <button (click)="navigatePanel('music')">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M9 18V5l12-2v13M9 8l12-2" />
+                    <ellipse cx="6" cy="18" rx="3" ry="2" />
+                    <ellipse cx="18" cy="16" rx="3" ry="2" />
+                  </svg>
+                  {{ 'Music settings' | t }}
+                </button>
+                <button (click)="navigatePanel('settings')">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 7h16M4 17h16M8 4v6m8 4v6" />
+                  </svg>
+                  {{ 'In-game settings' | t }}
+                </button>
+                <button (click)="navigatePanel('scoring-mode')">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M5 3h14v18H5ZM8 6h8v4H8Zm0 8h2m4 0h2m-8 4h2m4 0h2" />
+                  </svg>
+                  {{ 'Scoring mode' | t }}
+                </button>
+              </div>
+            </details>
+            @if (roomCode && room.access()?.host) {
+              <details class="menu-section" open>
+                <summary>{{ 'Room options' | t }}</summary>
+                <div class="menu-section-actions">
+                  @if (roomCode && room.access()?.host) {
+                    @if (room.state()?.seatRequests?.length) {
+                      <button (click)="navigatePanel('seat-requests')">
+                        {{ 'Seat requests' | t }} ? {{ room.state()?.seatRequests?.length }}
+                      </button>
+                    }
+                    <button (click)="navigatePanel('permissions')">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 3 3 7v5c0 5 9 9 9 9s9-4 9-9V7ZM8 12l3 3 5-6" />
+                      </svg>
+                      {{ 'Player permissions' | t }}
+                    </button>
+                  }
+                </div>
+              </details>
             }
+            <details class="menu-section" open>
+              <summary>{{ 'Information' | t }}</summary>
+              <div class="menu-section-actions">
+                <button (click)="navigatePanel('info')">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 11v6m0-10v1" />
+                  </svg>
+                  {{ 'Information' | t }}
+                </button>
+                <button (click)="navigatePanel('help')">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      d="M9 9a3 3 0 1 1 5 2c-2 1-2 2-2 3m0 3h.01M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20"
+                    />
+                  </svg>
+                  {{ 'Help' | t }}
+                </button>
+              </div>
+            </details>
+            <details class="menu-section" open>
+              <summary>{{ 'Navigation' | t }}</summary>
+              <div class="menu-section-actions">
+                @if (roomCode) {
+                  <button (click)="backToTables()" [disabled]="busy()">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="m3 10 9-7 9 7v11h-7v-7h-4v7H3Z" />
+                    </svg>
+                    {{ 'Return home' | t }}
+                  </button>
+                }
+                @if (!roomCode || !m.ended) {
+                  <button
+                    class="return-table"
+                    (click)="roomCode ? navigatePanel('leave-room') : returnToTables()"
+                    [disabled]="busy()"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      @if (roomCode) {
+                        <path d="M10 17v4H3V3h7v4m-3 5h14m-5-5 5 5-5 5" />
+                      } @else {
+                        <path d="m3 10 9-7 9 7v11h-7v-7h-4v7H3Z" />
+                      }
+                    </svg>
+                    {{ (roomCode ? 'Exit room' : 'My table') | t }}
+                  </button>
+                }
+              </div>
+            </details>
           </div>
         }
         @case ('perspective') {
@@ -478,7 +508,7 @@
                 <button
                   class="secondary"
                   (click)="declarePlayerRiichi(false)"
-                  [disabled]="busy() || (book().players[selected] ?? 0) < 1000"
+                  [disabled]="busy() || !canFundRiichi(selected)"
                 >
                   {{ 'Riichi' | t }}
                 </button>
@@ -773,6 +803,7 @@
               [maximumCount]="requiredDoraCount"
               [(value)]="dora"
               (valueChange)="error.set('')"
+              (entryClosed)="$event && saveIndicators()"
               [playerCount]="m.playerCount"
               [redFives]="settings?.redFives ?? true"
             />
@@ -784,6 +815,7 @@
               [maximumCount]="requiredDoraCount"
               [(value)]="ura"
               (valueChange)="error.set('')"
+              (entryClosed)="$event && saveIndicators()"
               [playerCount]="m.playerCount"
               [redFives]="settings?.redFives ?? true"
             />
@@ -855,7 +887,7 @@
                   busy() ||
                   paused() ||
                   (!!riichiPlayers()[player.id] && !isDoubleRiichi(player.id)) ||
-                  (!isDoubleRiichi(player.id) && (book().players[player.id] ?? 0) < 1000) ||
+                  (!isDoubleRiichi(player.id) && !canFundRiichi(player.id)) ||
                   (!isDoubleRiichi(player.id) && callCounts()[player.id] > 0) ||
                   (remotePlayer() && player.id !== roomPlayerId() && !can('declareAny'))
                 "

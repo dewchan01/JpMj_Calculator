@@ -53,6 +53,26 @@ function game(): Match {
   };
 }
 describe('live match recording', () => {
+  it('uses each rule profile for low-point Riichi and Double Riichi deposits', () => {
+    for (const preset of ['m-league', 'mahjong-soul', 'tenhou'] as const) {
+      for (const points of [-1000, 0, 900, 1000]) {
+        for (const double of [false, true]) {
+          const match = { ...game(), rules: presetRules(preset, 4) };
+          match.initialBalances.a = points;
+          if (preset !== 'm-league' && points < 1000) {
+            expect(() => declareRiichi(match, 'a', double, 'riichi-test')).toThrow(
+              'Not enough points for a Riichi deposit.',
+            );
+          } else {
+            const declared = declareRiichi(match, 'a', double, 'riichi-test');
+            expect(balances(declared).players.a).toBe(points - 1000);
+            expect(balances(cancelRiichi(declared, 'a')).players.a).toBe(points);
+          }
+        }
+      }
+    }
+  });
+
   it('cancels only the selected current-hand declaration, preserving later actions and other deposits', () => {
     const a = declareRiichi(game(), 'a', true, 'a-riichi');
     const b = declareRiichi(a, 'b', false, 'b-riichi');

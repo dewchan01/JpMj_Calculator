@@ -85,10 +85,23 @@ export class Repository {
           return;
         }
         let saved = match;
-        if (match.ended && !previous?.ended) {
+        if (match.ended && this.retention.autoMergePlayers()) {
           const others = (await this.db.matches.toArray()).filter((value) => value.id !== match.id);
           const identities = playerIdentities(others, this.players.players());
-          saved = mapImportedPlayers([match], mergePlayersByName([match], identities))[0];
+          const knownPlayerIds = new Set(playerIdentities(others).map((player) => player.id));
+          const mapping = mergePlayersByName([match], identities, {
+            caseSensitive: true,
+            knownPlayerIds,
+          });
+          // Never merge people who have occupied different seats in any saved game.
+          for (const source of Object.keys(mapping)) {
+            try {
+              mapImportedPlayers([...others, match], { [source]: mapping[source] });
+            } catch {
+              delete mapping[source];
+            }
+          }
+          saved = mapImportedPlayers([match], mapping)[0];
         }
         await this.db.matches.put(structuredClone(saved));
       })

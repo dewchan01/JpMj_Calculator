@@ -32,6 +32,7 @@ export class GameSounds {
   readonly previews = Object.keys(callSounds) as CallSound[];
   private context?: AudioContext;
   private audio?: HTMLAudioElement;
+  private bell?: HTMLAudioElement;
   private playback = 0;
 
   private readPreference(): boolean {
@@ -101,14 +102,29 @@ export class GameSounds {
     this.playFallback(call);
   }
 
+  preloadBell(): void {
+    if (this.bell || typeof Audio === 'undefined') return;
+    try {
+      const audio = new Audio(new URL('sounds/bell.mp3', document.baseURI).href);
+      audio.preload = 'auto';
+      audio.load();
+      this.bell = audio;
+    } catch {
+      /* Optional audio must not interrupt the game. */
+    }
+  }
+
   playBell(): void {
     if (!this.enabled() || typeof Audio === 'undefined') return;
     this.playback++;
     this.audio?.pause();
     this.unlock();
     try {
-      const audio = new Audio(new URL('sounds/bell.mp3', document.baseURI).href);
+      this.preloadBell();
+      const audio = this.bell;
+      if (!audio) return;
       this.audio = audio;
+      audio.currentTime = 0;
       audio.volume = 0.7;
       void audio.play().catch(() => undefined);
     } catch {

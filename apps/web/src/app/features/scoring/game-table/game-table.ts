@@ -689,6 +689,7 @@ export class GameTable {
     window.location.reload();
   }
   constructor() {
+    this.sounds.preloadBell();
     effect(() => {
       const dialog = this.waitingDeclaration()?.nativeElement;
       if (!dialog) return;
@@ -1313,9 +1314,16 @@ export class GameTable {
       else await this.persist(recordCall(this.match()!, this.selected, payload), true);
     });
   }
+  canFundRiichi(playerId: string): boolean {
+    const match = this.match();
+    return (
+      !!match &&
+      (tableRules(match.rules).allowNegativeRiichi || (this.book().players[playerId] ?? 0) >= 1000)
+    );
+  }
   canDeclareDoubleRiichi(): boolean {
     return (
-      (this.book().players[this.selected] ?? 0) >= 1000 &&
+      this.canFundRiichi(this.selected) &&
       this.currentPlayer.riichi === 'none' &&
       !this.currentPlayer.manualCalls &&
       !this.currentPlayer.melds.some((meld) => meld.type !== 'ankan')

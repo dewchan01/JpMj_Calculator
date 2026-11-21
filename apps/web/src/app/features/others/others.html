@@ -87,6 +87,21 @@
     @switch (section()) {
       @case ('data-management') {
         <label class="advanced-mode-toggle data-retention-toggle">
+          <span>{{ 'Automatically merge players by name after games end' | t }}</span>
+          <input
+            type="checkbox"
+            role="switch"
+            [checked]="retention.autoMergePlayers()"
+            (change)="retention.setAutoMergePlayers($any($event.target).checked)"
+          />
+        </label>
+        <p class="hint">
+          {{
+            'Names must match exactly, including letter case. Ambiguous names and players seated together are not merged.'
+              | t
+          }}
+        </p>
+        <label class="advanced-mode-toggle data-retention-toggle">
           <span>{{ 'Automatically delete each game when it ends' | t }}</span>
           <input
             type="checkbox"

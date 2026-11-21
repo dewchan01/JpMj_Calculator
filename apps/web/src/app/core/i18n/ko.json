@@ -1,4 +1,8 @@
 {
+  "Match actions": "대국 조작",
+  "Navigation": "페이지 이동",
+  "Automatically merge players by name after games end": "대국 종료 후 이름으로 플레이어 자동 병합",
+  "Names must match exactly, including letter case. Ambiguous names and players seated together are not merged.": "대소문자를 포함해 이름이 정확히 일치해야 합니다. 대상이 모호하거나 같은 대국에 함께 참가한 플레이어는 자동 병합하지 않습니다.",
   "Sync and check for updates": "동기화 및 업데이트 확인",
   "Update available": "업데이트 있음",
   "A new version is available. Reload to update?": "새 버전이 있습니다. 새로고침하여 업데이트할까요?",

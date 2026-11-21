@@ -251,6 +251,43 @@ h1 {
   display: grid;
   gap: 8px;
 }
+.menu-section-actions {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding-top: 8px;
+}
+.menu-section + .menu-section {
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+  padding-top: 16px;
+}
+.menu-section > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.menu-section > summary::-webkit-details-marker {
+  display: none;
+}
+.menu-section > summary::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  margin-inline: 12px 4px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+}
+.menu-section[open] > summary::after {
+  transform: rotate(45deg);
+}
 .menu-list button {
   text-align: left;
 }

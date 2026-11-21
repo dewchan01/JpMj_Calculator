@@ -34,13 +34,22 @@ export function identityLabel(player: PlayerIdentity, peers: PlayerIdentity[] = 
 export function mergePlayersByName(
   matches: Match[],
   existing: PlayerIdentity[],
+  options: { caseSensitive?: boolean; knownPlayerIds?: ReadonlySet<string> } = {},
 ): Record<string, string> {
-  const key = (name: string) => name.normalize('NFKC').trim().toLowerCase();
+  const key = (name: string) =>
+    options.caseSensitive ? name : name.normalize('NFKC').trim().toLowerCase();
   const incoming = playerIdentities(matches);
   const mapping: Record<string, string> = {};
   for (const person of incoming) {
-    if (existing.some((other) => other.id === person.id)) continue;
-    const candidates = existing.filter((other) => key(other.name) === key(person.name));
+    if (
+      options.knownPlayerIds
+        ? options.knownPlayerIds.has(person.id)
+        : existing.some((other) => other.id === person.id)
+    )
+      continue;
+    const candidates = existing.filter(
+      (other) => other.id !== person.id && key(other.name) === key(person.name),
+    );
     if (candidates.length > 1) continue;
     const target = candidates[0] ?? incoming.find((other) => key(other.name) === key(person.name));
     if (!target || target.id === person.id) continue;
