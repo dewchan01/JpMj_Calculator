@@ -16,8 +16,15 @@ test('manually replacing a dora indicator saves the newly selected tile', async 
   await expect(dora.locator('img')).toHaveAttribute('src', /Man1\.svg/);
   for (const index of [1, 2, 3]) {
     await dora.click();
-    await sheet.locator('.tile-entry-tray button.tile').click();
-    await sheet.locator('app-tile-picker button').nth(index).click();
+    if (index === 2) {
+      // Replacing in either order must confirm when the required count is restored.
+      await sheet.locator('app-tile-picker button').nth(index).click();
+      await expect(sheet.locator('.tile-entry-tray button.tile')).toHaveCount(2);
+      await sheet.locator('.tile-entry-tray button.tile').first().click();
+    } else {
+      await sheet.locator('.tile-entry-tray button.tile').click();
+      await sheet.locator('app-tile-picker button').nth(index).click();
+    }
     await expect(sheet).toHaveCount(0);
     await expect(dora.locator('app-tile-art')).toHaveCount(1);
     await expect(dora.locator('img')).toHaveAttribute('src', new RegExp(`Man${index + 1}\\.svg`));

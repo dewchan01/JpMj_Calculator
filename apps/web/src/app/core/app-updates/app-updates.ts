@@ -13,6 +13,7 @@ export class AppUpdates {
   private readonly logs = inject(DiagnosticLog);
   private readonly toast = inject(Toast);
   private ready = false;
+  private remoteVersion?: string;
   readonly busy = signal(false);
   readonly message = signal('');
   readonly failed = signal(false);
@@ -20,9 +21,11 @@ export class AppUpdates {
   readonly showPrompt = signal(false);
   private automatic = false;
   private timer?: ReturnType<typeof setInterval>;
-  private lastAutomaticCheck = 0;
   private readonly wake = () => {
-    if (Date.now() - this.lastAutomaticCheck >= 15 * 60 * 1000) this.checkAutomatically();
+    this.checkAutomatically(true);
+  };
+  private readonly restored = (event: PageTransitionEvent) => {
+    if (event.persisted) this.wake();
   };
 
   private markAvailable(): void {
@@ -34,28 +37,32 @@ export class AppUpdates {
   startAutomaticChecks(): void {
     if (this.automatic) return;
     this.automatic = true;
-    this.checkAutomatically();
+    this.checkAutomatically(true);
     this.timer = setInterval(() => this.checkAutomatically(), 15 * 60 * 1000);
     this.document.addEventListener('visibilitychange', this.wake);
     this.document.defaultView?.addEventListener('online', this.wake);
+    this.document.defaultView?.addEventListener('pageshow', this.restored);
   }
 
-  private checkAutomatically(): void {
+  private checkAutomatically(autoReload = false): void {
     if (
       this.document.hidden ||
       this.document.defaultView?.navigator.onLine === false ||
-      this.busy() ||
-      this.available()
+      this.busy()
     )
       return;
-    this.lastAutomaticCheck = Date.now();
-    void this.check(false, true);
+    if (this.available()) {
+      if (autoReload) this.apply();
+      return;
+    }
+    void this.check(autoReload, true);
   }
 
   constructor() {
     const subscription = this.sw.versionUpdates.subscribe((event) => {
       if (event.type === 'VERSION_READY') {
         this.ready = true;
+        this.remoteVersion = undefined;
         this.markAvailable();
       }
     });
@@ -65,6 +72,7 @@ export class AppUpdates {
       if (this.automatic) {
         this.document.removeEventListener('visibilitychange', this.wake);
         this.document.defaultView?.removeEventListener('online', this.wake);
+        this.document.defaultView?.removeEventListener('pageshow', this.restored);
       }
     });
   }
@@ -108,8 +116,9 @@ export class AppUpdates {
         remote.commit !== local.commit ||
         ('dirty' in remote && remote.dirty === true) !== local.dirty
       ) {
+        this.remoteVersion = JSON.stringify(remote);
         this.markAvailable();
-        if (autoReload) this.reload();
+        if (autoReload) this.reload(silent ? JSON.stringify(remote) : undefined);
       } else {
         this.available.set(false);
         this.message.set('You are using the latest version.');
@@ -131,7 +140,17 @@ export class AppUpdates {
     if (this.available()) this.reload();
   }
 
-  private reload(): void {
+  private reload(remoteVersion = this.remoteVersion): void {
+    // A partially deployed/stale server must not trap app startup in a reload loop.
+    if (remoteVersion) {
+      try {
+        const storage = this.document.defaultView?.sessionStorage;
+        if (storage?.getItem('riichi-update-reloaded') === remoteVersion) return;
+        storage?.setItem('riichi-update-reloaded', remoteVersion);
+      } catch {
+        // Updating remains available when session storage is blocked.
+      }
+    }
     this.message.set('Update ready. Reloading…');
     this.document.defaultView?.location.reload();
   }

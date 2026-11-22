@@ -3,23 +3,22 @@ import AxeBuilder from '@axe-core/playwright';
 
 test.use({ serviceWorkers: 'block' });
 
-test('automatic update detection offers reload without interrupting the page', async ({ page }) => {
-  await page.route('**/version.json', (route) =>
-    route.fulfill({
-      json: {
-        version: '1.0.0',
-        commit: route.request().headers()['ngsw-bypass'] ? 'new' : 'old',
-        dirty: false,
-      },
-    }),
-  );
+test('startup checks and reloads an update without visiting the version page', async ({ page }) => {
+  let loads = 0;
+  let checks = 0;
+  await page.route('**/version.json', (route) => {
+    const bypass = !!route.request().headers()['ngsw-bypass'];
+    if (bypass) checks++;
+    else loads++;
+    return route.fulfill({
+      json: { version: '1.0.0', commit: bypass || loads > 1 ? 'new' : 'old', dirty: false },
+    });
+  });
   await page.goto('/');
-  const notice = page.getByRole('status', { name: 'Update available', exact: true });
-  await expect(notice).toBeVisible();
-  await expect(notice.getByRole('button', { name: 'Reload now', exact: true })).toBeVisible();
-  await notice.getByRole('button', { name: 'Cancel', exact: true }).click();
-  await expect(notice).not.toBeVisible();
+  await expect.poll(() => loads).toBe(2);
+  await expect.poll(() => checks).toBeGreaterThanOrEqual(2);
   await expect(page.getByRole('button', { name: /Start match/ })).toBeVisible();
+  await expect(page.getByRole('status', { name: 'Update available', exact: true })).toHaveCount(0);
 });
 
 test('version page offers a manual update check with busy, current and retry states', async ({

@@ -167,6 +167,7 @@ export class TileInput {
   remove(index: number): void {
     this.value.set(this.notation(this.tiles().filter((_, position) => position !== index)));
     this.error.set('');
+    if (!this.photoReview()) this.finishWhenComplete();
   }
   removeLabel(tile: Tile): string {
     return this.i18n.t('Remove ' + this.i18n.tile(tile));

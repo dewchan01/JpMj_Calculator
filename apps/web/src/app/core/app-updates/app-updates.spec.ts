@@ -73,6 +73,45 @@ function setup(worker = true) {
 }
 
 describe('manual application updates', () => {
+  it('automatically applies an update on startup without opening the version page', async () => {
+    vi.useFakeTimers();
+    const { service, sw, reload } = setup();
+    sw.checkForUpdate.mockResolvedValue(true);
+    service.startAutomaticChecks();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(reload).toHaveBeenCalledOnce();
+  });
+  it('checks again on foreground entry even within fifteen minutes', async () => {
+    vi.useFakeTimers();
+    const { service, sw, document, reload } = setup();
+    service.startAutomaticChecks();
+    await vi.advanceTimersByTimeAsync(0);
+    sw.checkForUpdate.mockResolvedValue(true);
+    const listener = vi
+      .mocked(document.addEventListener)
+      .mock.calls.find(([name]) => name === 'visibilitychange')![1] as () => void;
+    listener();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(sw.checkForUpdate).toHaveBeenCalledTimes(2);
+    expect(reload).toHaveBeenCalledOnce();
+  });
+  it('avoids automatic metadata reload loops when the server still reports the same update', async () => {
+    const { service, fetcher, document, reload } = setup(false);
+    const values = new Map<string, string>();
+    Object.defineProperty(document.defaultView, 'sessionStorage', {
+      value: {
+        getItem: (key: string) => values.get(key),
+        setItem: (key: string, value: string) => values.set(key, value),
+      },
+    });
+    fetcher.mockResolvedValue({
+      ok: true,
+      json: async () => ({ version: '2.0.0', commit: 'new', dirty: false }),
+    });
+    await service.check(true, true);
+    await service.check(true, true);
+    expect(reload).toHaveBeenCalledOnce();
+  });
   it('detects ready versions without reloading', () => {
     const { service, reload, events } = setup();
     events.next({

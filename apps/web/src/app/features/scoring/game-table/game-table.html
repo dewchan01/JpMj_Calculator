@@ -317,7 +317,7 @@
         }
         @case ('menu') {
           <div class="menu-list">
-            <details class="menu-section" open>
+            <details class="menu-section">
               <summary>{{ 'Match actions' | t }}</summary>
               <div class="menu-section-actions">
                 @if (!m.ended) {
@@ -377,7 +377,7 @@
                 </button>
               </div>
             </details>
-            <details class="menu-section" open>
+            <details class="menu-section">
               <summary>{{ 'Settings' | t }}</summary>
               <div class="menu-section-actions">
                 <button (click)="navigatePanel('perspective')">
@@ -409,7 +409,7 @@
               </div>
             </details>
             @if (roomCode && room.access()?.host) {
-              <details class="menu-section" open>
+              <details class="menu-section">
                 <summary>{{ 'Room options' | t }}</summary>
                 <div class="menu-section-actions">
                   @if (roomCode && room.access()?.host) {
@@ -428,7 +428,7 @@
                 </div>
               </details>
             }
-            <details class="menu-section" open>
+            <details class="menu-section">
               <summary>{{ 'Information' | t }}</summary>
               <div class="menu-section-actions">
                 <button (click)="navigatePanel('info')">
@@ -448,7 +448,7 @@
                 </button>
               </div>
             </details>
-            <details class="menu-section" open>
+            <details class="menu-section">
               <summary>{{ 'Navigation' | t }}</summary>
               <div class="menu-section-actions">
                 @if (roomCode) {
